@@ -113,6 +113,7 @@ resource "azurerm_virtual_machine" "majority_maker" {
   }
 }
 
+/*
 module "majority_maker_on_destroy" {
   source              = "../../../generic_modules/on_destroy"
   node_count          = var.node_count
@@ -124,3 +125,4 @@ module "majority_maker_on_destroy" {
   public_ips          = local.provisioning_address
   dependencies        = [data.azurerm_public_ip.majority_maker]
 }
+*/

@@ -47,7 +47,7 @@ resource "azurerm_lb" "hana-load-balancer" {
   frontend_ip_configuration {
     name                          = "lbfe-hana"
     subnet_id                     = var.network_subnet_id
-    private_ip_address_allocation = "static"
+    private_ip_address_allocation = "Static"
     private_ip_address            = var.common_variables["hana"]["cluster_vip"]
   }
 
@@ -57,7 +57,7 @@ resource "azurerm_lb" "hana-load-balancer" {
     content {
       name                          = "lbfe-hana-secondary"
       subnet_id                     = var.network_subnet_id
-      private_ip_address_allocation = "static"
+      private_ip_address_allocation = "Static"
       private_ip_address            = frontend_ip_configuration.value
     }
   }
@@ -84,7 +84,7 @@ resource "azurerm_network_interface_backend_address_pool_association" "hana" {
 
 resource "azurerm_lb_probe" "hana-load-balancer" {
   count               = local.create_ha_infra
-  resource_group_name = var.resource_group_name
+  #resource_group_name = var.resource_group_name
   loadbalancer_id     = azurerm_lb.hana-load-balancer[0].id
   name                = "lbhp-hana"
   protocol            = "Tcp"
@@ -95,7 +95,7 @@ resource "azurerm_lb_probe" "hana-load-balancer" {
 
 resource "azurerm_lb_probe" "hana-load-balancer-secondary" {
   count               = local.create_active_active_infra
-  resource_group_name = var.resource_group_name
+  #resource_group_name = var.resource_group_name
   loadbalancer_id     = azurerm_lb.hana-load-balancer[0].id
   name                = "lbhp-hana-secondary"
   protocol            = "Tcp"
@@ -107,7 +107,7 @@ resource "azurerm_lb_probe" "hana-load-balancer-secondary" {
 # Load balancing rules for HANA 2.0
 resource "azurerm_lb_rule" "hana-lb-rules" {
   for_each                       = local.hana_lb_rules_ports
-  resource_group_name            = var.resource_group_name
+  #resource_group_name            = var.resource_group_name
   loadbalancer_id                = azurerm_lb.hana-load-balancer[0].id
   name                           = "lbrule-hana-tcp-${each.value}"
   protocol                       = "Tcp"
@@ -123,7 +123,7 @@ resource "azurerm_lb_rule" "hana-lb-rules" {
 # Load balancing rules for the Active/Active setup
 resource "azurerm_lb_rule" "hana-lb-rules-secondary" {
   for_each                       = local.hana_lb_rules_ports_secondary
-  resource_group_name            = var.resource_group_name
+  #resource_group_name            = var.resource_group_name
   loadbalancer_id                = azurerm_lb.hana-load-balancer[0].id
   name                           = "lbrule-hana-tcp-${each.value}-secondary"
   protocol                       = "Tcp"
@@ -138,7 +138,7 @@ resource "azurerm_lb_rule" "hana-lb-rules-secondary" {
 
 resource "azurerm_lb_rule" "hanadb_exporter" {
   count                          = var.common_variables["monitoring_enabled"] ? local.create_ha_infra : 0
-  resource_group_name            = var.resource_group_name
+  #resource_group_name            = var.resource_group_name
   loadbalancer_id                = azurerm_lb.hana-load-balancer[0].id
   name                           = "hanadb_exporter"
   protocol                       = "Tcp"
@@ -163,7 +163,7 @@ resource "azurerm_network_interface" "hana" {
   ip_configuration {
     name                          = "ipconf-primary"
     subnet_id                     = var.network_subnet_id
-    private_ip_address_allocation = "static"
+    private_ip_address_allocation = "Static"
     private_ip_address            = element(var.host_ips, count.index)
     public_ip_address_id          = local.bastion_enabled ? null : element(azurerm_public_ip.hana.*.id, count.index)
   }
@@ -457,6 +457,7 @@ module "hana_majority_maker" {
   fence_agent_client_secret = var.fence_agent_client_secret
 }
 
+/*
 module "hana_on_destroy" {
   source              = "../../../generic_modules/on_destroy"
   node_count          = var.hana_count
@@ -468,3 +469,4 @@ module "hana_on_destroy" {
   public_ips          = local.provisioning_addresses
   dependencies        = [data.azurerm_public_ip.hana]
 }
+*/

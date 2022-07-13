@@ -94,7 +94,7 @@ resource "azurerm_route_table" "myroutes" {
   route {
     name           = "default"
     address_prefix = local.vnet_address_range
-    next_hop_type  = "vnetlocal"
+    next_hop_type  = "VnetLocal"
   }
 
   tags = {

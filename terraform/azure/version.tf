@@ -1,10 +1,10 @@
 terraform {
-  required_version = ">= 1.1.0"
+  required_version = ">= 1.1.7"
   required_providers {
     # Configure the Azure Provider
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 2.97.0"
+      version = "~> 3.13.0"
     }
     null = {
       source  = "hashicorp/null"

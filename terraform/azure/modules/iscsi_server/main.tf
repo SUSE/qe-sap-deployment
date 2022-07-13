@@ -15,7 +15,7 @@ resource "azurerm_network_interface" "iscsisrv" {
   ip_configuration {
     name                          = "ipconf-primary"
     subnet_id                     = var.network_subnet_id
-    private_ip_address_allocation = "static"
+    private_ip_address_allocation = "Static"
     private_ip_address            = element(var.host_ips, count.index)
     public_ip_address_id          = local.bastion_enabled ? null : element(azurerm_public_ip.iscsisrv.*.id, count.index)
   }
@@ -123,6 +123,7 @@ resource "azurerm_virtual_machine" "iscsisrv" {
   }
 }
 
+/*
 module "iscsi_on_destroy" {
   source              = "../../../generic_modules/on_destroy"
   node_count          = var.iscsi_count
@@ -134,3 +135,4 @@ module "iscsi_on_destroy" {
   public_ips          = local.provisioning_addresses
   dependencies        = [data.azurerm_public_ip.iscsisrv]
 }
+*/
