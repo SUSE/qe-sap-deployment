@@ -44,9 +44,10 @@ variable "monitoring_srv_ip" {
   type        = string
   default     = ""
 }
-
+/*
 variable "on_destroy_dependencies" {
   description = "Resources objects need in the on_destroy script (everything that allows ssh connection)"
   type        = any
   default     = []
 }
+*/

@@ -184,7 +184,7 @@ variable "cluster_ssh_key" {
   description = "Path to a SSH private key used during the cluster creation. The key must be passwordless"
   type        = string
 }
-
+/*
 variable "provisioner" {
   description = "Used provisioner option. Available options: salt. Let empty to not use any provisioner"
   default     = "salt"
@@ -207,7 +207,7 @@ variable "provisioning_output_colored" {
   type        = bool
   default     = true
 }
-
+*/
 # Hana related variables
 
 variable "hana_name" {

@@ -108,6 +108,7 @@ resource "google_compute_instance" "drbd" {
   tags = ["drbd-group"]
 }
 
+/*
 module "drbd_on_destroy" {
   source              = "../../../generic_modules/on_destroy"
   node_count          = var.drbd_count
@@ -119,3 +120,4 @@ module "drbd_on_destroy" {
   public_ips          = local.provisioning_addresses
   dependencies        = var.on_destroy_dependencies
 }
+*/

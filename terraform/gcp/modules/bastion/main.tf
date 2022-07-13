@@ -79,6 +79,7 @@ resource "google_compute_instance" "bastion" {
   tags = ["bastion"]
 }
 
+/*
 module "bastion_on_destroy" {
   source       = "../../../generic_modules/on_destroy"
   node_count   = local.bastion_count
@@ -88,3 +89,4 @@ module "bastion_on_destroy" {
   public_ips   = google_compute_instance.bastion.*.network_interface.0.access_config.0.nat_ip
   dependencies = var.on_destroy_dependencies
 }
+*/
