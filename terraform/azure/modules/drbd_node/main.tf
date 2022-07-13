@@ -56,7 +56,7 @@ resource "azurerm_network_interface_backend_address_pool_association" "drbd-node
 
 resource "azurerm_lb_probe" "drbd-health-probe" {
   count               = var.drbd_count > 0 ? 1 : 0
-  resource_group_name = var.resource_group_name
+  #resource_group_name = var.resource_group_name
   loadbalancer_id     = azurerm_lb.drbd-load-balancer[0].id
   name                = "lbhp-drbd"
   protocol            = "Tcp"
@@ -83,7 +83,7 @@ resource "azurerm_lb_probe" "drbd-health-probe" {
 
 resource "azurerm_lb_rule" "drbd-lb-tcp-2049" {
   count                          = var.drbd_count > 0 ? 1 : 0
-  resource_group_name            = var.resource_group_name
+  #resource_group_name            = var.resource_group_name
   loadbalancer_id                = azurerm_lb.drbd-load-balancer[0].id
   name                           = "lbrule-drbd-tcp-2049"
   protocol                       = "Tcp"
@@ -98,7 +98,7 @@ resource "azurerm_lb_rule" "drbd-lb-tcp-2049" {
 
 resource "azurerm_lb_rule" "drbd-lb-udp-2049" {
   count                          = var.drbd_count > 0 ? 1 : 0
-  resource_group_name            = var.resource_group_name
+  #resource_group_name            = var.resource_group_name
   loadbalancer_id                = azurerm_lb.drbd-load-balancer[0].id
   name                           = "lbrule-drbd-udp-2049"
   protocol                       = "Udp"
@@ -231,8 +231,9 @@ resource "azurerm_virtual_machine" "drbd" {
   }
 }
 
+/*
 module "drbd_on_destroy" {
-  source              = "../../../generic_modules/on_destroy"
+  source              = "../../generic_modules/on_destroy"
   node_count          = var.drbd_count
   instance_ids        = azurerm_virtual_machine.drbd.*.id
   user                = var.common_variables["authorized_user"]
@@ -242,3 +243,4 @@ module "drbd_on_destroy" {
   public_ips          = local.provisioning_addresses
   dependencies        = [data.azurerm_public_ip.drbd]
 }
+*/

@@ -104,7 +104,7 @@ resource "azurerm_network_interface_backend_address_pool_association" "netweaver
 
 resource "azurerm_lb_probe" "netweaver-ascs-health-probe" {
   count               = local.create_ha_infra
-  resource_group_name = var.resource_group_name
+  #resource_group_name = var.resource_group_name
   loadbalancer_id     = azurerm_lb.netweaver-load-balancer[0].id
   name                = "lbhp-netweaver-ascs"
   protocol            = "Tcp"
@@ -115,7 +115,7 @@ resource "azurerm_lb_probe" "netweaver-ascs-health-probe" {
 
 resource "azurerm_lb_probe" "netweaver-ers-health-probe" {
   count               = local.create_ha_infra
-  resource_group_name = var.resource_group_name
+  #resource_group_name = var.resource_group_name
   loadbalancer_id     = azurerm_lb.netweaver-load-balancer[0].id
   name                = "lbhp-netweaver-ers"
   protocol            = "Tcp"
@@ -160,7 +160,7 @@ resource "azurerm_lb_probe" "netweaver-ers-health-probe" {
 
 resource "azurerm_lb_rule" "ascs-lb-rules" {
   for_each                       = local.ascs_lb_rules_ports
-  resource_group_name            = var.resource_group_name
+  #resource_group_name            = var.resource_group_name
   loadbalancer_id                = azurerm_lb.netweaver-load-balancer[0].id
   name                           = "lbrule-netweaver-ascs-tcp-${each.value}"
   protocol                       = "Tcp"
@@ -175,7 +175,7 @@ resource "azurerm_lb_rule" "ascs-lb-rules" {
 
 resource "azurerm_lb_rule" "ers-lb-rules" {
   for_each                       = local.ers_lb_rules_ports
-  resource_group_name            = var.resource_group_name
+  #resource_group_name            = var.resource_group_name
   loadbalancer_id                = azurerm_lb.netweaver-load-balancer[0].id
   name                           = "lbrule-netweaver-ers-tcp-${each.value}"
   protocol                       = "Tcp"
@@ -393,6 +393,7 @@ resource "azurerm_virtual_machine" "netweaver" {
   }
 }
 
+/*
 module "netweaver_on_destroy" {
   source              = "../../../generic_modules/on_destroy"
   node_count          = local.vm_count
@@ -404,3 +405,4 @@ module "netweaver_on_destroy" {
   public_ips          = local.provisioning_addresses
   dependencies        = [data.azurerm_public_ip.netweaver]
 }
+*/

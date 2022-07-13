@@ -74,7 +74,7 @@ resource "azurerm_network_interface" "bastion" {
   ip_configuration {
     name                          = "ipconf-primary"
     subnet_id                     = azurerm_subnet.bastion[0].id
-    private_ip_address_allocation = "static"
+    private_ip_address_allocation = "Static"
     private_ip_address            = local.private_ip_address
     public_ip_address_id          = azurerm_public_ip.bastion[0].id
   }
@@ -150,6 +150,7 @@ resource "azurerm_virtual_machine" "bastion" {
   }
 }
 
+/*
 module "bastion_on_destroy" {
   source       = "../../../generic_modules/on_destroy"
   node_count   = local.bastion_count
@@ -159,3 +160,4 @@ module "bastion_on_destroy" {
   public_ips   = data.azurerm_public_ip.bastion.*.ip_address
   dependencies = [data.azurerm_public_ip.bastion]
 }
+*/
