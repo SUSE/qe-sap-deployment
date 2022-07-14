@@ -62,7 +62,7 @@ resource "google_compute_instance" "iscsisrv" {
     scopes = ["compute-rw", "storage-rw", "logging-write", "monitoring-write", "service-control", "service-management"]
   }
 }
-
+/*
 module "iscsi_on_destroy" {
   source              = "../../../generic_modules/on_destroy"
   node_count          = var.iscsi_count
@@ -74,3 +74,4 @@ module "iscsi_on_destroy" {
   public_ips          = local.provisioning_addresses
   dependencies        = var.on_destroy_dependencies
 }
+*/

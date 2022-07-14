@@ -65,7 +65,7 @@ resource "google_compute_instance" "monitoring" {
     scopes = ["compute-rw", "storage-rw", "logging-write", "monitoring-write", "service-control", "service-management"]
   }
 }
-
+/*
 module "monitoring_on_destroy" {
   source              = "../../../generic_modules/on_destroy"
   node_count          = var.monitoring_enabled ? 1 : 0
@@ -77,3 +77,4 @@ module "monitoring_on_destroy" {
   public_ips          = local.provisioning_addresses
   dependencies        = var.on_destroy_dependencies
 }
+*/

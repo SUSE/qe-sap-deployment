@@ -162,6 +162,7 @@ resource "google_compute_instance" "clusternodes" {
   tags = ["hana-group"]
 }
 
+/*
 module "hana_on_destroy" {
   source              = "../../../generic_modules/on_destroy"
   node_count          = var.hana_count
@@ -173,3 +174,4 @@ module "hana_on_destroy" {
   public_ips          = local.provisioning_addresses
   dependencies        = var.on_destroy_dependencies
 }
+*/
