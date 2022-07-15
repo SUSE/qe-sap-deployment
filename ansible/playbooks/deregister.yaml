@@ -1,0 +1,44 @@
+---
+- hosts: "{{ hosts_to_check }}"
+  remote_user: "{{ remote_user_to_use }}"
+  become: true
+  become_user : root
+
+  tasks:
+
+    # Is registercloudguest available?
+    - name: Check for registercloudguest
+      ansible.builtin.command:  which registercloudguest
+      register: rcg
+      failed_when: false
+      changed_when: false
+
+    - name: Deregister with registercloudguest
+      ansible.builtin.command:  registercloudguest --clean
+      when: rcg.rc == 0
+    
+    - name: Deregister with SUSEConnect
+      ansible.builtin.command: SUSEConnect --de-register
+      when: rcg.rc != 0
+
+    - name: SUSEConnect Cleanup
+      ansible.builtin.command: SUSEConnect --cleanup
+      when: rcg.rc != 0
+
+    - name: Search for old zypper files
+      ansible.builtin.find:
+        paths: ["/etc/zypp/credentials.d", "/etc/zypp/repos.d", "/etc/zypp/services.d/*"]
+      register: Files_to_delete
+      when: rcg.rc != 0
+
+    - name: Append delete list
+      set_fact:
+        Files_to_delete: "{{ Files_to_delete + ['/etc/SUSEConnect'] }}"
+      when: rcg.rc != 0
+
+    - name: File Cleanup
+      ansible.builtin.file:
+        state: absent
+        path: "{{ item.path }}"
+      with_items: "{{ Files_to_delete }}"
+      when: rcg.rc != 0

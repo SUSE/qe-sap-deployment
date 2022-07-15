@@ -1,0 +1,66 @@
+---
+- hosts: "{{ hosts_to_check }}"
+  remote_user: "{{ remote_user_to_use }}"
+  become: true
+  become_user : root
+
+  tasks:
+
+    #Pre flight checks
+
+    #Do we have repos?  If yes, we need to register
+    - name: Check for registration
+      ansible.builtin.command: zypper lr
+      register: repos
+      failed_when: false
+      changed_when: false
+
+    # Is registercloudguest available?
+    - name: Check for registercloudguest
+      ansible.builtin.command:  which registercloudguest
+      register: rcg
+      failed_when: false
+      changed_when: false      
+
+    # Execute Section
+
+    - name: registercloudguest pre-run cleaning
+      ansible.builtin.command: registercloudguest --clean
+      when: 
+        - rcg.rc == 0 
+        - repos.rc != 0
+
+    - name: registercloudguest registration
+      ansible.builtin.command: registercloudguest --force-new -r "{{ reg_code }}" -e "{{ email_address }}"
+      when: 
+        - rcg.rc == 0
+        - repos.rc != 0
+
+    #If registercloudguest is not present fall back on SUSEConnect
+    - name: SUSEConnect registration
+      ansible.builtin.command: SUSEConnect -r "{{ reg_code }}" -e "{{ email_address }}"
+      when:
+        - rcg.rc != 0
+        - repos.rc != 0
+
+    #There are additional repos to add.  These are handled differently for SLES 15 and SLES12
+    - name: Add SLES 12 Advanced Systems Modules
+      ansible.builtin.command: SUSEConnect -p sle-module-adv-systems-management/12/{{ ansible_facts['architecture'] }} -r "{{ reg_code }}"
+      when:
+        - rcg.rc != 0
+        - repos.rc != 0
+        - ansible_facts['distribution_major_version'] == "12"
+
+    - name: Add SLES 15 public cloud module
+      ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/12/{{ ansible_facts['architecture'] }} -r "{{ reg_code }}"
+      when:
+        - rcg.rc != 0
+        - repos.rc != 0
+        - ansible_facts['distribution_major_version'] == "12"
+    
+    - name: Add SLES 12 public cloud module
+      ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/{{ ansible_facts['distribution_major_version']}}/{{ ansible_facts['architecture'] }} -r "{{ reg_code }}"
+      when:
+        - rcg.rc != 0
+        - repos.rc != 0
+        - ansible_facts['distribution_major_version'] == "15"
