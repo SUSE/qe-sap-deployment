@@ -83,7 +83,7 @@ resource "azurerm_network_interface_backend_address_pool_association" "hana" {
 }
 
 resource "azurerm_lb_probe" "hana-load-balancer" {
-  count               = local.create_ha_infra
+  count = local.create_ha_infra
   #resource_group_name = var.resource_group_name
   loadbalancer_id     = azurerm_lb.hana-load-balancer[0].id
   name                = "lbhp-hana"
@@ -94,7 +94,7 @@ resource "azurerm_lb_probe" "hana-load-balancer" {
 }
 
 resource "azurerm_lb_probe" "hana-load-balancer-secondary" {
-  count               = local.create_active_active_infra
+  count = local.create_active_active_infra
   #resource_group_name = var.resource_group_name
   loadbalancer_id     = azurerm_lb.hana-load-balancer[0].id
   name                = "lbhp-hana-secondary"
@@ -106,7 +106,7 @@ resource "azurerm_lb_probe" "hana-load-balancer-secondary" {
 
 # Load balancing rules for HANA 2.0
 resource "azurerm_lb_rule" "hana-lb-rules" {
-  for_each                       = local.hana_lb_rules_ports
+  for_each = local.hana_lb_rules_ports
   #resource_group_name            = var.resource_group_name
   loadbalancer_id                = azurerm_lb.hana-load-balancer[0].id
   name                           = "lbrule-hana-tcp-${each.value}"
@@ -122,7 +122,7 @@ resource "azurerm_lb_rule" "hana-lb-rules" {
 
 # Load balancing rules for the Active/Active setup
 resource "azurerm_lb_rule" "hana-lb-rules-secondary" {
-  for_each                       = local.hana_lb_rules_ports_secondary
+  for_each = local.hana_lb_rules_ports_secondary
   #resource_group_name            = var.resource_group_name
   loadbalancer_id                = azurerm_lb.hana-load-balancer[0].id
   name                           = "lbrule-hana-tcp-${each.value}-secondary"
@@ -137,7 +137,7 @@ resource "azurerm_lb_rule" "hana-lb-rules-secondary" {
 }
 
 resource "azurerm_lb_rule" "hanadb_exporter" {
-  count                          = var.common_variables["monitoring_enabled"] ? local.create_ha_infra : 0
+  count = var.common_variables["monitoring_enabled"] ? local.create_ha_infra : 0
   #resource_group_name            = var.resource_group_name
   loadbalancer_id                = azurerm_lb.hana-load-balancer[0].id
   name                           = "hanadb_exporter"
