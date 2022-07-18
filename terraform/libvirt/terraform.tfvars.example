@@ -106,7 +106,16 @@ iprange = "192.168.XXX.Y/24"
 #########################
 
 # Hostname, without the domain part
-#hana_name = "vmhana"
+# hana_name = "vmhana"
+
+# Mana memory allocation in Mib for each node (default = 32678)
+# hana_node_memory = 32678
+
+# Number of HANA nodes to deploy (defaut = 2)
+# hana_count = 2
+
+# number of vcpus to assign to each node (default = 1)
+# hana_node_vcpu = 1
 
 # Set specific image for HANA (it's the same for iscsi, monitoring, netweaver and drbd)
 # This option has preference over base image options
