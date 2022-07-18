@@ -30,6 +30,15 @@
         - rcg.rc == 0 
         - repos.rc != 0
 
+    # Wait for zypper, can be locked by PackageKit or purge-kernels
+    - name: Wait until zypper is not locked
+      shell: ls /proc/$(pidof zypper)/status
+      register: result
+      until: result.rc == 2
+      retries: 30
+      delay: 5
+      failed_when: false
+
     - name: registercloudguest registration
       ansible.builtin.command: registercloudguest --force-new -r "{{ reg_code }}" -e "{{ email_address }}"
       when: 
