@@ -110,7 +110,7 @@ output "output_data" {
     id                = libvirt_domain.hana_domain.*.id
     name              = libvirt_domain.hana_domain.*.name
     private_addresses = var.host_ips
-    addresses         = libvirt_domain.hana_domain.*.network_interface.0.addresses.0
+    #addresses         = libvirt_domain.hana_domain.*.network_interface.0.addresses.0
   }
 }
 /*
