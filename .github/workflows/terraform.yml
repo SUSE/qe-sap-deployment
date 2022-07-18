@@ -42,6 +42,6 @@ jobs:
     - name: Terraform Format
       run: terraform fmt -check -recursive -diff
 
-    # Generates an execution plan for Terraform
-    - name: Terraform Plan
-      run: terraform plan -input=false
+    # Validate
+    - name: Terraform Validate
+      run: terraform validate
