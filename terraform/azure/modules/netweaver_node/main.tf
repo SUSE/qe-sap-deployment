@@ -103,7 +103,7 @@ resource "azurerm_network_interface_backend_address_pool_association" "netweaver
 # example: Instance number: 00, port: 62000, Instance number: 01, port: 62001
 
 resource "azurerm_lb_probe" "netweaver-ascs-health-probe" {
-  count               = local.create_ha_infra
+  count = local.create_ha_infra
   #resource_group_name = var.resource_group_name
   loadbalancer_id     = azurerm_lb.netweaver-load-balancer[0].id
   name                = "lbhp-netweaver-ascs"
@@ -114,7 +114,7 @@ resource "azurerm_lb_probe" "netweaver-ascs-health-probe" {
 }
 
 resource "azurerm_lb_probe" "netweaver-ers-health-probe" {
-  count               = local.create_ha_infra
+  count = local.create_ha_infra
   #resource_group_name = var.resource_group_name
   loadbalancer_id     = azurerm_lb.netweaver-load-balancer[0].id
   name                = "lbhp-netweaver-ers"
@@ -159,7 +159,7 @@ resource "azurerm_lb_probe" "netweaver-ers-health-probe" {
 #}
 
 resource "azurerm_lb_rule" "ascs-lb-rules" {
-  for_each                       = local.ascs_lb_rules_ports
+  for_each = local.ascs_lb_rules_ports
   #resource_group_name            = var.resource_group_name
   loadbalancer_id                = azurerm_lb.netweaver-load-balancer[0].id
   name                           = "lbrule-netweaver-ascs-tcp-${each.value}"
@@ -174,7 +174,7 @@ resource "azurerm_lb_rule" "ascs-lb-rules" {
 }
 
 resource "azurerm_lb_rule" "ers-lb-rules" {
-  for_each                       = local.ers_lb_rules_ports
+  for_each = local.ers_lb_rules_ports
   #resource_group_name            = var.resource_group_name
   loadbalancer_id                = azurerm_lb.netweaver-load-balancer[0].id
   name                           = "lbrule-netweaver-ers-tcp-${each.value}"
