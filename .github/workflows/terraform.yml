@@ -36,12 +36,12 @@ jobs:
         terraform_version: 1.1.7
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
     - name: Terraform Init
-      run: cd terraform/${{ matrix.provider }} && terraform init
+      run: terraform init
 
     # Checks that all Terraform configuration files adhere to a canonical format
     - name: Terraform Format
-      run: cd terraform && terraform fmt -check -recursive -diff
+      run: terraform fmt -check -recursive -diff
 
     # Generates an execution plan for Terraform
     - name: Terraform Plan
-      run: cd terraform/azure && terraform plan -input=false
+      run: terraform plan -input=false
