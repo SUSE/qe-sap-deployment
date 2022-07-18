@@ -69,6 +69,12 @@ variable "subnet_netapp_address_range" {
 variable "admin_user" {
   description = "Administration user used to create the machines"
   type        = string
+  validation {
+    condition = (
+      var.admin_user != "admin"
+    )
+    error_message = "The value 'admin' cannot be used for admin_user, input a different value."
+  }
 }
 
 variable "storage_account_name" {
