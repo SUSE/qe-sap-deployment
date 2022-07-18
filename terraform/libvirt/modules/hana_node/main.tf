@@ -110,10 +110,10 @@ output "output_data" {
     id                = libvirt_domain.hana_domain.*.id
     name              = libvirt_domain.hana_domain.*.name
     private_addresses = var.host_ips
-    addresses         = libvirt_domain.hana_domain.*.network_interface.0.addresses.0
+    #addresses         = libvirt_domain.hana_domain.*.network_interface.0.addresses.0
   }
 }
-
+/*
 module "hana_on_destroy" {
   source       = "../../../generic_modules/on_destroy"
   node_count   = var.hana_count
@@ -123,3 +123,4 @@ module "hana_on_destroy" {
   public_ips   = libvirt_domain.hana_domain.*.network_interface.0.addresses.0
   dependencies = [libvirt_domain.hana_domain]
 }
+*/

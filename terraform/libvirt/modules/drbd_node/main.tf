@@ -111,7 +111,7 @@ output "output_data" {
     addresses         = libvirt_domain.drbd_domain.*.network_interface.0.addresses.0
   }
 }
-
+/*
 module "drbd_on_destroy" {
   source       = "../../../generic_modules/on_destroy"
   node_count   = var.drbd_count
@@ -121,3 +121,4 @@ module "drbd_on_destroy" {
   public_ips   = libvirt_domain.drbd_domain.*.network_interface.0.addresses.0
   dependencies = [libvirt_domain.drbd_domain]
 }
+*/
