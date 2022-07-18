@@ -51,14 +51,14 @@
         - repos.rc != 0
         - ansible_facts['distribution_major_version'] == "12"
 
-    - name: Add SLES 15 public cloud module
+    - name: Add SLES 12 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/12/{{ ansible_facts['architecture'] }} -r "{{ reg_code }}"
       when:
         - rcg.rc != 0
         - repos.rc != 0
         - ansible_facts['distribution_major_version'] == "12"
     
-    - name: Add SLES 12 public cloud module
+    - name: Add SLES 15 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/{{ ansible_facts['distribution_major_version']}}/{{ ansible_facts['architecture'] }} -r "{{ reg_code }}"
       when:
         - rcg.rc != 0
