@@ -69,18 +69,24 @@ variable "subnet_netapp_address_range" {
 variable "admin_user" {
   description = "Administration user used to create the machines"
   type        = string
+  validation {
+    condition = (
+      var.admin_user != "admin"
+    )
+    error_message = "The value 'admin' cannot be used for admin_user, input a different value."
+  }
 }
 
 variable "storage_account_name" {
   description = "Azure storage account name where HANA installation software is available"
   type        = string
-  default = ""
+  default     = ""
 }
 
 variable "storage_account_key" {
   description = "Azure storage account secret key"
   type        = string
-  default = ""
+  default     = ""
 }
 
 variable "public_key" {
@@ -91,7 +97,7 @@ variable "public_key" {
 variable "private_key" {
   description = "Content of a SSH private key or path to an already existing SSH private key. The key is only used to provision the machines. It is not uploaded to the machines in any case"
   type        = string
-  default = ""
+  default     = ""
 }
 
 variable "authorized_keys" {
@@ -346,7 +352,7 @@ variable "hana_majority_maker_ip" {
 variable "hana_inst_master" {
   description = "Azure storage account path where hana installation software is available"
   type        = string
-  default = ""
+  default     = ""
 }
 
 variable "hana_inst_folder" {
@@ -430,7 +436,7 @@ variable "hana_cost_optimized_instance_number" {
 variable "hana_master_password" {
   description = "Master password for the HANA system (sidadm user included)"
   type        = string
-  default = "AFakePassw0rd123"
+  default     = "AFakePassw0rd123"
 }
 
 variable "hana_cost_optimized_master_password" {
