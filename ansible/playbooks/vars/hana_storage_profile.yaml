@@ -1,0 +1,42 @@
+sap_storage_dict:
+  hanadata:
+    name: 'hanadata'
+    directory: '/hana/data'
+    vg: 'hanadatavg'
+    lv: 'hanadatalv'
+    pv: ["/dev/disk/azure/scsi1/lun0","/dev/disk/azure/scsi1/lun1"]
+    numluns: '1'
+    stripesize: '256'
+# LVM striped partition
+  hanalog:
+    name: 'hanalog'
+    directory: '/hana/log'
+    vg: 'hanalogvg'
+    lv: 'hanaloglv'
+    pv: ["/dev/disk/azure/scsi1/lun2","/dev/disk/azure/scsi1/lun3"]
+    numluns: '2'
+    stripesize: '32'
+  hanashared:
+    name: 'hanashared'
+    directory: '/hana/shared'
+    vg: 'hanasharedvg'
+    lv: 'hanasharedlv'
+    pv: ["/dev/disk/azure/scsi1/lun4"]
+    numluns: '1'
+    stripesize: ''
+  usrsap:
+    name: 'usrsap'
+    directory: '/usr/sap'
+    vg: 'usrsapvg'
+    lv: 'usrsaplv'
+    pv: ["/dev/disk/azure/scsi1/lun5"]
+    numluns: '1'
+    stripesize: ''
+  backup:
+    name: 'backup'
+    directory: '/backup'
+    vg: 'backupvg'
+    lv: 'backuplv'
+    pv: ["/dev/disk/azure/scsi1/lun6"]
+    numluns: '1'
+    stripesize: ''

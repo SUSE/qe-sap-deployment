@@ -1,0 +1,32 @@
+---
+- hosts: hana
+  remote_user: "{{ remote_user_to_use }}"
+  become: true
+  become_user : root
+  vars:
+    scale_out: False
+    use_sapconf: False
+    disabled_daemons:
+      - saptune
+      - tuned
+
+
+  tasks:
+
+    # Ensure required installation of required packages
+    - name: Ensure libssl 2.1 is installed on distributed Systems
+      community.general.zypper:
+        name: libssh2-1 # Caution, no version control here (yet)
+        state: present
+      when: scale_out | bool
+
+    - name: Configure sapconf based systems
+      ansible.builtin.include_tasks: ./tasks/sapconf.yaml
+      when: use_sapconf | bool
+
+    # saptune to be handled here!
+    
+  handlers:
+    - name: reboot
+      ansible.builtin.reboot:
+
