@@ -1,0 +1,50 @@
+---
+
+- name: Ensure sapconf is installed
+  community.general.zypper:
+    name: sapconf>=5.0.3 # weak version control 
+    state: present
+    
+- name: Ensure conflicting daemons are stopped and disabled
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  with_items: "{{ disabled_daemons }}"
+    
+- name: Ensure sapconf daemon is started and enabled
+  ansible.builtin.systemd:
+    name: sapconf
+    state: started
+    enabled: yes
+
+- name: Run sapconf_check
+  ansible.builtin.command: sapconf_check
+  changed_when: false
+
+#2205917 - SAP HANA DB: Recommended OS settings for SLES 12 / SLES for SAP Applications 12
+# Increase UserTasksMax doesn't seem to be handled by sapconf
+- name: Configure UserTasksMax
+  ansible.builtin.blockinfile:
+    create: yes
+    path: /etc/systemd/logind.conf.d/sap.conf
+    backup: yes
+    owner: root
+    group: root
+    mode: '0644'
+    block: |
+      [Login]
+      UserTasksMax=infinity
+  notify: reboot
+
+- name: Ensure Governor is set to Performance
+  ansible.builtin.lineinfile:
+    path: /etc/sysconfig/sapconf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+    - { 'regexp': '^GOVERNOR=', 'line': 'GOVERNOR=performance'}
+    - { 'regexp': '^PERF_BIAS=', 'line': 'PERF_BIAS=performance'}
+  notify: reboot
+
+    

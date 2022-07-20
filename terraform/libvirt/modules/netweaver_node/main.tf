@@ -92,7 +92,7 @@ output "output_data" {
     addresses         = libvirt_domain.netweaver_domain.*.network_interface.0.addresses.0
   }
 }
-
+/*
 module "netweaver_on_destroy" {
   source       = "../../../generic_modules/on_destroy"
   node_count   = local.vm_count
@@ -102,3 +102,4 @@ module "netweaver_on_destroy" {
   public_ips   = libvirt_domain.netweaver_domain.*.network_interface.0.addresses.0
   dependencies = [libvirt_domain.netweaver_domain]
 }
+*/
