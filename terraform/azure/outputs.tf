@@ -6,7 +6,7 @@
 
 # iSCSI server
 
-output "iscsi_srv_ip" {
+output "iscsisrv_ip" {
   value = module.iscsi_server.iscsisrv_ip
 }
 
@@ -20,24 +20,6 @@ output "iscsisrv_name" {
 
 output "iscsisrv_public_name" {
   value = module.iscsi_server.iscsisrv_public_name
-}
-
-# Monitoring
-
-output "monitoring_ip" {
-  value = module.monitoring.monitoring_ip
-}
-
-output "monitoring_public_ip" {
-  value = module.monitoring.monitoring_public_ip
-}
-
-output "monitoring_name" {
-  value = module.monitoring.monitoring_name
-}
-
-output "monitoring_public_name" {
-  value = module.monitoring.monitoring_public_name
 }
 
 # Hana nodes
@@ -56,6 +38,24 @@ output "cluster_nodes_name" {
 
 output "cluster_nodes_public_name" {
   value = module.hana_node.cluster_nodes_public_name
+}
+
+# Monitoring
+
+output "monitoring_ip" {
+  value = module.monitoring.monitoring_ip
+}
+
+output "monitoring_public_ip" {
+  value = module.monitoring.monitoring_public_ip
+}
+
+output "monitoring_name" {
+  value = module.monitoring.monitoring_name
+}
+
+output "monitoring_public_name" {
+  value = module.monitoring.monitoring_public_name
 }
 
 # drbd
