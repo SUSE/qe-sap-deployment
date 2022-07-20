@@ -23,9 +23,9 @@ output "cluster_nodes_ip" {
   value = module.hana_node.output_data.private_addresses
 }
 
-output "cluster_nodes_public_ip" {
-  value = module.hana_node.output_data.addresses
-}
+#output "cluster_nodes_public_ip" {
+#  value = module.hana_node.output_data.addresses
+#}
 
 output "cluster_nodes_name" {
   value = module.hana_node.output_data.name
