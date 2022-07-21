@@ -1,0 +1,17 @@
+all:
+  children:
+    hana:
+      hosts:
+%{ for index, value in hana-pip ~}
+        ${hana-name[index]}:
+          ansible_host: ${value}
+          ansible_python_interpreter: /usr/bin/python3
+%{ endfor ~}
+    iscsi:
+      hosts:
+ %{ for index, value in iscsi-pip ~}
+        ${iscsi-name[index]}:
+          ansible_host: ${value}
+          ansible_python_interpreter: /usr/bin/python3
+%{ endfor ~}
+  hosts: null
