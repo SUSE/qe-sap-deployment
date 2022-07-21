@@ -75,24 +75,24 @@ locals {
 }
 
 module "common_variables" {
-  source                              = "../generic_modules/common_variables"
-  provider_type                       = "gcp"
-  region                              = var.region
-  deployment_name                     = local.deployment_name
-  deployment_name_in_hostname         = var.deployment_name_in_hostname
-  reg_code                            = var.reg_code
-  reg_email                           = var.reg_email
-  reg_additional_modules              = var.reg_additional_modules
-  ha_sap_deployment_repo              = var.ha_sap_deployment_repo
-  additional_packages                 = var.additional_packages
-  public_key                          = var.public_key
-  private_key                         = var.private_key
-  authorized_keys                     = var.authorized_keys
-  authorized_user                     = var.admin_user
-  bastion_enabled                     = var.bastion_enabled
-  bastion_public_key                  = var.bastion_public_key
-  bastion_private_key                 = var.bastion_private_key
-/*
+  source                      = "../generic_modules/common_variables"
+  provider_type               = "gcp"
+  region                      = var.region
+  deployment_name             = local.deployment_name
+  deployment_name_in_hostname = var.deployment_name_in_hostname
+  reg_code                    = var.reg_code
+  reg_email                   = var.reg_email
+  reg_additional_modules      = var.reg_additional_modules
+  ha_sap_deployment_repo      = var.ha_sap_deployment_repo
+  additional_packages         = var.additional_packages
+  public_key                  = var.public_key
+  private_key                 = var.private_key
+  authorized_keys             = var.authorized_keys
+  authorized_user             = var.admin_user
+  bastion_enabled             = var.bastion_enabled
+  bastion_public_key          = var.bastion_public_key
+  bastion_private_key         = var.bastion_private_key
+  /*
   provisioner                         = var.provisioner
   provisioning_log_level              = var.provisioning_log_level
   provisioning_output_colored         = var.provisioning_output_colored
