@@ -22,7 +22,7 @@ output "iscsisrv_public_name" {
   value = []
 }
 
-# Cluster nodes
+# Hana nodes
 
 output "cluster_nodes_ip" {
   value = module.hana_node.cluster_nodes_ip

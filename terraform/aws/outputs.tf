@@ -4,7 +4,25 @@
 # - Private node name
 # - Public node name
 
-# Cluster nodes
+# iSCSI server
+
+output "iscsisrv_ip" {
+  value = join("", module.iscsi_server.iscsisrv_ip)
+}
+
+output "iscsisrv_public_ip" {
+  value = join("", module.iscsi_server.iscsisrv_public_ip)
+}
+
+output "iscsisrv_name" {
+  value = join("", module.iscsi_server.iscsisrv_name)
+}
+
+output "iscsisrv_public_name" {
+  value = join("", module.iscsi_server.iscsisrv_public_name)
+}
+
+# Hana nodes
 
 output "cluster_nodes_ip" {
   value = module.hana_node.cluster_nodes_ip
@@ -40,7 +58,25 @@ output "monitoring_public_name" {
   value = module.monitoring.monitoring_public_name
 }
 
-# Netweaver
+# drbd
+
+output "drbd_ip" {
+  value = module.drbd_node.drbd_ip
+}
+
+output "drbd_public_ip" {
+  value = module.drbd_node.drbd_public_ip
+}
+
+output "drbd_name" {
+  value = module.drbd_node.drbd_name
+}
+
+output "drbd_public_name" {
+  value = module.drbd_node.drbd_public_name
+}
+
+# netweaver
 
 output "netweaver_ip" {
   value = module.netweaver_node.netweaver_ip
@@ -58,38 +94,3 @@ output "netweaver_public_name" {
   value = module.netweaver_node.netweaver_public_name
 }
 
-# iSCSI server
-
-output "iscsisrv_ip" {
-  value = join("", module.iscsi_server.iscsisrv_ip)
-}
-
-output "iscsisrv_public_ip" {
-  value = join("", module.iscsi_server.iscsisrv_public_ip)
-}
-
-output "iscsisrv_name" {
-  value = join("", module.iscsi_server.iscsisrv_name)
-}
-
-output "iscsisrv_public_name" {
-  value = join("", module.iscsi_server.iscsisrv_public_name)
-}
-
-# DRBD
-
-output "drbd_ip" {
-  value = module.drbd_node.drbd_ip
-}
-
-output "drbd_public_ip" {
-  value = module.drbd_node.drbd_public_ip
-}
-
-output "drbd_name" {
-  value = module.drbd_node.drbd_name
-}
-
-output "drbd_public_name" {
-  value = module.drbd_node.drbd_public_name
-}

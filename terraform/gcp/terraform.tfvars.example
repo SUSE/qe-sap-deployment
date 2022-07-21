@@ -35,6 +35,9 @@ region = "europe-west1"
 # The name must be unique among different deployments
 # deployment_name = "mydeployment"
 
+# Admin user for the created machines (default = cloudadmin)
+# admin_user = "cloudadmin"
+
 # Add the "deployment_name" as a prefix to the hostname.
 #deployment_name_in_hostname = true
 
