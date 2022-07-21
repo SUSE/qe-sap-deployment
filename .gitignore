@@ -11,9 +11,9 @@ terraform/libvirt/.terraform
 terraform/libvirt/terraform.tfstate*
 terraform/libvirt/terraform.tfvars
 ansible/playbooks/tmp
-ansible/playbooks/sap-hana-storage.yml
 ansible/playbooks/roles/sap_storage
 .DS_Store
-ansible/playbook/go.sh
 /terraform/libvirt/.terraform.lock.hcl
 /terraform/gcp/.terraform.tfstate.lock.info
+ansible/playbooks/go.sh
+ansible/playbooks/vars/azure_hana_media.yaml

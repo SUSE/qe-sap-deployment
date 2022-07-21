@@ -13,4 +13,4 @@
 
 - name: SAP Storage Preparation - {{ sap_storage_action | capitalize }} Volume Groups and Logical Volumes
   include_tasks: "{{ sap_storage_cloud_type }}_tasks/{{ sap_storage_action }}_storage.yml"
-  loop: "{{ lookup('dict', sap_storage_dict) }}"
+  loop: "{{ lookup('dict', sap_storage_dict,  wantlist=True) }}"

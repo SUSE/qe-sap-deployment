@@ -1,6 +1,6 @@
 ---
-- hosts: "{{ hosts_to_check }}"
-  remote_user: "{{ remote_user_to_use }}"
+- hosts: all
+  remote_user: cloudadmin
   become: true
   become_user : root
 

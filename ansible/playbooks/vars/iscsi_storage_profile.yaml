@@ -1,0 +1,10 @@
+sap_storage_dict:
+  iscsi:
+    name: 'sbd'
+    directory: '/srv/sbd'
+    vg: 'sbdvg'
+    lv: 'sbdlv'
+    pv: ["/dev/disk/azure/scsi1/lun0"]
+    numluns: '1'
+    stripesize: ''
+    
