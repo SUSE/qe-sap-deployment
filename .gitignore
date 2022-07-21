@@ -14,3 +14,4 @@ ansible/playbooks/tmp
 ansible/playbooks/sap-hana-storage.yml
 ansible/playbooks/roles/sap_storage
 .DS_Store
+ansible/playbook/go.sh

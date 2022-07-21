@@ -1,0 +1,39 @@
+---
+- hosts: hana
+  remote_user: cloudadmin
+  become: true
+  become_user : root
+  vars:
+    hana_download_path: /hana/shared/install
+    url_timeout: 30
+    url_retries_cnt: 5
+    url_retries_delay: 10
+    
+  tasks:
+
+    - name: Include external variables
+      ansible.builtin.include_vars: ./vars/azure_hana_media.yaml
+
+    - name: Create software directory
+      ansible.builtin.file:
+        path: "{{ hana_download_path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Download HANA media
+      ansible.builtin.get_url:
+        url: "{{ item }}"
+        dest: "{{ hana_download_path + '/' + item | split('/')| last }}"
+        owner: root
+        group: root
+        mode: 0600
+        timeout: "{{ url_timeout }}"
+      register: result
+      until: result is succeeded
+      retries: "{{ url_retries_cnt }}"
+      delay: "{{ url_retries_delay }}"
+      with_items: "{{ hana_urls }}"
+
+    

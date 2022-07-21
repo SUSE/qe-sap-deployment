@@ -1,6 +1,6 @@
 ---
 - hosts: hana
-  remote_user: "{{ remote_user_to_use }}"
+  remote_user: cloudadmin
   become: true
   become_user : root
   vars:
@@ -9,8 +9,11 @@
     disabled_daemons:
       - saptune
       - tuned
-
-
+    hana_download_path: /hana/shared/install
+    url_timeout: 30
+    url_retries_cnt: 5
+    url_retries_delay: 10
+    
   tasks:
 
     # Ensure required installation of required packages
@@ -24,7 +27,7 @@
       ansible.builtin.include_tasks: ./tasks/sapconf.yaml
       when: use_sapconf | bool
 
-    # saptune to be handled here!
+    # saptune to be handled here with more included tasks!
     
   handlers:
     - name: reboot
