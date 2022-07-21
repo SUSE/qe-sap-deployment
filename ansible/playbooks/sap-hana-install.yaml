@@ -1,0 +1,9 @@
+---
+- hosts: hana
+  remote_user: cloudadmin
+  become: true
+  become_user : root
+  pre_tasks:
+    - include_vars: ./vars/sap-hana-install_vars.yaml
+  roles:
+    - { role: ../roles/sap_hana_install }

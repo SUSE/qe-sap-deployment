@@ -1,6 +1,6 @@
 ---
 - hosts: hana
-  remote_user: "{{ remote_user_to_use }}"
+  remote_user: cloudadmin
   become: true
   become_user : root
   pre_tasks:
@@ -8,7 +8,7 @@
 
   tasks:
 
-  - name: HANA storage preperation
+  - name: HANA storage preparation
     vars:
       sap_storage_cloud_type: 'generic'
       sap_storage_sap_type: 'sap_hana'
