@@ -30,6 +30,15 @@
         - rcg.rc == 0 
         - repos.rc != 0
 
+    # Wait for zypper, can be locked by PackageKit or purge-kernels
+    - name: Wait until zypper is not locked
+      shell: ls /proc/$(pidof zypper)/status
+      register: result
+      until: result.rc == 2
+      retries: 30
+      delay: 5
+      failed_when: false
+
     - name: registercloudguest registration
       ansible.builtin.command: registercloudguest --force-new -r "{{ reg_code }}" -e "{{ email_address }}"
       when: 
@@ -52,14 +61,14 @@
         - ansible_facts['distribution_major_version'] == "12"
 
     - name: Add SLES 12 public cloud module
-      ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/12/{{ ansible_facts['architecture'] }} -r "{{ reg_code }}"
+      ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/12/{{ ansible_facts['architecture'] }}
       when:
         - rcg.rc != 0
         - repos.rc != 0
         - ansible_facts['distribution_major_version'] == "12"
     
     - name: Add SLES 15 public cloud module
-      ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/{{ ansible_facts['distribution_major_version']}}/{{ ansible_facts['architecture'] }} -r "{{ reg_code }}"
+      ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/{{ ansible_facts['distribution_version'] }}/{{ ansible_facts['architecture'] }}
       when:
         - rcg.rc != 0
         - repos.rc != 0

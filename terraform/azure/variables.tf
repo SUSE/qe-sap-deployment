@@ -69,6 +69,7 @@ variable "subnet_netapp_address_range" {
 variable "admin_user" {
   description = "Administration user used to create the machines"
   type        = string
+  default     = "cloudadmin"
   validation {
     condition = (
       var.admin_user != "admin"

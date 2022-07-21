@@ -14,3 +14,5 @@ ansible/playbooks/tmp
 ansible/playbooks/sap-hana-storage.yml
 ansible/playbooks/roles/sap_storage
 .DS_Store
+/terraform/libvirt/.terraform.lock.hcl
+/terraform/gcp/.terraform.tfstate.lock.info
