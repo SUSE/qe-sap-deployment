@@ -64,7 +64,7 @@ variable "authorized_keys" {
 variable "admin_user" {
   description = "Administration user used to create the machines"
   type        = string
-  default = "cloudadmin"
+  default     = "cloudadmin"
   validation {
     condition = (
       var.admin_user != "admin"
