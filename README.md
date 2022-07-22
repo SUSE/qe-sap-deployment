@@ -30,16 +30,11 @@ $ TF_LOG_PATH=terraform.plan.log TF_LOG=INFO  terraform plan -out=plan.zip
 $ TF_LOG_PATH=terraform.apply.log TF_LOG=INFO  terraform apply -auto-approve plan.zip
 ```
 
-Collect the output and generate the the inventory
-```
-$ cd terraform/azure
-$ terraform output --json > azure.json
-$ python3 ../../scripts/out2inventory.py -s azure.json -o azure.yaml
-```
+Terraform also generate the Ansible inventory file **inventory.yaml**
 
 Test the inventory by pinging all hosts 
 ```
-$ ansible -i azure.yaml all -m ping --ssh-extra-args="-o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new -i <SECRET_FOLDER>/id_rsa_cloud" -u cloudadmin
+$ ansible -i inventory.yaml all -m ping --ssh-extra-args="-o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new -i <SECRET_FOLDER>/id_rsa_cloud" -u cloudadmin
 ```
 
 Destroy the deployed infrastructure
