@@ -7,6 +7,9 @@ ErrChk() {
   fi
 }
 
+source variables.sh
+ErrChk
+
 AnsFlgs="-i ./terraform/${PROVIDER}/inventory.yaml"
 AnsPlybkPath="./ansible/playbooks"
 
