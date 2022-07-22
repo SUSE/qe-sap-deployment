@@ -1,6 +1,6 @@
 PROVIDER='azure'
-REG_CODE='INTERNAL-USE-ONLY-bd83-d2ff'
-EMAIL='steven.stringer@suse.com'
+REG_CODE='SOME-SCC-CODE'
+EMAIL='your.name@something.com'
 SAPCONF='true'
 
 export REG_CODE EMAIL SAPCONF
