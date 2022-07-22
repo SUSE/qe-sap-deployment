@@ -63,7 +63,7 @@ cp variables.example variables.sh
 
 Edit the values of variables.sh to match your configuration.
 
-Then copy the `azure_hana_media.example.yaml` file and edit the values so the ansible knows where to download the installation media.  For azure, it is preferred upload the media to blobs in an Azure storage account
+Then copy the `azure_hana_media.example.yaml` file and edit the values so that ansible knows where to download the installation media.  For azure, it is preferred to upload the media to blobs in an Azure storage account.
 
 ```shell
 cp ansible/playbooks/vars/azure_hana_media.example.yaml ansible/playbooks/vars/azure_hana_media.yaml
@@ -75,4 +75,8 @@ Once these steps are completed, it should be possible to run the `build.sh` scri
 bash build.sh
 ```
 
-The infrastructure, including the de-registration of SLES, can be conducted with the `destroy.sh` script.
+The destruction of the infrastructure, including the de-registration of SLES, can be conducted with the `destroy.sh` script.
+
+```shell
+bash destroy.sh
+```
