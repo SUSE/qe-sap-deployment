@@ -1,8 +1,8 @@
 #!/bin/bash
 
-ErrChk() { 
+ErrChk() {
   if [[ $? -ne 0 ]] ; then
-    echo "Command failed"  
+    echo "Command failed"
     exit 1
   fi
 }
@@ -10,11 +10,12 @@ ErrChk() {
 source variables.sh
 ErrChk
 
-AnsFlgs="-i ./terraform/${PROVIDER}/inventory.yaml"
+TerraformPath="./terraform/${PROVIDER}"
+AnsFlgs="-i ${TerraformPath}/inventory.yaml"
 AnsPlybkPath="./ansible/playbooks"
 
 ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/deregister.yaml
 ErrChk
 
-terraform -chdir=/Users/sstringer/code/qe-sap-deployment/terraform/azure destroy -auto-approve
+terraform -chdir="${TerraformPath}" destroy -auto-approve
 ErrChk

@@ -10,16 +10,16 @@ ErrChk() {
 source variables.sh
 ErrChk
 
-AnsFlgs="-i ./terraform/${PROVIDER}/inventory.yaml"
+TerraformPath="./terraform/${PROVIDER}"
+AnsFlgs="-i ${TerraformPath}/inventory.yaml"
 AnsPlybkPath="./ansible/playbooks"
 
 
 ### TERRAFORM BIT ###
-terraform -chdir=./terraform/${PROVIDER} apply -auto-approve
+TF_LOG_PATH=terraform.apply.log TF_LOG=INFO terraform -chdir="${TerraformPath}" apply -auto-approve
 ErrChk
 
 ### ANSIBLE BIT ###
-
 ansible ${AnsFlgs} all -a true --ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"
 ErrChk
 
