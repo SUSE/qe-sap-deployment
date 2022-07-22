@@ -16,4 +16,6 @@ ansible/playbooks/roles/sap_storage
 /terraform/libvirt/.terraform.lock.hcl
 /terraform/gcp/.terraform.tfstate.lock.info
 ansible/playbooks/go.sh
+ansible/playbooks/destroy.sh
 ansible/playbooks/vars/azure_hana_media.yaml
+terraform/azure/.terraform.lock.hcl
