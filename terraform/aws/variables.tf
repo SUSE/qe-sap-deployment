@@ -159,25 +159,9 @@ variable "additional_packages" {
   default     = []
 }
 
-# Repository url used to install development versions of HA/SAP deployment packages
-# The latest RPM packages can be found at:
-# https://download.opensuse.org/repositories/network:ha-clustering:sap-deployments:devel/{YOUR SLE VERSION}
-# Contains the salt formulas rpm packages.
-variable "ha_sap_deployment_repo" {
-  description = "Repository url used to install development versions of HA/SAP deployment packages. If the SLE version is not present in the URL, it will be automatically detected"
-  type        = string
-  default     = "https://download.opensuse.org/repositories/network:ha-clustering:sap-deployments:v8"
-}
-
 variable "provisioner" {
-  description = "Used provisioner option. Available options: salt. Let empty to not use any provisioner"
-  default     = "salt"
-}
-
-variable "provisioning_log_level" {
-  description = "Provisioning process log level. For salt: https://docs.saltstack.com/en/latest/ref/configuration/logging/index.html"
-  type        = string
-  default     = "error"
+  description = "Used provisioner option. Available options: ansible. Let empty to not use any provisioner"
+  default     = "ansible"
 }
 
 variable "background" {
@@ -343,17 +327,6 @@ variable "hana_cost_optimized_instance_number" {
   default     = "01"
 }
 
-variable "hana_master_password" {
-  description = "Master password for the HANA system (sidadm user included)"
-  type        = string
-}
-
-variable "hana_cost_optimized_master_password" {
-  description = "Master password for the HANA system (sidadm user included)"
-  type        = string
-  default     = ""
-}
-
 variable "hana_primary_site" {
   description = "HANA system replication primary site name"
   type        = string
@@ -393,7 +366,7 @@ variable "hana_cluster_fencing_mechanism" {
 variable "hana_ha_enabled" {
   description = "Enable HA cluster in top of HANA system replication"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "hana_active_active" {
@@ -886,11 +859,10 @@ variable "netweaver_shared_storage_type" {
 # Testing and QA variables
 
 # Disable extra package installation (sap, ha pattern etc).
-# Disables first registration to install salt-minion, it is considered that images are delivered with salt-minion
 variable "offline_mode" {
   description = "Disable installation of extra packages usage not coming with the image"
   type        = bool
-  default     = false
+  default     = true
 }
 
 # Execute HANA Hardware Configuration Check Tool to bench filesystems.
