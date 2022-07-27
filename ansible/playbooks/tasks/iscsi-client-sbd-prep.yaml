@@ -1,0 +1,49 @@
+---
+  - name: Enable required services
+    ansible.builtin.systemd:
+      name:  "{{ item }}"
+      enabled: yes
+    with_items: 
+      - iscsid
+      - iscsi
+      - sbd
+
+  # This loop ensures that each hana host has a unique iscsi initiator name.
+  # The initiator names are composed from client0x_iqn_name_authority & client0x_meaningful_name and added to the
+  # client_list.  They are then added to /etc/iscsi/initiatorname.iscsi in the order they appear in the client list
+  # to the hosts in the hana group in the inventory.
+  - name: Edit initiator
+    ansible.builtin.lineinfile:
+      path: /etc/iscsi/initiatorname.iscsi
+      regexp: '^InitiatorName='
+      line: 'InitiatorName={{ item }}'
+    when: inventory_hostname in groups.hana[index]
+    loop: "{{ client_list|flatten(levels=1) }}"
+    loop_control:
+      index_var: index
+    notify:
+      - Restart iscsi
+
+  - name: Flush handlers
+    meta: flush_handlers   
+
+  - name: Scan iscsi disks
+    ansible.builtin.command:
+      cmd: 'iscsiadm -m discovery --type=st --portal={{ item }}:3260'
+      creates: "/etc/iscsi/nodes/{{ srv_iqn }}"
+    loop: "{{ query('inventory_hostnames', 'iscsi') }}"
+    register: discovered_iscsi
+
+  - name: iscsi login
+    ansible.builtin.command:
+      cmd: "iscsiadm -m node -T {{ srv_iqn }} --login --portal={{ item.stdout | split(':') | first }}"
+      creates: "/dev/disk/by-path/ip-{{ item.stdout | split(':') | first }}:3260-iscsi-{{ srv_iqn }}-lun-0"
+    when: item.changed
+    loop: "{{ discovered_iscsi.results }}"
+    register: login
+
+  - name: Set LUNs to automatic
+    ansible.builtin.command:
+      cmd: "iscsiadm -m node -p {{ item.item.stdout | split(':') | first }}:3260 -T {{ srv_iqn }} --op=update --name=node.startup --value=automatic"
+    when: item.changed
+    loop: "{{ login.results }}"

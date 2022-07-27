@@ -1,0 +1,52 @@
+---
+  - name: Remove unneeded packages from iscsi server
+    community.general.zypper:
+      name: "{{ item }}"
+      state: absent
+    with_items:
+      - lio-utils
+      - python-rtslib
+      - python-configshell
+      - targetcli
+    
+  - name: Install required packages on iscsi server
+    community.general.zypper:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - targetcli-fb
+      - dbus-1-python
+    
+  - name: Enable the iscsi target service on iscsi server
+    ansible.builtin.systemd:
+      name: targetcli
+      state: started
+      enabled: yes
+    
+  - name: Prepare iscsi disks
+    vars:
+      sap_storage_cloud_type: 'generic'
+      sap_storage_sap_type: 'sap_hana'
+      sap_storage_action: 'prepare'
+    include_role: 
+      name: ../roles/sap_storage
+  
+  - name: Configure HANA SBD target 
+    ansible.builtin.command: 
+      cmd: "{{ item.command }}" 
+      creates: "{{ item.creates }}" 
+    with_items: 
+      - { 'command': 'targetcli backstores/fileio create {{ backstore_name }} /srv/sbd/{{ backstore_name }} 50M write_back=false', 'creates': '/srv/sbd/{{ backstore_name }}' } 
+      - { 'command': 'targetcli iscsi/ create {{ srv_iqn }}', 'creates': '/sys/kernel/config/target/iscsi/{{ srv_iqn }}' }
+      - { 'command': 'targetcli iscsi/{{ srv_iqn }}/tpg1/luns/ create /backstores/fileio/{{ backstore_name }}', 'creates': '/sys/kernel/config/target/iscsi/{{ srv_iqn }}/tpgt_1/lun/lun_0' }
+      #- { 'command': 'targetcli iscsi/{{ srv_iqn }}/tpg1/acls/ create {{ cli01_iqn }}', 'creates': '/sys/kernel/config/target/iscsi/{{ srv_iqn }}/tpgt_1/acls/{{ cli01_iqn }}' }
+      #- { 'command': 'targetcli iscsi/{{ srv_iqn }}/tpg1/acls/ create {{ cli02_iqn }}', 'creates': '/sys/kernel/config/target/iscsi/{{ srv_iqn }}/tpgt_1/acls/{{ cli02_iqn }}' }
+
+  - name: Configure client ACLs
+    ansible.builtin.command: 
+      cmd: "targetcli iscsi/{{ srv_iqn }}/tpg1/acls/ create {{ item }}"
+      creates: '/sys/kernel/config/target/iscsi/{{ srv_iqn }}/tpgt_1/acls/{{ item }}'
+    with_items: "{{ client_list }}"
+    
+    
+    
