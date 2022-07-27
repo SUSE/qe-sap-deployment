@@ -15,7 +15,7 @@ The Python requirements could be managed with a virtual environment
 
 ```shell
 python3 -m venv venv
-source vanv/bin/activate
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -24,36 +24,14 @@ Prepare a ssh key pair
 ```shell
 cd <SECRET_FOLDER> 
 ssh-keygen -f id_rsa_cloud -t rsa -b 4096 -N
+ssh-add id_rsa_cloud
 ```
 
 ## Usage
 
-Here an example of Azure deployment
+### Build and Destroy Terraform and Ansible components
 
-```shell
-cd terraform/azure
-TF_LOG_PATH=terraform.plan.log TF_LOG=INFO  terraform plan -out=plan.zip
-TF_LOG_PATH=terraform.apply.log TF_LOG=INFO  terraform apply -auto-approve plan.zip
-```
-
-Terraform also generate the Ansible inventory file **inventory.yaml**
-
-Test the inventory by pinging all hosts
-
-```shell
-ansible -i inventory.yaml all -m ping --ssh-extra-args="-o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new -i <SECRET_FOLDER>/id_rsa_cloud" -u cloudadmin
-```
-
-Destroy the deployed infrastructure
-
-```shell
-cd terraform/azure
-TF_LOG_PATH=terraform.destroy.log TF_LOG=INFO  terraform destroy
- ```
-
-## Build and Destroy Terraform and Ansible components
-
-The build and destroy scripts are still an early stage of development and represent the progress made so far.  The scripts currently work for the 'azure' provider only.
+The build and destroy scripts are still an early stage of development and represent the progress made so far. The scripts currently work for the 'azure' provider only.
 
 To get started you must should create a new `variables.sh`:
 
@@ -63,7 +41,18 @@ cp variables.example variables.sh
 
 Edit the values of variables.sh to match your configuration.
 
-Then copy the `azure_hana_media.example.yaml` file and edit the values so that ansible knows where to download the installation media.  For azure, it is preferred to upload the media to blobs in an Azure storage account.
+* PROVIDER : one of the folders in the terraform folder
+* REG_CODE : SCC registration code used in the `registration.yaml` playbook
+* EMAIL : email address used in the registration.yaml playbook
+* SAPCONF : true/false
+
+Copy the `terraform.tfvars.example` of the provided of your choice and configure it.
+
+```shell
+cp terraform/azure/terraform.tfvars.example terraform/azure/terraform.tfvars
+```
+
+Copy the `azure_hana_media.example.yaml` file and edit the values so that ansible knows where to download the installation media.  For Azure, it is preferred to upload the media to blobs in an Azure storage account.
 
 ```shell
 cp ansible/playbooks/vars/azure_hana_media.example.yaml ansible/playbooks/vars/azure_hana_media.yaml
@@ -80,3 +69,28 @@ The destruction of the infrastructure, including the de-registration of SLES, ca
 ```shell
 bash destroy.sh
 ```
+
+### Manual terraform deployment
+
+Here an example of Azure deployment
+
+```shell
+cd terraform/azure
+TF_LOG_PATH=terraform.plan.log TF_LOG=INFO terraform plan -out=plan.zip
+TF_LOG_PATH=terraform.apply.log TF_LOG=INFO terraform apply -auto-approve plan.zip
+```
+
+Terraform also generate the Ansible inventory file **inventory.yaml**
+
+Test the inventory by pinging all hosts
+
+```shell
+ansible -i inventory.yaml all -m ping --ssh-extra-args="-o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new -i <SECRET_FOLDER>/id_rsa_cloud" -u cloudadmin
+```
+
+Destroy the deployed infrastructure
+
+```shell
+cd terraform/azure
+TF_LOG_PATH=terraform.destroy.log TF_LOG=INFO  terraform destroy
+ ```

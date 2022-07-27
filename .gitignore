@@ -1,3 +1,6 @@
+venv/
+secret/
+inventory.yam
 terraform/aws/.terraform
 terraform/aws/terraform.tfstate*
 terraform/aws/terraform.tfvars

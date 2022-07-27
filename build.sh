@@ -3,14 +3,14 @@ set -e
 
 source variables.sh
 
-AnsFlgs="-i ./terraform/${PROVIDER}/inventory.yaml"
+TerraformPath="./terraform/${PROVIDER}"
+AnsFlgs="-i ${TerraformPath}/inventory.yaml"
 AnsPlybkPath="./ansible/playbooks"
 
 ### TERRAFORM BIT ###
-terraform -chdir=./terraform/${PROVIDER} apply -auto-approve
+TF_LOG_PATH=terraform.apply.log TF_LOG=INFO terraform -chdir="${TerraformPath}" apply -auto-approve
 
 ### ANSIBLE BIT ###
-# Accept new ssh keys for ansible-controlled hosts
 ansible ${AnsFlgs} all -a true --ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"
 
 # Run registration
