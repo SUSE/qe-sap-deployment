@@ -109,8 +109,9 @@ podman build -t qeqe-dev .
 The image expect this repository code to be mount in **/src**
 
 Cloud provider account can be managed:
-- from within the image (e.g running `az login` from within the image)
-- share already existing sessions by mounting proper folders `-v ~/.aws:/root/.aws  -v ~/.azure:/root/.azure  -v ~/.config/gcloud:/root/.config/gcloud`
+
+* from within the image (e.g running `az login` from within the image)
+* share already existing sessions by mounting proper folders `-v ~/.aws:/root/.aws  -v ~/.azure:/root/.azure  -v ~/.config/gcloud:/root/.config/gcloud`
 
 Existing ssh keys has to be mounted `-v $(pwd)/secret:/root/.ssh`
 
