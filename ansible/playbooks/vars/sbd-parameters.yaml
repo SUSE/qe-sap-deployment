@@ -2,7 +2,7 @@
 config_backstore_name: 'sbdhana'
 
 # 
-# For complicance with RFC 3720 (as much as is practical), the first part of the IQN will be set as:
+# For compliance with RFC 3720 (as much as is practical), the first part of the IQN will be set as:
 # iqn.<current_year>-<current_month>.<naming_authority>:<meaningful_name>
 # A good example of this would be iqn:2022-08.com.suse:local:hana.cluster.sbd
 # This automation will compute the first part iqn, the naming authority and meaningful name can be defined below.
@@ -17,11 +17,3 @@ config_client01_iqn_name_authority: 'com.suse.hana01'
 config_client02_iqn_name_authority: 'com.suse.hana02'
 config_client01_meaningful_name: 'hana-db-1'
 config_client02_meaningful_name: 'hana-db-2'
-
-
-
-# - { 'command': 'targetcli backstores/fileio create sbdhana /srv/sbd/sbdhana 50M write_back=false', 'creates': '/srv/sbd/sbdhana' }
-  # - { 'command': 'targetcli iscsi/ create iqn.2006-04.dbnw1.local:dbnw1', 'creates': '/sys/kernel/config/target/iscsi/iqn.2006-04.dbnw1.local:dbnw1' }
-  # - { 'command': 'targetcli iscsi/iqn.2006-04.dbnw1.local:dbnw1/tpg1/luns/ create /backstores/fileio/sbdhana', 'creates': '/sys/kernel/config/target/iscsi/iqn.2006-04.dbnw1.local:dbnw1/tpgt_1/lun/lun_0' }
-  # - { 'command': 'targetcli iscsi/iqn.2006-04.dbnw1.local:dbnw1/tpg1/acls/ create iqn.2006-04.nw1-db-0.local:nw1-db-0', 'creates': '/sys/kernel/config/target/iscsi/iqn.2006-04.dbnw1.local:dbnw1/tpgt_1/acls/iqn.2006-04.nw1-db-0.local:nw1-db-0' }
-  # - { 'command': 'targetcli iscsi/iqn.2006-04.dbnw1.local:dbnw1/tpg1/acls/ create iqn.2006-04.nw1-db-1.local:nw1-db-1', 'creates': '/sys/kernel/config/target/iscsi/iqn.2006-04.dbnw1.local:dbnw1/tpgt_1/acls/iqn.2006-04.nw1-db-1.local:nw1-db-1' }

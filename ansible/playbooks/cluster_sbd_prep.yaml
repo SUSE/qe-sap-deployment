@@ -6,6 +6,8 @@
   pre_tasks:
     - include_vars: ./vars/iscsi-storage-profile.yaml
     - include_vars: ./vars/sbd-parameters.yaml
+  vars:
+    iscsi_prefix: /dev/disk/by-id/scsi-
 
   handlers:
     - name: Restart iscsi
@@ -60,6 +62,12 @@
     when: inventory_hostname in groups.hana
     tags:
       - client
+
+  - name: Client SBD configuration tasks
+    ansible.builtin.include_tasks: ./tasks/client-sbd-config.yaml  
+    when: inventory_hostname in groups.hana
+    tags:
+      - sbd
 
 
         
