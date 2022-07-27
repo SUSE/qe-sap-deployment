@@ -15,7 +15,7 @@ The Python requirements could be managed with a virtual environment
 
 ```shell
 python3 -m venv venv
-source vanv/bin/activate
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -40,15 +40,16 @@ cp variables.example variables.sh
 ```
 
 Edit the values of variables.sh to match your configuration.
+
 * PROVIDER : one of the folders in the terraform folder
 * REG_CODE : SCC registration code used in the `registration.yaml` playbook
 * EMAIL : email address used in the registration.yaml playbook
 * SAPCONF : true/false
 
-Copy the `terraform.tfvars.examle` of the provided of your choice and configure it.
+Copy the `terraform.tfvars.example` of the provided of your choice and configure it.
 
 ```shell
-cp terraform/azure/terraform.tfvars.examle terraform/azure/terraform.tfvars
+cp terraform/azure/terraform.tfvars.example terraform/azure/terraform.tfvars
 ```
 
 Copy the `azure_hana_media.example.yaml` file and edit the values so that ansible knows where to download the installation media.  For Azure, it is preferred to upload the media to blobs in an Azure storage account.
@@ -68,7 +69,6 @@ The destruction of the infrastructure, including the de-registration of SLES, ca
 ```shell
 bash destroy.sh
 ```
-
 
 ### Manual terraform deployment
 
@@ -94,4 +94,3 @@ Destroy the deployed infrastructure
 cd terraform/azure
 TF_LOG_PATH=terraform.destroy.log TF_LOG=INFO  terraform destroy
  ```
-
