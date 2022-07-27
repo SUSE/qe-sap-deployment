@@ -5,7 +5,7 @@ RUN zypper ref && zypper up -y
 #RUN zypper in -y azure-cli
 
 # way suggested on https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-linux?pivots=zypper
-RUN zypper install -y tar gzip unzip curl python310-pip
+RUN zypper install -y tar gzip unzip curl python310-pip openssh
 RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc
 RUN zypper addrepo --name 'Azure CLI' --check https://packages.microsoft.com/yumrepos/azure-cli azure-cli
 RUN zypper install --from azure-cli -y azure-cli
