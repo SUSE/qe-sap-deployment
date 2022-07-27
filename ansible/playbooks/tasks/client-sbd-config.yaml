@@ -1,0 +1,55 @@
+---
+###
+# Known issues
+##
+# lsscsi -l may use different symbolic links on each host, but both will point to the same actual /dev/sd[x] device.
+# This may cause the /etc/sysconfig/sbd file to be needlessly overwritten and may just look a little messy between hosts.
+# This will be revisited!
+##
+# Use lsscsi to report all the disks.  Our new disks will not be in facts yet
+
+# Find all scsi devices
+- name: Discovery iscsi devices
+  ansible.builtin.command: lsscsi -i
+  register: discovered_disks
+  changed_when: false
+
+# Create an empty list for the devices reside
+- name: Create iscsi facts
+  ansible.builtin.set_fact:
+    sbd_list: []
+  changed_when: false
+
+# Insert the the full by-id address in the list of each discovered disk that is of the type LIO-ORG (default Linux iSCSI server)
+- name: Set iscsi facts
+  ansible.builtin.set_fact:
+    sbd_list: "{{ sbd_list + [ iscsi_prefix + item | split(' ') | last ] }}"
+  when: item | regex_search('LIO-ORG')
+  loop: "{{ discovered_disks.stdout_lines }}"
+  changed_when: false
+
+# Run SDB dump on each iscsi disk found - this is for idempotency - we don't want to overwrite any sdb disks
+- name: Check that the sbd is not already initialised
+  ansible.builtin.command: sbd -d {{ item }} dump
+  loop: "{{ sbd_list }}"
+  delegate_to: vmhana01
+  changed_when: false
+  failed_when: false
+  register: sdb_safe
+
+# Only create an sbd device when we didn't get a clean return code from the dump command
+- name: Create sdb devices
+  ansible.builtin.command: sbd -d {{ item.item }} -1 60 -4 120 create
+  when: item.rc != 0
+  loop: "{{ sdb_safe.results }}"
+  delegate_to: vmhana01
+
+# Add ALL DISCOVERED iSCSI disks to the config file
+- name: Add disks to sbd file
+  ansible.builtin.lineinfile:
+    path: /etc/sysconfig/sbd
+    regexp: '^SBD_DEVICE='
+    line: "SBD_DEVICE=\"{{ sbd_list | join(';') }}\""
+
+
+
