@@ -1,0 +1,31 @@
+---
+- hosts: hana
+  remote_user: cloudadmin
+  become: true
+  become_user : root
+
+  tasks:
+  # tasks sourced from https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/high-availability-guide-suse-pacemaker
+
+  - name: Set fact
+    ansible.builtin.set_fact:
+      sbd: "{{ use_sbd | default('true') }}"
+
+  - name: Ensure required services are enabled for SBD systems
+    ansible.builtin.systemd:
+      name: "{{ item }}"
+      enabled: yes
+    with_items:
+      - iscsid
+      - iscsi
+      - sbd
+    when: sbd
+  
+     # - { 'command': 'targetcli backstores/fileio create sbdhana /srv/sbd/sbdhana 50M write_back=false', 'creates': '/srv/sbd/sbdhana' }
+     # - { 'command': 'targetcli iscsi/ create iqn.2006-04.dbnw1.local:dbnw1', 'creates': '/sys/kernel/config/target/iscsi/iqn.2006-04.dbnw1.local:dbnw1' }
+     # - { 'command': 'targetcli iscsi/iqn.2006-04.dbnw1.local:dbnw1/tpg1/luns/ create /backstores/fileio/sbdhana', 'creates': '/sys/kernel/config/target/iscsi/iqn.2006-04.dbnw1.local:dbnw1/tpgt_1/lun/lun_0' }
+     # - { 'command': 'targetcli iscsi/iqn.2006-04.dbnw1.local:dbnw1/tpg1/acls/ create iqn.2006-04.nw1-db-0.local:nw1-db-0', 'creates': '/sys/kernel/config/target/iscsi/iqn.2006-04.dbnw1.local:dbnw1/tpgt_1/acls/iqn.2006-04.nw1-db-0.local:nw1-db-0' }
+     # - { 'command': 'targetcli iscsi/iqn.2006-04.dbnw1.local:dbnw1/tpg1/acls/ create iqn.2006-04.nw1-db-1.local:nw1-db-1', 'creates': '/sys/kernel/config/target/iscsi/iqn.2006-04.dbnw1.local:dbnw1/tpgt_1/acls/iqn.2006-04.nw1-db-0.local:nw1-db-1' }
+
+
+        

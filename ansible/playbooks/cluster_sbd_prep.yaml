@@ -1,0 +1,65 @@
+---
+- hosts: iscsi, hana
+  remote_user: cloudadmin
+  become: true
+  become_user : root
+  pre_tasks:
+    - include_vars: ./vars/iscsi-storage-profile.yaml
+    - include_vars: ./vars/sbd-parameters.yaml
+
+  handlers:
+    - name: Restart iscsi
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: restarted
+      with_items:
+        - iscsi
+        - iscsid
+      when: inventory_hostname in groups.hana
+
+        
+  
+  # tasks sourced from https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/high-availability-guide-suse-pacemaker
+  tasks:
+ 
+  - name: Set facts for iscsi server
+    ansible.builtin.set_fact:
+      backstore_name: "{{ config_backstore_name | default('sbdhana') }}"
+      iqn_server_name_authority: "{{ config_server_iqn_name_authority | default('hanasbd') }}"
+      iqn_server_meaningful_name: "{{ config_server_meaningful_name | default('hana_sbd') }}"
+      client01_iqn_name_authority: "{{ config_client01_iqn_name_authority | default('local.hana01')}}"
+      client02_iqn_name_authority: "{{ config_client02_iqn_name_authority | default('local.hana02')}}"
+      client01_meaningful_name: "{{ config_client01_meaningful_name | default('hana01') }}"
+      client02_meaningful_name: "{{ config_client02_meaningful_name | default('hana02') }}"
+
+  - name: Get time data for iqn configuration
+    ansible.builtin.command: date +%Y_%m
+    register: date_result
+    changed_when: false
+
+  - name: Configure date facts for SBD configuration
+    ansible.builtin.set_fact:
+      year: "{{ date_result.stdout | split('_') | first }}"
+      month: "{{ date_result.stdout | split('_') | last }}"
+
+  - name: Configure iqn facts for SBD configuration
+    ansible.builtin.set_fact:
+      srv_iqn: 'iqn.{{ year }}-{{ month }}.{{ iqn_server_name_authority }}:{{ iqn_server_meaningful_name }}'
+      client_list:
+        - 'iqn.{{ year }}-{{ month }}.{{ client01_iqn_name_authority }}:{{ client01_meaningful_name }}'
+        - 'iqn.{{ year }}-{{ month }}.{{ client02_iqn_name_authority }}:{{ client02_meaningful_name }}'
+    
+  - name: Run iscsi server tasks
+    ansible.builtin.include_tasks: ./tasks/iscsi-server-sbd-prep.yaml
+    when: inventory_hostname in groups.iscsi
+    tags:
+      - server
+
+  - name: Run iscsi client tasks
+    ansible.builtin.include_tasks: ./tasks/iscsi-client-sbd-prep.yaml  
+    when: inventory_hostname in groups.hana
+    tags:
+      - client
+
+
+        
