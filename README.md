@@ -103,7 +103,7 @@ Dockerfile provided to keep track of right version of all needed. It need to be 
 
 ```shell
 podman pull opensuse/tumbleweed:latest
-podman build -t qeqe-dev .
+podman build -t my-tag .
 ```
 
 The image expect this repository code to be mount in **/src**
@@ -126,6 +126,6 @@ Or to execute a specific action:
 
 ```shell
 cd <THIS_REPO_FOLDER>
-podman run -it -v .:/src -v ~/.azure:/root/.azure -v $(pwd)/secret:/root/.ssh  --entrypoint=./build.sh qeqe-dev
-podman run -it -v .:/src -v ~/.azure:/root/.azure -v $(pwd)/secret:/root/.ssh  --entrypoint=./destroy.sh qeqe-dev
+podman run -it -v .:/src -v ~/.azure:/root/.azure -v $(pwd)/secret:/root/.ssh  --entrypoint=./build.sh my-tag
+podman run -it -v .:/src -v ~/.azure:/root/.azure -v $(pwd)/secret:/root/.ssh  --entrypoint=./destroy.sh my-tag
 ```
