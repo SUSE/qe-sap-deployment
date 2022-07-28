@@ -28,16 +28,6 @@ resource "aws_route" "drbd-cluster-vip" {
   network_interface_id   = aws_instance.drbd.0.primary_network_interface_id
 }
 
-module "sap_cluster_policies" {
-  enabled           = var.drbd_count > 0 ? true : false
-  source            = "../../modules/sap_cluster_policies"
-  common_variables  = var.common_variables
-  name              = var.name
-  aws_region        = var.aws_region
-  cluster_instances = aws_instance.drbd.*.id
-  route_table_id    = var.route_table_id
-}
-
 module "get_os_image" {
   source   = "../../modules/get_os_image"
   os_image = var.os_image
@@ -56,7 +46,6 @@ resource "aws_instance" "drbd" {
   vpc_security_group_ids      = [var.security_group_id]
   availability_zone           = element(var.availability_zones, count.index)
   source_dest_check           = false
-  iam_instance_profile        = module.sap_cluster_policies.cluster_profile_name[0]
 
   root_block_device {
     volume_type = "gp2"

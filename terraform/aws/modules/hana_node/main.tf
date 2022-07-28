@@ -39,16 +39,6 @@ resource "aws_route" "hana-cluster-vip-secondary" {
   network_interface_id   = aws_instance.hana.1.primary_network_interface_id
 }
 
-module "sap_cluster_policies" {
-  enabled           = var.hana_count > 0 ? true : false
-  source            = "../../modules/sap_cluster_policies"
-  common_variables  = var.common_variables
-  name              = var.name
-  aws_region        = var.aws_region
-  cluster_instances = aws_instance.hana.*.id
-  route_table_id    = var.route_table_id
-}
-
 module "get_os_image" {
   source   = "../../modules/get_os_image"
   os_image = var.os_image
@@ -66,7 +56,6 @@ resource "aws_instance" "hana" {
   private_ip                  = element(var.host_ips, count.index)
   vpc_security_group_ids      = [var.security_group_id]
   availability_zone           = element(var.availability_zones, count.index)
-  iam_instance_profile        = module.sap_cluster_policies.cluster_profile_name[0]
   source_dest_check           = false
 
   root_block_device {
