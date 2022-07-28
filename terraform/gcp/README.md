@@ -17,7 +17,6 @@ This sub directory contains the cloud specific part for usage of this
 repository with Google Cloud Platform (GCP). Looking for another provider? See
 [Getting started](../README.md#getting-started)
 
-
 # Quickstart
 
 This is a very short quickstart guide. For detailed information see [Using SUSE Automation to Deploy an SAP HANA Cluster on GCP - Getting Started🔗](https://documentation.suse.com/sbp/all/single-html/TRD-SLES-SAP-HA-automation-quickstart-cloud-gcp/).
@@ -82,7 +81,6 @@ For detailed information and deployment options have a look at `terraform.tfvars
     ```
     terraform destroy
     ```
-
 
 ## Bastion
 

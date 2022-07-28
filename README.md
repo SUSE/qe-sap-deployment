@@ -53,11 +53,9 @@ Copy the `terraform.tfvars.example` of the provided of your choice and configure
 cp terraform/azure/terraform.tfvars.example terraform/azure/terraform.tfvars
 ```
 
-
 The files in ansible/playbook/vars hold variables which control various aspects of the automation.  These variables are suitable for example Azure configuration and will not need to be altered in most cases.  The only exception is the `azure_hana_media.example.yaml`.  Users will need to supply their own SAP media and populate the file accordingly.
 
 Copy the `azure_hana_media.example.yaml` file and edit the values so that ansible knows where to download the installation media.  For Azure, it is preferred to upload the media to blobs in an Azure storage account.
-
 
 ```shell
 cp ansible/playbooks/vars/azure_hana_media.example.yaml ansible/playbooks/vars/azure_hana_media.yaml

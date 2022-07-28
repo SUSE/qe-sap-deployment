@@ -18,7 +18,6 @@ connection {
 }
 ```
 
-
 ## References
 
 https://github.com/hashicorp/terraform/issues/23679
