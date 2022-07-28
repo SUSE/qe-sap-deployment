@@ -31,7 +31,8 @@ ssh-add id_rsa_cloud
 
 ### Build and Destroy Terraform and Ansible components
 
-The build and destroy scripts are still an early stage of development and represent the progress made so far. The scripts currently work for the 'azure' provider only.
+The build and destroy scripts are still an early stage of development and represent the progress made so far.
+The scripts currently work for the 'azure' provider only.
 
 To get started you must should create a new `variables.sh`:
 
@@ -52,7 +53,8 @@ Copy the `terraform.tfvars.example` of the provided of your choice and configure
 cp terraform/azure/terraform.tfvars.example terraform/azure/terraform.tfvars
 ```
 
-Copy the `azure_hana_media.example.yaml` file and edit the values so that ansible knows where to download the installation media.  For Azure, it is preferred to upload the media to blobs in an Azure storage account.
+Copy the `azure_hana_media.example.yaml` file and edit the values so that ansible knows where to download the installation media.
+For Azure, it is preferred to upload the media to blobs in an Azure storage account.
 
 ```shell
 cp ansible/playbooks/vars/azure_hana_media.example.yaml ansible/playbooks/vars/azure_hana_media.yaml
@@ -93,4 +95,37 @@ Destroy the deployed infrastructure
 ```shell
 cd terraform/azure
 TF_LOG_PATH=terraform.destroy.log TF_LOG=INFO  terraform destroy
- ```
+```
+
+### Run deployment in a container
+
+Dockerfile provided to keep track of right version of all needed. It need to be build once:
+
+```shell
+podman pull opensuse/tumbleweed:latest
+podman build -t my-tag .
+```
+
+The image expect this repository code to be mount in **/src**
+
+Cloud provider account can be managed:
+
+* from within the image (e.g running `az login` from within the image)
+* share already existing sessions by mounting proper folders `-v ~/.aws:/root/.aws  -v ~/.azure:/root/.azure  -v ~/.config/gcloud:/root/.config/gcloud`
+
+Existing ssh keys has to be mounted `-v $(pwd)/secret:/root/.ssh`
+
+The image can be used interactively
+
+```shell
+cd <THIS_REPO_FOLDER>
+podman run -it -v .:/src -v ~/.azure:/root/.azure -v $(pwd)/secret:/root/.ssh
+```
+
+Or to execute a specific action:
+
+```shell
+cd <THIS_REPO_FOLDER>
+podman run -it -v .:/src -v ~/.azure:/root/.azure -v $(pwd)/secret:/root/.ssh  --entrypoint=./build.sh my-tag
+podman run -it -v .:/src -v ~/.azure:/root/.azure -v $(pwd)/secret:/root/.ssh  --entrypoint=./destroy.sh my-tag
+```
