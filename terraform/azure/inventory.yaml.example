@@ -1,0 +1,16 @@
+all:
+  children:
+    hana:
+      hosts:
+        vmhana01:
+          ansible_host: 1.2.3.4
+          ansible_python_interpreter: /usr/bin/python3
+        vmhana02:
+          ansible_host: 1.2.3.5
+          ansible_python_interpreter: /usr/bin/python3
+    iscsi:
+      hosts:
+         vmiscsi01:
+          ansible_host: 1.2.3.6
+          ansible_python_interpreter: /usr/bin/python3
+  hosts: null
