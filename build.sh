@@ -12,11 +12,8 @@ echo "--QE_SAP_DEPLOYMENT--"
 
 ### TERRAFORM BIT ###
 TF_LOG_PATH=terraform.init.log TF_LOG=INFO terraform -chdir="${TerraformPath}" init
-ErrChk
 TF_LOG_PATH=terraform.plan.log TF_LOG=INFO terraform -chdir="${TerraformPath}" plan -out=plan.zip
-ErrChk
 TF_LOG_PATH=terraform.apply.log TF_LOG=INFO terraform -chdir="${TerraformPath}" apply -auto-approve plan.zip
-ErrChk
 
 ### ANSIBLE BIT ###
 if [ -z ${SSH_AGENT_PID+x} ]
@@ -34,7 +31,6 @@ else
 fi
 
 ssh-add -v /root/.ssh/id_rsa_cloud
-
 
 ### ANSIBLE BIT ###
 # Accept new ssh keys for ansible-controlled hosts
