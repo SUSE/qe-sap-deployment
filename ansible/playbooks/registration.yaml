@@ -38,6 +38,7 @@
       retries: 30
       delay: 5
       failed_when: false
+      changed_when: false
 
     - name: registercloudguest registration
       ansible.builtin.command: registercloudguest --force-new -r "{{ reg_code }}" -e "{{ email_address }}"
