@@ -45,6 +45,7 @@ if [[ $1 == 'skip' ]] ; then
   exit 0
 fi
 
+ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/pre-cluster.yaml
 ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/sap-hana-preconfigure.yaml -e "use_sapconf=${SAPCONF}"
 ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/cluster_sbd_prep.yaml
 ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/sap-hana-storage.yaml 

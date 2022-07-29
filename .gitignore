@@ -24,3 +24,6 @@ ansible/playbooks/vars/azure_hana_media.yaml
 terraform/azure/.terraform.lock.hcl
 terraform/azure/inventory.yaml
 terraform.apply.log
+oldbuild.sh
+olddestroy.sh
+terraform/azure/plan.zip

@@ -2,10 +2,10 @@
 - hosts: iscsi, hana
   remote_user: cloudadmin
   become: true
-  become_user : root
+  become_user: root
   pre_tasks:
-    - include_vars: ./vars/iscsi-storage-profile.yaml
-    - include_vars: ./vars/sbd-parameters.yaml
+    - ansible.builtin.include_vars: ./vars/iscsi-storage-profile.yaml
+    - ansible.builtin.include_vars: ./vars/sbd-parameters.yaml
   vars:
     iscsi_prefix: /dev/disk/by-id/scsi-
 
@@ -19,18 +19,16 @@
         - iscsid
       when: inventory_hostname in groups.hana
 
-        
-  
-  # tasks sourced from https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/high-availability-guide-suse-pacemaker
+# tasks sourced from https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/high-availability-guide-suse-pacemaker
   tasks:
- 
+
   - name: Set facts for iscsi server
     ansible.builtin.set_fact:
       backstore_name: "{{ config_backstore_name | default('sbdhana') }}"
       iqn_server_name_authority: "{{ config_server_iqn_name_authority | default('hanasbd') }}"
       iqn_server_meaningful_name: "{{ config_server_meaningful_name | default('hana_sbd') }}"
-      client01_iqn_name_authority: "{{ config_client01_iqn_name_authority | default('local.hana01')}}"
-      client02_iqn_name_authority: "{{ config_client02_iqn_name_authority | default('local.hana02')}}"
+      client01_iqn_name_authority: "{{ config_client01_iqn_name_authority | default('local.hana01') }}"
+      client02_iqn_name_authority: "{{ config_client02_iqn_name_authority | default('local.hana02') }}"
       client01_meaningful_name: "{{ config_client01_meaningful_name | default('hana01') }}"
       client02_meaningful_name: "{{ config_client02_meaningful_name | default('hana02') }}"
 
@@ -58,13 +56,13 @@
       - server
 
   - name: Run iscsi client tasks
-    ansible.builtin.include_tasks: ./tasks/iscsi-client-sbd-prep.yaml  
+    ansible.builtin.include_tasks: ./tasks/iscsi-client-sbd-prep.yaml
     when: inventory_hostname in groups.hana
     tags:
       - client
 
   - name: Client SBD configuration tasks
-    ansible.builtin.include_tasks: ./tasks/client-sbd-config.yaml  
+    ansible.builtin.include_tasks: ./tasks/client-sbd-config.yaml
     when: inventory_hostname in groups.hana
     tags:
       - sbd

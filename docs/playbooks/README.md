@@ -4,6 +4,7 @@ The playbooks in this project are written to be executed after
 `terrform apply`  and in the following order:
 
 * registration.yaml
+* pre-cluster.yaml
 * sap-hana-preconfigure.yaml
 * cluster_sbd_prep.yaml
 * sap-hana-storage.yaml
@@ -41,6 +42,29 @@ If no repos are found, the playbook will first attempt to register with SCC
 using `registercloudguest`.  If the command is available, it will be used for
 registration.  If `registercloudguest` is not available then `SUSEConnect` will
 be used.
+
+## pre-cluster
+
+Target hosts:
+
+* all
+
+Variables: N/A
+
+Variable Source = N/A
+
+The pre-cluster playbook performs a number of simple tasks that need to be
+completed before the HANA clustering can commence.  No variables need to
+be set for this playbook.
+
+Firstly, the playbook ensure that the `/etc/hosts` on each system contains
+a valid entry for all other hosts.  
+
+After this first step the rest of the plays are only conducted on the `hana`
+node group.  A ssh key-pair is created (if one doesn't already exist) for the
+root user.  The root public key for each hana node is inserted into the
+`/root/.ssh/authorized_keys`.  Finally, a command is run from each host to
+each target (including itself) to accept the keys.
 
 ## sap-hana-preconfigure
 
