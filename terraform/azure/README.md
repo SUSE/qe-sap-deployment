@@ -17,11 +17,9 @@
    * [Use native fencing instead of SBD](#use-native-fencing-instead-of-sbd)
    * [Use Azure ANF (Azure Netapp Files)](#use-azure-anf-azure-netapp-files)
 
-
 This sub directory contains the cloud specific part for usage of this
 repository with Microsoft Azure. Looking for another provider? See
 [Getting started](../README.md#getting-started).
-
 
 # Quickstart
 
@@ -91,7 +89,6 @@ For detailed information and deployment options also have a look at `terraform.t
     ```
     terraform destroy
     ```
-
 
 ## Bastion
 
@@ -237,7 +234,6 @@ It is also possible to deploy several logical volumes to one volume group. For e
 
 If both disks have a size of 512GB, a first virtual volume with name `vg_hana_datalog_0` and size of 768GB and a second virtual volume with name `vg_hana_datalog_1` and size 256GB are created. Both virtual volumes are in volume group `vg_hana_datalog`. The first is mounted at `/hana/data` and the second at `/hana/log`.
 
-
 ### HANA data disks configuration example setups
 
 The database configuration may vary depending on the expected performance. In order to have different options, the virtual machine size, disks, network configuration, etc must be configured differently. Here some predefined options that might help in the configuration.
@@ -356,7 +352,6 @@ drbd_enabled = true
 ```
 
 Besides that, the expected performance setting the vm sizes, networking and disk different options need to be defined. Here are some suggested options (by default the **demo** option is deployed):
-
 
 ### Example NetWeaver configurations
 
@@ -571,7 +566,6 @@ az vm image list --output table --publisher SUSE --all
 ```
 
 If using a public image, skip to the [how to use section](#how-to-use).
-
 
 ### Upload custom image
 

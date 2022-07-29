@@ -22,7 +22,6 @@ provider? See [Getting started](../README.md#getting-started)
 
 This is a very short quickstart guide. For detailed information see [Using SUSE Automation to Deploy an SAP HANA Cluster on AWS - Getting Started🔗](https://documentation.suse.com/sbp/all/single-html/TRD-SLES-SAP-HA-automation-quickstart-cloud-aws/).
 
-
 For detailed information and deployment options have a look at `terraform.tfvars.example`.
 
 1) **Rename terraform.tfvars:**
@@ -123,7 +122,6 @@ For detailed information and deployment options have a look at `terraform.tfvars
 
     Here how it should look like your user or group:
 
-
     ![AWS policies](./images/policies.png)
 
     **Warning: If you use the 2nd option, the AWS web panel won't show that the created instances have any role attached, but they have. The limits in the IAM access makes this not visible, that's all**
@@ -143,7 +141,6 @@ For detailed information and deployment options have a look at `terraform.tfvars
     ```
     terraform destroy
     ```
-
 
 ## Bastion
 

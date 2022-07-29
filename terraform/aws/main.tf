@@ -68,14 +68,12 @@ module "common_variables" {
   reg_code                            = var.reg_code
   reg_email                           = var.reg_email
   reg_additional_modules              = var.reg_additional_modules
-  ha_sap_deployment_repo              = var.ha_sap_deployment_repo
   additional_packages                 = var.additional_packages
   public_key                          = var.public_key
   private_key                         = var.private_key
   authorized_keys                     = var.authorized_keys
   authorized_user                     = "ec2-user"
   provisioner                         = var.provisioner
-  provisioning_log_level              = var.provisioning_log_level
   provisioning_output_colored         = var.provisioning_output_colored
   background                          = var.background
   monitoring_enabled                  = var.monitoring_enabled
@@ -86,8 +84,8 @@ module "common_variables" {
   hana_instance_number                = var.hana_instance_number
   hana_cost_optimized_sid             = var.hana_cost_optimized_sid
   hana_cost_optimized_instance_number = var.hana_cost_optimized_instance_number
-  hana_master_password                = var.hana_master_password
-  hana_cost_optimized_master_password = var.hana_cost_optimized_master_password == "" ? var.hana_master_password : var.hana_cost_optimized_master_password
+  hana_master_password                = "NotRequiredByAnsible1234"
+  hana_cost_optimized_master_password = "NotRequiredByAnsible1234"
   hana_primary_site                   = var.hana_primary_site
   hana_secondary_site                 = var.hana_secondary_site
   hana_inst_folder                    = var.hana_inst_folder
@@ -130,7 +128,7 @@ module "common_variables" {
   netweaver_hana_ip                   = var.hana_ha_enabled ? local.hana_cluster_vip : element(local.hana_ips, 0)
   netweaver_hana_sid                  = var.hana_sid
   netweaver_hana_instance_number      = var.hana_instance_number
-  netweaver_hana_master_password      = var.hana_master_password
+  netweaver_hana_master_password      = "NotRequiredByAnsible1234"
   netweaver_ha_enabled                = var.netweaver_ha_enabled
   netweaver_cluster_vip_mechanism     = "route"
   netweaver_cluster_fencing_mechanism = var.netweaver_cluster_fencing_mechanism

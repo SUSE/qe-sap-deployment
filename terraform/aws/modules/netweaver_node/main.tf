@@ -74,16 +74,6 @@ resource "aws_efs_mount_target" "netweaver-efs-mount-target" {
   security_groups = [var.security_group_id]
 }
 
-module "sap_cluster_policies" {
-  enabled           = local.vm_count > 0 ? true : false
-  source            = "../../modules/sap_cluster_policies"
-  common_variables  = var.common_variables
-  name              = var.name
-  aws_region        = var.aws_region
-  cluster_instances = slice(aws_instance.netweaver.*.id, 0, min(local.vm_count, 2))
-  route_table_id    = var.route_table_id
-}
-
 module "get_os_image" {
   source   = "../../modules/get_os_image"
   os_image = var.os_image
@@ -101,7 +91,6 @@ resource "aws_instance" "netweaver" {
   vpc_security_group_ids      = [var.security_group_id]
   availability_zone           = element(var.availability_zones, count.index % 2)
   source_dest_check           = false
-  iam_instance_profile        = module.sap_cluster_policies.cluster_profile_name[0] # We apply to all nodes to have the SAP data provider, even though some policies are only for the clustered nodes
 
   root_block_device {
     volume_type = "gp2"
