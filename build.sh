@@ -89,6 +89,7 @@ fi
 
 . ./variables.sh
 
+LogEx="log.txt"
 TerraformPath="./terraform/${PROVIDER}"
 AnsFlgs="-i ${TerraformPath}/inventory.yaml"
 #AnsFlgs="${AnsFlgs} -vvvv"
@@ -99,9 +100,9 @@ echo "--QE_SAP_DEPLOYMENT--"
 ### TERRAFORM BIT ###
 if [ ${quite} -eq 1 ]
 then
-  TF_LOG_PATH=terraform.init.log  TF_LOG=INFO terraform -chdir="${TerraformPath}" init -no-color
-  TF_LOG_PATH=terraform.plan.log  TF_LOG=INFO terraform -chdir="${TerraformPath}" plan -out=plan.zip -no-color
-  TF_LOG_PATH=terraform.apply.log TF_LOG=INFO terraform -chdir="${TerraformPath}" apply -auto-approve plan.zip -no-color
+  TF_LOG_PATH=terraform.init."${LogEx}"  TF_LOG=INFO terraform -chdir="${TerraformPath}" init -no-color
+  TF_LOG_PATH=terraform.plan."${LogEx}"  TF_LOG=INFO terraform -chdir="${TerraformPath}" plan -out=plan.zip -no-color
+  TF_LOG_PATH=terraform.apply."${LogEx}" TF_LOG=INFO terraform -chdir="${TerraformPath}" apply -auto-approve plan.zip -no-color
 else
   terraform -chdir="${TerraformPath}" apply -auto-approve
 fi
@@ -126,6 +127,8 @@ ssh-add -v "${ssh_key}"
 if [ ${quite} -eq 1 ]
 then
   export ANSIBLE_NOCOLOR=True
+  export ANSIBLE_LOG_PATH="$(pwd)/ansible.build.${LogEx}"
+  export ANSIBLE_PIPELINING=True
 fi
 
 # Accept new ssh keys for ansible-controlled hosts

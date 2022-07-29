@@ -1,0 +1,4 @@
+hana_urls:
+  - %SAPCAR%
+  - %IMDB_SERVER%
+  - %IMDB_CLIENT%

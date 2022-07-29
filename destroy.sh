@@ -80,6 +80,7 @@ fi
 
 . ./variables.sh
 
+LogEx="log.txt"
 TerraformPath="./terraform/${PROVIDER}"
 AnsFlgs="-i ${TerraformPath}/inventory.yaml"
 #AnsFlgs="${AnsFlgs} -vvvv"
@@ -108,6 +109,7 @@ ssh-add -v "${ssh_key}"
 if [ ${quite} -eq 1 ]
 then
   export ANSIBLE_NOCOLOR=True
+  export ANSIBLE_LOG_PATH="$(pwd)/ansible.destroy.${LogEx}"
 fi
 
 ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/deregister.yaml
@@ -115,7 +117,7 @@ ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/deregister.yaml
 ### TERRAFORM BIT ###
 if [ ${quite} -eq 1 ]
 then
-  terraform -chdir="${TerraformPath}" destroy -auto-approve -no-color
+  TF_LOG_PATH=terraform.destroy."${LogEx}" TF_LOG=INFO terraform -chdir="${TerraformPath}" destroy -auto-approve -no-color
 else
   terraform -chdir="${TerraformPath}" destroy -auto-approve
 fi
