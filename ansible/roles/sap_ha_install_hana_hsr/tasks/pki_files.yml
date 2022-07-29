@@ -1,0 +1,42 @@
+---
+# Secondary nodes fetch PKI files from the primary node.
+# Use the ansible control node as temporary file storage.
+# Avoid dependency on connectivity requirements between the nodes.
+
+- name: "SAP HSR - Copy PKI files from primary to control node /tmp"
+  ansible.builtin.fetch:
+    src: "{{ item }}"
+    dest: /tmp/
+    flat: true
+  loop:
+    - "{{ __sap_ha_install_hana_hsr_secpath }}/data/SSFS_{{ sap_ha_install_hana_hsr_sid }}.DAT"
+    - "{{ __sap_ha_install_hana_hsr_secpath }}/key/SSFS_{{ sap_ha_install_hana_hsr_sid }}.KEY"
+  delegate_to: "{{ __sap_ha_install_hana_hsr_primary_node }}"
+  register: __sap_ha_install_hana_hsr_fetch_pki
+
+- name: "SAP HSR - Copy PKI files to /usr/sap/{{ sap_ha_install_hana_hsr_sid }}/SYS/global/security/rsecssfs/"
+  ansible.builtin.copy:
+    src: "/tmp/{{ item.file }}"
+    dest: "{{ item.path }}{{ item.file }}"
+    owner: "{{ sap_ha_install_hana_hsr_sid | lower }}adm"
+    group: sapsys
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ __sap_ha_install_hana_hsr_secpath }}/data/"
+      file: "SSFS_{{ sap_ha_install_hana_hsr_sid }}.DAT"
+      mode: "0600"
+    - path: "{{ __sap_ha_install_hana_hsr_secpath }}/key/"
+      file: "SSFS_{{ sap_ha_install_hana_hsr_sid }}.KEY"
+      mode: "0640"
+  loop_control:
+    label: "{{ item.path }}{{ item.file }}"
+
+- name: "SAP HSR - Clean up PKI files from control node /tmp"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "/tmp/SSFS_{{ sap_ha_install_hana_hsr_sid }}.DAT"
+    - "/tmp/SSFS_{{ sap_ha_install_hana_hsr_sid }}.KEY"
+  delegate_to: localhost
+  become: false
