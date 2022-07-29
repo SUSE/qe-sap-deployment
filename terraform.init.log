@@ -1,0 +1,20 @@
+2022-07-29T08:42:04.190+0100 [INFO]  Terraform version: 1.1.7
+2022-07-29T08:42:04.190+0100 [INFO]  Go runtime version: go1.17.2
+2022-07-29T08:42:04.190+0100 [INFO]  CLI args: []string{"terraform", "-chdir=./terraform/azure", "init"}
+2022-07-29T08:42:04.195+0100 [INFO]  CLI command args: []string{"init"}
+2022-07-29T08:52:43.609+0100 [INFO]  Terraform version: 1.1.7
+2022-07-29T08:52:43.609+0100 [INFO]  Go runtime version: go1.17.2
+2022-07-29T08:52:43.609+0100 [INFO]  CLI args: []string{"terraform", "-chdir=./terraform/azure", "init"}
+2022-07-29T08:52:43.613+0100 [INFO]  CLI command args: []string{"init"}
+2022-07-29T08:54:07.503+0100 [INFO]  Terraform version: 1.1.7
+2022-07-29T08:54:07.504+0100 [INFO]  Go runtime version: go1.17.2
+2022-07-29T08:54:07.504+0100 [INFO]  CLI args: []string{"terraform", "-chdir=./terraform/azure", "init"}
+2022-07-29T08:54:07.505+0100 [INFO]  CLI command args: []string{"init"}
+2022-07-29T08:58:24.767+0100 [INFO]  Terraform version: 1.1.7
+2022-07-29T08:58:24.767+0100 [INFO]  Go runtime version: go1.17.2
+2022-07-29T08:58:24.767+0100 [INFO]  CLI args: []string{"terraform", "-chdir=./terraform/azure", "init"}
+2022-07-29T08:58:24.771+0100 [INFO]  CLI command args: []string{"init"}
+2022-07-29T09:06:45.909+0100 [INFO]  Terraform version: 1.1.7
+2022-07-29T09:06:45.909+0100 [INFO]  Go runtime version: go1.17.2
+2022-07-29T09:06:45.909+0100 [INFO]  CLI args: []string{"terraform", "-chdir=./terraform/azure", "init"}
+2022-07-29T09:06:45.912+0100 [INFO]  CLI command args: []string{"init"}

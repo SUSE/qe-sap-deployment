@@ -1,0 +1,76 @@
+---
+- hosts: all
+  remote_user: cloudadmin
+  become: true
+  become_user : root
+
+  tasks:
+
+  - name: Ensure all hosts are present in all hosts /etc/hosts file
+    ansible.builtin.lineinfile:
+      path: "/etc/hosts"
+      regexp: ".*\t{{ hostvars[item]['ansible_hostname']}}\t{{ hostvars[item]['ansible_hostname']}}"
+      line: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}\t{{ hostvars[item]['ansible_hostname']}}\t{{ hostvars[item]['ansible_hostname']}}"
+      state: present
+      backup: yes
+    when: ansible_hostname != item or ansible_hostname == item 
+    with_items: "{{groups['all']}}"
+
+  - name: Ensure that /root/.ssh exists on hana
+    ansible.builtin.file:
+      path: /root/.ssh
+      state: directory
+      owner: root
+      group: root
+      mode: '0700'
+    when: inventory_hostname in groups.hana
+    
+  - name: Generate public/private keys for root on hana hosts
+    community.crypto.openssh_keypair:
+      group: root
+      owner: root
+      mode: '0600'
+      path: /root/.ssh/id_rsa
+      type: rsa
+      size: 4096
+    register: ssh_keys
+    when: inventory_hostname in groups.hana
+
+  - name: Add all hana root public keys to all hana nodes
+    ansible.builtin.lineinfile:
+      path: /root/.ssh/authorized_keys
+      line: "{{ hostvars[item].ssh_keys.public_key }}"
+      create: yes
+    with_items: "{{ groups['hana'] }}"
+    when: inventory_hostname in groups.hana
+
+  - name: Apply to Authorised Keys
+    ansible.posix.authorized_key:
+      user: root
+      state: present
+      key: "{{ hostvars[idx].ssh_keys.public_key }}"
+    loop: "{{ groups['hana'] }}"
+    loop_control:
+      loop_var: idx
+    when: inventory_hostname in groups.hana
+
+  - name: Slurp ssh daemon public key
+    ansible.builtin.slurp:
+      src: /etc/ssh/ssh_host_ecdsa_key.pub
+    register: pubkeys
+    when: inventory_hostname in groups.hana
+
+  - name: Populate /root/.ssh/known_hosts
+    ansible.builtin.known_hosts:
+      path: /root/.ssh/known_hosts
+      name: "{{ hostvars[idx]['ansible_hostname']}}"
+      state: present
+      key:  "{{ hostvars[idx]['ansible_hostname']}},{{ hostvars[idx]['ansible_default_ipv4']['address'] }} {{ (hostvars[idx].pubkeys.content | b64decode | split(' '))[0] }} {{ (hostvars[idx].pubkeys.content | b64decode | split(' '))[1] }}"
+    loop: "{{ groups['hana'] }}"
+    loop_control:
+      loop_var: idx
+    when: inventory_hostname in groups.hana
+      
+  
+
+    

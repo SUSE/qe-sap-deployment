@@ -14,11 +14,9 @@
    * [Terraform Parallelism](#terraform-parallelism)
 * [Troubleshooting](#troubleshooting)
 
-
 This sub directory contains the cloud specific part for usage of this
 repository with libvirt. Looking for another provider? See
 [Getting started](../README.md#getting-started).
-
 
 # Requirements
 

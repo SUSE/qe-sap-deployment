@@ -64,13 +64,13 @@ cp ansible/playbooks/vars/azure_hana_media.example.yaml ansible/playbooks/vars/a
 Once these steps are completed, it should be possible to run the `build.sh` script to create the infrastructure and install HANA on both VMs.
 
 ```shell
-bash build.sh
+./build.sh -k <SECRET_FOLDER>/id_rsa_cloud
 ```
 
 The destruction of the infrastructure, including the de-registration of SLES, can be conducted with the `destroy.sh` script.
 
 ```shell
-bash destroy.sh
+./destroy.sh -k <SECRET_FOLDER>/id_rsa_cloud
 ```
 
 ### Manual terraform deployment
