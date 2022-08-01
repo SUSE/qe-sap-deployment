@@ -1,0 +1,51 @@
+---
+- hosts: hana
+  remote_user: cloudadmin
+  become: true
+  become_user : root
+  pre_tasks:
+  - include_vars: ./vars/sap-hana-install_vars.yaml
+  vars:
+    hooks_dir: myHooks
+
+  tasks:
+
+  - name: Ensure hooks directory exists
+    ansible.builtin.file:
+      path: "/hana/shared/{{ hooks_dir }}"
+      owner: "{{ sap_hana_install_sid | lower }}adm"
+      group: sapsys
+      state: directory
+      mode: '0775'
+
+  - name: Copy system replication hook file
+    ansible.builtin.copy:
+      src:  /usr/share/SAPHanaSR/SAPHanaSR.py
+      remote_src: yes
+      dest: "/hana/shared/{{ hooks_dir }}/SAPHanaSR.py"
+      owner: "{{ sap_hana_install_sid | lower }}adm"
+      group: sapsys
+    register: copy_result
+
+  - name: Stop HANA
+    ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StopWait 600 10" # Stopwait will timeout after 600 seconds.
+    when: copy_result.changed # only stop HANA if the copy file did something, otherwise we'll stop it for no reason
+
+  - name: Ensure ha_dr_provider_SAPHanaSR section exists in global.ini
+    community.general.ini_file:
+      path: /usr/sap/HDB/SYS/global/hdb/custom/config/global.ini
+      section: "{{ item.section }}"
+      option: "{{ item.key }}"
+      value: "{{ item.value }}"
+      backup: yes
+    with_items: 
+      - { 'section': 'ha_dr_provider_SAPHanaSR', 'key': 'provider', 'value': 'SAPHanaSR'}
+      - { 'section': 'ha_dr_provider_SAPHanaSR', 'key': 'path', 'value': '/hana/shared/{{ hooks_dir }}'}
+      - { 'section': 'ha_dr_provider_SAPHanaSR', 'key': 'execution_order', 'value': '1'}
+      - { 'section': 'trace', 'key': 'ha_dr_saphanasr', 'value': 'info'}
+    when: copy_result.changed
+  
+  - name: Start HANA
+    ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StartWait 600 10"
+    when: copy_result.changed # only start HANA if we stopped it
+
