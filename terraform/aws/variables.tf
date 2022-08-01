@@ -81,6 +81,12 @@ variable "authorized_keys" {
   default     = []
 }
 
+variable "admin_user" {
+  description = "User name of the admin user to deploy in the provisioned machines"
+  type        = string
+  default     = "cloudadmin"
+}
+
 # Deployment variables
 
 variable "deployment_name" {
