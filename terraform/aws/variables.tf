@@ -76,7 +76,7 @@ variable "private_key" {
 }
 
 variable "authorized_keys" {
-  description = "List of additional authorized SSH public keys content or path to already existing SSH public keys to access the created machines with the used admin user (ec2-user in this case)"
+  description = "List of additional authorized SSH public keys content or path to already existing SSH public keys to access the created machines with the used admin user (cloudadmin in this case)"
   type        = list(string)
   default     = []
 }
