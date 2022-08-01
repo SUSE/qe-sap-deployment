@@ -10,6 +10,7 @@ Tools needed
 
 * terraform v1.1.7
 * ansible 4.10.0 (ansible-core 2.11.12)
+* cloud provider cli tools (`az`, `aws`, `gcloud`)
 
 The Python requirements could be managed with a virtual environment
 
@@ -53,9 +54,8 @@ Copy the `terraform.tfvars.example` of the provided of your choice and configure
 cp terraform/azure/terraform.tfvars.example terraform/azure/terraform.tfvars
 ```
 
-The files in ansible/playbook/vars hold variables which control various aspects of the automation.  These variables are suitable for example Azure configuration and will not need to be altered in most cases.  The only exception is the `azure_hana_media.example.yaml`.  Users will need to supply their own SAP media and populate the file accordingly.
-
-Copy the `azure_hana_media.example.yaml` file and edit the values so that ansible knows where to download the installation media.  For Azure, it is preferred to upload the media to blobs in an Azure storage account.
+Copy the `azure_hana_media.example.yaml` file and edit the values so that ansible knows where to download the installation media.
+For Azure, it is preferred to upload the media to blobs in an Azure storage account.
 
 ```shell
 cp ansible/playbooks/vars/azure_hana_media.example.yaml ansible/playbooks/vars/azure_hana_media.yaml
@@ -64,13 +64,13 @@ cp ansible/playbooks/vars/azure_hana_media.example.yaml ansible/playbooks/vars/a
 Once these steps are completed, it should be possible to run the `build.sh` script to create the infrastructure and install HANA on both VMs.
 
 ```shell
-bash build.sh
+./build.sh -k <SECRET_FOLDER>/id_rsa_cloud
 ```
 
 The destruction of the infrastructure, including the de-registration of SLES, can be conducted with the `destroy.sh` script.
 
 ```shell
-bash destroy.sh
+./destroy.sh -k <SECRET_FOLDER>/id_rsa_cloud
 ```
 
 ### Manual terraform deployment
@@ -127,6 +127,6 @@ Or to execute a specific action:
 
 ```shell
 cd <THIS_REPO_FOLDER>
-podman run -it -v .:/src -v ~/.azure:/root/.azure -v $(pwd)/secret:/root/.ssh  --entrypoint=./build.sh my-tag
-podman run -it -v .:/src -v ~/.azure:/root/.azure -v $(pwd)/secret:/root/.ssh  --entrypoint=./destroy.sh my-tag
+podman run -it -v .:/src -v ~/.azure:/root/.azure -v $(pwd)/secret:/root/.ssh my-tag ./build.sh -k <SECRET_FOLDER>/id_rsa_cloud
+podman run -it -v .:/src -v ~/.azure:/root/.azure -v $(pwd)/secret:/root/.ssh my-tag ./destroy.sh -k <SECRET_FOLDER>/id_rsa_cloud
 ```

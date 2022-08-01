@@ -1,0 +1,19 @@
+#################################
+# qe-sap-deployments project configuration file
+# Find all the available variables and definitions in the variables.tf file
+#################################
+
+az_region            = "%REGION%"
+vnet_address_range   = "10.10.0.0/16"
+subnet_address_range = "10.10.1.0/24"
+deployment_name = "%DEPLOYMENTNAME%"
+os_image = "%OSVER%"
+public_key  = "%SSHKEY%"
+
+cluster_ssh_pub = "salt://sshkeys/cluster.id_rsa.pub"
+cluster_ssh_key = "salt://sshkeys/cluster.id_rsa"
+provisioner = "off"
+bastion_enabled = false
+hana_name = "vmhana"
+hana_vm_size = "Standard_E4s_v3"
+hana_count = "2"
