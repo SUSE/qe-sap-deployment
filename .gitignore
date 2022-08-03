@@ -29,3 +29,4 @@ terraform/azure/plan.zip
 terraform.apply.log
 terraform.init.log
 terraform.plan.log
+settings.json

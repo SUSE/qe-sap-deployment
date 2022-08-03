@@ -44,12 +44,21 @@
   loop: "{{ sdb_safe.results }}"
   delegate_to: vmhana01
 
+- name: Ensure that sbd configuration file exits
+  ansible.builtin.file:
+    path: /etc/sysconfig/sbd
+    owner: root
+    group: root
+    mode: '0554'
+    state: touch
+    
+
 # Add ALL DISCOVERED iSCSI disks to the config file
 - name: Add disks to sbd config file
   ansible.builtin.lineinfile:
     path: /etc/sysconfig/sbd
     regexp: '^SBD_DEVICE='
-    line: "SBD_DEVICE=\"{{ sbd_list | join(';') }}\""
+    line: "SBD_DEVICE={{ sbd_list | join(';') }}"
 
 # Add other required lines to the sdb config file and create
 - name: Set pacemaker and start mode in sbd config file
