@@ -91,6 +91,7 @@ resource "aws_instance" "netweaver" {
   vpc_security_group_ids      = [var.security_group_id]
   availability_zone           = element(var.availability_zones, count.index % 2)
   source_dest_check           = false
+  user_data                   = templatefile("${path.root}/adminuser.tpl", { username = var.common_variables["authorized_user"], publickey = var.common_variables["public_key"] })
 
   root_block_device {
     volume_type = "gp2"
@@ -119,7 +120,7 @@ module "netweaver_on_destroy" {
   source       = "../../../generic_modules/on_destroy"
   node_count   = local.vm_count
   instance_ids = aws_instance.netweaver.*.id
-  user         = "ec2-user"
+  user         = var.common_variables["authorized_user"]
   private_key  = var.common_variables["private_key"]
   public_ips   = aws_instance.netweaver.*.public_ip
   dependencies = concat(

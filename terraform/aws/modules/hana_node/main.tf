@@ -57,6 +57,7 @@ resource "aws_instance" "hana" {
   vpc_security_group_ids      = [var.security_group_id]
   availability_zone           = element(var.availability_zones, count.index)
   source_dest_check           = false
+  user_data                   = templatefile("${path.root}/adminuser.tpl", { username = var.common_variables["authorized_user"], publickey = var.common_variables["public_key"] })
 
   root_block_device {
     volume_type = "gp2"
@@ -84,7 +85,7 @@ module "hana_on_destroy" {
   source       = "../../../generic_modules/on_destroy"
   node_count   = var.hana_count
   instance_ids = aws_instance.hana.*.id
-  user         = "ec2-user"
+  user         = var.common_variables["authorized_user"]
   private_key  = var.common_variables["private_key"]
   public_ips   = aws_instance.hana.*.public_ip
   dependencies = concat(
