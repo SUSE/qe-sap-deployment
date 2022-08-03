@@ -8,6 +8,20 @@
         "tfvars",
         "SLES",
         "cloudadmin",
-        "gcloud"
-    ]
+        "gcloud",
+        "Quickstart",
+        "tvars",
+        "iscsi"
+    ],
+    "languageSettings": [
+        {
+          // use with Markdown files
+          "languageId": "markdown",
+          // Exclude fenced text
+          "ignoreRegExpList": [
+            "`.*`",
+            "```([\\n\\(\\)]|[^(\\$\\$)])*```"
+          ]
+        }
+      ]
 }
