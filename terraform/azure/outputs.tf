@@ -95,6 +95,7 @@ output "netweaver_public_name" {
 }
 
 # bastion
+
 output "bastion_public_ip" {
   value = module.bastion.public_ip
 }
@@ -103,10 +104,11 @@ output "bastion_public_ip" {
 resource "local_file" "ansible_inventory" {
   content = templatefile("inventory.tmpl",
     {
-      hana-name  = module.hana_node.cluster_nodes_name[0],
-      hana-pip   = module.hana_node.cluster_nodes_public_ip[0],
-      iscsi-name = module.iscsi_server.iscsisrv_name,
-      iscsi-pip  = module.iscsi_server.iscsisrv_public_ip
+      hana-name     = module.hana_node.cluster_nodes_name[0],
+      hana-pip      = module.hana_node.cluster_nodes_public_ip[0],
+      iscsi-name    = module.iscsi_server.iscsisrv_name,
+      iscsi-pip     = module.iscsi_server.iscsisrv_public_ip,
+      iscsi-enabled = local.iscsi_enabled
   })
   filename = "inventory.yaml"
 }
