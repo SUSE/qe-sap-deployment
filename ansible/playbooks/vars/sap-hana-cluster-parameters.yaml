@@ -1,0 +1,4 @@
+primary_node: vmhana01
+secondary_node: vmhana02
+hana_sid: HDB
+hana_instance: 00

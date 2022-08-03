@@ -1,0 +1,28 @@
+---
+- hosts: hana
+  remote_user: cloudadmin
+  become: true
+  become_user: root
+  vars:
+    provider: azure # only provider for now
+  
+  handlers:
+  - name: Restart systemd daemon
+    ansible.builtin.systemd:
+      daemon_reload: yes
+
+  tasks:
+
+  - name: SBD Cluster [azure]
+    ansible.builtin.include_tasks: ./tasks/azure-cluster-bootstrap.yaml
+    when: provider == "azure"
+    tags: bootstrap
+
+  - name: Add HANA to cluster [azure]
+    ansible.builtin.include_tasks: ./tasks/azure-cluster-hana.yaml
+    when:
+      - provider == "azure"
+      - ansible_hostname == 'vmhana01'
+    tags: hana_cluster
+
+ 

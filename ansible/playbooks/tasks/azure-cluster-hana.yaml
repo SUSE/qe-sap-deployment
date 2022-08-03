@@ -1,0 +1,98 @@
+---
+- name: Get cluster status
+  ansible.builtin.command: crm configure show
+  register: hana_crm_mon_xml 
+  changed_when: no
+
+- name: Set crm facts
+  ansible.builtin.set_fact:
+    crm_maintainence_mode: "{{ (hana_crm_mon_xml.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] }}"
+    hana_topology_clone: "{{ hana_crm_mon_xml.stdout | regex_search('clone cln_SAPHanaTopology') }}"
+    hana_topology_resource: "{{ hana_crm_mon_xml.stdout | regex_search('primitive rsc_SAPHanaTopology') }}"
+    hana_resource_clone: "{{ hana_crm_mon_xml.stdout | regex_search('ms msl_SAPHana_') }}"
+    hana_resource: "{{ hana_crm_mon_xml.stdout | regex_search('primitive rsc_SAPHana_') }}"
+    ip_resource: "{{ hana_crm_mon_xml.stdout | regex_search('primitive rsc_ip_') }}"
+    ip_nc: "{{ hana_crm_mon_xml.stdout | regex_search('primitive rsc_nc_') }}"
+    ip_grp: "{{ hana_crm_mon_xml.stdout | regex_search('group g_ip_') }}"
+    ip_colo: "{{ hana_crm_mon_xml.stdout | regex_search('colocation col_saphana_ip_') }}"
+    order: "{{ hana_crm_mon_xml.stdout | regex_search('order ord_SAPHana_') }}"
+    resource_stickiness: "{{ (hana_crm_mon_xml.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1' ))[0] }}"
+    migration_threshold: "{{ (hana_crm_mon_xml.stdout | regex_search('migration-threshold=([0-9]*)', '\\1' ))[0] }}"
+  when: ansible_hostname == 'vmhana01'
+  changed_when: no
+
+- name: Ensure maintainence mode is active
+  ansible.builtin.command: crm configure property maintenance-mode=true
+  when: crm_maintainence_mode is false
+    
+- name: Create HANA topology resource
+  ansible.builtin.command: crm configure primitive rsc_SAPHanaTopology_HDB_HDB00 ocf:suse:SAPHanaTopology operations \$id="rsc_sap2_HDB_HDB00-operations" op monitor interval="10" timeout="600" op start interval="0" timeout="600" op stop interval="0" timeout="300" params SID="HDB" InstanceNumber="00" 
+  when: hana_topology_resource == ''
+
+- name: Create HANA topology clone
+  ansible.builtin.command: crm configure clone cln_SAPHanaTopology_HDB_HDB00 rsc_SAPHanaTopology_HDB_HDB00 meta clone-node-max="1" target-role="Started" interleave="true"
+  when: hana_topology_clone == ''
+
+- name: Create HANA resource
+  ansible.builtin.command: crm configure primitive rsc_SAPHana_HDB_HDB00 ocf:suse:SAPHana operations \$id="rsc_sap_HDB_HDB00-operations" op start interval="0" timeout="3600" op stop interval="0" timeout="3600" op promote interval="0" timeout="3600" op monitor interval="60" role="Master" timeout="700" op monitor interval="61" role="Slave" timeout="700" params SID="HDB" InstanceNumber="00" PREFER_SITE_TAKEOVER="true" DUPLICATE_PRIMARY_TIMEOUT="7200" AUTOMATED_REGISTER="false" 
+  when: hana_resource == ''
+
+- name: Create HANA resource clone
+  ansible.builtin.command: crm configure ms msl_SAPHana_HDB_HDB00 rsc_SAPHana_HDB_HDB00 meta notify="true" clone-max="2" clone-node-max="1" target-role="Started" interleave="true" 
+  when: hana_resource_clone == ''
+
+- name: Create IP resource
+  ansible.builtin.command: crm configure primitive rsc_ip_HDB_HDB00 ocf:heartbeat:IPaddr2 meta target-role="Started" operations \$id="rsc_ip_HDB_HDB00-operations" op monitor interval="10s" timeout="20s" params ip="10.10.1.13"
+  when: ip_resource == ''
+
+- name: Create netcat resource
+  ansible.builtin.command: crm configure primitive rsc_nc_HDB_HDB00 azure-lb port=62503 meta resource-stickiness=0
+  when: ip_nc == ''
+
+- name: Configure IP group
+  ansible.builtin.command: crm configure group g_ip_HDB_HDB00 rsc_ip_HDB_HDB00 rsc_nc_HDB_HDB00
+  when: ip_grp == ''
+
+- name: Configure hana/IP colocation
+  ansible.builtin.command: 'crm configure colocation col_saphana_ip_HDB_HDB00 4000: g_ip_HDB_HDB00:Started msl_SAPHana_HDB_HDB00:Master'
+  when: ip_colo == ''
+
+- name: Configure order
+  ansible.builtin.command: 'crm configure order ord_SAPHana_HDB_HDB00 Optional: cln_SAPHanaTopology_HDB_HDB00 msl_SAPHana_HDB_HDB00'
+  when: order == ''
+
+- name: Wait for cluster to settle
+  ansible.builtin.pause:
+    seconds: 30
+
+# Assume that hana resource needs a cleanup
+- name: Cleanup
+  ansible.builtin.command: crm resource cleanup rsc_SAPHana_HDB_HDB00
+
+- name: Wait for cluster to settle
+  ansible.builtin.pause:
+    seconds: 30
+
+# Get current maintainence state
+- name: Refresh cluster status
+  ansible.builtin.command: crm configure show
+  register: refreshed_hana_crm_mon_xml 
+  changed_when: no
+
+- name: Set crm facts
+  ansible.builtin.set_fact:
+    refreshed_crm_maintainence_mode: "{{ (refreshed_hana_crm_mon_xml.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] }}"
+  changed_when: no
+
+- name: Ensure maintainence mode is disabled
+  ansible.builtin.command: crm configure property maintenance-mode=false
+  when: refreshed_crm_maintainence_mode is true
+
+- name: Ensure resource-stickiness is configured
+  ansible.builtin.command: crm configure rsc_defaults resource-stickiness=1000
+  when: resource_stickiness != '1000'
+
+- name: Ensure migration-threshold is configured
+  ansible.builtin.command: crm configure rsc_defaults migration-threshold=5000
+  when: migration_threshold != '1000'
+
