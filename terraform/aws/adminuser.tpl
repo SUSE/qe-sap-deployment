@@ -1,8 +1,8 @@
-#cloud-config to deploy cloudadmin user in EC2 instances
+#cloud-config to deploy the admin user in EC2 instances
 cloud_final_modules:
 - [users-groups,always]
 users:
-  - name: cloudadmin
+  - name: ${username}
     groups: [ wheel ]
     sudo:
       - "ALL=(ALL) NOPASSWD:ALL"
