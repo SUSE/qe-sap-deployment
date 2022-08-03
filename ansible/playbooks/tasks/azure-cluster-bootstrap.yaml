@@ -1,0 +1,190 @@
+---
+#This collection of tasks bootstraps the cluster following guidance from
+#https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/high-availability-guide-suse-pacemaker
+
+- name: Ensure cluster dependencies are installed
+  community.general.zypper:
+    name: "{{item}}" # Caution, no version control here (yet)
+    state: present
+  loop:
+    - socat
+    - resource-agents
+#    
+#- name: Get package information
+#  package_facts:
+#    manager: "auto"
+
+# The code needs to decide if it is necessary to set DefaultTasksMax to 4096.  
+# The value may be set to a larger or smaller integer or infinity
+- name: Get DefaultTasksMax value
+  ansible.builtin.command: systemctl --no-pager show 
+  register: systemd_result
+  changed_when: no
+
+- name: Check max tasks infinity
+  ansible.builtin.set_fact:
+    MaxTasks: infinity
+  loop: "{{ systemd_result.stdout_lines }}"
+  when: item is search("DefaultTasksMax=infinity")
+
+- name: Check max tasks integer
+  ansible.builtin.set_fact:
+    MaxTasksInt: "{{ item | split('=') | last }}"
+  loop: "{{ systemd_result.stdout_lines }}"
+  when: item is search("DefaultTasksMax=") and item is not search("DefaultTasksMax=infinity")
+
+- name: Set DefaultTasksMax
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: '^DefaultTasksMax='
+    line: 'DefaultTasksMax=4096'
+    state: present
+    backup: yes
+  when: MaxTasks is defined and MaxTasks is not match('infinity') 
+
+- name: Set DefaultTasksMax
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: '^DefaultTasksMax='
+    line: 'DefaultTasksMax=4096'
+    state: present
+    backup: yes
+  when: MaxTasksInt is defined and MaxTasksInt | int < 4096
+
+- name: Flush handlers
+  meta: flush_handlers   
+
+- name: Ensure 'CLOUD_NETCONFIG_MANAGE' is disabled for eth0
+  ansible.builtin.lineinfile:
+    path: /etc/sysconfig/network/ifcfg-eth0
+    regexp: '^CLOUD_NETCONFIG_MANAGE='
+    line: 'CLOUD_NETCONFIG_MANAGE="no"'
+    backup: yes
+
+- name: Slurp SBD config
+  ansible.builtin.slurp:
+    src: /etc/sysconfig/sbd
+  register: sbd_slurp
+
+- name: Set SBD set_fact
+  ansible.builtin.set_fact:
+    sbd_paths:  "{{ sbd_slurp['content'] | b64decode | regex_findall('SBD_DEVICE=(.+)') | last }}"
+  
+- name: Create the cluster on primary
+  ansible.builtin.command:
+    cmd: "crm cluster init -y -n qe-cluster -s {{ sbd_paths }} -w softdog -i eth0 -u" 
+    creates: /etc/corosync/corosync.conf
+  when: ansible_hostname == 'vmhana01'
+
+  #check crm status
+
+- name: Check the cluster on primary
+  ansible.builtin.command:
+    cmd: "crm status"     
+  when: ansible_hostname == 'vmhana01'
+  changed_when: no
+
+- name: Join the cluster
+  ansible.builtin.command:
+    cmd: "crm cluster join -y -c vmhana01 -i eth0" 
+    creates: /etc/corosync/corosync.conf
+  when: ansible_hostname == 'vmhana02'
+  
+- name: Check the cluster on secondary
+  ansible.builtin.command:
+    cmd: "crm status"     
+  when: ansible_hostname == 'vmhana02'
+  changed_when: no  
+
+- name: Ensure correct corosync parameters are set
+  ansible.builtin.lineinfile:
+    path: /etc/corosync/corosync.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backrefs: yes
+    backup: yes
+  with_items:
+    - { 'regexp': '(.*)(token:).*', 'line': '\g<1>\g<2> 30000' }
+    - { 'regexp': '(.*)(token_retransmits_before_loss_const:).*', 'line': '\g<1>\g<2> 10' }
+    - { 'regexp': '(.*)(join:).*', 'line': '\g<1>\g<2> 60' }
+    - { 'regexp': '(.*)(consensus:).*', 'line': '\g<1>\g<2> 36000' }
+    - { 'regexp': '(.*)(max_messages:).*', 'line': '\g<1>\g<2> 20' }
+    - { 'regexp': '(.*)(expected_votes:).*', 'line': '\g<1>\g<2> 2' }
+    - { 'regexp': '(.*)(two_node:).*', 'line': '\g<1>\g<2> 1' }
+  # The default stonith device must be deleted, first it must be asserted that it exists  
+
+- name: Check for pervious ansible creation of stonith devices
+  ansible.builtin.file:
+    path: /var/lib/qedep/sbd
+    state: file
+  check_mode: yes
+  register: sbd_file_check
+  changed_when: no
+  failed_when: no
+  when: ansible_hostname == 'vmhana01'
+
+- name: Set stonith state facts
+  ansible.builtin.set_fact:
+    # The crm output comprises of spaces and tabs.  The below regexp removes all the spaces to make
+    # it a little easier to split.  Test version of crm is crmsh-4.3.1+20220321.bd33abac-150200.5.77.1.noarch
+    sbd_tracer: "{{ sbd_file_check.state }}"
+  when: ansible_hostname == 'vmhana01'
+
+#Split rebuild 
+- name: Rebuild stonith device
+  ansible.builtin.include_tasks: ./rebuild-stonith.yaml
+  when:
+    - ansible_hostname == 'vmhana01'
+    - sbd_tracer == 'absent'
+
+- name: Get cluster status
+  ansible.builtin.command: crm_mon --output-as xml
+  register: pre_crm_mon_xml 
+  changed_when: no
+  when: ansible_hostname == 'vmhana01'
+  
+- name: Set crm maintainence facts
+  ansible.builtin.set_fact:
+    crm_maintainence_mode: "{{ (pre_crm_mon_xml.stdout | regex_search('maintenance-mode=\"([a-z]*)\"', '\\1' ))[0] }}"
+    rsc_azure_events: "{{ pre_crm_mon_xml.stdout | regex_search('resource id=\"rsc_azure-events\"') }}"
+    cln_azure_events: "{{ pre_crm_mon_xml.stdout | regex_search('clone id=\"cln_azure-events\"') }}"
+  when: ansible_hostname == 'vmhana01'
+
+- name: Ensure maintainence mode is active
+  ansible.builtin.command: crm configure property maintenance-mode=true
+  when:
+    - ansible_hostname == 'vmhana01'
+    - crm_maintainence_mode is false
+
+- name: Add Azure scheduled events to cluster
+  ansible.builtin.command: crm configure primitive rsc_azure-events ocf:heartbeat:azure-events op monitor interval=10s
+  when:
+    - inventory_hostname == 'vmhana01'
+    - rsc_azure_events == ''
+
+- name: Clone Azure scheduled events
+  ansible.builtin.command: crm configure clone cln_azure-events rsc_azure-events
+  when:
+    - inventory_hostname == 'vmhana01'
+    - cln_azure_events == ''
+
+- name: Get cluster status
+  ansible.builtin.command: crm_mon --output-as xml
+  register: post_crm_mon_xml 
+  changed_when: no
+  when: ansible_hostname == 'vmhana01'
+
+- name: Reset crm maintainence facts
+  ansible.builtin.set_fact:
+    crm_maintainence_mode: "{{ (post_crm_mon_xml .stdout | regex_search('maintenance-mode=\"([a-z]*)\"', '\\1' ))[0] }}"
+    rsc_azure_events: "{{ post_crm_mon_xml .stdout | regex_search('resource id=\"rsc_azure-events\"') }}"
+    cln_azure_events: "{{ post_crm_mon_xml .stdout | regex_search('clone id=\"cln_azure-events\"') }}"
+  when: ansible_hostname == 'vmhana01'
+
+- name: Ensure maintainence mode is deactivated
+  ansible.builtin.command: crm configure property maintenance-mode=false
+  when:
+    - ansible_hostname == 'vmhana01'
+    - crm_maintainence_mode is true
+
+

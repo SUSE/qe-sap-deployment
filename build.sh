@@ -152,3 +152,4 @@ ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/sap-hana-download-media.yaml
 ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/sap-hana-install.yaml 
 ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/sap-hana-system-replication.yaml
 ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/sap-hana-system-replication-hooks.yaml
+ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/sap-hana-cluster.yaml

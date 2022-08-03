@@ -1,0 +1,46 @@
+---
+- name: Check for stonith device
+  ansible.builtin.command:
+    cmd: crm resource status
+  register: sbd_status
+  changed_when: no
+
+- name: Set stonith device facts
+  ansible.builtin.set_fact:
+    # The crm output comprises of spaces and tabs.  The below regexp removes all the spaces to make
+    # it a little easier to split.  Test version of crm is crmsh-4.3.1+20220321.bd33abac-150200.5.77.1.noarch
+    sbd_device_name:   "{{ (sbd_status.stdout | regex_replace(' *', '') | split('\t') | first ) }}"
+    sbd_device_status: "{{ (sbd_status.stdout | regex_replace(' *', '') | split('\t') | last ) }}"
+  when:
+    - sbd_status is defined
+    - sbd_status.stdout_lines|length == 1
+  # The command should bring back only 1 line therefore anyother value than 1 is a failure!
+
+- name: Ensure stonith device is stopped
+  ansible.builtin.command:
+    cmd: "crm resource stop {{ sbd_device_name }}" 
+  register: sbd_status
+  when: sbd_device_status == 'Started'
+
+- name: Remove stonith device
+  ansible.builtin.command:
+    cmd: "crm configure delete {{ sbd_device_name }}"
+  when: sbd_device_name != 'NOresourcesconfigured' #If no stonith was found 'NOresourcesconfigured' should be registered in {{ sbd_device_name }}
+
+- name: Create new SBD stonith device
+  ansible.builtin.command:
+    cmd: 'sudo crm configure primitive stonith-sbd stonith:external/sbd params pcmk_delay_max="15" op monitor interval="600" timeout="15"'
+  register: create_stonith
+
+  # When the stonith device is changed the file /var/lib/sbd is changed
+- name: Write status file
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: "{{ item.state }}"
+    owner: root
+    group: root
+    mode: '0700'
+  when: create_stonith.changed
+  with_items:
+   - { 'path': '/var/lib/qedep',     'state': 'directory' }
+   - { 'path': '/var/lib/qedep/sbd', 'state': 'touch' }
