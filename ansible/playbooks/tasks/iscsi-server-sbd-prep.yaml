@@ -39,8 +39,6 @@
       - { 'command': 'targetcli backstores/fileio create {{ backstore_name }} /srv/sbd/{{ backstore_name }} 50M write_back=false', 'creates': '/srv/sbd/{{ backstore_name }}' } 
       - { 'command': 'targetcli iscsi/ create {{ srv_iqn }}', 'creates': '/sys/kernel/config/target/iscsi/{{ srv_iqn }}' }
       - { 'command': 'targetcli iscsi/{{ srv_iqn }}/tpg1/luns/ create /backstores/fileio/{{ backstore_name }}', 'creates': '/sys/kernel/config/target/iscsi/{{ srv_iqn }}/tpgt_1/lun/lun_0' }
-      #- { 'command': 'targetcli iscsi/{{ srv_iqn }}/tpg1/acls/ create {{ cli01_iqn }}', 'creates': '/sys/kernel/config/target/iscsi/{{ srv_iqn }}/tpgt_1/acls/{{ cli01_iqn }}' }
-      #- { 'command': 'targetcli iscsi/{{ srv_iqn }}/tpg1/acls/ create {{ cli02_iqn }}', 'creates': '/sys/kernel/config/target/iscsi/{{ srv_iqn }}/tpgt_1/acls/{{ cli02_iqn }}' }
 
   - name: Configure client ACLs
     ansible.builtin.command: 

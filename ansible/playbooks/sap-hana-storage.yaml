@@ -4,7 +4,8 @@
   become: true
   become_user : root
   pre_tasks:
-    - include_vars: ./vars/hana_storage_profile.yaml
+    - name: Source hana storage variables
+      include_vars: ./vars/hana_storage_profile.yaml
 
   tasks:
 
