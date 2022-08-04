@@ -14,6 +14,9 @@ jobs:
     name: 'Markdown lint'
     runs-on: ubuntu-latest
     environment: production
+    strategy:
+      matrix:
+        docfile: ['README.md', 'terraform/aws/README.md', 'terraform/azure/README.md']
 
     steps:
     # Checkout the repository to the GitHub Actions runner
@@ -23,7 +26,7 @@ jobs:
     - name: markdownlint-cli
       uses: nosborn/github-action-markdown-cli@v3.1.0
       with:
-        files: README.md
+        files: ${{ matrix.docfile }}
         config_file: .markdownlint.json
 
     - name: Spell-check Markdown files
@@ -32,4 +35,4 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         incremental_files_only: false
         config: 'cspell.json'
-        files: 'README.md'
+        files: ${{ matrix.docfile }}

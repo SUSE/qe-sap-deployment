@@ -42,11 +42,9 @@ For detailed information and deployment options have a look at `terraform.tfvars
     ssh-keygen -f ../salt/sshkeys/cluster.id_rsa -q -P ""
     ```
 
-	The key files need to have same name as defined in [terraform.tfvars](./terraform.tfvars.example).
+    The key files need to have same name as defined in [terraform.tfvars](./terraform.tfvars.example).
 
-3) **[Adapt saltstack pillars manually](../pillar_examples/)** or set the `pre_deployment` variable to automatically copy the example pillar files.
-
-4) **Configure Terraform access to GCP**
+3) **Configure Terraform access to GCP**
 
     - First, a GCP account with an active subscription is required.
 
@@ -64,7 +62,7 @@ For detailed information and deployment options have a look at `terraform.tfvars
       export GOOGLE_APPLICATION_CREDENTIALS=/path/to/<PROJECT-ID>-xxxxxxxxx.json
       ```
 
-5) **Deploy**
+4) **Deploy**
 
     The deployment can now be started with:
 
@@ -117,7 +115,7 @@ This Terraform configuration deploys SAP HANA in a High-Availability Cluster on 
 The infrastructure deployed includes:
 
 * virtual network
-* subnets within the virtual network.
+* subnets within the virtual network
 * firewall group with rules for access to the instances created in the subnet. Only allowed external network traffic is for the protocols: SSH, HTTP, HTTPS, and for the HAWK service. Internally to the subnet, all traffic is allowed.
 * Public IP access for the virtual machines (if enabled)
 * compute instance groups
@@ -126,7 +124,7 @@ The infrastructure deployed includes:
 * block devices
 * shared filestore filesystems (if enabled)
 
-By default, this configuration will create 3 instances in GCP: one for support services (mainly iSCSI as most other services - DHCP, NTP, etc - are provided by Google) and 2 cluster nodes, but this can be changed to deploy more cluster nodes as needed.
+By default, this configuration creates 3 instances in GCP: one for support services (mainly iSCSI as most other services - DHCP, NTP, etc - are provided by Google) and 2 cluster nodes, but this can be changed to deploy more cluster nodes as needed.
 
 # Customization
 
