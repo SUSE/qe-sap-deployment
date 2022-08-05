@@ -8,6 +8,10 @@ jobs:
     steps:
       # Important: This sets up your GITHUB_WORKSPACE environment variable
       - uses: actions/checkout@v2
+      
+      - name: Install tox
+        run: |
+          python3 -m pip install --upgrade -r requirements.txt
 
       - name: Run ansible-lint
         uses: ansible-community/ansible-lint-action@main
