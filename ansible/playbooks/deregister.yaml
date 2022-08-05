@@ -28,12 +28,12 @@
     - name: Search for old zypper files
       ansible.builtin.find:
         paths: ["/etc/zypp/credentials.d", "/etc/zypp/repos.d", "/etc/zypp/services.d/*"]
-      register: Files_to_delete
+      register: files_to_delete
       when: rcg.rc != 0
 
     - name: Append delete list
       set_fact:
-        Files_to_delete: "{{ Files_to_delete + ['/etc/SUSEConnect'] }}"
+        files_to_delete: "{{ Files_to_delete + ['/etc/SUSEConnect'] }}"
       when: rcg.rc != 0
 
     - name: File Cleanup
