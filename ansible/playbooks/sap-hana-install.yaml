@@ -4,6 +4,7 @@
   become: true
   become_user : root
   pre_tasks:
-    - include_vars: ./vars/sap-hana-install_vars.yaml
+    - name: Source hana install variables
+      include_vars: ./vars/sap-hana-install_vars.yaml
   roles:
     - { role: ../roles/sap_hana_install }

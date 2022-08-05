@@ -4,6 +4,7 @@
   become: true
   become_user: root
   pre_tasks:
-    - include_vars: ./vars/hana_hsr_parameters.yaml
+    - name: Include hana system replication variables
+      include_vars: ./vars/hana_hsr_parameters.yaml
   roles:
     - { role: ../roles/sap_ha_install_hana_hsr }

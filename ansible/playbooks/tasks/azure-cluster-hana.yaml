@@ -27,45 +27,47 @@
     
 - name: Create HANA topology resource
   ansible.builtin.command: crm configure primitive rsc_SAPHanaTopology_HDB_HDB00 ocf:suse:SAPHanaTopology operations \$id="rsc_sap2_HDB_HDB00-operations" op monitor interval="10" timeout="600" op start interval="0" timeout="600" op stop interval="0" timeout="300" params SID="HDB" InstanceNumber="00" 
-  when: hana_topology_resource == ''
+  when: hana_topology_resource | length == 0
 
 - name: Create HANA topology clone
   ansible.builtin.command: crm configure clone cln_SAPHanaTopology_HDB_HDB00 rsc_SAPHanaTopology_HDB_HDB00 meta clone-node-max="1" target-role="Started" interleave="true"
-  when: hana_topology_clone == ''
+  when: hana_topology_clone | length == 0
 
 - name: Create HANA resource
   ansible.builtin.command: crm configure primitive rsc_SAPHana_HDB_HDB00 ocf:suse:SAPHana operations \$id="rsc_sap_HDB_HDB00-operations" op start interval="0" timeout="3600" op stop interval="0" timeout="3600" op promote interval="0" timeout="3600" op monitor interval="60" role="Master" timeout="700" op monitor interval="61" role="Slave" timeout="700" params SID="HDB" InstanceNumber="00" PREFER_SITE_TAKEOVER="true" DUPLICATE_PRIMARY_TIMEOUT="7200" AUTOMATED_REGISTER="false" 
-  when: hana_resource == ''
+  when: hana_resource | length == 0
 
 - name: Create HANA resource clone
   ansible.builtin.command: crm configure ms msl_SAPHana_HDB_HDB00 rsc_SAPHana_HDB_HDB00 meta notify="true" clone-max="2" clone-node-max="1" target-role="Started" interleave="true" 
-  when: hana_resource_clone == ''
+  when: hana_resource_clone | length == 0
 
 - name: Create IP resource
-  ansible.builtin.command: crm configure primitive rsc_ip_HDB_HDB00 ocf:heartbeat:IPaddr2 meta target-role="Started" operations \$id="rsc_ip_HDB_HDB00-operations" op monitor interval="10s" timeout="20s" params ip="10.10.1.13"
-  when: ip_resource == ''
+  ansible.builtin.command: crm configure primitive rsc_ip_HDB_HDB00 ocf:heartbeat:IPaddr2 meta target-role="Started" operations \$id="rsc_ip_HDB_HDB00-operations" op monitor interval="10s" timeout="20s" params ip="10.10.1.12"
+  when: ip_resource | length == 0
 
-- name: Create netcat resource
-  ansible.builtin.command: crm configure primitive rsc_nc_HDB_HDB00 azure-lb port=62503 meta resource-stickiness=0
-  when: ip_nc == ''
+- name: Create socat resource
+  ansible.builtin.command: crm configure primitive rsc_socat_HDB_HDB00 azure-lb params port=62500 op monitor timeout=20 interval=10 op_params depth=0 meta resource-stickiness=0
+  when: ip_nc | length == 0
 
 - name: Configure IP group
-  ansible.builtin.command: crm configure group g_ip_HDB_HDB00 rsc_ip_HDB_HDB00 rsc_nc_HDB_HDB00
-  when: ip_grp == ''
+  ansible.builtin.command: crm configure group g_ip_HDB_HDB00 rsc_ip_HDB_HDB00 rsc_socat_HDB_HDB00
+  when: ip_grp | length == 0
 
 - name: Configure hana/IP colocation
   ansible.builtin.command: 'crm configure colocation col_saphana_ip_HDB_HDB00 4000: g_ip_HDB_HDB00:Started msl_SAPHana_HDB_HDB00:Master'
-  when: ip_colo == ''
+  when: ip_colo | length == 0
 
 - name: Configure order
   ansible.builtin.command: 'crm configure order ord_SAPHana_HDB_HDB00 Optional: cln_SAPHanaTopology_HDB_HDB00 msl_SAPHana_HDB_HDB00'
-  when: order == ''
+  when: order | length == 0
 
 - name: Wait for cluster to settle
   ansible.builtin.pause:
     seconds: 30
 
 # Assume that hana resource needs a cleanup
+# There really should be a way of checking if this needs to be run!
+# Plus the linter doesn't like it!
 - name: Cleanup
   ansible.builtin.command: crm resource cleanup rsc_SAPHana_HDB_HDB00
 

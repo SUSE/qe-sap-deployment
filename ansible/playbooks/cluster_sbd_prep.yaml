@@ -4,8 +4,10 @@
   become: true
   become_user: root
   pre_tasks:
-    - ansible.builtin.include_vars: ./vars/iscsi-storage-profile.yaml
-    - ansible.builtin.include_vars: ./vars/sbd-parameters.yaml
+    - name: include isscsi storage profile
+      ansible.builtin.include_vars: ./vars/iscsi-storage-profile.yaml
+    - name: include sdb vars
+      ansible.builtin.include_vars: ./vars/sbd-parameters.yaml
   vars:
     iscsi_prefix: /dev/disk/by-id/scsi-
 

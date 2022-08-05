@@ -9,12 +9,12 @@
   - name: Ensure all hosts are present in all hosts /etc/hosts file
     ansible.builtin.lineinfile:
       path: "/etc/hosts"
-      regexp: ".*\t{{ hostvars[item]['ansible_hostname']}}\t{{ hostvars[item]['ansible_hostname']}}"
-      line: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}\t{{ hostvars[item]['ansible_hostname']}}\t{{ hostvars[item]['ansible_hostname']}}"
+      regexp: ".*{{ hostvars[item]['ansible_hostname'] }}.*{{ hostvars[item]['ansible_hostname'] }}"
+      line: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}    {{ hostvars[item]['ansible_hostname'] }}    {{ hostvars[item]['ansible_hostname'] }}"
       state: present
       backup: yes
     when: ansible_hostname != item or ansible_hostname == item 
-    with_items: "{{groups['all']}}"
+    with_items: "{{ groups['all'] }}"
 
   - name: Ensure that /root/.ssh exists on hana
     ansible.builtin.file:
@@ -41,6 +41,7 @@
       path: /root/.ssh/authorized_keys
       line: "{{ hostvars[item].ssh_keys.public_key }}"
       create: yes
+      mode: '0600'
     with_items: "{{ groups['hana'] }}"
     when: inventory_hostname in groups.hana
 
@@ -63,13 +64,15 @@
   - name: Populate /root/.ssh/known_hosts
     ansible.builtin.known_hosts:
       path: /root/.ssh/known_hosts
-      name: "{{ hostvars[idx]['ansible_hostname']}}"
+      name: "{{ hostvars[idx]['ansible_hostname'] }}"
       state: present
-      key:  "{{ hostvars[idx]['ansible_hostname']}},{{ hostvars[idx]['ansible_default_ipv4']['address'] }} {{ (hostvars[idx].pubkeys.content | b64decode | split(' '))[0] }} {{ (hostvars[idx].pubkeys.content | b64decode | split(' '))[1] }}"
+      key:  "{{ hostvars[idx]['ansible_hostname'] }},{{ hostvars[idx]['ansible_default_ipv4']['address'] }} {{ (hostvars[idx].pubkeys.content | b64decode | split(' '))[0] }} {{ (hostvars[idx].pubkeys.content | b64decode | split(' '))[1] }}"
     loop: "{{ groups['hana'] }}"
     loop_control:
       loop_var: idx
     when: inventory_hostname in groups.hana
+
+
       
   
 

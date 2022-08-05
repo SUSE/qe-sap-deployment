@@ -65,6 +65,9 @@
   ansible.builtin.lineinfile:
     create: yes
     path: /etc/sysconfig/sbd
+    owner: root
+    group: root
+    mode: '0644'
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
   loop: 
@@ -76,6 +79,9 @@
   ansible.builtin.lineinfile:
     create: yes
     path: /etc/modules-load.d/softdog.conf
+    owner: root
+    group: root
+    mode: '0644'
     regexp: '^softdog'
     line: 'softdog'
 

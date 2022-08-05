@@ -4,7 +4,7 @@
 
 - name: Ensure cluster dependencies are installed
   community.general.zypper:
-    name: "{{item}}" # Caution, no version control here (yet)
+    name: "{{ item }}" # Caution, no version control here (yet)
     state: present
   loop:
     - socat
@@ -23,13 +23,13 @@
 
 - name: Check max tasks infinity
   ansible.builtin.set_fact:
-    MaxTasks: infinity
+    max_tasks: infinity
   loop: "{{ systemd_result.stdout_lines }}"
   when: item is search("DefaultTasksMax=infinity")
 
 - name: Check max tasks integer
   ansible.builtin.set_fact:
-    MaxTasksInt: "{{ item | split('=') | last }}"
+    max_tasks_int: "{{ item | split('=') | last }}"
   loop: "{{ systemd_result.stdout_lines }}"
   when: item is search("DefaultTasksMax=") and item is not search("DefaultTasksMax=infinity")
 
@@ -40,7 +40,7 @@
     line: 'DefaultTasksMax=4096'
     state: present
     backup: yes
-  when: MaxTasks is defined and MaxTasks is not match('infinity') 
+  when: max_tasks is defined and max_tasks is not match('infinity') 
 
 - name: Set DefaultTasksMax
   ansible.builtin.lineinfile:
@@ -49,7 +49,10 @@
     line: 'DefaultTasksMax=4096'
     state: present
     backup: yes
-  when: MaxTasksInt is defined and MaxTasksInt | int < 4096
+  when:
+    - max_tasks is defined
+    - max_tasks_int is defined 
+    - max_tasks_int | int < 4096
 
 - name: Flush handlers
   meta: flush_handlers   
@@ -160,13 +163,13 @@
   ansible.builtin.command: crm configure primitive rsc_azure-events ocf:heartbeat:azure-events op monitor interval=10s
   when:
     - inventory_hostname == 'vmhana01'
-    - rsc_azure_events == ''
+    - rsc_azure_events | length == 0
 
 - name: Clone Azure scheduled events
   ansible.builtin.command: crm configure clone cln_azure-events rsc_azure-events
   when:
     - inventory_hostname == 'vmhana01'
-    - cln_azure_events == ''
+    - cln_azure_events| length == 0
 
 - name: Get cluster status
   ansible.builtin.command: crm_mon --output-as xml
@@ -185,6 +188,6 @@
   ansible.builtin.command: crm configure property maintenance-mode=false
   when:
     - ansible_hostname == 'vmhana01'
-    - crm_maintainence_mode is true
+    - crm_maintainence_mode is true 
 
 
