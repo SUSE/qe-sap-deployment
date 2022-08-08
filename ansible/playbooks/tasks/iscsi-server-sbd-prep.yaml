@@ -9,13 +9,20 @@
       - python-configshell
       - targetcli
     
-  - name: Install required packages on iscsi server
+  - name: Install required packages on iscsi server SLES 15.3
     community.general.zypper:
       name: "{{ item }}"
       state: present
     with_items:
       - targetcli-fb
       - dbus-1-python
+    when: ansible_distribution_version == '15.3'
+
+  - name: Install required packages on iscsi server SLES 15.4
+    community.general.zypper:
+      name: yast2-iscsi-lio-server
+      state: present
+    when: ansible_distribution_version == '15.4'
     
   - name: Enable the iscsi target service on iscsi server
     ansible.builtin.systemd:

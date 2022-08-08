@@ -12,7 +12,7 @@
     hana_resource_clone: "{{ hana_crm_mon_xml.stdout | regex_search('ms msl_SAPHana_') }}"
     hana_resource: "{{ hana_crm_mon_xml.stdout | regex_search('primitive rsc_SAPHana_') }}"
     ip_resource: "{{ hana_crm_mon_xml.stdout | regex_search('primitive rsc_ip_') }}"
-    ip_nc: "{{ hana_crm_mon_xml.stdout | regex_search('primitive rsc_nc_') }}"
+    ip_nc: "{{ hana_crm_mon_xml.stdout | regex_search('primitive rsc_socat_') }}"
     ip_grp: "{{ hana_crm_mon_xml.stdout | regex_search('group g_ip_') }}"
     ip_colo: "{{ hana_crm_mon_xml.stdout | regex_search('colocation col_saphana_ip_') }}"
     order: "{{ hana_crm_mon_xml.stdout | regex_search('order ord_SAPHana_') }}"
