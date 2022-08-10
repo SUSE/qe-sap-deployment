@@ -9,27 +9,30 @@
       - python-configshell
       - targetcli
     
-  - name: Install required packages on iscsi server SLES 15.3
+  - name: Install iscsi server packages SLES 15.3
     community.general.zypper:
       name: "{{ item }}"
       state: present
-    with_items:
+    loop:
       - targetcli-fb
       - dbus-1-python
     when: ansible_distribution_version == '15.3'
 
-  - name: Install required packages on iscsi server SLES 15.4
+  - name: Install iscsi server packages SLES 15.4
     community.general.zypper:
       name: yast2-iscsi-lio-server
       state: present
     when: ansible_distribution_version == '15.4'
-    
-  - name: Enable the iscsi target service on iscsi server
-    ansible.builtin.systemd:
-      name: targetcli
-      state: started
-      enabled: yes
-    
+
+  - name: Install iscsi server packages SLES 12
+    community.general.zypper:
+      name: "{{ item }}"
+      state: present
+    when: ansible_distribution_major_version == '12'
+    loop:
+      - yast2-iscsi-lio-server
+      - targetcli-fb
+
   - name: Prepare iscsi disks
     vars:
       sap_storage_cloud_type: 'generic'
