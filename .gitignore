@@ -31,3 +31,4 @@ terraform.init.log
 terraform.plan.log
 settings.json
 variables.sh
+justansibuilt.sh

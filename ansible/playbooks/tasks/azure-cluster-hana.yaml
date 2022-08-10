@@ -1,23 +1,23 @@
 ---
 - name: Get cluster status
   ansible.builtin.command: crm configure show
-  register: hana_crm_mon_xml 
+  register: crm_conf_show 
   changed_when: no
 
 - name: Set crm facts
   ansible.builtin.set_fact:
-    crm_maintainence_mode: "{{ (hana_crm_mon_xml.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] }}"
-    hana_topology_clone: "{{ hana_crm_mon_xml.stdout | regex_search('clone cln_SAPHanaTopology') }}"
-    hana_topology_resource: "{{ hana_crm_mon_xml.stdout | regex_search('primitive rsc_SAPHanaTopology') }}"
-    hana_resource_clone: "{{ hana_crm_mon_xml.stdout | regex_search('ms msl_SAPHana_') }}"
-    hana_resource: "{{ hana_crm_mon_xml.stdout | regex_search('primitive rsc_SAPHana_') }}"
-    ip_resource: "{{ hana_crm_mon_xml.stdout | regex_search('primitive rsc_ip_') }}"
-    ip_nc: "{{ hana_crm_mon_xml.stdout | regex_search('primitive rsc_socat_') }}"
-    ip_grp: "{{ hana_crm_mon_xml.stdout | regex_search('group g_ip_') }}"
-    ip_colo: "{{ hana_crm_mon_xml.stdout | regex_search('colocation col_saphana_ip_') }}"
-    order: "{{ hana_crm_mon_xml.stdout | regex_search('order ord_SAPHana_') }}"
-    resource_stickiness: "{{ (hana_crm_mon_xml.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1' ))[0] }}"
-    migration_threshold: "{{ (hana_crm_mon_xml.stdout | regex_search('migration-threshold=([0-9]*)', '\\1' ))[0] }}"
+    crm_maintainence_mode: "{{ (crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] }}"
+    hana_topology_clone: "{{ crm_conf_show.stdout | regex_search('clone cln_SAPHanaTopology') }}"
+    hana_topology_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHanaTopology') }}"
+    hana_resource_clone: "{{ crm_conf_show.stdout | regex_search('ms msl_SAPHana_') }}"
+    hana_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHana_') }}"
+    ip_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_ip_') }}"
+    ip_nc: "{{ crm_conf_show.stdout | regex_search('primitive rsc_socat_') }}"
+    ip_grp: "{{ crm_conf_show.stdout | regex_search('group g_ip_') }}"
+    ip_colo: "{{ crm_conf_show.stdout | regex_search('colocation col_saphana_ip_') }}"
+    order: "{{ crm_conf_show.stdout | regex_search('order ord_SAPHana_') }}"
+    resource_stickiness: "{{ (crm_conf_show.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1' ))[0] }}"
+    migration_threshold: "{{ (crm_conf_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1' ))[0] }}"
   when: ansible_hostname == 'vmhana01'
   changed_when: no
 
@@ -78,12 +78,12 @@
 # Get current maintainence state
 - name: Refresh cluster status
   ansible.builtin.command: crm configure show
-  register: refreshed_hana_crm_mon_xml 
+  register: refreshed_crm_conf_show 
   changed_when: no
 
 - name: Set crm facts
   ansible.builtin.set_fact:
-    refreshed_crm_maintainence_mode: "{{ (refreshed_hana_crm_mon_xml.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] }}"
+    refreshed_crm_maintainence_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] }}"
   changed_when: no
 
 - name: Ensure maintainence mode is disabled
