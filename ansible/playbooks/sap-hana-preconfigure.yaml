@@ -6,9 +6,6 @@
   vars:
     scale_out: False
     use_sapconf: False
-    disabled_daemons:
-      - saptune
-      - tuned
     hana_download_path: /hana/shared/install
     url_timeout: 30
     url_retries_cnt: 5
@@ -16,13 +13,23 @@
     
   tasks:
 
-    # Ensure required installation of required packages
+  # Ensure required installation of required packages
     - name: Ensure libssl 2.1 is installed on distributed Systems
       community.general.zypper:
         name: libssh2-1 # Caution, no version control here (yet)
         state: present
       when: scale_out | bool
 
+    # 3018133 - Linux: Running SAP applications compiled with GCC 10.x
+    - name: Ensure minimum version of GCC10 are installed
+      community.general.zypper:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - 'libgcc_s1>=10.2.1'
+        - 'libstdc++6>=10.2.1'
+        - 'libatomic1>=10.2.1'
+    
     - name: Configure sapconf based systems
       ansible.builtin.include_tasks: ./tasks/sapconf.yaml
       when: use_sapconf | bool
