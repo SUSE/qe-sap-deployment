@@ -1,0 +1,13 @@
+from unittest import mock
+
+from qesap import main
+
+
+def test_destroy(base_args, tmpdir):
+    """
+    Test the most common and simple execution of destroy:
+     - ...
+    """
+    args = base_args(tmpdir)
+    args.append('destroy')
+    assert main(args) == 0
