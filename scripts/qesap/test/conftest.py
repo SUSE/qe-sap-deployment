@@ -4,45 +4,36 @@ import json
 import pytest
 
 
-@pytest.fixture
-def compose_default_subprocess_run_calls():
-    """
-    Compose a standard list of expected calls to subprocess.run
-    """
-    def _callback(acr_name):
-        calls = list()
-        calls.append(mock.call(['mkdir', '/tmp/charts']))
-        calls.append(
-            mock.call(
-                [
-                    "helm",
-                    "pull",
-                    "-d",
-                    "/tmp/charts",
-                    "oci://registry.suse.com/trento/trento-server",
-                ]))
-        calls.append(
-            mock.call(
-                [
-                    "helm",
-                    "push",
-                    "/tmp/charts/something.tgz",
-                    "oci://" + acr_name + "/trento",
-                ]))
-        return calls
-    return _callback
-
 
 @pytest.fixture
-def base_args():
+def base_args(tmpdir):
     """
     Return bare minimal list of arguments to run any sub-command
     Args:
-        x (str): x used for -x
-        output (str): output folder for --output
+        base_dir (str): used for -b
+        config_file (str): used for -c
     """
-    def _callback(basedir):
-        return ['--verbose', '--base-dir', str(basedir)]
+    def _callback(base_dir=None, config_file=None):
+        args = list()
+        args.append('--verbose')
+
+        args.append('--base-dir')
+        if base_dir is None:
+            args.append(str(tmpdir))
+        else:
+            args.append(str(base_dir))
+
+        args.append('--config-file')
+        if config_file is None:
+            config_file_name = str(tmpdir / 'config.yaml')
+            with open(config_file_name, 'w') as file:
+                file.write("")
+            args.append(config_file_name)
+        else:
+            args.append(config_file)
+
+        return args
+
     return _callback
 
 
@@ -125,4 +116,42 @@ def check_multilines():
             if "\\-" in l:
                 return False, "Something like '\\--set' in ["+l+"]. Maybe a missing EOL"
         return (True, '')
+    return _callback
+
+
+@pytest.fixture
+def check_manadatory_args(capsys, tmpdir):
+    '''
+    Given a cli to test and a subcommand string,
+    check that both -c and -b are mandatory
+    '''
+    def _callback(cli_to_test, subcmd):
+        try:
+            cli_to_test([subcmd])
+        except SystemExit:
+            pass
+        captured = capsys.readouterr()
+        if 'error:' not in captured.err:
+            return False
+
+        # Try with b but without c
+        try:
+            cli_to_test(['-b', str(tmpdir), subcmd])
+        except SystemExit:
+            pass
+        captured = capsys.readouterr()
+        if 'error:' not in captured.err:
+            return False
+
+        # Try with c but without b
+        try:
+            cli_to_test(['-c', str(tmpdir), subcmd])
+        except SystemExit:
+            pass
+        captured = capsys.readouterr()
+        if 'error:' not in captured.err:
+            return False
+
+        return True
+
     return _callback

@@ -6,10 +6,11 @@ import os
 import argparse
 import logging
 import sys
-import re
 import subprocess
-import json
-from json.decoder import JSONDecodeError
+import yaml
+from yaml.parser import ParserError
+from yaml.scanner import ScannerError
+from string import Template
 
 
 VERSION  = '0.1'
@@ -101,27 +102,92 @@ def subprocess_run(cmd):
     return (0, stdout)
 
 
-def cmd_configure(configure_file, base_project, dryrun):
+def validate_config(config):
+    log.debug("Configure date:%s", config)
+    if config is None:
+        log.error("Empty config")
+        return False
+
+    if 'terraform' not in config.keys():
+        log.error("Missing key terraform in the config")
+        return False
+
+    if config['terraform'] is None or 'provider' not in config['terraform'].keys():
+        log.error("Missing 'provider' key in the config['terraform']")
+        return False
+
+    if config['terraform']['provider'] is None:
+        log.error("Empty 'provider' in the config")
+        return False
+
+    return True
+
+
+def validate_basedir(basedir, config):
+    terraform_dir = os.path.join(basedir, 'terraform')
+    if not os.path.isdir(terraform_dir):
+        log.error("Missing %s", terraform_dir)
+        return False, None
+    terraform_provider_dir = os.path.join(terraform_dir, config['terraform']['provider'])
+    if not os.path.isdir(terraform_provider_dir):
+        log.error("Missing %s", terraform_provider_dir)
+        return False, None
+    tfvar_template_path = os.path.join(terraform_provider_dir,'terraform.tfvars.template')
+    if not os.path.isfile(tfvar_template_path):
+        return False, None
+    tfvar_path = os.path.join(terraform_provider_dir,'terraform.tfvars')
+
+    return True, {
+    'terraform':terraform_dir,
+    'provider':terraform_provider_dir,
+    'tfvars':tfvar_path,
+    'tfvars_template':tfvar_template_path
+    }
+
+
+def cmd_configure(configure_data, base_project, dryrun):
     """ Main executor for the configure sub-command
 
     Args:
-        configure_file (str): configuration file
+        configure_data (obj): configuration structure
         base_project (str): base project path where to
                       look for the terraform and ansible folder
                       to write all the needed files
-        dryrun (bool): enable dryrun execution mode
+        dryrun (bool): enable dryrun execution mode.
+                       Does not write any file.
 
     Returns:
         int: execution result, 0 means OK. It is mind to be used as script exit code
     """
-    return 0
+
+    # Validations
+    if not validate_config(configure_data):
+        return 1, f"Invalid configuration file content in {configure_data}"
+    res, cfg_paths = validate_basedir(base_project, configure_data)
+    if not res:
+        return 1, f"Invalid folder structure at {base_project}"
+
+    # Just an handy alias
+    tfvar_path = cfg_paths['tfvars']
+
+    # Create tfvars file
+    if dryrun:
+        print(f"Create {tfvar_path}")
+    else:
+        with open(cfg_paths['tfvars_template'], 'r') as f:
+            src = Template(f.read())
+            result = src.substitute(configure_data['terraform'])
+            log.error(result)
+            with open(tfvar_path, 'w', encoding='utf-8') as file:
+                file.write(result)
+    return 0, 'ok'
 
 
-def cmd_deploy(configure_file, base_project, dryrun):
+def cmd_deploy(configure_data, base_project, dryrun):
     """ Main executor for the deploy sub-command
 
     Args:
-        configure_file (str): configuration file
+        configure_data (obj): configuration structure
         base_project (str): base project path where to
                       look for the Terraform and Ansible files
         dryrun (bool): enable dryrun execution mode
@@ -132,11 +198,11 @@ def cmd_deploy(configure_file, base_project, dryrun):
     return 0
 
 
-def cmd_destroy(configure_file, base_project, dryrun):
+def cmd_destroy(configure_data, base_project, dryrun):
     """ Main executor for the deploy sub-command
 
     Args:
-        configure_file (str): configuration file
+        configure_data (obj): configuration structure
         base_project (str): base project path where to
                       look for the Terraform and Ansible files
         dryrun (bool): enable dryrun execution mode
@@ -147,11 +213,11 @@ def cmd_destroy(configure_file, base_project, dryrun):
     return 0
 
 
-def cmd_terraform(configure_file, base_project, dryrun):
+def cmd_terraform(configure_data, base_project, dryrun):
     """ Main executor for the deploy sub-command
 
     Args:
-        configure_file (str): configuration file
+        configure_data (obj): configuration structure
         base_project (str): base project path where to
                       look for the Terraform files
         dryrun (bool): enable dryrun execution mode
@@ -162,11 +228,11 @@ def cmd_terraform(configure_file, base_project, dryrun):
     return 0
 
 
-def cmd_ansible(configure_file, base_project, dryrun):
+def cmd_ansible(configure_data, base_project, dryrun):
     """ Main executor for the deploy sub-command
 
     Args:
-        configure_file (str): configuration file
+        configure_data (obj): configuration structure
         base_project (str): base project path where to
                       look for the Ansible files
         dryrun (bool): enable dryrun execution mode
@@ -175,6 +241,31 @@ def cmd_ansible(configure_file, base_project, dryrun):
         int: execution result, 0 means OK. It is mind to be used as script exit code
     """
     return 0
+
+
+def is_yaml(path):
+    """ argparser validator for YAML files
+
+    Args:
+        path (str)): path of the file to validate
+
+    Raises:
+        argparse.ArgumentTypeError: if the file does not exist
+        or it is not a valid YAML file
+
+    Returns:
+        str: the validated file
+    """
+    if not os.path.isfile(path):
+        #raise SystemExit
+        raise argparse.ArgumentTypeError("is_yaml:" + path + " is not a file")
+
+    with open(path, 'r', encoding='utf-8') as file:
+        try:
+            data = yaml.load(file, Loader=yaml.FullLoader)
+        except (ScannerError, ParserError):
+            raise argparse.ArgumentTypeError("is_yaml:" + path + " is not a valid YAML file")
+    return data
 
 
 def is_dir(path):
@@ -201,16 +292,19 @@ def cli(command_line=None):
     Command line argument parser
     '''
     parser   = argparse.ArgumentParser(description=DESCRIBE)
+
     parser.add_argument('--version', action='version', version=VERSION)
     parser.add_argument('--verbose', action='store_true', help="Increases log verbosity")
     parser.add_argument('--dryrun',  action='store_true', help="Dry run execution mode")
-    parser.add_argument('-c', '--config-file', dest='config_file',
-    type=str,
+
+    parser.add_argument('-c', '--config-file', dest='configfile',
+    type=is_yaml,
+    required=True,
     help="""Input global configuration .yaml file""")
+
     parser.add_argument('-b', '--base-dir', dest='basedir',
     type=is_dir,
     required=True,
-    #default=None,
     help="""Base project folder, used to figure out
     where to write all the generated configuration files and
     where they are stored when it is time to call Terraform and Ansible.
@@ -220,14 +314,15 @@ def cli(command_line=None):
     - ...
     """)
     # Sub-commands
-    subparsers = parser.add_subparsers(dest='command')
+    subparsers = parser.add_subparsers(
+        description='''List of qesap subcommands, each of them is usually associated to a specific procedure''',
+        dest='command')
 
-    parser_configure = subparsers.add_parser('configure')
-    parser_deploy = subparsers.add_parser('deploy')
-    parser_destroy = subparsers.add_parser('destroy')
-    parser_terraform = subparsers.add_parser('terraform')
-    parser_ansible = subparsers.add_parser('ansible')
-
+    parser_configure = subparsers.add_parser('configure', help="Generate all Terraform, Ansible configuration file starting from the main global YAML configuration file")
+    parser_deploy = subparsers.add_parser('deploy', help="Run, in sequence, the Terraform and Ansible deployment steps")
+    parser_destroy = subparsers.add_parser('destroy', help="Run, in sequence, the Ansible and Terraform destroy steps")
+    parser_terraform = subparsers.add_parser('terraform', help="Only run the Terraform part of the deployment")
+    parser_ansible = subparsers.add_parser('ansible', help="Only run the Ansible part of the deployment")
 
     parsed_args = parser.parse_args(command_line)
     return parsed_args
@@ -248,36 +343,37 @@ def main(command_line=None):
 
     if parsed_args.command == "configure":
         log.info("Configuring...")
-        return cmd_configure(
-            parsed_args.config_file,
+        res = cmd_configure(
+            parsed_args.configfile,
             parsed_args.basedir,
             parsed_args.dryrun
         )
+        return res[0]
     elif parsed_args.command == "deploy":
         log.info("Deploying...")
         return cmd_deploy(
-            parsed_args.config_file,
+            parsed_args.configfile,
             parsed_args.basedir,
             parsed_args.dryrun
         )
     elif parsed_args.command == "destroy":
         log.info("Destroying...")
         return cmd_destroy(
-            parsed_args.config_file,
+            parsed_args.configfile,
             parsed_args.basedir,
             parsed_args.dryrun
         )
     elif parsed_args.command == "terraform":
         log.info("Running Terraform...")
         return cmd_terraform(
-            parsed_args.config_file,
+            parsed_args.configfile,
             parsed_args.basedir,
             parsed_args.dryrun
         )
     elif parsed_args.command == "ansible":
         log.info("Running Ansible...")
         return cmd_ansible(
-            parsed_args.config_file,
+            parsed_args.configfile,
             parsed_args.basedir,
             parsed_args.dryrun
         )
