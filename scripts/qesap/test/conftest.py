@@ -1,9 +1,8 @@
 from unittest import mock
 import json
+import os
 
 import pytest
-
-
 
 @pytest.fixture
 def base_args(tmpdir):
@@ -33,6 +32,34 @@ def base_args(tmpdir):
             args.append(config_file)
 
         return args
+
+    return _callback
+
+
+@pytest.fixture
+def configure_helper(tmpdir, base_args):
+    def _callback(provider, conf, tfvar):
+        provider_path = os.path.join(tmpdir,'terraform', provider)
+        if not os.path.isdir(provider_path):
+            os.makedirs(provider_path)
+        tfvar_path = os.path.join(provider_path,'terraform.tfvars')
+
+        ansiblevars_path = os.path.join(tmpdir,'ansible', 'playbooks', 'vars')
+        if not os.path.isdir(ansiblevars_path):
+            os.makedirs(ansiblevars_path)
+        hana_vars = os.path.join(ansiblevars_path, 'azure_hana_media.yaml')
+
+        config_file_name = str(tmpdir / 'config.yaml')
+        with open(config_file_name, 'w') as file:
+            file.write(conf)
+        with open(os.path.join(provider_path, 'terraform.tfvars.template'), 'w') as file:
+            for line in tfvar:
+                file.write(line)
+
+        args = base_args(base_dir=tmpdir, config_file=config_file_name)
+        args.append('configure')
+
+        return args, tfvar_path, hana_vars
 
     return _callback
 

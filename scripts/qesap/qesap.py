@@ -7,6 +7,7 @@ import argparse
 import logging
 import sys
 import subprocess
+import re
 import yaml
 from yaml.parser import ParserError
 from yaml.scanner import ScannerError
@@ -103,7 +104,7 @@ def subprocess_run(cmd):
 
 
 def validate_config(config):
-    log.debug("Configure date:%s", config)
+    log.debug("Configure data:%s", config)
     if config is None:
         log.error("Empty config")
         return False
@@ -134,14 +135,23 @@ def validate_basedir(basedir, config):
         return False, None
     tfvar_template_path = os.path.join(terraform_provider_dir,'terraform.tfvars.template')
     if not os.path.isfile(tfvar_template_path):
+        log.error("Missing %s", tfvar_template_path)
         return False, None
+
+    ansible_pl_vars_dir = os.path.join(basedir, 'ansible', 'playbooks', 'vars')
+    if not os.path.isdir(ansible_pl_vars_dir):
+        log.error("Missing %s", ansible_pl_vars_dir)
+        return False, None
+
     tfvar_path = os.path.join(terraform_provider_dir,'terraform.tfvars')
+    hana_vars = os.path.join(ansible_pl_vars_dir,'azure_hana_media.yaml')
 
     return True, {
     'terraform':terraform_dir,
     'provider':terraform_provider_dir,
     'tfvars':tfvar_path,
-    'tfvars_template':tfvar_template_path
+    'tfvars_template':tfvar_template_path,
+    'hana_vars':hana_vars
     }
 
 
@@ -169,17 +179,40 @@ def cmd_configure(configure_data, base_project, dryrun):
 
     # Just an handy alias
     tfvar_path = cfg_paths['tfvars']
+    hana_vars = cfg_paths['hana_vars']
 
     # Create tfvars file
+    with open(cfg_paths['tfvars_template'], 'r') as f:
+        tfvar_content = f.readlines()
+        log.debug("Template:%s", tfvar_content)
+
+        if 'variables' in configure_data['terraform'].keys():
+            log.debug("Config has terraform variables")
+            for k,v in configure_data['terraform']['variables'].items():
+                key_replace = False
+                # Look for k in the template file content
+                for index, line in enumerate(tfvar_content):
+                    match = re.search(k+r'\s?=.*', line)
+                    if match:
+                        log.debug("Replace template %s with [%s = %s]", line, k, v)
+                        tfvar_content[index] = f"{k} = {v}\n"
+                        key_replace = True
+                # add the new key/value pair
+                if not key_replace:
+                    log.debug("[k:%s = v:%s] is not in the template, append it", k, v)
+                    tfvar_content.append(f"{k} = {v}\n")
+        log.debug("Result terraform.tfvars:\n%s", tfvar_content)
+    hanavar_content = {}
+    hanavar_content['hana_urls'] = configure_data['ansible']['hana_urls']
+    log.debug("Result %s:\n%s", hana_vars, hanavar_content)
     if dryrun:
-        print(f"Create {tfvar_path}")
+        print(f"Create {tfvar_path} with content {tfvar_content}")
+        print(f"Create {hana_vars} with content {hanavar_content}")
     else:
-        with open(cfg_paths['tfvars_template'], 'r') as f:
-            src = Template(f.read())
-            result = src.substitute(configure_data['terraform'])
-            log.error(result)
-            with open(tfvar_path, 'w', encoding='utf-8') as file:
-                file.write(result)
+        with open(tfvar_path, 'w', encoding='utf-8') as file:
+            file.write(''.join(tfvar_content))
+        with open(hana_vars, 'w', encoding='utf-8') as file:
+            yaml.dump(hanavar_content, file)
     return 0, 'ok'
 
 
