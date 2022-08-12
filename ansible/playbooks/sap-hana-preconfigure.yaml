@@ -4,8 +4,11 @@
   become: true
   become_user : root
   vars:
-    scale_out: False
-    use_sapconf: False
+    scale_out: false
+    use_sapconf: false
+    saptune_solution: HANA
+    platform: azure
+    cluster_node: true
     hana_download_path: /hana/shared/install
     url_timeout: 30
     url_retries_cnt: 5
@@ -35,6 +38,9 @@
       when: use_sapconf | bool
 
     # saptune to be handled here with more included tasks!
+    - name: Configure saptune based systems
+      ansible.builtin.include_tasks: ./tasks/saptune.yaml
+      when: not use_sapconf | bool 
     
   handlers:
     - name: reboot
