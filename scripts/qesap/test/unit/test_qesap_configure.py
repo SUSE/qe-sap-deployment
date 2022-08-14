@@ -23,7 +23,9 @@ def test_configure(configure_helper):
     provider = 'pinocchio'
     conf = f"""---
 terraform:
-  provider: {provider}"""
+  provider: {provider}
+ansible:
+    hana_urls: onlyone"""
     args, _, _ = configure_helper(provider, conf, [])
 
     assert main(args) == 0
@@ -37,7 +39,9 @@ def test_configure_create_tfvars_file(configure_helper):
     provider = 'pinocchio'
     conf = f"""---
 terraform:
-  provider: {provider}"""
+  provider: {provider}
+ansible:
+    hana_urls: onlyone"""
     args, tfvar_path, _ = configure_helper(provider, conf, [])
 
     main(args)
@@ -54,7 +58,9 @@ def test_configure_tfvars_novariables(configure_helper):
     provider = 'pinocchio'
     conf = f"""---
 terraform:
-  provider: {provider}"""
+  provider: {provider}
+ansible:
+    hana_urls: something"""
     tfvar_template = [
     "something = static\n",
     "hananame = hahaha\n",
@@ -81,7 +87,9 @@ terraform:
   provider: {provider}
   variables:
     region : eu1
-    deployment_name : rocket"""
+    deployment_name : rocket
+ansible:
+    hana_urls: something"""
     tfvar_template = [
     "something = static\n",
     "hananame = hahaha\n",
@@ -110,7 +118,9 @@ def test_configure_tfvars_overwrite_variables(configure_helper):
 terraform:
   provider: {provider}
   variables:
-    something : yamlrulez"""
+    something : yamlrulez
+ansible:
+    hana_urls: something"""
 
     tfvar_template = [
     "something = static\n",
@@ -135,9 +145,11 @@ def test_configure_create_ansible_vars(configure_helper):
     provider = 'pinocchio'
     conf = f"""---
 terraform:
-  provider: {provider}"""
+  provider: {provider}
+ansible:
+    hana_urls: something"""
     args, _, hana_vars = configure_helper(provider, conf, [])
-
+    log.error("hana_vars:%s", hana_vars)
     main(args)
 
     assert os.path.isfile(hana_vars)
@@ -181,7 +193,9 @@ def test_configure_dryrun(configure_helper):
     provider = 'pinocchio'
     conf = f"""---
 terraform:
-  provider: {provider}"""
+  provider: {provider}
+ansible:
+    hana_urls: something"""
     tfvar_template = [
     "something = static\n",
     "hananame = hahaha\n",
@@ -258,6 +272,20 @@ def test_configure_fail_at_missing_params(configure_helper):
 
     # test has to fail as config has 'terraform' but no anything else
     args, tfvar_path, _ = configure_helper('pinocchio', "terraform:", [])
+    assert main(args) == 1
+
+    conf = """---
+terraform:
+    provider:
+ansible:"""
+    args, tfvar_path, _ = configure_helper('pinocchio', conf, [])
+    assert main(args) == 1
+
+    conf = """---
+terraform:
+    provider: something
+ansible:"""
+    args, tfvar_path, _ = configure_helper('pinocchio', conf, [])
     assert main(args) == 1
 
 

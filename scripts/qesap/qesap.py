@@ -121,6 +121,14 @@ def validate_config(config):
         log.error("Empty 'provider' in the config")
         return False
 
+    if not 'ansible' in config.keys() or config['ansible'] is None:
+        log.error("Empty 'ansible' in the config")
+        return False
+
+    if not 'hana_urls' in config['ansible'].keys():
+        log.error("Missing 'hana_urls' in 'ansible' in the config")
+        return False
+
     return True
 
 
@@ -258,6 +266,7 @@ def cmd_terraform(configure_data, base_project, dryrun):
     Returns:
         int: execution result, 0 means OK. It is mind to be used as script exit code
     """
+    subprocess_run('ls')
     return 0
 
 

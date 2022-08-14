@@ -37,7 +37,7 @@ def base_args(tmpdir):
 
 
 @pytest.fixture
-def configure_helper(tmpdir, base_args):
+def args_helper(tmpdir, base_args):
     def _callback(provider, conf, tfvar):
         provider_path = os.path.join(tmpdir,'terraform', provider)
         if not os.path.isdir(provider_path):
@@ -57,8 +57,17 @@ def configure_helper(tmpdir, base_args):
                 file.write(line)
 
         args = base_args(base_dir=tmpdir, config_file=config_file_name)
-        args.append('configure')
 
+        return args, tfvar_path, hana_vars
+
+    return _callback
+
+
+@pytest.fixture
+def configure_helper(args_helper):
+    def _callback(provider, conf, tfvar):
+        args, tfvar_path, hana_vars = args_helper(provider, conf, tfvar)
+        args.append('configure')
         return args, tfvar_path, hana_vars
 
     return _callback
