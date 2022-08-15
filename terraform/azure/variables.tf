@@ -24,9 +24,9 @@ variable "vnet_address_range" {
   default     = "10.74.0.0/16"
   validation {
     condition = (
-      can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}$", var.vnet_address_range))
+      can(cidrnetmask(var.vnet_address_range))
     )
-    error_message = "Invalid IP range format. It must be something like: 102.168.10.5/24 ."
+    error_message = "Must be a valid IPv4 CIDR block address."
   }
 }
 
@@ -42,9 +42,9 @@ variable "subnet_address_range" {
   default     = ""
   validation {
     condition = (
-      var.subnet_address_range == "" || can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}$", var.subnet_address_range))
+      var.subnet_address_range == "" || can(cidrnetmask(var.subnet_address_range))
     )
-    error_message = "Invalid IP range format. It must be something like: 102.168.10.5/24 ."
+    error_message = "Must be a valid IPv4 CIDR block address."
   }
 }
 
@@ -60,9 +60,9 @@ variable "subnet_netapp_address_range" {
   default     = ""
   validation {
     condition = (
-      var.subnet_netapp_address_range == "" || can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}$", var.subnet_netapp_address_range))
+      var.subnet_netapp_address_range == "" || can(cidrnetmask(var.subnet_netapp_address_range))
     )
-    error_message = "Invalid IP range format. It must be something like: 102.168.10.5/24 ."
+    error_message = "Must be a valid IPv4 CIDR block address."
   }
 }
 
@@ -568,6 +568,18 @@ variable "sbd_storage_type" {
 # If iscsi is selected as sbd_storage_type
 # Use the next variables for advanced configuration
 
+variable "iscsi_count" {
+  description = "The number of iscsi servers to deploy"
+  type = number
+  default = 1
+  validation {
+    condition = (
+      var.iscsi_count >= 1 && var.iscsi_count <= 3
+    )
+    error_message = "The number of iscsi server must be 1, 2 or 3."
+  }
+}
+
 variable "iscsi_name" {
   description = "hostname, without the domain part"
   type        = string
@@ -610,9 +622,23 @@ variable "iscsi_srv_ip" {
   }
 }
 
+variable "iscsi_ips" {
+  description = "ip addresses to set to the iscsi nodes. If it's not set the addresses will be auto generated from the provided vnet address range.  Up to three IP addresses may be set"
+  type        = list(string)
+  default     = []
+  validation {
+    condition = (
+      can([for v in var.iscsi_ips : regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", v)])
+    )
+    error_message = "Invalid IP address format."
+
+  }
+}
+
 variable "iscsi_lun_count" {
   description = "Number of LUN (logical units) to serve with the iscsi server. Each LUN can be used as a unique sbd disk"
   default     = 3
+  
 }
 
 variable "iscsi_disk_size" {
