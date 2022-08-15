@@ -47,6 +47,7 @@ def subprocess_run(cmd):
     Returns:
         (int, list of string): exit code and list of stdout
     """
+    log.error("------")
     if 0 == len(cmd):
         log.error("Empty command")
         return (1, [])
@@ -266,7 +267,19 @@ def cmd_terraform(configure_data, base_project, dryrun):
     Returns:
         int: execution result, 0 means OK. It is mind to be used as script exit code
     """
-    subprocess_run('ls')
+    sequence = ['init', 'plan', 'apply']
+    cmd = [[], [], []]
+
+    for idx, seq in enumerate(sequence):
+        cmd[idx].append(f"TF_LOG_PATH=terraform.{seq}.log.txt")
+        cmd[idx].append('TF_LOG=INFO')
+        cmd[idx].append('terraform')
+        cmd[idx].append('-chdir=""')
+        cmd[idx].append(seq)
+        cmd[idx].append('-no-color')
+
+        ret, out = subprocess_run(cmd)
+        log.error("ret:%s out:%s", ret, out)
     return 0
 
 
