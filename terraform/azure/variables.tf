@@ -570,8 +570,8 @@ variable "sbd_storage_type" {
 
 variable "iscsi_count" {
   description = "The number of iscsi servers to deploy"
-  type = number
-  default = 1
+  type        = number
+  default     = 1
   validation {
     condition = (
       var.iscsi_count >= 1 && var.iscsi_count <= 3
@@ -638,7 +638,7 @@ variable "iscsi_ips" {
 variable "iscsi_lun_count" {
   description = "Number of LUN (logical units) to serve with the iscsi server. Each LUN can be used as a unique sbd disk"
   default     = 3
-  
+
 }
 
 variable "iscsi_disk_size" {
