@@ -9,11 +9,7 @@
     saptune_solution: HANA
     platform: azure
     cluster_node: true
-    hana_download_path: /hana/shared/install
-    url_timeout: 30
-    url_retries_cnt: 5
-    url_retries_delay: 10
-    
+        
   tasks:
 
   # Ensure required installation of required packages
