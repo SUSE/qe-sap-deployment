@@ -21,6 +21,7 @@
   changed_when: false
 
 # Insert the the full by-id address in the list of each discovered disk that is of the type LIO-ORG (default Linux iSCSI server)
+
 - name: Set iscsi facts
   ansible.builtin.set_fact:
     sbd_list: "{{ sbd_list + [ iscsi_prefix + item | split(' ') | last ] }}"
@@ -59,7 +60,7 @@
     path: /etc/sysconfig/sbd
     regexp: '^SBD_DEVICE='
     line: "SBD_DEVICE={{ sbd_list | join(';') }}"
-
+  
 # Add other required lines to the sdb config file and create
 - name: Set pacemaker and start mode in sbd config file
   ansible.builtin.lineinfile:
