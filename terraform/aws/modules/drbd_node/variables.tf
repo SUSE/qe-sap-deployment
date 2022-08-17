@@ -94,12 +94,6 @@ variable "iscsi_srv_ip" {
   type        = string
 }
 
-variable "on_destroy_dependencies" {
-  description = "Resources objects need in the on_destroy script (everything that allows ssh connection)"
-  type        = any
-  default     = []
-}
-
 variable "os_image" {
   description = "sles4sap AMI image identifier or a pattern used to find the image name (e.g. suse-sles-sap-15-sp1-byos)"
   type        = string

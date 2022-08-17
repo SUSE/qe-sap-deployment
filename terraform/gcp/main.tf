@@ -190,11 +190,6 @@ module "drbd_node" {
   iscsi_srv_ip         = module.iscsi_server.iscsisrv_ip
   nfs_mounting_point   = var.drbd_nfs_mounting_point
   nfs_export_name      = var.netweaver_sid
-  /*
-  on_destroy_dependencies = [
-    google_compute_firewall.ha_firewall_allow_tcp,
-    module.bastion
-  ]*/
 }
 
 module "netweaver_node" {
@@ -215,11 +210,6 @@ module "netweaver_node" {
   iscsi_srv_ip              = module.iscsi_server.iscsisrv_ip
   netweaver_software_bucket = var.netweaver_software_bucket
   virtual_host_ips          = local.netweaver_virtual_ips
-  /*
-  on_destroy_dependencies = [
-    google_compute_firewall.ha_firewall_allow_tcp,
-    module.bastion
-  ]*/
 }
 
 module "hana_node" {
@@ -254,12 +244,6 @@ module "monitoring" {
   network_subnet_name = local.subnet_name
   os_image            = local.monitoring_os_image
   monitoring_srv_ip   = local.monitoring_srv_ip
-  /*
-  on_destroy_dependencies = [
-    google_compute_firewall.ha_firewall_allow_tcp,
-    google_compute_router_nat.nat,
-    module.bastion
-  ]*/
 }
 
 module "iscsi_server" {
@@ -276,9 +260,4 @@ module "iscsi_server" {
   host_ips            = [local.iscsi_srv_ip]
   lun_count           = var.iscsi_lun_count
   iscsi_disk_size     = var.iscsi_disk_size
-  /*
-  on_destroy_dependencies = [
-    google_compute_firewall.ha_firewall_allow_tcp,
-    module.bastion
-  ]*/
 }

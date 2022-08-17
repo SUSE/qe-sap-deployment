@@ -40,13 +40,3 @@ resource "aws_instance" "monitoring" {
     Workspace = var.common_variables["deployment_name"]
   }
 }
-
-module "monitoring_on_destroy" {
-  source       = "../../../generic_modules/on_destroy"
-  node_count   = var.monitoring_enabled ? 1 : 0
-  instance_ids = aws_instance.monitoring.*.id
-  user         = var.common_variables["authorized_user"]
-  private_key  = var.common_variables["private_key"]
-  public_ips   = aws_instance.monitoring.*.public_ip
-  dependencies = var.on_destroy_dependencies
-}

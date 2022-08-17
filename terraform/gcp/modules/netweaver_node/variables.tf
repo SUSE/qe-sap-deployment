@@ -77,9 +77,3 @@ variable "virtual_host_ips" {
   description = "virtual ip addresses to set to the nodes"
   type        = list(string)
 }
-
-variable "on_destroy_dependencies" {
-  description = "Resources objects need in the on_destroy script (everything that allows ssh connection)"
-  type        = any
-  default     = []
-}

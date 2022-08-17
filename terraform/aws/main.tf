@@ -174,11 +174,6 @@ module "drbd_node" {
   iscsi_srv_ip          = join("", module.iscsi_server.iscsisrv_ip)
   nfs_mounting_point    = var.drbd_nfs_mounting_point
   nfs_export_name       = var.netweaver_sid
-  on_destroy_dependencies = [
-    aws_route.public,
-    aws_security_group_rule.ssh,
-    aws_security_group_rule.outall
-  ]
 }
 
 module "iscsi_server" {
@@ -198,12 +193,6 @@ module "iscsi_server" {
   host_ips           = [local.iscsi_ip]
   lun_count          = var.iscsi_lun_count
   iscsi_disk_size    = var.iscsi_disk_size
-  on_destroy_dependencies = [
-    aws_route_table_association.infra-subnet-route-association,
-    aws_route.public,
-    aws_security_group_rule.ssh,
-    aws_security_group_rule.outall
-  ]
 }
 
 module "netweaver_node" {
@@ -231,13 +220,6 @@ module "netweaver_node" {
   host_ips              = local.netweaver_ips
   virtual_host_ips      = local.netweaver_virtual_ips
   iscsi_srv_ip          = join("", module.iscsi_server.iscsisrv_ip)
-  /*
-  on_destroy_dependencies = [
-    aws_route.public,
-    aws_security_group_rule.ssh,
-    aws_security_group_rule.outall
-  ]
-  */
 }
 
 module "hana_node" {
@@ -263,11 +245,6 @@ module "hana_node" {
   hana_data_disk_type   = var.hana_data_disk_type
   hana_data_disk_size   = var.hana_data_disk_size
   iscsi_srv_ip          = join("", module.iscsi_server.iscsisrv_ip)
-  on_destroy_dependencies = [
-    aws_route.public,
-    aws_security_group_rule.ssh,
-    aws_security_group_rule.outall
-  ]
 }
 
 module "monitoring" {
@@ -286,10 +263,4 @@ module "monitoring" {
   os_owner           = local.monitoring_os_owner
   subnet_ids         = aws_subnet.infra-subnet.*.id
   timezone           = var.timezone
-  on_destroy_dependencies = [
-    aws_route_table_association.infra-subnet-route-association,
-    aws_route.public,
-    aws_security_group_rule.ssh,
-    aws_security_group_rule.outall
-  ]
 }
