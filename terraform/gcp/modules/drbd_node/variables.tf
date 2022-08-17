@@ -76,16 +76,6 @@ variable "iscsi_srv_ip" {
   type        = string
 }
 
-variable "cluster_ssh_pub" {
-  description = "path for the public key needed by the cluster"
-  type        = string
-}
-
-variable "cluster_ssh_key" {
-  description = "path for the private key needed by the cluster"
-  type        = string
-}
-
 variable "nfs_mounting_point" {
   description = "Mounting point of the NFS share created in to of DRBD (`/mnt` must not be used in Azure)"
   type        = string

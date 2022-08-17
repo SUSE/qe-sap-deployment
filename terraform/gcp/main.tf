@@ -188,8 +188,6 @@ module "drbd_node" {
   gcp_credentials_file = var.gcp_credentials_file
   host_ips             = local.drbd_ips
   iscsi_srv_ip         = module.iscsi_server.iscsisrv_ip
-  cluster_ssh_pub      = var.cluster_ssh_pub
-  cluster_ssh_key      = var.cluster_ssh_key
   nfs_mounting_point   = var.drbd_nfs_mounting_point
   nfs_export_name      = var.netweaver_sid
   /*
@@ -215,8 +213,6 @@ module "netweaver_node" {
   gcp_credentials_file      = var.gcp_credentials_file
   host_ips                  = local.netweaver_ips
   iscsi_srv_ip              = module.iscsi_server.iscsisrv_ip
-  cluster_ssh_pub           = var.cluster_ssh_pub
-  cluster_ssh_key           = var.cluster_ssh_key
   netweaver_software_bucket = var.netweaver_software_bucket
   virtual_host_ips          = local.netweaver_virtual_ips
   /*
@@ -245,14 +241,6 @@ module "hana_node" {
   hana_data_disk_size   = var.hana_data_disk_size
   hana_backup_disk_type = var.hana_backup_disk_type
   hana_backup_disk_size = var.hana_backup_disk_size
-  cluster_ssh_pub       = var.cluster_ssh_pub
-  cluster_ssh_key       = var.cluster_ssh_key
-  /*
-  on_destroy_dependencies = [
-    google_compute_firewall.ha_firewall_allow_tcp,
-    google_compute_router_nat.nat,
-    module.bastion
-  ]*/
 }
 
 module "monitoring" {

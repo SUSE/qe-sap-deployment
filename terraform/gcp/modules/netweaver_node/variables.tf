@@ -68,16 +68,6 @@ variable "iscsi_srv_ip" {
   type        = string
 }
 
-variable "cluster_ssh_pub" {
-  description = "path for the public key needed by the cluster"
-  type        = string
-}
-
-variable "cluster_ssh_key" {
-  description = "path for the private key needed by the cluster"
-  type        = string
-}
-
 variable "netweaver_software_bucket" {
   description = "gcp bucket where netweaver software is available"
   type        = string

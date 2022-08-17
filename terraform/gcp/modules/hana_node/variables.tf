@@ -104,21 +104,3 @@ variable "hana_inst_disk_device" {
   type        = string
   default     = "/dev/sdd"
 }
-
-variable "cluster_ssh_pub" {
-  description = "path for the public key needed by the cluster"
-  type        = string
-}
-
-variable "cluster_ssh_key" {
-  description = "path for the private key needed by the cluster"
-  type        = string
-}
-
-/*
-variable "on_destroy_dependencies" {
-  description = "Resources objects need in the on_destroy script (everything that allows ssh connection)"
-  type        = any
-  default     = []
-}
-*/

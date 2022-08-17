@@ -171,8 +171,6 @@ module "drbd_node" {
   host_ips              = local.drbd_ips
   drbd_data_disk_size   = var.drbd_data_disk_size
   drbd_data_disk_type   = var.drbd_data_disk_type
-  cluster_ssh_pub       = var.cluster_ssh_pub
-  cluster_ssh_key       = var.cluster_ssh_key
   iscsi_srv_ip          = join("", module.iscsi_server.iscsisrv_ip)
   nfs_mounting_point    = var.drbd_nfs_mounting_point
   nfs_export_name       = var.netweaver_sid
@@ -233,13 +231,13 @@ module "netweaver_node" {
   host_ips              = local.netweaver_ips
   virtual_host_ips      = local.netweaver_virtual_ips
   iscsi_srv_ip          = join("", module.iscsi_server.iscsisrv_ip)
-  cluster_ssh_pub       = var.cluster_ssh_pub
-  cluster_ssh_key       = var.cluster_ssh_key
+  /*
   on_destroy_dependencies = [
     aws_route.public,
     aws_security_group_rule.ssh,
     aws_security_group_rule.outall
   ]
+  */
 }
 
 module "hana_node" {
@@ -265,8 +263,6 @@ module "hana_node" {
   hana_data_disk_type   = var.hana_data_disk_type
   hana_data_disk_size   = var.hana_data_disk_size
   iscsi_srv_ip          = join("", module.iscsi_server.iscsisrv_ip)
-  cluster_ssh_pub       = var.cluster_ssh_pub
-  cluster_ssh_key       = var.cluster_ssh_key
   on_destroy_dependencies = [
     aws_route.public,
     aws_security_group_rule.ssh,
