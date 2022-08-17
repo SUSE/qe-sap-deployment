@@ -47,7 +47,6 @@ def subprocess_run(cmd):
     Returns:
         (int, list of string): exit code and list of stdout
     """
-    log.error("------")
     if 0 == len(cmd):
         log.error("Empty command")
         return (1, [])
@@ -267,19 +266,34 @@ def cmd_terraform(configure_data, base_project, dryrun):
     Returns:
         int: execution result, 0 means OK. It is mind to be used as script exit code
     """
+    if not validate_config(configure_data):
+        return 1, f"Invalid configuration file content in {configure_data}"
+    res, cfg_paths = validate_basedir(base_project, configure_data)
+    if not res:
+        return 1, f"Invalid folder structure at {base_project}"
+
     sequence = ['init', 'plan', 'apply']
-    cmd = [[], [], []]
+    cmds = [[], [], []]
 
     for idx, seq in enumerate(sequence):
-        cmd[idx].append(f"TF_LOG_PATH=terraform.{seq}.log.txt")
-        cmd[idx].append('TF_LOG=INFO')
-        cmd[idx].append('terraform')
-        cmd[idx].append('-chdir=""')
-        cmd[idx].append(seq)
-        cmd[idx].append('-no-color')
-
-        ret, out = subprocess_run(cmd)
-        log.error("ret:%s out:%s", ret, out)
+        cmds[idx].append(f"TF_LOG_PATH=terraform.{seq}.log.txt")
+        cmds[idx].append('TF_LOG=INFO')
+        cmds[idx].append('terraform')
+        cmds[idx].append('-chdir="' + cfg_paths['provider'] + '"')
+        cmds[idx].append(seq)
+        if seq == 'plan':
+            cmds[idx].append('-out=plan.zip')
+        elif seq == 'apply':
+            cmds[idx].append('-auto-approve')
+            cmds[idx].append('plan.zip')
+        cmds[idx].append('-no-color')
+    for command in cmds:
+        if dryrun:
+            print(command)
+        else:
+            log.debug("Add call:%s", command)
+            ret, out = subprocess_run(command)
+            log.debug("Terraform process return ret:%s out:%s", ret, out)
     return 0
 
 
