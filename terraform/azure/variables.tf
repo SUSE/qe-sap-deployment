@@ -131,6 +131,12 @@ variable "bastion_os_image" {
   default     = ""
 }
 
+variable "bastion_os_major_version" {
+  description = "The major OS version of SLES for the bastion.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
+}
+
 variable "bastion_public_key" {
   description = "Content of a SSH public key or path to an already existing SSH public key to the bastion. If it's not set the key provided in public_key will be used"
   type        = string
@@ -270,6 +276,12 @@ variable "hana_count" {
 
 variable "hana_os_image" {
   description = "sles4sap image used to create the HANA machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp3:gen2:latest"
+  type        = string
+  default     = ""
+}
+
+variable "hana_os_major_version" {
+  description = "The major OS version of SLES for the HANA VMs.  If not set, this value will be computed.  Example: 15"
   type        = string
   default     = ""
 }
@@ -586,6 +598,12 @@ variable "iscsi_os_image" {
   default     = ""
 }
 
+variable "iscsi_os_major_version" {
+  description = "The major OS version of SLES for the iscsi VMs.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
+}
+
 variable "iscsi_srv_uri" {
   description = "Path to a custom azure image in a storage account used to create the iscsi machines"
   type        = string
@@ -653,6 +671,12 @@ variable "monitoring_os_image" {
   default     = ""
 }
 
+variable "monitoring_os_major_version" {
+  description = "The major OS version of SLES for the monitoring VM.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
+}
+
 variable "monitoring_uri" {
   description = "Path to a custom azure image in a storage account used to create the monitoring machines"
   type        = string
@@ -705,6 +729,12 @@ variable "drbd_ips" {
 
 variable "drbd_os_image" {
   description = "sles4sap image used to create the DRBD machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp3:gen2:latest"
+  type        = string
+  default     = ""
+}
+
+variable "drdb_os_major_version" {
+  description = "The major OS version of SLES drdb VMs.  If not set, this value will be computed.  Example: 15"
   type        = string
   default     = ""
 }
@@ -773,6 +803,12 @@ variable "netweaver_app_server_count" {
 
 variable "netweaver_os_image" {
   description = "sles4sap image used to create the Netweaver machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp3:gen2:latest"
+  type        = string
+  default     = ""
+}
+
+variable "netweaver_os_major_version" {
+  description = "The major OS version of SLES for the netweaver VMs.  If not set, this value will be computed.  Example: 15"
   type        = string
   default     = ""
 }

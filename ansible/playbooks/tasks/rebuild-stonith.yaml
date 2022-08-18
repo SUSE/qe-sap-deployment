@@ -14,14 +14,7 @@
   when:
     - sbd_status is defined
     - sbd_status.stdout_lines|length == 1
-  # The command should bring back only 1 line therefore anyother value than 1 is a failure!
-
-- name: Test vars
-  ansible.builtin.debug:
-    var: "{{ item }}"
-  with_items:
-    - sbd_device_name
-    - sbd_device_status
+  # The command should bring back only 1 line therefore another value than 1 is a failure!
 
 - name: Ensure stonith device is stopped
   ansible.builtin.command:

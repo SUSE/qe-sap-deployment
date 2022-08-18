@@ -10,6 +10,8 @@
     hooks_dir: myHooks
     site_a: node01 
     site_b: node02
+    sap_hana_install_sid: HDB
+    sap_hana_install_instance_number: 00
 
   tasks:
 
@@ -62,8 +64,6 @@
     when:
       - copy_result.changed # only start HANA if we stopped it
       - ansible_hostname == 'vmahana02'
-
-
 
   - name: Add hooks into sudoers
     ansible.builtin.lineinfile:

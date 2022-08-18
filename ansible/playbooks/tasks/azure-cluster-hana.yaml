@@ -7,7 +7,9 @@
 - name: Set crm facts
   ansible.builtin.set_fact:
     crm_maintainence_mode: "{{ (crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] }}"
+    stonith_enabled: "{{ (crm_conf_show.stdout | regex_search('stonith-enabled=([a-z]*)', '\\1' ))[0] | default('false') }}"
     hana_topology_clone: "{{ crm_conf_show.stdout | regex_search('clone cln_SAPHanaTopology') }}"
+    stonith_timeout: "{{ crm_conf_show.stdout | regex_search('stonith-timeout') }}" # this should be variable!
     hana_topology_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHanaTopology') }}"
     hana_resource_clone: "{{ crm_conf_show.stdout | regex_search('ms msl_SAPHana_') }}"
     hana_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHana_') }}"
@@ -28,6 +30,22 @@
 - name: Create HANA topology resource
   ansible.builtin.command: crm configure primitive rsc_SAPHanaTopology_HDB_HDB00 ocf:suse:SAPHanaTopology operations \$id="rsc_sap2_HDB_HDB00-operations" op monitor interval="10" timeout="600" op start interval="0" timeout="600" op stop interval="0" timeout="300" params SID="HDB" InstanceNumber="00" 
   when: hana_topology_resource | length == 0
+
+- name: Set stonith-timeout [sdb]
+  ansible.builtin.command: crm configure property stonith-timeout=144
+  when:
+    - stonith_timeout | length == 0
+    - use_sbd | bool
+  
+- name: Set stonith-timeout [azure fencing]
+  ansible.builtin.command: crm configure property stonith-timeout=900
+  when:
+    - stonith_timeout | length == 0
+    - use_sbd | bool
+
+- name: Enable stonith
+  ansible.builtin.command: crm configure property stonith-enabled=true
+  when: stonith_enabled != 'true'
 
 - name: Create HANA topology clone
   ansible.builtin.command: crm configure clone cln_SAPHanaTopology_HDB_HDB00 rsc_SAPHanaTopology_HDB_HDB00 meta clone-node-max="1" target-role="Started" interleave="true"
