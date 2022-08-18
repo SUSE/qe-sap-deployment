@@ -10,8 +10,6 @@ deployment_name = "%DEPLOYMENTNAME%"
 os_image = "%OSVER%"
 public_key  = "%SSHKEY%"
 
-cluster_ssh_pub = "salt://sshkeys/cluster.id_rsa.pub"
-cluster_ssh_key = "salt://sshkeys/cluster.id_rsa"
 provisioner = "off"
 bastion_enabled = false
 hana_name = "vmhana"

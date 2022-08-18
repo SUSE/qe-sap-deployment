@@ -53,18 +53,6 @@
       - { 'section': 'trace', 'key': 'ha_dr_saphanasr', 'value': 'info'}
     when: copy_result.changed
   
-  - name: Start HANA primary
-    ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StartWait 600 10"
-    when:
-      - copy_result.changed # only start HANA if we stopped it
-      - ansible_hostname == 'vmahana01'
-
-  - name: Start HANA secondary
-    ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StartWait 600 10"
-    when:
-      - copy_result.changed # only start HANA if we stopped it
-      - ansible_hostname == 'vmahana02'
-
   - name: Add hooks into sudoers
     ansible.builtin.lineinfile:
       path: /etc/sudoers.d/HanaSystemReplication
@@ -82,3 +70,14 @@
      - { 'regexp': '^Cmnd_Alias SFAIL_SITEB',  'line': 'Cmnd_Alias SFAIL_SITEB = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ site_b }} -v SFAIL -t crm_config -s SAPHanaSR'}
      - { 'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD',  'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: SOK_SITEA, SFAIL_SITEA, SOK_SITEB, SFAIL_SITEB'}
 
+  - name: Start HANA primary
+    ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StartWait 600 10"
+    when:
+      - copy_result.changed # only start HANA if we stopped it
+      - ansible_hostname == 'vmahana01'
+
+  - name: Start HANA secondary
+    ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StartWait 600 10"
+    when:
+      - copy_result.changed # only start HANA if we stopped it
+      - ansible_hostname == 'vmahana02'
