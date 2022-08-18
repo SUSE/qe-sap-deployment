@@ -109,13 +109,13 @@ output "bastion_public_ip" {
 resource "local_file" "ansible_inventory" {
   content = templatefile("inventory.tmpl",
     {
-      hana-name     = module.hana_node.cluster_nodes_name[0],
-      hana-pip      = module.hana_node.cluster_nodes_public_ip[0],
-      hana-major-version = local.hana_major_version
-      iscsi-name    = module.iscsi_server.iscsisrv_name,
-      iscsi-pip     = module.iscsi_server.iscsisrv_public_ip,
+      hana-name           = module.hana_node.cluster_nodes_name[0],
+      hana-pip            = module.hana_node.cluster_nodes_public_ip[0],
+      hana-major-version  = local.hana_major_version
+      iscsi-name          = module.iscsi_server.iscsisrv_name,
+      iscsi-pip           = module.iscsi_server.iscsisrv_public_ip,
       iscsi-major-version = local.iscsi_major_version
-      iscsi-enabled = local.iscsi_enabled
+      iscsi-enabled       = local.iscsi_enabled
   })
   filename = "inventory.yaml"
 }
