@@ -166,8 +166,6 @@ module "drbd_node" {
   resource_group_name = local.resource_group_name
   network_subnet_id   = local.subnet_id
   storage_account     = azurerm_storage_account.mytfstorageacc.primary_blob_endpoint
-  cluster_ssh_pub     = var.cluster_ssh_pub
-  cluster_ssh_key     = var.cluster_ssh_key
   host_ips            = local.drbd_ips
   iscsi_srv_ip        = join("", module.iscsi_server.iscsisrv_ip)
   nfs_mounting_point  = var.drbd_nfs_mounting_point
@@ -201,8 +199,6 @@ module "netweaver_node" {
   network_subnet_id           = local.subnet_id
   network_subnet_netapp_id    = local.subnet_netapp_id
   storage_account             = azurerm_storage_account.mytfstorageacc.primary_blob_endpoint
-  cluster_ssh_pub             = var.cluster_ssh_pub
-  cluster_ssh_key             = var.cluster_ssh_key
   ascs_instance_number        = var.netweaver_ascs_instance_number
   ers_instance_number         = var.netweaver_ers_instance_number
   storage_account_name        = var.netweaver_storage_account_name
@@ -242,8 +238,6 @@ module "hana_node" {
   enable_accelerated_networking = var.hana_enable_accelerated_networking
   sles4sap_uri                  = var.sles4sap_uri
   hana_instance_number          = var.hana_instance_number
-  cluster_ssh_pub               = var.cluster_ssh_pub
-  cluster_ssh_key               = var.cluster_ssh_key
   hana_data_disks_configuration = var.hana_data_disks_configuration
   os_image                      = local.hana_os_image
   iscsi_srv_ip                  = join("", module.iscsi_server.iscsisrv_ip)

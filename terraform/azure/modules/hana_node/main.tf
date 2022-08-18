@@ -446,8 +446,6 @@ module "hana_majority_maker" {
   storage_account_key           = var.storage_account_key
   enable_accelerated_networking = var.enable_accelerated_networking
   sles4sap_uri                  = var.sles4sap_uri
-  cluster_ssh_pub               = var.cluster_ssh_pub
-  cluster_ssh_key               = var.cluster_ssh_key
   os_image                      = var.os_image
   iscsi_srv_ip                  = var.iscsi_srv_ip
   # only used by azure fence agent (native fencing)

@@ -90,25 +90,9 @@ variable "iscsi_srv_ip" {
   type        = string
 }
 
-variable "cluster_ssh_pub" {
-  description = "path for the public key needed by the cluster"
-  type        = string
-}
-
-variable "cluster_ssh_key" {
-  description = "path for the private key needed by the cluster"
-  type        = string
-}
-
 variable "reg_code" {
   description = "If informed, register the product using SUSEConnect"
   default     = ""
-}
-
-variable "on_destroy_dependencies" {
-  description = "Resources objects need in the on_destroy script (everything that allows ssh connection)"
-  type        = any
-  default     = []
 }
 
 variable "os_image" {

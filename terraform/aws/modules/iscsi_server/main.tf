@@ -42,13 +42,3 @@ resource "aws_instance" "iscsisrv" {
     Workspace = var.common_variables["deployment_name"]
   }
 }
-
-module "iscsi_on_destroy" {
-  source       = "../../../generic_modules/on_destroy"
-  node_count   = var.iscsi_count
-  instance_ids = aws_instance.iscsisrv.*.id
-  user         = var.common_variables["authorized_user"]
-  private_key  = var.common_variables["private_key"]
-  public_ips   = aws_instance.iscsisrv.*.public_ip
-  dependencies = var.on_destroy_dependencies
-}

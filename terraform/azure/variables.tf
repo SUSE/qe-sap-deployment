@@ -174,16 +174,6 @@ variable "timezone" {
   default     = "Europe/Berlin"
 }
 
-variable "cluster_ssh_pub" {
-  description = "Path to a SSH public key used during the cluster creation. The key must be passwordless"
-  type        = string
-}
-
-variable "cluster_ssh_key" {
-  description = "Path to a SSH private key used during the cluster creation. The key must be passwordless"
-  type        = string
-}
-
 variable "reg_code" {
   description = "If informed, register the product using SUSEConnect"
   type        = string

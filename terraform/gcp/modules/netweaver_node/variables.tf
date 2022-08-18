@@ -68,16 +68,6 @@ variable "iscsi_srv_ip" {
   type        = string
 }
 
-variable "cluster_ssh_pub" {
-  description = "path for the public key needed by the cluster"
-  type        = string
-}
-
-variable "cluster_ssh_key" {
-  description = "path for the private key needed by the cluster"
-  type        = string
-}
-
 variable "netweaver_software_bucket" {
   description = "gcp bucket where netweaver software is available"
   type        = string
@@ -86,10 +76,4 @@ variable "netweaver_software_bucket" {
 variable "virtual_host_ips" {
   description = "virtual ip addresses to set to the nodes"
   type        = list(string)
-}
-
-variable "on_destroy_dependencies" {
-  description = "Resources objects need in the on_destroy script (everything that allows ssh connection)"
-  type        = any
-  default     = []
 }
