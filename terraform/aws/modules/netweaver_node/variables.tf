@@ -103,22 +103,6 @@ variable "iscsi_srv_ip" {
   type        = string
 }
 
-variable "cluster_ssh_pub" {
-  description = "path for the public key needed by the cluster"
-  type        = string
-}
-
-variable "cluster_ssh_key" {
-  description = "path for the private key needed by the cluster"
-  type        = string
-}
-
-variable "on_destroy_dependencies" {
-  description = "Resource objects needed in on_destroy script (everything that allows ssh connection)"
-  type        = any
-  default     = []
-}
-
 variable "os_image" {
   description = "sles4sap AMI image identifier or a pattern used to find the image name (e.g. suse-sles-sap-15-sp1-byos)"
   type        = string

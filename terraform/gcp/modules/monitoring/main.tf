@@ -65,16 +65,3 @@ resource "google_compute_instance" "monitoring" {
     scopes = ["compute-rw", "storage-rw", "logging-write", "monitoring-write", "service-control", "service-management"]
   }
 }
-/*
-module "monitoring_on_destroy" {
-  source              = "../../../generic_modules/on_destroy"
-  node_count          = var.monitoring_enabled ? 1 : 0
-  instance_ids        = google_compute_instance.monitoring.*.id
-  user                = var.common_variables["authorized_user"]
-  private_key         = var.common_variables["private_key"]
-  bastion_host        = var.bastion_host
-  bastion_private_key = var.common_variables["bastion_private_key"]
-  public_ips          = local.provisioning_addresses
-  dependencies        = var.on_destroy_dependencies
-}
-*/

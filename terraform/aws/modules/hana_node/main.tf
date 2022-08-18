@@ -80,16 +80,3 @@ resource "aws_instance" "hana" {
     "${var.common_variables["deployment_name"]}-cluster" = "${var.name}${format("%02d", count.index + 1)}"
   }
 }
-
-module "hana_on_destroy" {
-  source       = "../../../generic_modules/on_destroy"
-  node_count   = var.hana_count
-  instance_ids = aws_instance.hana.*.id
-  user         = var.common_variables["authorized_user"]
-  private_key  = var.common_variables["private_key"]
-  public_ips   = aws_instance.hana.*.public_ip
-  dependencies = concat(
-    [aws_route_table_association.hana-subnet-route-association],
-    var.on_destroy_dependencies
-  )
-}

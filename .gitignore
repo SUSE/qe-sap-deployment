@@ -23,6 +23,8 @@ ansible/playbooks/go.sh
 ansible/playbooks/destroy.sh
 ansible/playbooks/vars/azure_hana_media.yaml
 terraform/azure/.terraform.lock.hcl
+terraform/gcp/.terraform.lock.hcl
+terraform/aws/.terraform.lock.hcl
 terraform/azure/inventory.yaml
 oldbuild.sh
 olddestroy.sh
