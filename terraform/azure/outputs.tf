@@ -5,6 +5,11 @@
 # - Public node name
 
 # iSCSI server
+output "hana_os_major_verion" {
+  description = "The major version of the HANA OS"
+  value       = local.hana_major_version
+}
+
 
 output "iscsisrv_ip" {
   value = module.iscsi_server.iscsisrv_ip
@@ -104,11 +109,23 @@ output "bastion_public_ip" {
 resource "local_file" "ansible_inventory" {
   content = templatefile("inventory.tmpl",
     {
-      hana-name     = module.hana_node.cluster_nodes_name[0],
-      hana-pip      = module.hana_node.cluster_nodes_public_ip[0],
-      iscsi-name    = module.iscsi_server.iscsisrv_name,
-      iscsi-pip     = module.iscsi_server.iscsisrv_public_ip,
-      iscsi-enabled = local.iscsi_enabled
+      hana-name           = module.hana_node.cluster_nodes_name[0],
+      hana-pip            = module.hana_node.cluster_nodes_public_ip[0],
+      hana-major-version  = local.hana_major_version
+      iscsi-name          = module.iscsi_server.iscsisrv_name,
+      iscsi-pip           = module.iscsi_server.iscsisrv_public_ip,
+      iscsi-major-version = local.iscsi_major_version
+      iscsi-enabled       = local.iscsi_enabled
   })
   filename = "inventory.yaml"
+}
+
+resource "local_file" "fence_data" {
+  content = templatefile("fence_data.tmpl",
+    {
+      resource_group_name = local.resource_group_name
+      subscription_id     = data.azurerm_subscription.current.subscription_id
+      tenant_id           = data.azurerm_subscription.current.tenant_id
+  })
+  filename = "fence_data.json"
 }

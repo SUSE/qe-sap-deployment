@@ -9,10 +9,46 @@
   loop:
     - socat
     - resource-agents
-#    
-#- name: Get package information
-#  package_facts:
-#    manager: "auto"
+
+- name: Get the status of all extensions
+  ansible.builtin.command: SUSEConnect -s
+  register: sc_status
+  changed_when: no
+
+- name: Set public cloud extension fact
+  ansible.builtin.set_fact:
+    public_cloud_module: "{{ (sc_status.stdout | from_json | json_query(jmesquery))[0] }}"
+  vars:
+    jmesquery: "[? identifier==`sle-module-public-cloud`].status"
+
+- name: debug
+  ansible.builtin.debug:
+    var: public_cloud_module
+    
+
+- name: Activate public cloud module [SLES 12]
+  ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/12/x86_64 # Only works on x86_64 for now!  
+  when:
+    - ansible_distribution_major_version == '12'
+    - public_cloud_module != 'Registered'
+
+- name: Activate public cloud module [SLES 15]
+  ansible.builtin.command: "SUSEConnect -p sle-module-public-cloud/{{ ansible_distribution_version }}/x86_64" # Only works on x86_64 for now!  
+  when:
+    - ansible_distribution_major_version == '15'
+    - public_cloud_module != 'Registered'
+
+# TODO: Version Control
+- name: Ensure Azure Python SDK and Azure Identity python modules are installed
+  community.general.zypper:
+    name: "{{ item.package }}"
+    state: present
+  loop:
+    # For SLES 12 a we need to force a downgrade of python-azure-core see https://www.suse.com/support/kb/doc/?id=000020716
+    - { 'sles' : '12', 'package' : ['python-azure-mgmt-compute', 'python-azure-identity', 'python-azure-core==1.9.0-2.3.4'] } 
+    - { 'sles' : '15', 'package' : ['python3-azure-mgmt-compute', 'python3-azure-identity'] }
+  when: item.sles == ansible_distribution_major_version
+  
 
 # The code needs to decide if it is necessary to set DefaultTasksMax to 4096.  
 # The value may be set to a larger or smaller integer or infinity
@@ -68,19 +104,30 @@
   ansible.builtin.slurp:
     src: /etc/sysconfig/sbd
   register: sbd_slurp
+  when: use_sbd | bool
 
 - name: Set SBD set_fact
   ansible.builtin.set_fact:
     sbd_paths:  "{{ sbd_slurp['content'] | b64decode | regex_findall('SBD_DEVICE=(.+)') | last }}"
+  when: use_sbd | bool
   
-- name: Create the cluster on primary
+- name: Create the cluster on primary [sbd]
   ansible.builtin.command:
     cmd: "crm cluster init -y -n qe-cluster -s {{ sbd_paths }} -w softdog -i eth0 -u" 
     creates: /etc/corosync/corosync.conf
-  when: ansible_hostname == 'vmhana01'
+  when:
+   - ansible_hostname == 'vmhana01'
+   - use_sbd | bool
+  
+- name: Create the cluster on primary [azure fencing]
+  ansible.builtin.command:
+    cmd: "crm cluster init -y -n qe-cluster -i eth0 -u" 
+    creates: /etc/corosync/corosync.conf
+  when:
+   - ansible_hostname == 'vmhana01'
+   - not use_sbd | bool
 
   #check crm status
-
 - name: Check the cluster on primary
   ansible.builtin.command:
     cmd: "crm status"     
@@ -124,21 +171,24 @@
   register: sbd_file_check
   changed_when: no
   failed_when: no
-  when: ansible_hostname == 'vmhana01'
+  when: 
+    - ansible_hostname == 'vmhana01'
 
 - name: Set stonith state facts
   ansible.builtin.set_fact:
     # The crm output comprises of spaces and tabs.  The below regexp removes all the spaces to make
     # it a little easier to split.  Test version of crm is crmsh-4.3.1+20220321.bd33abac-150200.5.77.1.noarch
     sbd_tracer: "{{ sbd_file_check.state }}"
-  when: ansible_hostname == 'vmhana01'
+  when:
+    - ansible_hostname == 'vmhana01'
 
-#Split rebuild 
+#Split rebuild to it's own task file 
 - name: Rebuild stonith device
   ansible.builtin.include_tasks: ./rebuild-stonith.yaml
   when:
     - ansible_hostname == 'vmhana01'
     - sbd_tracer == 'absent'
+    - use_sbd | bool
 
 - name: Get cluster status
   ansible.builtin.command: crm configure show
@@ -146,18 +196,26 @@
   changed_when: no
   when: ansible_hostname == 'vmhana01'
   
-- name: Set crm maintainence facts
+- name: Set crm maintenance facts
   ansible.builtin.set_fact:
-    crm_maintainence_mode: "{{ (crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] | default('unknown') }}"
+    crm_maintenance_mode: "{{ (crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] | default('unknown') }}"
     rsc_azure_events: "{{ crm_conf_show.stdout | regex_search('primitive rsc_azure-events') }}"
     cln_azure_events: "{{ crm_conf_show.stdout | regex_search('clone cln_azure-events') }}"
+    rsc_st_azure: "{{ crm_conf_show.stdout | regex_search('rsc_st_azure') }}"
   when: ansible_hostname == 'vmhana01'
 
-- name: Ensure maintainence mode is active
+- name: Ensure maintenance mode is active
   ansible.builtin.command: crm configure property maintenance-mode=true
   when:
     - ansible_hostname == 'vmhana01'
-    - crm_maintainence_mode is false or crm_maintainence_mode == 'unknown'
+    - crm_maintenance_mode is false or crm_maintenance_mode == 'unknown'
+
+- name: Configure azure fencing
+  ansible.builtin.command: "crm configure primitive rsc_stonith_azure stonith:fence_azure_arm params subscriptionId=\"{{ subscription_id }}\" resourceGroup=\"{{ resource_group }}\" tenantId=\"{{ tenant_id }}\" login=\"{{ application_id }}\" passwd=\"{{ app_password }}\" pcmk_monitor_retries=4 pcmk_action_limit=3 power_timeout=240 pcmk_reboot_timeout=900 op monitor interval=3600 timeout=120"
+  when:
+    - inventory_hostname == 'vmhana01'
+    - rsc_st_azure | length == 0
+    - not use_sbd | bool
 
 - name: Add Azure scheduled events to cluster
   ansible.builtin.command: crm configure primitive rsc_azure-events ocf:heartbeat:azure-events op monitor interval=10s
@@ -177,17 +235,17 @@
   changed_when: no
   when: ansible_hostname == 'vmhana01'
 
-- name: Reset crm maintainence facts
+- name: Reset crm maintenance facts
   ansible.builtin.set_fact:
-    crm_maintainence_mode: "{{ (crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] | default('unknown') }}"
+    crm_maintenance_mode: "{{ (crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] | default('unknown') }}"
     rsc_azure_events: "{{ crm_conf_show.stdout | regex_search('primitive rsc_azure-events') }}"
     cln_azure_events: "{{ crm_conf_show.stdout | regex_search('clone cln_azure-events') }}"
   when: ansible_hostname == 'vmhana01'
 
-- name: Ensure maintainence mode is deactivated
+- name: Ensure maintenance mode is deactivated
   ansible.builtin.command: crm configure property maintenance-mode=false
   when:
     - ansible_hostname == 'vmhana01'
-    - crm_maintainence_mode is true or crm_maintainence_mode == 'unknown'
+    - crm_maintenance_mode is true or crm_maintenance_mode == 'unknown'
 
 

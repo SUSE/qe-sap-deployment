@@ -10,6 +10,8 @@
     hooks_dir: myHooks
     site_a: node01 
     site_b: node02
+    sap_hana_install_sid: HDB
+    sap_hana_install_instance_number: 00
 
   tasks:
 
@@ -51,7 +53,6 @@
       - { 'section': 'trace', 'key': 'ha_dr_saphanasr', 'value': 'info'}
     when: copy_result.changed
   
-
   - name: Add hooks into sudoers
     ansible.builtin.lineinfile:
       path: /etc/sudoers.d/HanaSystemReplication
