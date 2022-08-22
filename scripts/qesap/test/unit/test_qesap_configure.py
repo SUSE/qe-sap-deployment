@@ -31,6 +31,23 @@ ansible:
     assert main(args) == 0
 
 
+def test_configure_no_tfvars(args_helper):
+    '''
+    if tfvars template is missing,
+    just create tfvars from the config.yaml content
+    '''
+    provider = 'pinocchio'
+    conf = f"""---
+terraform:
+  provider: {provider}
+ansible:
+    hana_urls: onlyone"""
+    args, tfvar_path, _, _ = args_helper(provider, conf, None)
+    args.append('configure')
+
+    assert main(args) == 0
+
+
 def test_configure_create_tfvars_file(configure_helper):
     """
     Test that 'configure' write a terraform.tfvars file in
@@ -44,7 +61,7 @@ ansible:
     hana_urls: onlyone"""
     args, tfvar_path, _ = configure_helper(provider, conf, [])
 
-    main(args)
+    assert main(args) == 0
 
     assert os.path.isfile(tfvar_path)
 
@@ -67,7 +84,7 @@ ansible:
     "ip_range = 10.0.4.0/24\n"]
     args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
 
-    main(args)
+    assert main(args) == 0
 
     with open(tfvar_path, 'r') as file:
         data = file.readlines()
@@ -96,7 +113,7 @@ ansible:
     "ip_range = 10.0.4.0/24\n"]
     args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
 
-    main(args)
+    assert main(args) == 0
 
     expected_tfvars = tfvar_template
     expected_tfvars.append("region = eu1\n")
@@ -127,7 +144,7 @@ ansible:
     "somethingelse = keep\n"]
     args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
 
-    main(args)
+    assert main(args) == 0
 
     expected_tfvars = [
     "something = yamlrulez\n",

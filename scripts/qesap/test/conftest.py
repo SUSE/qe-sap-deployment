@@ -52,9 +52,10 @@ def args_helper(tmpdir, base_args):
         config_file_name = str(tmpdir / 'config.yaml')
         with open(config_file_name, 'w') as file:
             file.write(conf)
-        with open(os.path.join(provider_path, 'terraform.tfvars.template'), 'w') as file:
-            for line in tfvar_template:
-                file.write(line)
+        if tfvar_template is not None and len(tfvar_template) > 0:
+            with open(os.path.join(provider_path, 'terraform.tfvars.template'), 'w') as file:
+                for line in tfvar_template:
+                    file.write(line)
 
         args = base_args(base_dir=tmpdir, config_file=config_file_name)
 
