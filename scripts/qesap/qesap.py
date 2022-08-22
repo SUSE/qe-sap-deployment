@@ -254,13 +254,14 @@ def cmd_destroy(configure_data, base_project, dryrun):
     return 0
 
 
-def cmd_terraform(configure_data, base_project, dryrun):
+def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
     """ Main executor for the deploy sub-command
 
     Args:
         configure_data (obj): configuration structure
         base_project (str): base project path where to
                       look for the Terraform files
+        destroy (bool): destroy
         dryrun (bool): enable dryrun execution mode
 
     Returns:
@@ -272,8 +273,8 @@ def cmd_terraform(configure_data, base_project, dryrun):
     if not res:
         return 1, f"Invalid folder structure at {base_project}"
 
-    sequence = ['init', 'plan', 'apply']
-    cmds = [[], [], []]
+    sequence = ['init', 'plan', 'apply'] if not destroy else ['destroy']
+    cmds = [[], [], []] if not destroy else [[]]
 
     for idx, seq in enumerate(sequence):
         cmds[idx].append(f"TF_LOG_PATH=terraform.{seq}.log.txt")
@@ -286,6 +287,8 @@ def cmd_terraform(configure_data, base_project, dryrun):
         elif seq == 'apply':
             cmds[idx].append('-auto-approve')
             cmds[idx].append('plan.zip')
+        elif seq == 'destroy':
+            cmds[idx].append('-auto-approve')
         cmds[idx].append('-no-color')
     for command in cmds:
         if dryrun:
@@ -391,6 +394,10 @@ def cli(command_line=None):
     parser_deploy = subparsers.add_parser('deploy', help="Run, in sequence, the Terraform and Ansible deployment steps")
     parser_destroy = subparsers.add_parser('destroy', help="Run, in sequence, the Ansible and Terraform destroy steps")
     parser_terraform = subparsers.add_parser('terraform', help="Only run the Terraform part of the deployment")
+    parser_terraform.add_argument('-d',
+                                  '--destroy',
+                                  action='store_true',
+                                  help='Only destroy terraform setup, without executing ansible')
     parser_ansible = subparsers.add_parser('ansible', help="Only run the Ansible part of the deployment")
 
     parsed_args = parser.parse_args(command_line)
@@ -437,7 +444,8 @@ def main(command_line=None):
         return cmd_terraform(
             parsed_args.configfile,
             parsed_args.basedir,
-            parsed_args.dryrun
+            parsed_args.dryrun,
+            destroy=parsed_args.destroy
         )
     elif parsed_args.command == "ansible":
         log.info("Running Ansible...")

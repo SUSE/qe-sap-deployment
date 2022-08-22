@@ -122,3 +122,41 @@ ansible:
     assert main(args) == 0
 
     run.assert_not_called()
+
+
+@mock.patch("qesap.subprocess_run")
+def test_terraform_call_terraform_destroy(run, args_helper):
+    """
+    Command terraform with -d calls 'terraform destroy'
+    """
+    provider = 'mangiafuoco'
+    conf = f"""---
+terraform:
+  provider: {provider}
+ansible:
+    hana_urls: onlyone"""
+
+    args, terraform_dir, _, _ = args_helper(provider, conf, '')
+
+    args.append('terraform')
+    args.append('-d')
+    log.error(args)
+
+
+
+    run.return_value = (0, [])
+    calls = []
+    calls.append(mock.call([
+        'TF_LOG_PATH=terraform.destroy.log.txt',
+        'TF_LOG=INFO',
+        'terraform',
+        f"-chdir=\"{terraform_dir}\"",
+        'destroy',
+        '-auto-approve',
+        '-no-color']))
+
+    assert main(args) == 0
+    run.assert_called()
+
+
+    run.assert_has_calls(calls)

@@ -125,6 +125,16 @@ def test_cli_terraform(base_args):
     cli(args)
 
 
+def test_cli_terraform_destroy(base_args):
+    '''
+    Test terraform with -d to run destroy mode
+    '''
+    args = base_args()
+    args.append('terraform')
+    args.append('-d')
+    cli(args)
+
+
 def test_cli_ansible_noargs(check_manadatory_args):
     '''
     ansible subcommand at least needs:
