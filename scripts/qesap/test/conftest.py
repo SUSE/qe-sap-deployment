@@ -5,6 +5,27 @@ import os
 import pytest
 
 @pytest.fixture
+def config_yaml_sample():
+    """
+    create yaml config data sample with one string, list and dict variable.
+    :return:
+    dict based data structure
+    """
+    config = """---
+terraform:
+  provider: {}
+ansible:
+    hana_urls: onlyone"""
+    def _callback(provider=None):
+        internal_prov = provider
+        if internal_prov is None:
+            internal_prov = 'pinocchio'
+        return config.format(internal_prov)
+
+    return _callback
+
+
+@pytest.fixture
 def base_args(tmpdir):
     """
     Return bare minimal list of arguments to run any sub-command
@@ -30,7 +51,6 @@ def base_args(tmpdir):
             args.append(config_file_name)
         else:
             args.append(config_file)
-
         return args
 
     return _callback
@@ -58,7 +78,6 @@ def args_helper(tmpdir, base_args):
                     file.write(line)
 
         args = base_args(base_dir=tmpdir, config_file=config_file_name)
-
         return args, provider_path, tfvar_path, hana_vars
 
     return _callback
@@ -85,6 +104,7 @@ def create_config():
         if ver:
             config['version'] = ver
         return config
+
     return _callback
 
 
@@ -95,6 +115,7 @@ def line_match():
     """
     def _callback(string_list, matcher):
         return len([s for s in string_list if matcher in s]) > 0
+
     return _callback
 
 
@@ -120,6 +141,7 @@ def check_duplicate():
                 if len([s for s in lines if setting_field in s]) != 1 :
                     return (False, "Setting '"+setting_field+"' appear more than one time")
         return (True, '')
+
     return _callback
 
 
@@ -153,6 +175,7 @@ def check_multilines():
             if "\\-" in l:
                 return False, "Something like '\\--set' in ["+l+"]. Maybe a missing EOL"
         return (True, '')
+
     return _callback
 
 
@@ -188,7 +211,6 @@ def check_manadatory_args(capsys, tmpdir):
         captured = capsys.readouterr()
         if 'error:' not in captured.err:
             return False
-
         return True
 
     return _callback

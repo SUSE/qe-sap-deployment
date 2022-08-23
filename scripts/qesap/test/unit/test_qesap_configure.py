@@ -15,50 +15,38 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'assets')
 #    log.error(datafiles)
 
 
-def test_configure(configure_helper):
+def test_configure(configure_helper, config_yaml_sample):
     """
     Test the most common and simple execution of configure:
      - ...
     """
     provider = 'pinocchio'
-    conf = f"""---
-terraform:
-  provider: {provider}
-ansible:
-    hana_urls: onlyone"""
+    conf = config_yaml_sample(provider)
     args, _, _ = configure_helper(provider, conf, [])
 
     assert main(args) == 0
 
 
-def test_configure_no_tfvars(args_helper):
+def test_configure_no_tfvars(args_helper, config_yaml_sample):
     '''
     if tfvars template is missing,
     just create tfvars from the config.yaml content
     '''
     provider = 'pinocchio'
-    conf = f"""---
-terraform:
-  provider: {provider}
-ansible:
-    hana_urls: onlyone"""
+    conf = config_yaml_sample(provider)
     args, tfvar_path, _, _ = args_helper(provider, conf, None)
     args.append('configure')
 
     assert main(args) == 0
 
 
-def test_configure_create_tfvars_file(configure_helper):
+def test_configure_create_tfvars_file(configure_helper, config_yaml_sample):
     """
     Test that 'configure' write a terraform.tfvars file in
     <BASE_DIR>/terraform/<PROVIDER>
     """
     provider = 'pinocchio'
-    conf = f"""---
-terraform:
-  provider: {provider}
-ansible:
-    hana_urls: onlyone"""
+    conf = config_yaml_sample(provider)
     args, tfvar_path, _ = configure_helper(provider, conf, [])
 
     assert main(args) == 0
@@ -154,17 +142,13 @@ ansible:
         assert expected_tfvars == data
 
 
-def test_configure_create_ansible_vars(configure_helper):
+def test_configure_create_ansible_vars(configure_helper, config_yaml_sample):
     """
     Test that 'configure' write an azure_hana_media.yaml file in
     <BASE_DIR>/ansible/playbooks/vars
     """
     provider = 'pinocchio'
-    conf = f"""---
-terraform:
-  provider: {provider}
-ansible:
-    hana_urls: something"""
+    conf = config_yaml_sample(provider)
     args, _, hana_vars = configure_helper(provider, conf, [])
     log.error("hana_vars:%s", hana_vars)
     main(args)
