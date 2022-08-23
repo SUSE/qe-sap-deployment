@@ -3,10 +3,12 @@ name: Glue Script
 on:
   push:
     paths:
-      - scripts/qesap/**    
+      - scripts/qesap/**
+      - .github/workflows/gluescript.yml
   pull_request:
     paths:
-      - scripts/qesap/**      
+      - scripts/qesap/**
+      - .github/workflows/gluescript.yml
 
 jobs:
   build:
