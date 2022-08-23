@@ -14,6 +14,12 @@ def config_yaml_sample():
     config = """---
 terraform:
   provider: {}
+  variables:
+    az_region: "westeurope"
+    hana_ips: ["10.0.0.2", "10.0.0.3"]
+    hana_data_disks_configuration:
+      disk_type: "hdd,hdd,hdd"
+      disks_size: "64,64,64"
 ansible:
     hana_urls: onlyone"""
     def _callback(provider=None):
