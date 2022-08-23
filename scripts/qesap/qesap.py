@@ -281,8 +281,6 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
     cmds = [[], [], []] if not destroy else [[]]
 
     for idx, seq in enumerate(sequence):
-        cmds[idx].append(f"TF_LOG_PATH=terraform.{seq}.log.txt")
-        cmds[idx].append('TF_LOG=INFO')
         cmds[idx].append('terraform')
         cmds[idx].append('-chdir="' + cfg_paths['provider'] + '"')
         cmds[idx].append(seq)
@@ -301,6 +299,10 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
             log.debug("Add call:%s", command)
             ret, out = subprocess_run(command)
             log.debug("Terraform process return ret:%s out:%s", ret, out)
+            log_filename = f"terraform.{command[2]}.log.txt"
+            log.error("Write %s getcwd:%s", log_filename, os.getcwd())
+            with open(log_filename, 'w') as log_file:
+                log_file.write('boom')
     return 0
 
 
