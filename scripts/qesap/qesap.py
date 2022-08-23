@@ -278,20 +278,22 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
         return 1, f"Invalid folder structure at {base_project}"
 
     sequence = ['init', 'plan', 'apply'] if not destroy else ['destroy']
-    cmds = [[], [], []] if not destroy else [[]]
+    cmds = []
 
     for idx, seq in enumerate(sequence):
-        cmds[idx].append('terraform')
-        cmds[idx].append('-chdir="' + cfg_paths['provider'] + '"')
-        cmds[idx].append(seq)
+        this_cmd = []
+        this_cmd.append('terraform')
+        this_cmd.append('-chdir=' + cfg_paths['provider'])
+        this_cmd.append(seq)
         if seq == 'plan':
-            cmds[idx].append('-out=plan.zip')
+            this_cmd.append('-out=plan.zip')
         elif seq == 'apply':
-            cmds[idx].append('-auto-approve')
-            cmds[idx].append('plan.zip')
+            this_cmd.append('-auto-approve')
+            this_cmd.append('plan.zip')
         elif seq == 'destroy':
-            cmds[idx].append('-auto-approve')
-        cmds[idx].append('-no-color')
+            this_cmd.append('-auto-approve')
+        this_cmd.append('-no-color')
+        cmds.append(this_cmd)
     for command in cmds:
         if dryrun:
             print(command)
@@ -302,7 +304,7 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
             log_filename = f"terraform.{command[2]}.log.txt"
             log.error("Write %s getcwd:%s", log_filename, os.getcwd())
             with open(log_filename, 'w') as log_file:
-                log_file.write('boom')
+                log_file.write('\n'.join(out))
     return 0
 
 
