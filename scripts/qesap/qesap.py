@@ -7,12 +7,11 @@ import argparse
 import logging
 import sys
 import subprocess
-import re
 import yaml
 from yaml.parser import ParserError
 from yaml.scanner import ScannerError
 from string import Template
-
+from lib.config import yaml_to_tfvars, template_to_tfvars
 
 VERSION  = '0.1'
 
@@ -191,31 +190,11 @@ def cmd_configure(configure_data, base_project, dryrun):
     tfvar_path = cfg_paths['tfvars']
     hana_vars = cfg_paths['hana_vars']
 
-    # Create tfvars file
-    tfvar_content = []
     if cfg_paths['tfvars_template']:
-        with open(cfg_paths['tfvars_template'], 'r') as f:
-            tfvar_content = f.readlines()
-            log.debug("Template:%s", tfvar_content)
-
-        if 'variables' in configure_data['terraform'].keys():
-            log.debug("Config has terraform variables")
-            for k,v in configure_data['terraform']['variables'].items():
-                key_replace = False
-                # Look for k in the template file content
-                for index, line in enumerate(tfvar_content):
-                    match = re.search(k+r'\s?=.*', line)
-                    if match:
-                        log.debug("Replace template %s with [%s = %s]", line, k, v)
-                        tfvar_content[index] = f"{k} = {v}\n"
-                        key_replace = True
-                # add the new key/value pair
-                if not key_replace:
-                    log.debug("[k:%s = v:%s] is not in the template, append it", k, v)
-                    tfvar_content.append(f"{k} = {v}\n")
-        log.debug("Result terraform.tfvars:\n%s", tfvar_content)
-    hanavar_content = {}
-    hanavar_content['hana_urls'] = configure_data['ansible']['hana_urls']
+        tfvar_content = template_to_tfvars(cfg_paths['tfvars_template'], configure_data)
+    else:
+        tfvar_content = yaml_to_tfvars(configure_data)
+    hanavar_content = {'hana_urls': configure_data['ansible']['hana_urls']}
     log.debug("Result %s:\n%s", hana_vars, hanavar_content)
     if dryrun:
         print(f"Create {tfvar_path} with content {tfvar_content}")

@@ -4,6 +4,42 @@ import os
 
 import pytest
 
+
+@pytest.fixture()
+def config_data_sample():
+    """
+    Config data as if obtained from yaml file.
+    'variables' section must contains only one string, list and dict.
+    :return:
+    dict based data structure
+    """
+    def _callback(provider='pinocchio',
+                  az_region='westeurope',
+                  hana_ips=None,
+                  hana_disk_configuration=None):
+
+        # Default values
+        hana_ips = hana_ips if hana_ips else ['10.0.0.2', '10.0.0.3']
+        hana_disk_configuration = hana_disk_configuration if \
+            hana_disk_configuration else {'disk_type': 'hdd,hdd,hdd',  'disks_size': '64,64,64'}
+
+        # Config template
+        config = {'name': 'geppetto',
+                  'terraform': {
+                      'provider': provider,
+                      'variables': {
+                          'az_region': az_region,
+                          'hana_ips': hana_ips,
+                          'hana_data_disks_configuration': hana_disk_configuration
+                      }
+                  },
+                  'ansible': {'hana_urls': ['SAPCAR_URL', 'SAP_HANA_URL', 'SAP_CLIENT_SAR_URL']}
+                  }
+
+        return config
+    return _callback
+
+
 @pytest.fixture
 def config_yaml_sample():
     """
@@ -21,7 +57,11 @@ terraform:
       disk_type: "hdd,hdd,hdd"
       disks_size: "64,64,64"
 ansible:
-    hana_urls: onlyone"""
+  hana_urls:
+    - SAPCAR_URL
+    - SAP_HANA_URL
+    - SAP_CLIENT_SAR_URL"""
+
     def _callback(provider=None):
         internal_prov = provider
         if internal_prov is None:
