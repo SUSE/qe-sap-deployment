@@ -156,22 +156,14 @@ def test_configure_create_ansible_vars(configure_helper, config_yaml_sample):
     assert os.path.isfile(hana_vars)
 
 
-def test_configure_ansible_vars_content(configure_helper):
+def test_configure_ansible_vars_content(configure_helper, config_yaml_sample):
     """
     Test that 'configure' write an azure_hana_media.yaml with
     expected content
     """
     provider = 'pinocchio'
-    conf = f"""---
-terraform:
-  provider: {provider}
-ansible:
-  hana_urls:
-    - SAPCAR_URL
-    - SAP_HANA_URL
-    - SAP_CLIENT_SAR_URL"""
+    conf = config_yaml_sample(provider)
     args, _, hana_vars = configure_helper(provider, conf, [])
-
     main(args)
 
     with open(hana_vars, 'r') as file:
