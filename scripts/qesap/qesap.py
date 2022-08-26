@@ -11,7 +11,7 @@ import yaml
 from yaml.parser import ParserError
 from yaml.scanner import ScannerError
 from string import Template
-from lib.config import yaml_to_tfvars, template_to_tfvars
+from lib.config import yaml_to_tfvars, template_to_tfvars, terraform_yml
 
 VERSION  = '0.1'
 
@@ -108,20 +108,22 @@ def validate_config(config):
         log.error("Empty config")
         return False
 
-    if 'terraform' not in config.keys():
-        log.error("Missing key terraform in the config")
+    if (
+        'apiver' not in config.keys()
+        or config['apiver'] is None
+        or not isinstance(config['apiver'], int) ):
+        log.error("Error at 'apiver' in the config")
         return False
 
-    if config['terraform'] is None or 'provider' not in config['terraform'].keys():
-        log.error("Missing 'provider' key in the config['terraform']")
-        return False
-
-    if config['terraform']['provider'] is None:
-        log.error("Empty 'provider' in the config")
+    if (
+        'provider' not in config.keys()
+        or config['provider'] is None
+        or not isinstance(config['provider'], str) ):
+        log.error("Error at 'provider' in the config")
         return False
 
     if not 'ansible' in config.keys() or config['ansible'] is None:
-        log.error("Empty 'ansible' in the config")
+        log.error("Error at 'ansible' in the config")
         return False
 
     if not 'hana_urls' in config['ansible'].keys():
@@ -144,7 +146,7 @@ def validate_basedir(basedir, config):
     if not os.path.isdir(terraform_dir):
         log.error("Missing %s", terraform_dir)
         return False, None
-    result['provider'] = os.path.join(terraform_dir, config['terraform']['provider'])
+    result['provider'] = os.path.join(terraform_dir, config['provider'])
     if not os.path.isdir(result['provider']):
         log.error("Missing %s", result['terraform'])
         return False, None
@@ -191,17 +193,24 @@ def cmd_configure(configure_data, base_project, dryrun):
     hana_vars = cfg_paths['hana_vars']
 
     if cfg_paths['tfvars_template']:
+        log.debug("tfvar template %s", cfg_paths['tfvars_template'])
         tfvar_content = template_to_tfvars(cfg_paths['tfvars_template'], configure_data)
-    else:
+    elif terraform_yml(configure_data):
+        log.debug("tfvar template not present")
         tfvar_content = yaml_to_tfvars(configure_data)
+    else:
+        return 1, "No terraform.tfvars.template neither terraform in the configuration"
+
     hanavar_content = {'hana_urls': configure_data['ansible']['hana_urls']}
     log.debug("Result %s:\n%s", hana_vars, hanavar_content)
     if dryrun:
         print(f"Create {tfvar_path} with content {tfvar_content}")
         print(f"Create {hana_vars} with content {hanavar_content}")
     else:
+        log.info("Write %s", tfvar_path)
         with open(tfvar_path, 'w', encoding='utf-8') as file:
             file.write(''.join(tfvar_content))
+        log.info("Write %s", hana_vars)
         with open(hana_vars, 'w', encoding='utf-8') as file:
             yaml.dump(hanavar_content, file)
     return 0, 'ok'
@@ -299,6 +308,12 @@ def cmd_ansible(configure_data, base_project, dryrun):
     Returns:
         int: execution result, 0 means OK. It is mind to be used as script exit code
     """
+    ansible_common = ['ansible-playbook', '-i']
+    ansible_cmd = []
+    for playbook in configure_data['ansible']['create']:
+        ansible_cmd = ansible_common.copy()
+        ansible_cmd.append(playbook)
+        subprocess_run(ansible_cmd)
     return 0
 
 
@@ -377,7 +392,8 @@ def cli(command_line=None):
         description='''List of qesap subcommands, each of them is usually associated to a specific procedure''',
         dest='command')
 
-    parser_configure = subparsers.add_parser('configure', help="Generate all Terraform, Ansible configuration file starting from the main global YAML configuration file")
+    parser_configure = subparsers.add_parser('configure',
+    help="Generate all Terraform, Ansible configuration file starting from the main global YAML configuration file")
     parser_deploy = subparsers.add_parser('deploy', help="Run, in sequence, the Terraform and Ansible deployment steps")
     parser_destroy = subparsers.add_parser('destroy', help="Run, in sequence, the Ansible and Terraform destroy steps")
     parser_terraform = subparsers.add_parser('terraform', help="Only run the Terraform part of the deployment")

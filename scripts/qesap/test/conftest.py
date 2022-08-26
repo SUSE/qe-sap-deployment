@@ -33,7 +33,9 @@ def config_data_sample():
                           'hana_data_disks_configuration': hana_disk_configuration
                       }
                   },
-                  'ansible': {'hana_urls': ['SAPCAR_URL', 'SAP_HANA_URL', 'SAP_CLIENT_SAR_URL']}
+                  'ansible': {
+                      'hana_urls': ['SAPCAR_URL', 'SAP_HANA_URL', 'SAP_CLIENT_SAR_URL']
+                      }
                   }
 
         return config
@@ -48,8 +50,9 @@ def config_yaml_sample():
     dict based data structure
     """
     config = """---
+apiver: 1
+provider: {}
 terraform:
-  provider: {}
   variables:
     az_region: "westeurope"
     hana_ips: ["10.0.0.2", "10.0.0.3"]
@@ -209,7 +212,8 @@ def check_multilines():
         """
     def _callback(lines):
         if len(lines) <= 1:
-            return False, "trento_cluster_install.sh should be a multi line script but it is only " + str(len(lines)) + " lines long."
+            return False,
+            "trento_cluster_install.sh should be a multi line script but it is only " + str(len(lines)) + " lines long."
         for l in lines[:-1]:
             if l[-1] != "\n":
                 return False, "Last char in ["+l+"] is not \n"

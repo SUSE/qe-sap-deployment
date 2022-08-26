@@ -44,21 +44,42 @@ def yaml_to_tfvars(yaml_data):
     return config_out
 
 
+def terraform_yml(configure_data):
+    """
+    Check if Terraform:variables are present in the config.yaml
+    """
+    if not configure_data:
+        return False
+
+    if 'terraform' not in configure_data.keys():
+        return False
+    
+    if configure_data['terraform'] is None:
+        return False
+
+    if 'variables' not in configure_data['terraform'].keys():
+        return False
+
+    return True
+
+
+
 def template_to_tfvars(tfvars_template, configure_data):
     """ takes
 
     Args:
-        configure_data (dict): configuration data sctructure
+        configure_data (dict): configuration data structure
         tfvars_template (str): path to the tfvars template file
 
     Returns:
         bool: True(pass)/False(failure)
     """
+    log.info("Read %s", tfvars_template)
     with open(tfvars_template, 'r') as f:
         tfvar_content = f.readlines()
         log.debug("Template:%s", tfvar_content)
 
-        if 'variables' in configure_data['terraform'].keys():
+        if terraform_yml(configure_data):
             log.debug("Config has terraform variables")
             for k,v in configure_data['terraform']['variables'].items():
                 key_replace = False

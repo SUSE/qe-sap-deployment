@@ -27,6 +27,53 @@ def test_configure(configure_helper, config_yaml_sample):
     assert main(args) == 0
 
 
+def test_configure_apiver(configure_helper):
+    '''
+    The configure has to have a apiver field at top level
+    '''
+    provider = 'pinocchio'
+    conf = f"""---
+provider: {provider}
+terraform:
+ansible:
+    hana_urls: something"""
+    tfvar_template = [
+    "something = static\n",
+    "hananame = hahaha\n",
+    "ip_range = 10.0.4.0/24\n"]
+    args, tfvar_path, _ = configure_helper(provider, conf, [])
+
+    assert main(args) == 1
+
+    conf = f"""---
+apiver:
+provider: {provider}
+terraform:
+ansible:
+    hana_urls: something"""
+    tfvar_template = [
+    "something = static\n",
+    "hananame = hahaha\n",
+    "ip_range = 10.0.4.0/24\n"]
+    args, tfvar_path, _ = configure_helper(provider, conf, [])
+
+    assert main(args) == 1
+
+    conf = f"""---
+apiver: chiodo
+provider: {provider}
+terraform:
+ansible:
+    hana_urls: something"""
+    tfvar_template = [
+    "something = static\n",
+    "hananame = hahaha\n",
+    "ip_range = 10.0.4.0/24\n"]
+    args, tfvar_path, _ = configure_helper(provider, conf, [])
+
+    assert main(args) == 1
+
+
 def test_configure_no_tfvars(args_helper, config_yaml_sample):
     '''
     if tfvars template is missing,
@@ -54,6 +101,24 @@ def test_configure_create_tfvars_file(configure_helper, config_yaml_sample):
     assert os.path.isfile(tfvar_path)
 
 
+def test_configure_tfvars_novariables_notemplate(configure_helper):
+    """
+    If no terraform.tfvars.template is present and
+    no terraform::variables is present in the config.yaml
+    it has to fails.
+    """
+    provider = 'pinocchio'
+
+    conf = f"""---
+apiver: 1
+provider: {provider}
+ansible:
+    hana_urls: something"""
+    args, tfvar_path, _ = configure_helper(provider, conf, None)
+
+    assert main(args) == 1
+
+
 def test_configure_tfvars_novariables(configure_helper):
     """
     Test that 'configure' generated terraform.tfvars file
@@ -61,15 +126,30 @@ def test_configure_tfvars_novariables(configure_helper):
     if no variables are provided in the config.yaml
     """
     provider = 'pinocchio'
-    conf = f"""---
-terraform:
-  provider: {provider}
-ansible:
-    hana_urls: something"""
     tfvar_template = [
     "something = static\n",
     "hananame = hahaha\n",
     "ip_range = 10.0.4.0/24\n"]
+
+    conf = f"""---
+apiver: 1
+provider: {provider}
+terraform:
+ansible:
+    hana_urls: something"""
+    args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
+
+    assert main(args) == 0
+
+    with open(tfvar_path, 'r') as file:
+        data = file.readlines()
+        assert tfvar_template == data
+
+    conf = f"""---
+apiver: 1
+provider: {provider}
+ansible:
+    hana_urls: something"""
     args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
@@ -88,8 +168,9 @@ def test_configure_tfvars_with_variables(configure_helper):
     """
     provider = 'pinocchio'
     conf = f"""---
+apiver: 1
+provider: {provider}
 terraform:
-  provider: {provider}
   variables:
     region : eu1
     deployment_name : rocket
@@ -120,8 +201,9 @@ def test_configure_tfvars_overwrite_variables(configure_helper):
     provider = 'pinocchio'
 
     conf = f"""---
+apiver: 1
+provider: {provider}
 terraform:
-  provider: {provider}
   variables:
     something : yamlrulez
 ansible:
@@ -150,7 +232,7 @@ def test_configure_create_ansible_vars(configure_helper, config_yaml_sample):
     provider = 'pinocchio'
     conf = config_yaml_sample(provider)
     args, _, hana_vars = configure_helper(provider, conf, [])
-    log.error("hana_vars:%s", hana_vars)
+
     main(args)
 
     assert os.path.isfile(hana_vars)
@@ -162,7 +244,17 @@ def test_configure_ansible_vars_content(configure_helper, config_yaml_sample):
     expected content
     """
     provider = 'pinocchio'
-    conf = config_yaml_sample(provider)
+    conf = f"""---
+apiver: 1
+provider: {provider}
+terraform:
+    variables:
+        az_region: "westeurope"
+ansible:
+  hana_urls:
+    - SAPCAR_URL
+    - SAP_HANA_URL
+    - SAP_CLIENT_SAR_URL"""
     args, _, hana_vars = configure_helper(provider, conf, [])
     main(args)
 
@@ -175,7 +267,7 @@ def test_configure_ansible_vars_content(configure_helper, config_yaml_sample):
         assert 'SAP_CLIENT_SAR_URL' in data['hana_urls']
 
 
-def test_configure_dryrun(configure_helper):
+def test_configure_dryrun(config_yaml_sample, configure_helper):
     """
     Test that 'configure' in DryRun mode
     does NOT write a terraform.tfvars file in
@@ -184,11 +276,7 @@ def test_configure_dryrun(configure_helper):
     <BASE_DIR>/ansible/playbooks/vars
     """
     provider = 'pinocchio'
-    conf = f"""---
-terraform:
-  provider: {provider}
-ansible:
-    hana_urls: something"""
+    conf = config_yaml_sample(provider)
     tfvar_template = [
     "something = static\n",
     "hananame = hahaha\n",
@@ -209,10 +297,15 @@ def test_configure_checkfolder(base_args, tmpdir):
      - <BASEDIR>/terraform
      - <BASEDIR>/ansible/playbooks/vars/
     """
+    provider = 'pinocchio'
     config_file_name = str(tmpdir / 'config.yaml')
     with open(config_file_name, 'w') as file:
-        file.write(f"""terraform:
-  provider: Pinocchio""")
+        file.write(f"""---
+apiver: 1
+provider: {provider}
+ansible:
+    hana_urls: onlyone
+""")
 
     folder_1 = tmpdir / '1'
     os.makedirs(folder_1)
@@ -232,7 +325,7 @@ def test_configure_checkfolder(base_args, tmpdir):
     os.makedirs(folder_3)
     terraform_3 = folder_3 / 'terraform'
     os.makedirs(terraform_3)
-    cloud_3 = terraform_3 / 'Pinocchio'
+    cloud_3 = terraform_3 / provider
     os.makedirs(cloud_3)
     args = base_args(base_dir=folder_3, config_file=config_file_name)
     args.append('configure')
@@ -268,15 +361,17 @@ def test_configure_fail_at_missing_params(configure_helper):
     assert main(args) == 1
 
     conf = """---
+apiver: 1
+provider:
 terraform:
-    provider:
 ansible:"""
     args, tfvar_path, _ = configure_helper('pinocchio', conf, [])
     assert main(args) == 1
 
     conf = """---
-terraform:
-    provider: something
+apiver: 1
+provider: something
+terraform:    
 ansible:"""
     args, tfvar_path, _ = configure_helper('pinocchio', conf, [])
     assert main(args) == 1
@@ -295,26 +390,12 @@ def test_configure_check_terraform_cloud_provider(base_args, tmpdir):
     os.makedirs(os.path.join(tmpdir,'terraform'))
     config_file_name = str(tmpdir / 'config.yaml')
     with open(config_file_name, 'w') as file:
-        file.write(f"""terraform:
-  provider: {provider}""")
-
-    args = base_args(base_dir=tmpdir, config_file=config_file_name)
-    args.append('configure')
-    assert main(args) == 1
-
-
-def test_configure_tfvarstemplate(base_args, tmpdir):
-    """
-    Test that 'configure' fails if
-    <BASE_DIR>/terraform/<PROVIDER>/terraform.tfvars.template
-    is missing
-    """
-    provider = 'pinocchio'
-    os.makedirs(os.path.join(tmpdir,'terraform', provider))
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
-        file.write(f"""terraform:
-  provider: {provider}""")
+        file.write(f"""---
+apiver: 1
+provider: {provider}
+ansible:
+    hana_urls: onlyone
+""")
 
     args = base_args(base_dir=tmpdir, config_file=config_file_name)
     args.append('configure')

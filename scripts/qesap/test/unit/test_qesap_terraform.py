@@ -25,7 +25,6 @@ def test_terraform_call_terraform(run, terraform_cmd_args, args_helper, config_y
 
     args, terraform_dir, _, _ = args_helper(provider, conf, '')
     args.append('terraform')
-    log.error(args)
     run.return_value = (0, [])
     assert main(args) == 0
     run.assert_called()
