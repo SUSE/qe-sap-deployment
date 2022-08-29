@@ -7,6 +7,7 @@ import argparse
 import logging
 import sys
 import subprocess
+import re
 import yaml
 from yaml.parser import ParserError
 from yaml.scanner import ScannerError
@@ -296,7 +297,7 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
     return 0
 
 
-def cmd_ansible(configure_data, base_project, dryrun):
+def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
     """ Main executor for the deploy sub-command
 
     Args:
@@ -308,12 +309,57 @@ def cmd_ansible(configure_data, base_project, dryrun):
     Returns:
         int: execution result, 0 means OK. It is mind to be used as script exit code
     """
-    ansible_common = ['ansible-playbook', '-i']
+    ansible_common = ['ansible-playbook']
+    if verbose:
+        ansible_common.append('-vvvv')
+    ansible_common.append('-i')
+    inventory = os.path.join(base_project, 'terraform', configure_data['provider'], 'inventory.yaml')
+    if not os.path.isfile(inventory):
+        log.error("Missing inventory at %s", inventory)
+        return 1
+    ansible_common.append(inventory)
+    
     ansible_cmd = []
-    for playbook in configure_data['ansible']['create']:
+    if 'ansible' not in configure_data.keys():
+        log.info('No Ansible playbooks to play')
+        return 0
+    if configure_data['ansible'] is None:
+        log.info('No Ansible playbooks to play')
+        return 0
+
+    sequence = 'create'
+    if destroy:
+        sequence = 'destroy'
+    if sequence not in configure_data['ansible'].keys():
+        log.info('No Ansible playbooks to play')
+        return 0
+
+    ansible_cmd_seq = []
+    for playbook in configure_data['ansible'][sequence]:
         ansible_cmd = ansible_common.copy()
-        ansible_cmd.append(playbook)
-        subprocess_run(ansible_cmd)
+        playbook_cmd = playbook.split(' ')
+        log.debug("playbook:%s", playbook)
+        playbook_filename = os.path.join(base_project, 'ansible', 'playbooks', playbook_cmd[0])
+        if not os.path.isfile(playbook_filename):
+            log.error("Missing playbook at %s", playbook_filename)
+            return 1
+        ansible_cmd.append(playbook_filename)
+        for ply_cmd in playbook_cmd[1:]:
+            match = re.search(r'\${(.*)}', ply_cmd)
+            if match:
+                value = str(configure_data['ansible']['variables'][match.group(1)])
+                log.debug("Replace value %s in %s", value, ply_cmd )
+                ansible_cmd.append(re.sub(r'\${(.*)}', value, ply_cmd))
+            else:
+                ansible_cmd.append(ply_cmd)
+        ansible_cmd_seq.append(ansible_cmd)
+
+    for cmd in ansible_cmd_seq:
+        ret, out = subprocess_run(cmd)
+        log.info("ret:%d, out:%s", ret, out)
+        if ret != 0:
+            log.error("cmd:%s return not zero %d", cmd, ret)
+            return ret
     return 0
 
 
@@ -402,6 +448,10 @@ def cli(command_line=None):
                                   action='store_true',
                                   help='Only destroy terraform setup, without executing ansible')
     parser_ansible = subparsers.add_parser('ansible', help="Only run the Ansible part of the deployment")
+    parser_ansible.add_argument('-d',
+                                '--destroy',
+                                action='store_true',
+                                help='Only destroy terraform setup, without executing ansible')
 
     parsed_args = parser.parse_args(command_line)
     return parsed_args
@@ -455,7 +505,9 @@ def main(command_line=None):
         return cmd_ansible(
             parsed_args.configfile,
             parsed_args.basedir,
-            parsed_args.dryrun
+            parsed_args.dryrun,
+            parsed_args.verbose,
+            destroy=parsed_args.destroy
         )
     else:
         log.error("Unknown command:%s", parsed_args.command)

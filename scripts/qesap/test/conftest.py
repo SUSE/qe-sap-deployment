@@ -75,6 +75,58 @@ ansible:
 
 
 @pytest.fixture
+def provider_dir(tmpdir):
+    def _callback(provider):
+        provider_path = os.path.join(tmpdir,'terraform', provider)
+        if not os.path.isdir(provider_path):
+            os.makedirs(provider_path)
+        return provider_path
+
+    return _callback
+
+
+@pytest.fixture
+def playbooks_dir(tmpdir):
+    def _callback():
+        playbooks_path = os.path.join(tmpdir,'ansible', 'playbooks')
+        if not os.path.isdir(playbooks_path):
+            os.makedirs(playbooks_path)
+        return playbooks_path
+
+    return _callback
+
+
+@pytest.fixture
+def create_playbooks(playbooks_dir):
+    def _callback(playbook_list):
+        playbook_filename_list = []
+        for playbook in playbook_list:
+            ans_plybk_path = playbooks_dir()
+            playbook_filename = os.path.join(ans_plybk_path, playbook + '.yaml')
+            with open(playbook_filename, 'w') as f:
+                f.write("")
+            playbook_filename_list.append(playbook_filename)
+        return playbook_filename_list
+
+    return _callback
+
+
+@pytest.fixture
+def create_inventory(provider_dir):
+    """
+    Create an empty inventory file
+    """
+    def _callback(provider):
+        provider_path = provider_dir(provider)
+        inventory_filename = os.path.join(provider_path,'inventory.yaml')
+        with open(inventory_filename, 'w') as f:
+            f.write("")
+        return inventory_filename
+
+    return _callback
+
+
+@pytest.fixture
 def base_args(tmpdir):
     """
     Return bare minimal list of arguments to run any sub-command
@@ -82,9 +134,10 @@ def base_args(tmpdir):
         base_dir (str): used for -b
         config_file (str): used for -c
     """
-    def _callback(base_dir=None, config_file=None):
+    def _callback(base_dir=None, config_file=None, verbose=True):
         args = list()
-        args.append('--verbose')
+        if verbose:
+            args.append('--verbose')
 
         args.append('--base-dir')
         if base_dir is None:
@@ -94,6 +147,7 @@ def base_args(tmpdir):
 
         args.append('--config-file')
         if config_file is None:
+            # create an empty config.yaml
             config_file_name = str(tmpdir / 'config.yaml')
             with open(config_file_name, 'w') as file:
                 file.write("")
@@ -106,11 +160,10 @@ def base_args(tmpdir):
 
 
 @pytest.fixture
-def args_helper(tmpdir, base_args):
+def args_helper(tmpdir, base_args, provider_dir):
     def _callback(provider, conf, tfvar_template):
-        provider_path = os.path.join(tmpdir,'terraform', provider)
-        if not os.path.isdir(provider_path):
-            os.makedirs(provider_path)
+
+        provider_path = provider_dir(provider)
         tfvar_path = os.path.join(provider_path,'terraform.tfvars')
 
         ansiblevars_path = os.path.join(tmpdir,'ansible', 'playbooks', 'vars')
