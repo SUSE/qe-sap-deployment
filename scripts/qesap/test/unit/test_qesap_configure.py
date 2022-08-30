@@ -1,4 +1,5 @@
 import os
+import re
 import yaml
 import logging
 log = logging.getLogger(__name__)
@@ -74,17 +75,42 @@ ansible:
     assert main(args) == 1
 
 
-def test_configure_no_tfvars(args_helper, config_yaml_sample):
+def test_configure_no_tfvars_template(args_helper, config_yaml_sample):
     '''
     if tfvars template is missing,
     just create tfvars from the config.yaml content
     '''
     provider = 'pinocchio'
     conf = config_yaml_sample(provider)
+
+    # Create some regexp from the injected conf.yaml
+    # to be used later in the verification against the generated terraform.tfvars
+    regexp_set = []
+    conf_dict = yaml.safe_load(conf)
+    for k, v in conf_dict['terraform']['variables'].items():
+        # just focus on the strings variables
+        if isinstance(v, str):
+            regexp_set.append(r'{0}\s?=\s?"{1}"'.format(k,v))
+
     args, tfvar_path, _, _ = args_helper(provider, conf, None)
     args.append('configure')
+    tfvar_file = os.path.join(tfvar_path, 'terraform.tfvars')
 
     assert main(args) == 0
+
+    assert os.path.isfile(tfvar_file)
+    with open(tfvar_file, 'r') as f:
+        tfvars_lines = f.readlines()
+        for var_re in regexp_set:
+            one_match = False
+            for line in tfvars_lines:
+                #log.debug("Check %s", line)
+                if not one_match:
+                    match = re.search(var_re, line)
+                    if match:
+                        log.debug("Line [%s] match with [%s]", line, var_re)
+                        one_match = True
+            assert one_match, 'Variable:' + var_re + ' missing in the generated terraform.tfvars'
 
 
 def test_configure_create_tfvars_file(configure_helper, config_yaml_sample):
@@ -94,11 +120,11 @@ def test_configure_create_tfvars_file(configure_helper, config_yaml_sample):
     """
     provider = 'pinocchio'
     conf = config_yaml_sample(provider)
-    args, tfvar_path, _ = configure_helper(provider, conf, [])
+    args, tfvar_file, _ = configure_helper(provider, conf, [])
 
     assert main(args) == 0
 
-    assert os.path.isfile(tfvar_path)
+    assert os.path.isfile(tfvar_file)
 
 
 def test_configure_tfvars_novariables_notemplate(configure_helper):
@@ -179,12 +205,15 @@ ansible:
     tfvar_template = [
     "something = static\n",
     "hananame = hahaha\n",
-    "ip_range = 10.0.4.0/24\n"]
+    "ip_range = 10.0.4.0/24"]
     args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
 
-    expected_tfvars = tfvar_template
+    expected_tfvars = tfvar_template[0:2]
+    # EOL is expected to be added in terraform.tfvars
+    # if missing at the end of the template
+    expected_tfvars.append(tfvar_template[2] + '\n')
     expected_tfvars.append("region = eu1\n")
     expected_tfvars.append("deployment_name = rocket\n")
     with open(tfvar_path, 'r') as file:

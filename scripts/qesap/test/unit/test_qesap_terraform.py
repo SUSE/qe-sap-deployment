@@ -44,9 +44,39 @@ def test_terraform_call_terraform(run, terraform_cmd_args, args_helper, config_y
     run.assert_has_calls(calls)
 
 
+
+@mock.patch("qesap.subprocess_run", side_effect = [(0, []),(1, []),(1, [])])
+def test_terraform_stop_at_failure(run, args_helper, config_yaml_sample):
+    """
+    Command stop at first subprocess(terraform) with not zero exit code.
+    Simulate a failure at 'terraform plan'
+    """
+    provider = 'mangiafuoco'
+    conf = config_yaml_sample(provider)
+
+    args, terraform_dir, _, _ = args_helper(provider, conf, '')
+    args.append('terraform')
+
+    calls = []
+    terraform_cmd_common = [
+        'terraform',
+        f"-chdir={terraform_dir}"]
+    for terraform_cmd_args in [['init'], ['plan', '-out=plan.zip']]:
+        terraform_cmd = terraform_cmd_common.copy()
+        terraform_cmd += terraform_cmd_args
+        terraform_cmd.append('-no-color')
+        calls.append(mock.call(terraform_cmd))
+
+    assert main(args) == 1
+
+    run.assert_called()
+    run.assert_has_calls(calls)
+    assert not any(['apply' in name[0] for name, args in run.call_args_list]), 'Unexpected terraform apply call'
+
+
 @mock.patch("qesap.subprocess_run")
 @pytest.mark.parametrize("terraform_cmd_args", terraform_cmds)
-def test_terraform_terraform_logs(run, terraform_cmd_args, args_helper, config_yaml_sample, tmpdir):
+def test_terraform_logs(run, terraform_cmd_args, args_helper, config_yaml_sample, tmpdir):
     """
     Command terraform create one log file for each command:
      - terraform.{cmd}.log.txt
@@ -94,7 +124,7 @@ def test_terraform_logs_content(run, terraform_cmd_args, args_helper, config_yam
 @pytest.mark.parametrize("terraform_cmd_args", [('init')])
 def test_integration_terraform(terraform_cmd_args, args_helper, config_yaml_sample, tmpdir):
     """
-    Each terraform log file contains terraform stdout
+    Run a test with the true Terraform
     """
     provider = 'azure'
     conf = config_yaml_sample(provider)

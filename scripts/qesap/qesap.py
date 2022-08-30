@@ -57,7 +57,8 @@ def subprocess_run(cmd):
         proc = subprocess.run(cmd, capture_output=True, check=False)
         if proc.returncode != 0:
             log.error("Error %d in %s", proc.returncode, ' '.join(cmd[0:1]))
-            log.error(proc.stderr)
+            for err_line in proc.stderr.decode('UTF-8').splitlines():
+                log.error("          %s", err_line)
             return (proc.returncode, [])
         stdout = [l.decode("utf-8") for l in proc.stdout.splitlines()]
     else:
@@ -287,13 +288,16 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
         if dryrun:
             print(command)
         else:
-            log.debug("Add call:%s", command)
+            log.info("Run:     %s\n", command)
             ret, out = subprocess_run(command)
             log.debug("Terraform process return ret:%s out:%s", ret, out)
             log_filename = f"terraform.{command[2]}.log.txt"
-            log.error("Write %s getcwd:%s", log_filename, os.getcwd())
+            log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
             with open(log_filename, 'w') as log_file:
                 log_file.write('\n'.join(out))
+            if ret != 0:
+                log.error("command:%s return not zero %d", command, ret)
+                return ret
     return 0
 
 

@@ -76,7 +76,7 @@ def template_to_tfvars(tfvars_template, configure_data):
     """
     log.info("Read %s", tfvars_template)
     with open(tfvars_template, 'r') as f:
-        tfvar_content = f.readlines()
+        tfvar_content = ['{}\n'.format(line.rstrip()) for line in f.readlines()]
         log.debug("Template:%s", tfvar_content)
 
         if terraform_yml(configure_data):
