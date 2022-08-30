@@ -199,7 +199,7 @@ provider: {provider}
 terraform:
   variables:
     region : eu1
-    deployment_name : rocket
+    deployment_name : "rocket"
 ansible:
     hana_urls: something"""
     tfvar_template = [
@@ -214,8 +214,42 @@ ansible:
     # EOL is expected to be added in terraform.tfvars
     # if missing at the end of the template
     expected_tfvars.append(tfvar_template[2] + '\n')
-    expected_tfvars.append("region = eu1\n")
-    expected_tfvars.append("deployment_name = rocket\n")
+    expected_tfvars.append('region = "eu1"\n')
+    expected_tfvars.append('deployment_name = "rocket"\n')
+    with open(tfvar_path, 'r') as file:
+        data = file.readlines()
+        assert expected_tfvars == data
+
+
+def test_configure_tfvars_string_commas(configure_helper):
+    """
+    Terraform.tfvars need commas around all strings variables
+    """
+    provider = 'pinocchio'
+    conf = f"""---
+apiver: 1
+provider: {provider}
+terraform:
+  variables:
+    region : eu1
+    deployment_name : "rocket"
+    os_image: SUSE:sles-sap-15-sp3-byos:gen2:2022.05.05
+    public_key: /root/secret/id_rsa.pub
+ansible:
+    hana_urls: something"""
+    tfvar_template = ["something = static"]
+    args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
+
+    assert main(args) == 0
+
+    expected_tfvars = []
+    # EOL is expected to be added in terraform.tfvars
+    # if missing at the end of the template
+    expected_tfvars.append(tfvar_template[0] + '\n')
+    expected_tfvars.append('region = "eu1"\n')
+    expected_tfvars.append('deployment_name = "rocket"\n')
+    expected_tfvars.append('os_image = "SUSE:sles-sap-15-sp3-byos:gen2:2022.05.05"\n')
+    expected_tfvars.append('public_key = "/root/secret/id_rsa.pub"\n')
     with open(tfvar_path, 'r') as file:
         data = file.readlines()
         assert expected_tfvars == data
