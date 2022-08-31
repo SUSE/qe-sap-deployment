@@ -103,10 +103,29 @@ def create_playbooks(playbooks_dir):
         for playbook in playbook_list:
             ans_plybk_path = playbooks_dir()
             playbook_filename = os.path.join(ans_plybk_path, playbook + '.yaml')
-            with open(playbook_filename, 'w') as f:
+            with open(playbook_filename, 'w', encoding='utf-8') as f:
                 f.write("")
             playbook_filename_list.append(playbook_filename)
         return playbook_filename_list
+
+    return _callback
+
+
+@pytest.fixture
+def ansible_config():
+    def _callback(provider, playbooks):
+        config_content = f"""---
+apiver: 1
+provider: {provider}
+ansible:
+    hana_urls: somesome"""
+
+        for seq in ['create', 'destroy']:
+            if seq in playbooks.keys():
+                config_content += f"\n    {seq}:"""
+                for play in playbooks[seq]:
+                    config_content += f"\n        - {play}.yaml"
+        return config_content
 
     return _callback
 
@@ -119,7 +138,7 @@ def create_inventory(provider_dir):
     def _callback(provider):
         provider_path = provider_dir(provider)
         inventory_filename = os.path.join(provider_path,'inventory.yaml')
-        with open(inventory_filename, 'w') as f:
+        with open(inventory_filename, 'w', encoding='utf-8') as f:
             f.write("")
         return inventory_filename
 
@@ -149,7 +168,7 @@ def base_args(tmpdir):
         if config_file is None:
             # create an empty config.yaml
             config_file_name = str(tmpdir / 'config.yaml')
-            with open(config_file_name, 'w') as file:
+            with open(config_file_name, 'w', encoding='utf-8') as file:
                 file.write("")
             args.append(config_file_name)
         else:
@@ -172,10 +191,10 @@ def args_helper(tmpdir, base_args, provider_dir):
         hana_vars = os.path.join(ansiblevars_path, 'azure_hana_media.yaml')
 
         config_file_name = str(tmpdir / 'config.yaml')
-        with open(config_file_name, 'w') as file:
+        with open(config_file_name, 'w', encoding='utf-8') as file:
             file.write(conf)
         if tfvar_template is not None and len(tfvar_template) > 0:
-            with open(os.path.join(provider_path, 'terraform.tfvars.template'), 'w') as file:
+            with open(os.path.join(provider_path, 'terraform.tfvars.template'), 'w', encoding='utf-8') as file:
                 for line in tfvar_template:
                     file.write(line)
 
@@ -242,41 +261,6 @@ def check_duplicate():
                 setting_field = setting.split('=')[0]
                 if len([s for s in lines if setting_field in s]) != 1 :
                     return (False, "Setting '"+setting_field+"' appear more than one time")
-        return (True, '')
-
-    return _callback
-
-
-@pytest.fixture
-def check_multilines():
-    """
-    Fixture to test trento_cluster_install.sh content
-    This bash script is written to file as multiple line single command
-    This fixture check that:
-     - each lines (out of the last one) ends with \\ and EOL
-     - all needed EOL are present
-     - all and only needed spaces are present at the end of each line
-
-    Args:
-        lines (list(str)): list of string, each string is a trento_cluster_install.sh line
-
-        Returns:
-            tuple: True/False result, if False str about the error message
-        """
-    def _callback(lines):
-        if len(lines) <= 1:
-            return False,
-            f"trento_cluster_install.sh should be a multi line script but it is only {len(lines)} lines long."
-        for l in lines[:-1]:
-            if l[-1] != "\n":
-                return False, "Last char in ["+l+"] is not \n"
-            # in multi line command the '\' has to be the last char in the line
-            if l[-2] != "\\":
-                return False, "One by last char in ["+l+"] is not \\"
-            if l[-3] != " ":
-                return False, "One by last char in ["+l+"] is not a space"
-            if "\\-" in l:
-                return False, "Something like '\\--set' in ["+l+"]. Maybe a missing EOL"
         return (True, '')
 
     return _callback

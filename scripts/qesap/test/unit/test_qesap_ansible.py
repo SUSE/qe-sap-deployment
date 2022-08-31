@@ -7,20 +7,16 @@ from qesap import main
 
 
 @mock.patch("qesap.subprocess_run")
-def test_ansible_create(run, base_args, tmpdir, create_inventory, create_playbooks):
+def test_ansible_create(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
     """
     Test that the ansible subcommand plays playbooks
     listed in the ansible::create part of the config.yml
     """
     provider = 'grilloparlante'
-    config_content = f"""---
-provider: {provider}
-ansible:
-    create:
-        - get_cherry_wood.yaml
-        - made_pinocchio_head.yaml"""
+    playbooks = {'create': ['get_cherry_wood', 'made_pinocchio_head']}
+    config_content = ansible_config(provider, playbooks)
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
@@ -29,31 +25,29 @@ ansible:
 
     inventory = create_inventory(provider)
 
-    playbook_list = create_playbooks(['get_cherry_wood', 'made_pinocchio_head'])
+    playbook_files_list = create_playbooks(playbooks['create'])
     calls = []
-    for playbook in playbook_list:
+    for playbook in playbook_files_list:
         calls.append(mock.call(['ansible-playbook', '-i', inventory, playbook]))
 
     assert main(args) == 0
-    
+
     run.assert_called()
     run.assert_has_calls(calls)
 
 
 @mock.patch("qesap.subprocess_run")
-def test_ansible_verbose(run, base_args, tmpdir, create_inventory, create_playbooks):
+def test_ansible_verbose(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
     """
     run with -vvvv if qesap ansible --verbose
     (probably not supported in qesap deploy/destroy)
     """
     provider = 'grilloparlante'
-    config_content = f"""---
-provider: {provider}
-ansible:
-    create:
-        - get_cherry_wood.yaml"""
+    playbooks = {'create': ['get_cherry_wood']}
+
+    config_content = ansible_config(provider, playbooks)
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, True)
@@ -61,39 +55,37 @@ ansible:
     run.return_value = (0, [])
 
     inventory = create_inventory(provider)
-    
-    playbook_list = create_playbooks(['get_cherry_wood'])
+
+    playbook_list = create_playbooks(playbooks['create'])
     calls = []
     for playbook in playbook_list:
         calls.append(mock.call(['ansible-playbook', '-vvvv', '-i', inventory, playbook]))
 
     assert main(args) == 0
-    
+
     run.assert_called()
     run.assert_has_calls(calls)
 
 
 @mock.patch("qesap.subprocess_run")
-def test_ansible_dryrun(run, base_args, tmpdir, create_inventory, create_playbooks):
+def test_ansible_dryrun(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
     """
     Command ansible does not call the Ansible executable in dryrun mode
     """
     provider = 'grilloparlante'
-    config_content = f"""---
-provider: {provider}
-ansible:
-    create:
-        - get_cherry_wood.yaml"""
+    playbooks = {'create': ['get_cherry_wood', 'made_pinocchio_head']}
+
+    config_content = ansible_config(provider, playbooks)
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, True)
     args.append('ansible')
     args.insert(0, '--dryrun')
     run.return_value = (0, [])
-    inventory = create_inventory(provider)
-    playbook_list = create_playbooks(['get_cherry_wood'])
+    create_inventory(provider)
+    create_playbooks(playbooks['create'])
 
     assert main(args) == 0
 
@@ -101,97 +93,85 @@ ansible:
 
 
 @mock.patch("qesap.subprocess_run")
-def test_ansible_missing_inventory(run, tmpdir, base_args):
+def test_ansible_missing_inventory(run, tmpdir, base_args, ansible_config):
     """
     Stop and return non zero if inventory is missing
     """
-    config_content = f"""---
-provider: grilloparlante
-ansible:
-    create:
-        - get_cherry_wood.yaml"""
+    config_content = ansible_config('grilloparlante', {'create':['get_cherry_wood']})
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
     args.append('ansible')
-    
+
     assert main(args) != 0
-    
+
     run.assert_not_called()
 
 
 @mock.patch("qesap.subprocess_run")
-def test_ansible_no_playbooks(run, tmpdir, base_args, create_inventory):
+def test_ansible_no_playbooks(run, tmpdir, base_args, create_inventory, ansible_config):
     """
     If no playbooks are listed, Ansible is not called
     """
     provider = 'grilloparlante'
-    config_content = f"""---
-provider: {provider}
-ansible:"""
+
+    config_content = ansible_config(provider, {})
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
     args.append('ansible')
     run.return_value = (0, [])
 
-    inventory = create_inventory(provider)
+    create_inventory(provider)
 
     assert main(args) == 0
-    
+
     run.assert_not_called()
 
 
 @mock.patch("qesap.subprocess_run")
-def test_ansible_missing_playbook(run, tmpdir, base_args, create_inventory, create_playbooks):
+def test_ansible_missing_playbook(run, tmpdir, base_args, create_inventory, create_playbooks, ansible_config):
     """
     ansible subcommand has not to run any commands if
     any of the playbooks YAML file referred in the config.yaml
     does not exist
     """
     provider = 'grilloparlante'
-    config_content = f"""---
-provider: {provider}
-ansible:
-    create:
-        - get_cherry_wood.yaml
-        - made_pinocchio_head.yaml"""
+    playbooks = {'create': ['get_cherry_wood', 'made_pinocchio_head']}
+    config_content = ansible_config(provider, playbooks)
+
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
     args.append('ansible')
     run.return_value = (0, [])
 
-    inventory = create_inventory(provider)
+    create_inventory(provider)
     # create one out of two
-    create_playbooks(['get_cherry_wood'])
+    create_playbooks(playbooks['create'][0:1])
 
     assert main(args) != 0
-    
+
     run.assert_not_called()
 
 
 @mock.patch("qesap.subprocess_run", side_effect = [(0, []),(1, [])])
-def test_ansible_stop(run, tmpdir, base_args, create_inventory, create_playbooks):
+def test_ansible_stop(run, tmpdir, base_args, create_inventory, create_playbooks, ansible_config):
     """
     Stop the sequence of playbook at first one
     that is failing and return non zero
     """
     provider = 'grilloparlante'
-    config_content = f"""---
-provider: {provider}
-ansible:
-    create:
-        - get_cherry_wood.yaml
-        - made_pinocchio_head.yaml"""
+    playbooks = {'create': ['get_cherry_wood', 'made_pinocchio_head']}
+    config_content = ansible_config(provider, playbooks)
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
@@ -199,33 +179,28 @@ ansible:
 
     inventory = create_inventory(provider)
 
-    playbook_list = create_playbooks(['get_cherry_wood', 'made_pinocchio_head'])
+    playbook_list = create_playbooks(playbooks['create'])
     calls = []
     calls.append(mock.call(['ansible-playbook', '-i', inventory, playbook_list[0]]))
 
     assert main(args) != 0
-    
+
     run.assert_called()
     run.assert_has_calls(calls)
 
 
 @mock.patch("qesap.subprocess_run")
-def test_ansible_destroy(run, base_args, tmpdir, create_inventory, create_playbooks):
+def test_ansible_destroy(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
     """
     Test that ansible subcommand, called with -d,
     call the destroy list of playbooks
     """
     provider = 'grilloparlante'
-    config_content = f"""---
-provider: {provider}
-ansible:
-    create:
-        - get_cherry_wood.yaml
-        - made_pinocchio_head.yaml
-    destroy:
-        - plant_a_tree.yaml"""
+    playbooks = {'create': ['get_cherry_wood', 'made_pinocchio_head'], 'destroy': ['plant_a_tree']}
+    config_content = ansible_config(provider, playbooks)
+
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
@@ -235,13 +210,13 @@ ansible:
 
     inventory = create_inventory(provider)
 
-    playbook_list = create_playbooks(['plant_a_tree'])
+    playbook_list = create_playbooks(playbooks['destroy'])
     calls = []
     for playbook in playbook_list:
         calls.append(mock.call(['ansible-playbook', '-i', inventory, playbook]))
 
     assert main(args) == 0
-    
+
     run.assert_called()
     run.assert_has_calls(calls)
 
@@ -254,8 +229,10 @@ def test_ansible_env_reg(run, base_args, tmpdir, create_inventory, create_playbo
     """
     provider = 'grilloparlante'
     config_content = """---
+apiver: 1
 provider: grilloparlante
 ansible:
+    hana_urls: somesome
     create:
         - registration.yaml -e reg_code=${reg_code} -e email_address=${email}
     variables:
@@ -263,7 +240,7 @@ ansible:
         email: mastro.geppetto@collodi.it
     """
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
@@ -285,7 +262,7 @@ ansible:
     calls.append(mock.call(ansible_cmd))
 
     assert main(args) == 0
-    
+
     run.assert_called()
     run.assert_has_calls(calls)
 
@@ -299,15 +276,17 @@ def test_ansible_env_sapconf(run, base_args, tmpdir, create_inventory, create_pl
     """
     provider = 'grilloparlante'
     config_content = """---
+apiver: 1
 provider: grilloparlante
 ansible:
+    hana_urls: somesome
     create:
         - sap-hana-preconfigure.yaml -e "use_sapconf=${sapconf}"
     variables:
         sapconf: True
     """
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
@@ -327,13 +306,13 @@ ansible:
     calls.append(mock.call(ansible_cmd))
 
     assert main(args) == 0
-    
+
     run.assert_called()
     run.assert_has_calls(calls)
 
 
 @mock.patch("qesap.subprocess_run")
-def test_ansible_ssh(run, base_args, tmpdir, create_inventory, create_playbooks):
+def test_ansible_ssh(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
     """
     This first Ansible command has to be called before all the others
 
@@ -357,14 +336,10 @@ def test_ansible_ssh(run, base_args, tmpdir, create_inventory, create_playbooks)
     ansible ${AnsFlgs} all -a true --ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"
     """
     provider = 'grilloparlante'
-    config_content = f"""---
-provider: {provider}
-ansible:
-    create:
-        - get_cherry_wood.yaml
-        - made_pinocchio_head.yaml"""
+    playbooks = {'create': ['get_cherry_wood', 'made_pinocchio_head']}
+    config_content = ansible_config(provider, playbooks)
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
@@ -373,7 +348,7 @@ ansible:
 
     inventory = create_inventory(provider)
 
-    playbook_list = create_playbooks(['get_cherry_wood', 'made_pinocchio_head'])
+    playbook_list = create_playbooks(playbooks['create'])
     calls = []
     ssh_share = ['ansible', '-i', inventory, 'all', '-a', 'true', '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"']
     calls.append(mock.call(ssh_share))
@@ -381,7 +356,7 @@ ansible:
         calls.append(mock.call(['ansible-playbook', '-i', inventory, playbook]))
 
     assert main(args) == 0
-    
+
     run.assert_called()
     run.assert_has_calls(calls)
 

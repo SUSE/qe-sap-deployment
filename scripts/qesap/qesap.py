@@ -105,7 +105,7 @@ def subprocess_run(cmd):
 
 def validate_config(config):
     '''
-    Validate the internal structure of the configure.yaml
+    Validate the mandatory and common part of the internal structure of the configure.yaml
     '''
     log.debug("Configure data:%s", config)
     if config is None:
@@ -126,6 +126,15 @@ def validate_config(config):
         log.error("Error at 'provider' in the config")
         return False
 
+    return True
+
+
+def validate_ansible_config(config, sequence):
+    '''
+    Validate the ansible part of the internal structure of the configure.yaml
+    '''
+    log.debug("Configure data:%s", config)
+
     if 'ansible' not in config.keys() or config['ansible'] is None:
         log.error("Error at 'ansible' in the config")
         return False
@@ -133,6 +142,11 @@ def validate_config(config):
     if 'hana_urls' not in config['ansible'].keys():
         log.error("Missing 'hana_urls' in 'ansible' in the config")
         return False
+
+    if sequence:
+        if sequence not in config['ansible'].keys() or config['ansible'][sequence] is None:
+            log.info('No Ansible playbooks to play in %s for sequence:%s', config['ansible'], sequence)
+            return False
 
     return True
 
@@ -210,8 +224,10 @@ def cmd_configure(configure_data, base_project, dryrun):
     else:
         return 1, "No terraform.tfvars.template neither terraform in the configuration"
 
-    hanavar_content = {'hana_urls': configure_data['ansible']['hana_urls']}
-    log.debug("Result %s:\n%s", hana_vars, hanavar_content)
+    if validate_ansible_config(configure_data, None):
+        hanavar_content = {'hana_urls': configure_data['ansible']['hana_urls']}
+        log.debug("Result %s:\n%s", hana_vars, hanavar_content)
+
     if dryrun:
         print(f"Create {tfvar_path} with content {tfvar_content}")
         print(f"Create {hana_vars} with content {hanavar_content}")
@@ -268,6 +284,8 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
     Returns:
         int: execution result, 0 means OK. It is mind to be used as script exit code
     """
+
+    # Validations
     if not validate_config(configure_data):
         return 1, f"Invalid configuration file content in {configure_data}"
     res, cfg_paths = validate_basedir(base_project, configure_data)
@@ -275,7 +293,7 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
         return 1, f"Invalid folder structure at {base_project}"
 
     cmds = []
-    for _, seq in enumerate(['init', 'plan', 'apply'] if not destroy else ['destroy']):
+    for seq in ['init', 'plan', 'apply'] if not destroy else ['destroy']:
         this_cmd = []
         this_cmd.append('terraform')
         this_cmd.append('-chdir=' + cfg_paths['provider'])
@@ -301,9 +319,9 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
             with open(log_filename, 'w', encoding='utf-8') as log_file:
                 log_file.write('\n'.join(out))
             if ret != 0:
-                log.error("command:%s return not zero %d", command, ret)
-                return ret
-    return 0
+                log.error("command:%s returned non zero %d", command, ret)
+                return ret, f"Error at {command}"
+    return 0, 'Ok'
 
 
 def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
@@ -318,29 +336,30 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
     Returns:
         int: execution result, 0 means OK. It is mind to be used as script exit code
     """
-    ansible_common = ['ansible-playbook']
-    if verbose:
-        ansible_common.append('-vvvv')
-    ansible_common.append('-i')
-    inventory = os.path.join(base_project, 'terraform', configure_data['provider'], 'inventory.yaml')
-    if not os.path.isfile(inventory):
-        log.error("Missing inventory at %s", inventory)
-        return 1
-    ansible_common.append(inventory)
+
+    # Validations
+    if not validate_config(configure_data):
+        return 1, f"Invalid configuration file content in {configure_data}"
 
     sequence = 'create'
     if destroy:
         sequence = 'destroy'
 
-    if 'ansible' not in configure_data.keys():
-        log.info('No Ansible playbooks to play')
+    if not validate_ansible_config(configure_data, sequence):
+        log.info('No Ansible playbooks to play in %s', configure_data)
         return 0
-    if configure_data['ansible'] is None:
-        log.info('No Ansible playbooks to play')
-        return 0
-    if sequence not in configure_data['ansible'].keys():
-        log.info('No Ansible playbooks to play')
-        return 0
+
+    inventory = os.path.join(base_project, 'terraform', configure_data['provider'], 'inventory.yaml')
+    if not os.path.isfile(inventory):
+        log.error("Missing inventory at %s", inventory)
+        return 1, "Missing inventory"
+
+    ansible_common = ['ansible-playbook']
+    if verbose:
+        ansible_common.append('-vvvv')
+
+    ansible_common.append('-i')
+    ansible_common.append(inventory)
 
     ansible_cmd = []
     ansible_cmd_seq = []
@@ -380,7 +399,7 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
                 log.debug(">    %s", out_line)
             log.debug("Ansible process return ret:%d", ret)
             if ret != 0:
-                log.error("command:%s return not zero %d", command, ret)
+                log.error("command:%s returned non zero %d", command, ret)
                 return ret
     return 0
 
@@ -516,12 +535,15 @@ def main(command_line=None):
         )
     if parsed_args.command == "terraform":
         log.info("Running Terraform...")
-        return cmd_terraform(
+        res, err = cmd_terraform(
             parsed_args.configfile,
             parsed_args.basedir,
             parsed_args.dryrun,
             destroy=parsed_args.destroy
         )
+        if res != 0:
+            print(err)
+        return res
     if parsed_args.command == "ansible":
         log.info("Running Ansible...")
         return cmd_ansible(
