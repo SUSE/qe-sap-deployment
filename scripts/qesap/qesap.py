@@ -11,10 +11,9 @@ import re
 import yaml
 from yaml.parser import ParserError
 from yaml.scanner import ScannerError
-from string import Template
 from lib.config import yaml_to_tfvars, template_to_tfvars, terraform_yml
 
-VERSION  = '0.1'
+VERSION = '0.1'
 
 DESCRIBE = '''qe-sap-deployment helper script'''
 
@@ -51,21 +50,21 @@ def subprocess_run(cmd):
         log.error("Empty command")
         return (1, [])
 
-    log.info("Run:%s", ' '.join(cmd))
+    log.info("Run:       %s", ' '.join(cmd))
     stdout = []
-    if sys.version_info.major == 3 and sys.version_info.minor > 7 :
+    if sys.version_info.major == 3 and sys.version_info.minor > 7:
         proc = subprocess.run(cmd, capture_output=True, check=False)
         if proc.returncode != 0:
             log.error("Error %d in %s", proc.returncode, ' '.join(cmd[0:1]))
             for err_line in proc.stderr.decode('UTF-8').splitlines():
                 log.error("          %s", err_line)
             return (proc.returncode, [])
-        stdout = [l.decode("utf-8") for l in proc.stdout.splitlines()]
+        stdout = [line.decode("utf-8") for line in proc.stdout.splitlines()]
     else:
         import select
         proc = subprocess.Popen(cmd,
-               stdout=subprocess.PIPE,
-               stderr=subprocess.PIPE)
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
         poller_out = select.epoll()
         poller_out.register(proc.stdout.fileno(), select.EPOLLIN)
         poller_err = select.epoll()
@@ -73,7 +72,7 @@ def subprocess_run(cmd):
 
         while True:
             events_out = poller_out.poll(1)
-            #log.debug("Events out:%s", events_out)
+            # log.debug("Events out:%s", events_out)
             for fd, _ in events_out:
                 if fd != proc.stdout.fileno():
                     log.error("fd:%s proc.stdout.fileno():%s", fd, proc.stdout.fileno())
@@ -99,12 +98,15 @@ def subprocess_run(cmd):
             log.info("Stdout:%s", stdout)
             return (proc.returncode, [])
 
-    for l in stdout:
-        log.debug('Stdout:%s',l)
+    for line in stdout:
+        log.debug('Stdout:%s', line)
     return (0, stdout)
 
 
 def validate_config(config):
+    '''
+    Validate the internal structure of the configure.yaml
+    '''
     log.debug("Configure data:%s", config)
     if config is None:
         log.error("Empty config")
@@ -113,22 +115,22 @@ def validate_config(config):
     if (
         'apiver' not in config.keys()
         or config['apiver'] is None
-        or not isinstance(config['apiver'], int) ):
+        or not isinstance(config['apiver'], int)):
         log.error("Error at 'apiver' in the config")
         return False
 
     if (
         'provider' not in config.keys()
         or config['provider'] is None
-        or not isinstance(config['provider'], str) ):
+        or not isinstance(config['provider'], str)):
         log.error("Error at 'provider' in the config")
         return False
 
-    if not 'ansible' in config.keys() or config['ansible'] is None:
+    if 'ansible' not in config.keys() or config['ansible'] is None:
         log.error("Error at 'ansible' in the config")
         return False
 
-    if not 'hana_urls' in config['ansible'].keys():
+    if 'hana_urls' not in config['ansible'].keys():
         log.error("Missing 'hana_urls' in 'ansible' in the config")
         return False
 
@@ -136,6 +138,9 @@ def validate_config(config):
 
 
 def validate_basedir(basedir, config):
+    '''
+    Validate the file and folder structure of the main repository
+    '''
     terraform_dir = os.path.join(basedir, 'terraform')
     result = {
         'terraform': terraform_dir,
@@ -162,8 +167,8 @@ def validate_basedir(basedir, config):
         log.error("Missing %s", ansible_pl_vars_dir)
         return False, None
 
-    result['tfvars'] = os.path.join(result['provider'],'terraform.tfvars')
-    result['hana_vars'] = os.path.join(ansible_pl_vars_dir,'azure_hana_media.yaml')
+    result['tfvars'] = os.path.join(result['provider'], 'terraform.tfvars')
+    result['hana_vars'] = os.path.join(ansible_pl_vars_dir, 'azure_hana_media.yaml')
 
     return True, result
 
@@ -267,10 +272,8 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
     if not res:
         return 1, f"Invalid folder structure at {base_project}"
 
-    sequence = ['init', 'plan', 'apply'] if not destroy else ['destroy']
     cmds = []
-
-    for idx, seq in enumerate(sequence):
+    for _, seq in enumerate(['init', 'plan', 'apply'] if not destroy else ['destroy']):
         this_cmd = []
         this_cmd.append('terraform')
         this_cmd.append('-chdir=' + cfg_paths['provider'])
@@ -286,11 +289,11 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
         cmds.append(this_cmd)
     for command in cmds:
         if dryrun:
-            print(command)
+            print(' '.join(command))
         else:
-            log.info("Run:     %s\n", command)
             ret, out = subprocess_run(command)
-            log.debug("Terraform process return ret:%s out:%s", ret, out)
+            log.debug('\n>    '.join(out))
+            log.debug("Terraform process return ret:%d", ret)
             log_filename = f"terraform.{command[2]}.log.txt"
             log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
             with open(log_filename, 'w') as log_file:
@@ -322,23 +325,31 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
         log.error("Missing inventory at %s", inventory)
         return 1
     ansible_common.append(inventory)
-    
-    ansible_cmd = []
+
+    sequence = 'create'
+    if destroy:
+        sequence = 'destroy'
+
     if 'ansible' not in configure_data.keys():
         log.info('No Ansible playbooks to play')
         return 0
     if configure_data['ansible'] is None:
         log.info('No Ansible playbooks to play')
         return 0
-
-    sequence = 'create'
-    if destroy:
-        sequence = 'destroy'
     if sequence not in configure_data['ansible'].keys():
         log.info('No Ansible playbooks to play')
         return 0
 
+    ansible_cmd = []
     ansible_cmd_seq = []
+    ssh_share = ansible_common.copy()
+    ssh_share[0] = 'ansible'
+    ssh_share.append('all')
+    ssh_share.append('-a')
+    ssh_share.append('true')
+    ssh_share.append('--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"')
+    ansible_cmd_seq.append(ssh_share)
+
     for playbook in configure_data['ansible'][sequence]:
         ansible_cmd = ansible_common.copy()
         playbook_cmd = playbook.split(' ')
@@ -352,18 +363,23 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
             match = re.search(r'\${(.*)}', ply_cmd)
             if match:
                 value = str(configure_data['ansible']['variables'][match.group(1)])
-                log.debug("Replace value %s in %s", value, ply_cmd )
+                log.debug("Replace value %s in %s", value, ply_cmd)
                 ansible_cmd.append(re.sub(r'\${(.*)}', value, ply_cmd))
             else:
                 ansible_cmd.append(ply_cmd)
         ansible_cmd_seq.append(ansible_cmd)
 
-    for cmd in ansible_cmd_seq:
-        ret, out = subprocess_run(cmd)
-        log.info("ret:%d, out:%s", ret, out)
-        if ret != 0:
-            log.error("cmd:%s return not zero %d", cmd, ret)
-            return ret
+    for command in ansible_cmd_seq:
+        if dryrun:
+            print(' '.join(command))
+        else:
+            ret, out = subprocess_run(command)
+            for out_line in out:
+                log.debug(">    %s", out_line)
+            log.debug("Ansible process return ret:%d", ret)
+            if ret != 0:
+                log.error("command:%s return not zero %d", command, ret)
+                return ret
     return 0
 
 
@@ -381,14 +397,14 @@ def is_yaml(path):
         str: the validated file
     """
     if not os.path.isfile(path):
-        #raise SystemExit
+        # raise SystemExit
         raise argparse.ArgumentTypeError("is_yaml:" + path + " is not a file")
 
     with open(path, 'r', encoding='utf-8') as file:
         try:
             data = yaml.load(file, Loader=yaml.FullLoader)
-        except (ScannerError, ParserError):
-            raise argparse.ArgumentTypeError("is_yaml:" + path + " is not a valid YAML file")
+        except (ScannerError, ParserError) as exc:
+            raise argparse.ArgumentTypeError("is_yaml:" + path + " is not a valid YAML file") from exc
     return data
 
 
@@ -406,30 +422,29 @@ def is_dir(path):
     """
     if os.path.isdir(path):
         return path
-    else:
-        #raise SystemExit
-        raise argparse.ArgumentTypeError("is_dir:" + path + " is not a folder")
+    # raise SystemExit
+    raise argparse.ArgumentTypeError("is_dir:" + path + " is not a folder")
 
 
 def cli(command_line=None):
     '''
     Command line argument parser
     '''
-    parser   = argparse.ArgumentParser(description=DESCRIBE)
+    parser = argparse.ArgumentParser(description=DESCRIBE)
 
     parser.add_argument('--version', action='version', version=VERSION)
     parser.add_argument('--verbose', action='store_true', help="Increases log verbosity")
     parser.add_argument('--dryrun',  action='store_true', help="Dry run execution mode")
 
     parser.add_argument('-c', '--config-file', dest='configfile',
-    type=is_yaml,
-    required=True,
-    help="""Input global configuration .yaml file""")
+                        type=is_yaml,
+                        required=True,
+                        help="""Input global configuration .yaml file""")
 
     parser.add_argument('-b', '--base-dir', dest='basedir',
-    type=is_dir,
-    required=True,
-    help="""Base project folder, used to figure out
+                        type=is_dir,
+                        required=True,
+                        help="""Base project folder, used to figure out
     where to write all the generated configuration files and
     where they are stored when it is time to call Terraform and Ansible.
     It has to be created in advance.
@@ -442,10 +457,11 @@ def cli(command_line=None):
         description='''List of qesap subcommands, each of them is usually associated to a specific procedure''',
         dest='command')
 
-    parser_configure = subparsers.add_parser('configure',
-    help="Generate all Terraform, Ansible configuration file starting from the main global YAML configuration file")
-    parser_deploy = subparsers.add_parser('deploy', help="Run, in sequence, the Terraform and Ansible deployment steps")
-    parser_destroy = subparsers.add_parser('destroy', help="Run, in sequence, the Ansible and Terraform destroy steps")
+    subparsers.add_parser('configure',
+                          help="""Generate all Terraform, Ansible configuration file
+                                  starting from the main global YAML configuration file""")
+    subparsers.add_parser('deploy', help="Run, in sequence, the Terraform and Ansible deployment steps")
+    subparsers.add_parser('destroy', help="Run, in sequence, the Ansible and Terraform destroy steps")
     parser_terraform = subparsers.add_parser('terraform', help="Only run the Terraform part of the deployment")
     parser_terraform.add_argument('-d',
                                   '--destroy',
@@ -467,7 +483,7 @@ def main(command_line=None):
     '''
     parsed_args = cli(command_line)
 
-    if parsed_args.verbose :
+    if parsed_args.verbose:
         log.setLevel(logging.getLevelName('DEBUG'))
 
     if not parsed_args.command:
@@ -482,21 +498,21 @@ def main(command_line=None):
             parsed_args.dryrun
         )
         return res[0]
-    elif parsed_args.command == "deploy":
+    if parsed_args.command == "deploy":
         log.info("Deploying...")
         return cmd_deploy(
             parsed_args.configfile,
             parsed_args.basedir,
             parsed_args.dryrun
         )
-    elif parsed_args.command == "destroy":
+    if parsed_args.command == "destroy":
         log.info("Destroying...")
         return cmd_destroy(
             parsed_args.configfile,
             parsed_args.basedir,
             parsed_args.dryrun
         )
-    elif parsed_args.command == "terraform":
+    if parsed_args.command == "terraform":
         log.info("Running Terraform...")
         return cmd_terraform(
             parsed_args.configfile,
@@ -504,7 +520,7 @@ def main(command_line=None):
             parsed_args.dryrun,
             destroy=parsed_args.destroy
         )
-    elif parsed_args.command == "ansible":
+    if parsed_args.command == "ansible":
         log.info("Running Ansible...")
         return cmd_ansible(
             parsed_args.configfile,
@@ -513,9 +529,9 @@ def main(command_line=None):
             parsed_args.verbose,
             destroy=parsed_args.destroy
         )
-    else:
-        log.error("Unknown command:%s", parsed_args.command)
-        return 1
+
+    log.error("Unknown command:%s", parsed_args.command)
+    return 1
 
 
 if __name__ == "__main__":

@@ -86,9 +86,10 @@ def test_terraform_logs(run, terraform_cmd_args, args_helper, config_yaml_sample
 
     args, terraform_dir, _, _ = args_helper(provider, conf, '')
     args.append('terraform')
-    log.error(args)
     run.return_value = (0, ['This is the terraform output', 'Two lines of that'])
+
     assert main(args) == 0
+
     if isinstance(terraform_cmd_args, str):
         cmd = terraform_cmd_args
     else:
@@ -107,10 +108,11 @@ def test_terraform_logs_content(run, terraform_cmd_args, args_helper, config_yam
 
     args, terraform_dir, _, _ = args_helper(provider, conf, '')
     args.append('terraform')
-    log.error(args)
     terraform_output = ['This is the terraform output', 'Two lines of that']
     run.return_value = (0, terraform_output)
+
     assert main(args) == 0
+
     if isinstance(terraform_cmd_args, str):
         cmd = terraform_cmd_args
     else:
@@ -138,8 +140,8 @@ def test_integration_terraform(terraform_cmd_args, args_helper, config_yaml_samp
     args.append('--config-file')
     args.append(config_file_name)
     args.append('terraform')
-    log.error("===> args:%s", args)
     terraform_output = ['This is the terraform output\n', 'Two lines of that\n']
+
     assert main(args) == 0
 
     if isinstance(terraform_cmd_args, str):
@@ -147,7 +149,7 @@ def test_integration_terraform(terraform_cmd_args, args_helper, config_yaml_samp
     else:
         cmd = terraform_cmd_args[0]
 
-    log.error("===> cmd:%s", cmd)
+    log.debug("===> cmd:%s", cmd)
     with open(f"terraform.{cmd}.log.txt", 'r') as log_file:
         log_lines = log_file.readlines()
     assert 'Initializing modules...\n' in log_lines
@@ -164,8 +166,8 @@ def test_terraform_dryrun(run, args_helper, config_yaml_sample):
     args, terraform_dir, _, _ = args_helper(provider, conf, '')
     args.append('terraform')
     args.insert(0, '--dryrun')
-    log.error(args)
     run.return_value = (0, [])
+
     assert main(args) == 0
 
     run.assert_not_called()
@@ -183,7 +185,6 @@ def test_terraform_call_terraform_destroy(run, args_helper, config_yaml_sample):
 
     args.append('terraform')
     args.append('-d')
-    log.error(args)
 
     run.return_value = (0, [])
     calls = []

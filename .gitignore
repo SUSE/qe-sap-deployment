@@ -1,4 +1,7 @@
 venv/
+
+**/.venv/
+**/__pycache__/
 secret/
 inventory.yaml
 terraform/aws/.terraform

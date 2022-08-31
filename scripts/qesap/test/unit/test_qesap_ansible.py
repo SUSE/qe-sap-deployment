@@ -74,6 +74,33 @@ ansible:
 
 
 @mock.patch("qesap.subprocess_run")
+def test_ansible_dryrun(run, base_args, tmpdir, create_inventory, create_playbooks):
+    """
+    Command ansible does not call the Ansible executable in dryrun mode
+    """
+    provider = 'grilloparlante'
+    config_content = f"""---
+provider: {provider}
+ansible:
+    create:
+        - get_cherry_wood.yaml"""
+    config_file_name = str(tmpdir / 'config.yaml')
+    with open(config_file_name, 'w') as file:
+        file.write(config_content)
+
+    args = base_args(None, config_file_name, True)
+    args.append('ansible')
+    args.insert(0, '--dryrun')
+    run.return_value = (0, [])
+    inventory = create_inventory(provider)
+    playbook_list = create_playbooks(['get_cherry_wood'])
+
+    assert main(args) == 0
+
+    run.assert_not_called()
+
+
+@mock.patch("qesap.subprocess_run")
 def test_ansible_missing_inventory(run, tmpdir, base_args):
     """
     Stop and return non zero if inventory is missing
@@ -305,35 +332,67 @@ ansible:
     run.assert_has_calls(calls)
 
 
-def test_ansible_ssh():
+@mock.patch("qesap.subprocess_run")
+def test_ansible_ssh(run, base_args, tmpdir, create_inventory, create_playbooks):
     """
-    This stuff
+    This first Ansible command has to be called before all the others
 
     if [ -z ${SSH_AGENT_PID+x} ]
-then
-  echo "No SSH_AGENT_PID"
-  eval $(ssh-agent)
-else
-  if ps -p $SSH_AGENT_PID > /dev/null
-  then
-    echo "ssh-agent is already running at ${SSH_AGENT_PID}"
-  else
-    echo "ssh-agent is NOT running at ${SSH_AGENT_PID}"
-    eval $(ssh-agent)
-  fi
-fi
+    then
+      echo "No SSH_AGENT_PID"
+      eval $(ssh-agent)
+    else
+      if ps -p $SSH_AGENT_PID > /dev/null
+      then
+        echo "ssh-agent is already running at ${SSH_AGENT_PID}"
+      else
+        echo "ssh-agent is NOT running at ${SSH_AGENT_PID}"
+        eval $(ssh-agent)
+      fi
+    fi
 
-ssh-add -v "${ssh_key}"
+    ssh-add -v "${ssh_key}"
 
+    # Accept new ssh keys for ansible-controlled hosts
+    ansible ${AnsFlgs} all -a true --ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"
+    """
+    provider = 'grilloparlante'
+    config_content = f"""---
+provider: {provider}
+ansible:
+    create:
+        - get_cherry_wood.yaml
+        - made_pinocchio_head.yaml"""
+    config_file_name = str(tmpdir / 'config.yaml')
+    with open(config_file_name, 'w') as file:
+        file.write(config_content)
+
+    args = base_args(None, config_file_name, False)
+    args.append('ansible')
+    run.return_value = (0, [])
+
+    inventory = create_inventory(provider)
+
+    playbook_list = create_playbooks(['get_cherry_wood', 'made_pinocchio_head'])
+    calls = []
+    ssh_share = ['ansible', '-i', inventory, 'all', '-a', 'true', '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"']
+    calls.append(mock.call(ssh_share))
+    for playbook in playbook_list:
+        calls.append(mock.call(['ansible-playbook', '-i', inventory, playbook]))
+
+    assert main(args) == 0
+    
+    run.assert_called()
+    run.assert_has_calls(calls)
+
+
+def test_ansible_env_config():
+    """
 if [ ${quite} -eq 1 ]
 then
   export ANSIBLE_NOCOLOR=True
   export ANSIBLE_LOG_PATH="$(pwd)/ansible.build.${LogEx}"
 fi
 export ANSIBLE_PIPELINING=True
-
-# Accept new ssh keys for ansible-controlled hosts
-ansible ${AnsFlgs} all -a true --ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"
-
     """
     pass
