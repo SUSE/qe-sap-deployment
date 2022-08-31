@@ -22,30 +22,29 @@ def yaml_to_tfvars_entry(key, value):
                 f'{param_value}' \
                 f'}}'
     else:
-        log.error(f'Unrecognized value type in yaml file: {key} = {value}')
-        return False, ''
-    return True, entry
+        log.error('Unrecognized value type in yaml file: %s = %s', key, value)
+        return None
+    return entry
 
 
 def yaml_to_tfvars(yaml_data):
     """ Takes data structure collected from yaml config,
-    converts into tfvars format and writes it into the final tfvars file
+    converts into tfvars format
 
     Args:
         yaml_data (dict): data structure returned from is_yaml
         tfvars_file (str): path to the target tfvars file
 
     Returns:
-        bool: True(pass)/False(failure)
+        str: terraform.tfvars content string. None for error.
     """
     config_out = ''
     terraform_variables = yaml_data['terraform']['variables']
     log.debug(yaml_data)
     for key, value in terraform_variables.items():
-        res, entry = yaml_to_tfvars_entry(key, value)
-        if not res:
-            log.error(f'Unrecognized value type in yaml file: {key} = {value}')
-            return False, ''
+        entry = yaml_to_tfvars_entry(key, value)
+        if entry is None:
+            return None
         config_out += f'\n{entry}'
 
     return config_out
@@ -88,8 +87,8 @@ def template_to_tfvars(tfvars_template, configure_data):
         bool: True(pass)/False(failure)
     """
     log.info("Read %s", tfvars_template)
-    with open(tfvars_template, 'r') as f:
-        tfvar_content = ['{}\n'.format(line.rstrip()) for line in f.readlines()]
+    with open(tfvars_template, 'r', encoding='utf-8') as filehandler:
+        tfvar_content = [f"{line.rstrip()}\n" for line in filehandler.readlines()]
         log.debug("Template:%s", tfvar_content)
 
         if not terraform_yml(configure_data):
@@ -109,7 +108,9 @@ def template_to_tfvars(tfvars_template, configure_data):
             # add the new key/value pair
             if not key_replace:
                 log.debug("[k:%s = v:%s] is not in the template, append it", k, v)
-                res, entry = yaml_to_tfvars_entry(k, v)
+                entry = yaml_to_tfvars_entry(k, v)
+                if entry is None:
+                    return None
                 tfvar_content.append(entry + '\n')
         log.debug("Result terraform.tfvars:\n%s", tfvar_content)
         return tfvar_content

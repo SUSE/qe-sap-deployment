@@ -266,7 +266,7 @@ def check_multilines():
     def _callback(lines):
         if len(lines) <= 1:
             return False,
-            "trento_cluster_install.sh should be a multi line script but it is only " + str(len(lines)) + " lines long."
+            f"trento_cluster_install.sh should be a multi line script but it is only {len(lines)} lines long."
         for l in lines[:-1]:
             if l[-1] != "\n":
                 return False, "Last char in ["+l+"] is not \n"

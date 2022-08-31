@@ -205,6 +205,8 @@ def cmd_configure(configure_data, base_project, dryrun):
     elif terraform_yml(configure_data):
         log.debug("tfvar template not present")
         tfvar_content = yaml_to_tfvars(configure_data)
+        if tfvar_content is None:
+            return 1, "Problem converting config.yaml content to terraform.tfvars"
     else:
         return 1, "No terraform.tfvars.template neither terraform in the configuration"
 
@@ -296,7 +298,7 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
             log.debug("Terraform process return ret:%d", ret)
             log_filename = f"terraform.{command[2]}.log.txt"
             log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
-            with open(log_filename, 'w') as log_file:
+            with open(log_filename, 'w', encoding='utf-8') as log_file:
                 log_file.write('\n'.join(out))
             if ret != 0:
                 log.error("command:%s return not zero %d", command, ret)
