@@ -24,20 +24,6 @@ logging.basicConfig()
 log = logging.getLogger('QESAPDEP')
 
 
-def os_path_exists(path):
-    """Tiny os.path.exists wrapper
-    Mostly used to be able to mock os.path.exists only for the code under test
-    and not in the overall runtime. It is to avoid problems using the debugger
-
-    Args:
-        path (Union[AnyStr, _PathLike[AnyStr]]): path
-
-    Returns:
-        bool: Test whether a path exists.
-    """
-    return os.path.exists(path)
-
-
 def subprocess_run(cmd):
     """Tiny wrapper around subprocess
 
