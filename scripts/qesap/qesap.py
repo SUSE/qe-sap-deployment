@@ -62,41 +62,42 @@ def subprocess_run(cmd):
         stdout = [line.decode("utf-8") for line in proc.stdout.splitlines()]
     else:
         import select
-        proc = subprocess.Popen(cmd,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-        poller_out = select.epoll()
-        poller_out.register(proc.stdout.fileno(), select.EPOLLIN)
-        poller_err = select.epoll()
-        poller_err.register(proc.stderr.fileno(), select.EPOLLIN)
+        with subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE) as proc:
+            poller_out = select.epoll()
+            poller_out.register(proc.stdout.fileno(), select.EPOLLIN)
+            poller_err = select.epoll()
+            poller_err.register(proc.stderr.fileno(), select.EPOLLIN)
 
-        while True:
-            events_out = poller_out.poll(1)
-            # log.debug("Events out:%s", events_out)
-            for fd, _ in events_out:
-                if fd != proc.stdout.fileno():
-                    log.error("fd:%s proc.stdout.fileno():%s", fd, proc.stdout.fileno())
-                    continue
-                data = os.read(fd, 1024)
-                data_str = data.decode(encoding="utf-8", errors="ignore")
-                if data_str:
-                    log.debug("Split:%s", data_str.splitlines())
-                    stdout += data_str.splitlines()
-            if proc.poll() is not None:
-                log.info('Done')
-                break
-        if proc.returncode != 0:
-            log.error("Error %d in %s", proc.returncode, ' '.join(cmd[0:1]))
-            events_err = poller_err.poll(1)
-            log.debug("Events err:%s", events_err)
-            for fd, _ in events_err:
-                if fd != proc.stderr.fileno():
-                    log.error("fd:%s proc.stderr.fileno():%s", fd, proc.stdout.fileno())
-                    continue
-                data = os.read(fd, 1024)
-                log.error(data.decode(encoding="utf-8", errors="ignore").strip())
-            log.info("Stdout:%s", stdout)
-            return (proc.returncode, [])
+            while True:
+                events_out = poller_out.poll(1)
+                # log.debug("Events out:%s", events_out)
+                for fdout_stream, _ in events_out:
+                    if fdout_stream != proc.stdout.fileno():
+                        log.error("fd:%s proc.stdout.fileno():%s", fdout_stream, proc.stdout.fileno())
+                        continue
+                    data = os.read(fdout_stream, 1024)
+                    data_str = data.decode(encoding="utf-8", errors="ignore")
+                    if data_str:
+                        log.debug("Split:%s", data_str.splitlines())
+                        stdout += data_str.splitlines()
+                if proc.poll() is not None:
+                    log.info('Done')
+                    break
+            if proc.returncode != 0:
+                log.error("Error %d in %s", proc.returncode, ' '.join(cmd[0:1]))
+                events_err = poller_err.poll(1)
+                log.debug("Events err:%s", events_err)
+                for fdout_stream, _ in events_err:
+                    if fdout_stream != proc.stderr.fileno():
+                        log.error("fd:%s proc.stderr.fileno():%s", fdout_stream, proc.stdout.fileno())
+                        continue
+                    data = os.read(fdout_stream, 1024)
+                    log.error(data.decode(encoding="utf-8", errors="ignore").strip())
+                log.info("Stdout:%s", stdout)
+                return (proc.returncode, [])
 
     for line in stdout:
         log.debug('Stdout:%s', line)
@@ -104,25 +105,27 @@ def subprocess_run(cmd):
 
 
 def validate_config(config):
-    '''
+    """
     Validate the mandatory and common part of the internal structure of the configure.yaml
-    '''
+    """
     log.debug("Configure data:%s", config)
     if config is None:
         log.error("Empty config")
         return False
 
     if (
-        'apiver' not in config.keys()
-        or config['apiver'] is None
-        or not isinstance(config['apiver'], int)):
+        "apiver" not in config.keys()
+        or config["apiver"] is None
+        or not isinstance(config["apiver"], int)
+    ):
         log.error("Error at 'apiver' in the config")
         return False
 
     if (
-        'provider' not in config.keys()
-        or config['provider'] is None
-        or not isinstance(config['provider'], str)):
+        "provider" not in config.keys()
+        or config["provider"] is None
+        or not isinstance(config["provider"], str)
+    ):
         log.error("Error at 'provider' in the config")
         return False
 
@@ -455,17 +458,19 @@ def cli(command_line=None):
 
     parser.add_argument('--version', action='version', version=VERSION)
     parser.add_argument('--verbose', action='store_true', help="Increases log verbosity")
-    parser.add_argument('--dryrun',  action='store_true', help="Dry run execution mode")
+    parser.add_argument('--dryrun', action='store_true', help="Dry run execution mode")
 
-    parser.add_argument('-c', '--config-file', dest='configfile',
-                        type=is_yaml,
-                        required=True,
-                        help="""Input global configuration .yaml file""")
+    parser.add_argument(
+        '-c', '--config-file', dest='configfile',
+        type=is_yaml,
+        required=True,
+        help="""Input global configuration .yaml file""")
 
-    parser.add_argument('-b', '--base-dir', dest='basedir',
-                        type=is_dir,
-                        required=True,
-                        help="""Base project folder, used to figure out
+    parser.add_argument(
+        '-b', '--base-dir', dest='basedir',
+        type=is_dir,
+        required=True,
+        help="""Base project folder, used to figure out
     where to write all the generated configuration files and
     where they are stored when it is time to call Terraform and Ansible.
     It has to be created in advance.
