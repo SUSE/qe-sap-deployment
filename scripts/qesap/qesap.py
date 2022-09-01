@@ -5,6 +5,7 @@
 import os
 import argparse
 import logging
+import select
 import sys
 import subprocess
 import re
@@ -61,7 +62,6 @@ def subprocess_run(cmd):
             return (proc.returncode, [])
         stdout = [line.decode("utf-8") for line in proc.stdout.splitlines()]
     else:
-        import select
         with subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
