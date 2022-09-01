@@ -252,14 +252,13 @@ ansible:
 
     playbook_list = create_playbooks(['registration'])
     calls = []
-    ansible_cmd = ['ansible-playbook']
-    ansible_cmd.append('-i')
-    ansible_cmd.append(inventory)
-    ansible_cmd.append(playbook_list[0])
-    ansible_cmd.append('-e')
-    ansible_cmd.append('reg_code=1234-5678-90XX')
-    ansible_cmd.append('-e')
-    ansible_cmd.append('email_address=mastro.geppetto@collodi.it')
+    ansible_cmd = [
+        'ansible-playbook',
+        '-i', inventory,
+        playbook_list[0],
+        '-e', 'reg_code=1234-5678-90XX',
+        '-e', 'email_address=mastro.geppetto@collodi.it'
+    ]
     calls.append(mock.call(ansible_cmd))
 
     assert main(args) == 0
@@ -297,12 +296,12 @@ ansible:
 
     playbook_list = create_playbooks(['sap-hana-preconfigure'])
     calls = []
-    ansible_cmd = ['ansible-playbook']
-    ansible_cmd.append('-i')
-    ansible_cmd.append(inventory)
-    ansible_cmd.append(playbook_list[0])
-    ansible_cmd.append('-e')
-    ansible_cmd.append('"use_sapconf=True"')
+    ansible_cmd = [
+        'ansible-playbook',
+        '-i', inventory,
+        playbook_list[0],
+        '-e', '"use_sapconf=True"'
+    ]
     calls.append(mock.call(ansible_cmd))
 
     assert main(args) == 0

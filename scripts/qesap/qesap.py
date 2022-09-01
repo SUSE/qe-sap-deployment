@@ -275,15 +275,11 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
 
     cmds = []
     for seq in ['init', 'plan', 'apply'] if not destroy else ['destroy']:
-        this_cmd = []
-        this_cmd.append('terraform')
-        this_cmd.append('-chdir=' + cfg_paths['provider'])
-        this_cmd.append(seq)
+        this_cmd = ['terraform', f"-chdir={cfg_paths['provider']}", seq]
         if seq == 'plan':
             this_cmd.append('-out=plan.zip')
         elif seq == 'apply':
-            this_cmd.append('-auto-approve')
-            this_cmd.append('plan.zip')
+            this_cmd.extend(['-auto-approve', 'plan.zip'])
         elif seq == 'destroy':
             this_cmd.append('-auto-approve')
         this_cmd.append('-no-color')
@@ -346,10 +342,9 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
     ansible_cmd_seq = []
     ssh_share = ansible_common.copy()
     ssh_share[0] = 'ansible'
-    ssh_share.append('all')
-    ssh_share.append('-a')
-    ssh_share.append('true')
-    ssh_share.append('--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"')
+    ssh_share.extend([
+        'all', '-a', 'true',
+        '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'])
     ansible_cmd_seq.append(ssh_share)
 
     for playbook in configure_data['ansible'][sequence]:

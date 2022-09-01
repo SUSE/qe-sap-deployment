@@ -23,7 +23,7 @@ def test_configure(configure_helper, config_yaml_sample):
     """
     provider = 'pinocchio'
     conf = config_yaml_sample(provider)
-    args, _, _ = configure_helper(provider, conf, [])
+    args, *_ = configure_helper(provider, conf, [])
 
     assert main(args) == 0
 
@@ -230,14 +230,15 @@ ansible:
 
     assert main(args) == 0
 
-    expected_tfvars = []
     # EOL is expected to be added in terraform.tfvars
     # if missing at the end of the template
-    expected_tfvars.append(tfvar_template[0] + '\n')
-    expected_tfvars.append('region = "eu1"\n')
-    expected_tfvars.append('deployment_name = "rocket"\n')
-    expected_tfvars.append('os_image = "SUSE:sles-sap-15-sp3-byos:gen2:2022.05.05"\n')
-    expected_tfvars.append('public_key = "/root/secret/id_rsa.pub"\n')
+    expected_tfvars = [
+        tfvar_template[0] + '\n',
+        'region = "eu1"\n',
+        'deployment_name = "rocket"\n',
+        'os_image = "SUSE:sles-sap-15-sp3-byos:gen2:2022.05.05"\n',
+        'public_key = "/root/secret/id_rsa.pub"\n'
+    ]
     with open(tfvar_path, 'r', encoding='utf-8') as file:
         data = file.readlines()
         assert expected_tfvars == data

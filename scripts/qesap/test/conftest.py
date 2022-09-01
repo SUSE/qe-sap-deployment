@@ -219,9 +219,10 @@ def create_config():
     """Create one element for the list in the configure.json related to trento_deploy.py -s
     """
     def _callback(typ, reg, ver):
-        config = {}
-        config['type'] = typ
-        config['registry'] = reg
+        config = {
+            'type': typ,
+            'registry': reg
+        }
         if ver:
             config['version'] = ver
         return config

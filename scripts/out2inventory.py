@@ -63,15 +63,15 @@ class Inventory():
                   ansible_host: 40.68.73.102
                   ansible_python_interpreter: /usr/bin/python3
         '''
-        inv = {}
-        inv['all'] = {}
-        inv['all']['hosts'] = None
-        inv['all']['children'] = {}
-        inv['all']['children']['hana'] = {}
-        inv['all']['children']['iscsi'] = {}
-        inv['all']['children']['hana']['hosts'] = {}
-        inv['all']['children']['iscsi']['hosts'] = {}
-        self.inv = inv
+        self.inv = {
+            'all': {
+                'hosts': None,
+                'children': {
+                    'hana': {'hosts': {}},
+                    'iscsi': {'hosts': {}},
+                }
+            }
+        }
 
     def __str__(self):
         return yaml.dump(self.inv, Dumper=yaml.SafeDumper)
@@ -81,9 +81,10 @@ class Inventory():
 
     def add_data(self, data, from_key, to_key):
         for idx, value in enumerate(data[from_key]['name']):
-            self.inv['all']['children'][to_key]['hosts'][value] = {}
-            self.inv['all']['children'][to_key]['hosts'][value]['ansible_host'] = data[from_key]['public_ip'][idx]
-            self.inv['all']['children'][to_key]['hosts'][value]['ansible_python_interpreter'] = '/usr/bin/python3'
+            self.inv['all']['children'][to_key]['hosts'][value] = {
+                'ansible_host': data[from_key]['public_ip'][idx],
+                'ansible_python_interpreter': '/usr/bin/python3'
+            }
 
 
 def cli(command_line=None):
