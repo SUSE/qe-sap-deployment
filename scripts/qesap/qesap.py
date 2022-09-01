@@ -495,7 +495,7 @@ def cli(command_line=None):
     return parsed_args
 
 
-def main(command_line=None):
+def main(command_line=None):  # pylint: disable=too-many-return-statements
     '''
     Main script entry point for command line execution
     '''
