@@ -11,8 +11,8 @@ log = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'assets')
 
-#@pytest.mark.datafiles(os.path.join(DATA_DIR,'repo'))
-#def test_some(datafiles):
+# @pytest.mark.datafiles(os.path.join(DATA_DIR,'repo'))
+# def test_some(datafiles):
 #    log.error(datafiles)
 
 
@@ -92,7 +92,6 @@ def test_configure_no_tfvars_template(args_helper, config_yaml_sample):
         for var_re in regexp_set:
             one_match = False
             for line in tfvars_lines:
-                #log.debug("Check %s", line)
                 if not one_match:
                     match = re.search(var_re, line)
                     if match:

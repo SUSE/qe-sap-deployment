@@ -35,7 +35,7 @@ def test_cli_configure_b_notexist(capsys, tmpdir):
     user is in charge to create it in advance
     '''
 
-    #Provide a valid config.yaml
+    # Provide a valid config.yaml
     config_file_name = str(tmpdir / 'config.yaml')
     with open(config_file_name, 'w', encoding='utf-8') as file:
         yaml.dump({}, file)

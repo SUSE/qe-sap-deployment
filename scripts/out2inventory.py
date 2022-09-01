@@ -37,7 +37,6 @@ def reasembled_output(data):
             x_family[data_key] = data_value
         for mandatory_key in ['ip', 'name', 'public_ip', 'public_name']:
             if mandatory_key not in x_family:
-                #print("Missing:", mandatory_key)
                 x_family[mandatory_key] = None
         reasembled[family] = x_family
     return reasembled
@@ -75,7 +74,6 @@ class Inventory():
         self.inv = inv
 
     def __str__(self):
-        #return '{}'.format(self.inv)
         return yaml.dump(self.inv, Dumper=yaml.SafeDumper)
 
     def write(self, file):
@@ -115,12 +113,9 @@ def main(command_line=None):
         data = json.load(file)
 
     r_data = reasembled_output(data)
-    #print(json.dumps(r_data))
     inv = Inventory()
-    #print('---------------------------------------------------\n', inv)
     inv.add_data(r_data, 'iscsisrv', 'iscsi')
     inv.add_data(r_data, 'cluster_nodes', 'hana')
-    #print('---------------------------------------------------\n', inv)
     with open(parsed_args.output, mode="wt", encoding="utf-8") as file:
         inv.write(file)
 
