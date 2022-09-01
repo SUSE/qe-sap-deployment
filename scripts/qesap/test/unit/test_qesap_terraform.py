@@ -143,7 +143,6 @@ def test_integration_terraform(terraform_cmd_args, args_helper, config_yaml_samp
     args.append('--config-file')
     args.append(config_file_name)
     args.append('terraform')
-    terraform_output = ['This is the terraform output\n', 'Two lines of that\n']
 
     assert main(args) == 0
 

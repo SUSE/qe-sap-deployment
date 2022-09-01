@@ -38,11 +38,7 @@ provider: {provider}
 terraform:
 ansible:
     hana_urls: something"""
-    tfvar_template = [
-        "something = static\n",
-        "hananame = hahaha\n",
-        "ip_range = 10.0.4.0/24\n"]
-    args, tfvar_path, _ = configure_helper(provider, conf, [])
+    args, *_ = configure_helper(provider, conf, [])
 
     assert main(args) == 1
 
@@ -52,11 +48,7 @@ provider: {provider}
 terraform:
 ansible:
     hana_urls: something"""
-    tfvar_template = [
-        "something = static\n",
-        "hananame = hahaha\n",
-        "ip_range = 10.0.4.0/24\n"]
-    args, tfvar_path, _ = configure_helper(provider, conf, [])
+    args, *_ = configure_helper(provider, conf, [])
 
     assert main(args) == 1
 
@@ -66,11 +58,7 @@ provider: {provider}
 terraform:
 ansible:
     hana_urls: something"""
-    tfvar_template = [
-        "something = static\n",
-        "hananame = hahaha\n",
-        "ip_range = 10.0.4.0/24\n"]
-    args, tfvar_path, _ = configure_helper(provider, conf, [])
+    args, *_ = configure_helper(provider, conf, [])
 
     assert main(args) == 1
 
@@ -140,7 +128,7 @@ apiver: 1
 provider: {provider}
 ansible:
     hana_urls: something"""
-    args, tfvar_path, _ = configure_helper(provider, conf, None)
+    args, *_ = configure_helper(provider, conf, None)
 
     assert main(args) == 1
 
