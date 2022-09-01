@@ -11,8 +11,8 @@ VERSION = '0.1'
 DESCRIBE = '''Create the Ansible inventory from the terraform output'''
 
 
-def reasembled_output(data):
-    reasembled = {}
+def reassembled_output(data):
+    reassembled = {}
     # a list of different resource type/family is expected.
     # Each family needs a dedicated care
     for family in ['bastion', 'cluster_nodes', 'drbd', 'iscsisrv', 'monitoring', 'netweaver']:
@@ -38,8 +38,8 @@ def reasembled_output(data):
         for mandatory_key in ['ip', 'name', 'public_ip', 'public_name']:
             if mandatory_key not in x_family:
                 x_family[mandatory_key] = None
-        reasembled[family] = x_family
-    return reasembled
+        reassembled[family] = x_family
+    return reassembled
 
 
 class Inventory():
@@ -112,7 +112,7 @@ def main(command_line=None):
     with open(parsed_args.source, 'r', encoding="utf-8") as file:
         data = json.load(file)
 
-    r_data = reasembled_output(data)
+    r_data = reassembled_output(data)
     inv = Inventory()
     inv.add_data(r_data, 'iscsisrv', 'iscsi')
     inv.add_data(r_data, 'cluster_nodes', 'hana')
