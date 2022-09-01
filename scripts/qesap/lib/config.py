@@ -37,7 +37,7 @@ def yaml_to_tfvars(yaml_data):
                     f'{param_value}' \
                     f'}}'
         else:
-            log.error(f'Unrecognized value type in yaml file: {key} = {value}')
+            log.error('Unrecognized value type in yaml file: %s = %s', key, value)
             return False
         config_out = f'{config_out}\n{entry}'
 
@@ -54,13 +54,13 @@ def template_to_tfvars(tfvars_template, configure_data):
     Returns:
         bool: True(pass)/False(failure)
     """
-    with open(tfvars_template, 'r') as f:
+    with open(tfvars_template, 'r', encoding="utf-8") as f:
         tfvar_content = f.readlines()
         log.debug("Template:%s", tfvar_content)
 
         if 'variables' in configure_data['terraform'].keys():
             log.debug("Config has terraform variables")
-            for k,v in configure_data['terraform']['variables'].items():
+            for k, v in configure_data['terraform']['variables'].items():
                 key_replace = False
                 # Look for k in the template file content
                 for index, line in enumerate(tfvar_content):

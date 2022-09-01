@@ -1,5 +1,3 @@
-from unittest import mock
-import json
 import os
 
 import pytest
@@ -80,10 +78,11 @@ def base_args(tmpdir):
         config_file (str): used for -c
     """
     def _callback(base_dir=None, config_file=None):
-        args = list()
-        args.append('--verbose')
+        args = [
+            '--verbose',
+            '--base-dir'
+        ]
 
-        args.append('--base-dir')
         if base_dir is None:
             args.append(str(tmpdir))
         else:
@@ -92,7 +91,7 @@ def base_args(tmpdir):
         args.append('--config-file')
         if config_file is None:
             config_file_name = str(tmpdir / 'config.yaml')
-            with open(config_file_name, 'w') as file:
+            with open(config_file_name, 'w', encoding="utf-8") as file:
                 file.write("")
             args.append(config_file_name)
         else:
@@ -105,21 +104,21 @@ def base_args(tmpdir):
 @pytest.fixture
 def args_helper(tmpdir, base_args):
     def _callback(provider, conf, tfvar_template):
-        provider_path = os.path.join(tmpdir,'terraform', provider)
+        provider_path = os.path.join(tmpdir, 'terraform', provider)
         if not os.path.isdir(provider_path):
             os.makedirs(provider_path)
-        tfvar_path = os.path.join(provider_path,'terraform.tfvars')
+        tfvar_path = os.path.join(provider_path, 'terraform.tfvars')
 
-        ansiblevars_path = os.path.join(tmpdir,'ansible', 'playbooks', 'vars')
+        ansiblevars_path = os.path.join(tmpdir, 'ansible', 'playbooks', 'vars')
         if not os.path.isdir(ansiblevars_path):
             os.makedirs(ansiblevars_path)
         hana_vars = os.path.join(ansiblevars_path, 'azure_hana_media.yaml')
 
         config_file_name = str(tmpdir / 'config.yaml')
-        with open(config_file_name, 'w') as file:
+        with open(config_file_name, 'w', encoding="utf-8") as file:
             file.write(conf)
         if tfvar_template is not None and len(tfvar_template) > 0:
-            with open(os.path.join(provider_path, 'terraform.tfvars.template'), 'w') as file:
+            with open(os.path.join(provider_path, 'terraform.tfvars.template'), 'w', encoding="utf-8") as file:
                 for line in tfvar_template:
                     file.write(line)
 
@@ -144,7 +143,7 @@ def create_config():
     """Create one element for the list in the configure.json related to trento_deploy.py -s
     """
     def _callback(typ, reg, ver):
-        config = dict()
+        config = {}
         config['type'] = typ
         config['registry'] = reg
         if ver:
@@ -179,12 +178,12 @@ def check_duplicate():
         """
     def _callback(lines):
         for line in lines:
-            if len([s for s in lines if line.strip() in s.strip()]) != 1 :
+            if len([s for s in lines if line.strip() in s.strip()]) != 1:
                 return (False, "Line '"+line+"' appear more than one time")
             if '--set' in line:
                 setting = line.split(' ')[1]
                 setting_field = setting.split('=')[0]
-                if len([s for s in lines if setting_field in s]) != 1 :
+                if len([s for s in lines if setting_field in s]) != 1:
                     return (False, "Setting '"+setting_field+"' appear more than one time")
         return (True, '')
 

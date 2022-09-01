@@ -1,16 +1,20 @@
 from unittest import mock
 import os
 import logging
-log = logging.getLogger(__name__)
 import pytest
 
 from qesap import main
+
+log = logging.getLogger(__name__)
+
 
 terraform_cmds = [
     ('init'),
     ('plan', '-out=plan.zip'),
     ('apply', '-auto-approve', 'plan.zip')
 ]
+
+
 @mock.patch("qesap.subprocess_run")
 @pytest.mark.parametrize("terraform_cmd_args", terraform_cmds)
 def test_terraform_call_terraform(run, terraform_cmd_args, args_helper, config_yaml_sample):
@@ -55,7 +59,7 @@ def test_terraform_terraform_logs(run, terraform_cmd_args, args_helper, config_y
     provider = 'mangiafuoco'
     conf = config_yaml_sample(provider)
 
-    args, terraform_dir, _, _ = args_helper(provider, conf, '')
+    args, *_ = args_helper(provider, conf, '')
     args.append('terraform')
     log.error(args)
     run.return_value = (0, ['This is the terraform output', 'Two lines of that'])
@@ -76,7 +80,7 @@ def test_terraform_logs_content(run, terraform_cmd_args, args_helper, config_yam
     provider = 'mangiafuoco'
     conf = config_yaml_sample(provider)
 
-    args, terraform_dir, _, _ = args_helper(provider, conf, '')
+    args, *_ = args_helper(provider, conf, '')
     args.append('terraform')
     log.error(args)
     terraform_output = ['This is the terraform output', 'Two lines of that']
@@ -86,7 +90,7 @@ def test_terraform_logs_content(run, terraform_cmd_args, args_helper, config_yam
         cmd = terraform_cmd_args
     else:
         cmd = terraform_cmd_args[0]
-    with open(f"terraform.{cmd}.log.txt", 'r') as log_file:
+    with open(f"terraform.{cmd}.log.txt", 'r', encoding="utf-8") as log_file:
         log_lines = log_file.read().splitlines()
     assert terraform_output == log_lines
 
@@ -100,9 +104,9 @@ def test_integration_terraform(terraform_cmd_args, args_helper, config_yaml_samp
     provider = 'azure'
     conf = config_yaml_sample(provider)
     config_file_name = 'config.yaml'
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding="utf-8") as file:
         file.write(conf)
-    args = list()
+    args = []
     args.append('--verbose')
     args.append('--base-dir')
     args.append(str(os.path.abspath(os.path.join(os.getcwd(), '..', '..'))))
@@ -110,7 +114,6 @@ def test_integration_terraform(terraform_cmd_args, args_helper, config_yaml_samp
     args.append(config_file_name)
     args.append('terraform')
     log.error("===> args:%s", args)
-    terraform_output = ['This is the terraform output\n', 'Two lines of that\n']
     assert main(args) == 0
 
     if isinstance(terraform_cmd_args, str):
@@ -119,7 +122,7 @@ def test_integration_terraform(terraform_cmd_args, args_helper, config_yaml_samp
         cmd = terraform_cmd_args[0]
 
     log.error("===> cmd:%s", cmd)
-    with open(f"terraform.{cmd}.log.txt", 'r') as log_file:
+    with open(f"terraform.{cmd}.log.txt", 'r', encoding="utf-8") as log_file:
         log_lines = log_file.readlines()
     assert 'Initializing modules...\n' in log_lines
 
@@ -132,7 +135,7 @@ def test_terraform_dryrun(run, args_helper, config_yaml_sample):
     provider = 'mangiafuoco'
     conf = config_yaml_sample(provider)
 
-    args, terraform_dir, _, _ = args_helper(provider, conf, '')
+    args, *_ = args_helper(provider, conf, '')
     args.append('terraform')
     args.insert(0, '--dryrun')
     log.error(args)

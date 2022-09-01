@@ -10,10 +10,9 @@ import subprocess
 import yaml
 from yaml.parser import ParserError
 from yaml.scanner import ScannerError
-from string import Template
 from lib.config import yaml_to_tfvars, template_to_tfvars
 
-VERSION  = '0.1'
+VERSION = '0.1'
 
 DESCRIBE = '''qe-sap-deployment helper script'''
 
@@ -52,7 +51,7 @@ def subprocess_run(cmd):
 
     log.info("Run:%s", ' '.join(cmd))
     stdout = []
-    if sys.version_info.major == 3 and sys.version_info.minor > 7 :
+    if sys.version_info.major == 3 and sys.version_info.minor > 7:
         proc = subprocess.run(cmd, capture_output=True, check=False)
         if proc.returncode != 0:
             log.error("Error %d in %s", proc.returncode, ' '.join(cmd[0:1]))
@@ -61,44 +60,45 @@ def subprocess_run(cmd):
         stdout = [l.decode("utf-8") for l in proc.stdout.splitlines()]
     else:
         import select
-        proc = subprocess.Popen(cmd,
-               stdout=subprocess.PIPE,
-               stderr=subprocess.PIPE)
-        poller_out = select.epoll()
-        poller_out.register(proc.stdout.fileno(), select.EPOLLIN)
-        poller_err = select.epoll()
-        poller_err.register(proc.stderr.fileno(), select.EPOLLIN)
+        with subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE) as proc:
+            poller_out = select.epoll()
+            poller_out.register(proc.stdout.fileno(), select.EPOLLIN)
+            poller_err = select.epoll()
+            poller_err.register(proc.stderr.fileno(), select.EPOLLIN)
 
-        while True:
-            events_out = poller_out.poll(1)
-            #log.debug("Events out:%s", events_out)
-            for fd, _ in events_out:
-                if fd != proc.stdout.fileno():
-                    log.error("fd:%s proc.stdout.fileno():%s", fd, proc.stdout.fileno())
-                    continue
-                data = os.read(fd, 1024)
-                data_str = data.decode(encoding="utf-8", errors="ignore")
-                if data_str:
-                    log.debug("Split:%s", data_str.splitlines())
-                    stdout += data_str.splitlines()
-            if proc.poll() is not None:
-                log.info('Done')
-                break
-        if proc.returncode != 0:
-            log.error("Error %d in %s", proc.returncode, ' '.join(cmd[0:1]))
-            events_err = poller_err.poll(1)
-            log.debug("Events err:%s", events_err)
-            for fd, _ in events_err:
-                if fd != proc.stderr.fileno():
-                    log.error("fd:%s proc.stderr.fileno():%s", fd, proc.stdout.fileno())
-                    continue
-                data = os.read(fd, 1024)
-                log.error(data.decode(encoding="utf-8", errors="ignore").strip())
-            log.info("Stdout:%s", stdout)
-            return (proc.returncode, [])
+            while True:
+                events_out = poller_out.poll(1)
+                #log.debug("Events out:%s", events_out)
+                for fd, _ in events_out:
+                    if fd != proc.stdout.fileno():
+                        log.error("fd:%s proc.stdout.fileno():%s", fd, proc.stdout.fileno())
+                        continue
+                    data = os.read(fd, 1024)
+                    data_str = data.decode(encoding="utf-8", errors="ignore")
+                    if data_str:
+                        log.debug("Split:%s", data_str.splitlines())
+                        stdout += data_str.splitlines()
+                if proc.poll() is not None:
+                    log.info('Done')
+                    break
+            if proc.returncode != 0:
+                log.error("Error %d in %s", proc.returncode, ' '.join(cmd[0:1]))
+                events_err = poller_err.poll(1)
+                log.debug("Events err:%s", events_err)
+                for fd, _ in events_err:
+                    if fd != proc.stderr.fileno():
+                        log.error("fd:%s proc.stderr.fileno():%s", fd, proc.stdout.fileno())
+                        continue
+                    data = os.read(fd, 1024)
+                    log.error(data.decode(encoding="utf-8", errors="ignore").strip())
+                log.info("Stdout:%s", stdout)
+                return (proc.returncode, [])
 
     for l in stdout:
-        log.debug('Stdout:%s',l)
+        log.debug('Stdout:%s', l)
     return (0, stdout)
 
 
@@ -120,11 +120,11 @@ def validate_config(config):
         log.error("Empty 'provider' in the config")
         return False
 
-    if not 'ansible' in config.keys() or config['ansible'] is None:
+    if 'ansible' not in config or config['ansible'] is None:
         log.error("Empty 'ansible' in the config")
         return False
 
-    if not 'hana_urls' in config['ansible'].keys():
+    if 'hana_urls' not in config['ansible']:
         log.error("Missing 'hana_urls' in 'ansible' in the config")
         return False
 
@@ -158,8 +158,8 @@ def validate_basedir(basedir, config):
         log.error("Missing %s", ansible_pl_vars_dir)
         return False, None
 
-    result['tfvars'] = os.path.join(result['provider'],'terraform.tfvars')
-    result['hana_vars'] = os.path.join(ansible_pl_vars_dir,'azure_hana_media.yaml')
+    result['tfvars'] = os.path.join(result['provider'], 'terraform.tfvars')
+    result['hana_vars'] = os.path.join(ansible_pl_vars_dir, 'azure_hana_media.yaml')
 
     return True, result
 
@@ -259,7 +259,7 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
     sequence = ['init', 'plan', 'apply'] if not destroy else ['destroy']
     cmds = []
 
-    for idx, seq in enumerate(sequence):
+    for seq in sequence:
         this_cmd = []
         this_cmd.append('terraform')
         this_cmd.append('-chdir=' + cfg_paths['provider'])
@@ -322,8 +322,8 @@ def is_yaml(path):
     with open(path, 'r', encoding='utf-8') as file:
         try:
             data = yaml.load(file, Loader=yaml.FullLoader)
-        except (ScannerError, ParserError):
-            raise argparse.ArgumentTypeError("is_yaml:" + path + " is not a valid YAML file")
+        except (ScannerError, ParserError) as exc:
+            raise argparse.ArgumentTypeError("is_yaml:" + path + " is not a valid YAML file") from exc
     return data
 
 
@@ -341,30 +341,31 @@ def is_dir(path):
     """
     if os.path.isdir(path):
         return path
-    else:
-        #raise SystemExit
-        raise argparse.ArgumentTypeError("is_dir:" + path + " is not a folder")
+    # raise SystemExit
+    raise argparse.ArgumentTypeError("is_dir:" + path + " is not a folder")
 
 
 def cli(command_line=None):
     '''
     Command line argument parser
     '''
-    parser   = argparse.ArgumentParser(description=DESCRIBE)
+    parser = argparse.ArgumentParser(description=DESCRIBE)
 
     parser.add_argument('--version', action='version', version=VERSION)
     parser.add_argument('--verbose', action='store_true', help="Increases log verbosity")
     parser.add_argument('--dryrun',  action='store_true', help="Dry run execution mode")
 
-    parser.add_argument('-c', '--config-file', dest='configfile',
-    type=is_yaml,
-    required=True,
-    help="""Input global configuration .yaml file""")
+    parser.add_argument(
+        '-c', '--config-file', dest='configfile',
+        type=is_yaml,
+        required=True,
+        help="""Input global configuration .yaml file""")
 
-    parser.add_argument('-b', '--base-dir', dest='basedir',
-    type=is_dir,
-    required=True,
-    help="""Base project folder, used to figure out
+    parser.add_argument(
+        '-b', '--base-dir', dest='basedir',
+        type=is_dir,
+        required=True,
+        help="""Base project folder, used to figure out
     where to write all the generated configuration files and
     where they are stored when it is time to call Terraform and Ansible.
     It has to be created in advance.
@@ -397,7 +398,7 @@ def main(command_line=None):
     '''
     parsed_args = cli(command_line)
 
-    if parsed_args.verbose :
+    if parsed_args.verbose:
         log.setLevel(logging.getLevelName('DEBUG'))
 
     if not parsed_args.command:
@@ -412,21 +413,21 @@ def main(command_line=None):
             parsed_args.dryrun
         )
         return res[0]
-    elif parsed_args.command == "deploy":
+    if parsed_args.command == "deploy":
         log.info("Deploying...")
         return cmd_deploy(
             parsed_args.configfile,
             parsed_args.basedir,
             parsed_args.dryrun
         )
-    elif parsed_args.command == "destroy":
+    if parsed_args.command == "destroy":
         log.info("Destroying...")
         return cmd_destroy(
             parsed_args.configfile,
             parsed_args.basedir,
             parsed_args.dryrun
         )
-    elif parsed_args.command == "terraform":
+    if parsed_args.command == "terraform":
         log.info("Running Terraform...")
         return cmd_terraform(
             parsed_args.configfile,
@@ -434,16 +435,15 @@ def main(command_line=None):
             parsed_args.dryrun,
             destroy=parsed_args.destroy
         )
-    elif parsed_args.command == "ansible":
+    if parsed_args.command == "ansible":
         log.info("Running Ansible...")
         return cmd_ansible(
             parsed_args.configfile,
             parsed_args.basedir,
             parsed_args.dryrun
         )
-    else:
-        log.error("Unknown command:%s", parsed_args.command)
-        return 1
+    log.error("Unknown command:%s", parsed_args.command)
+    return 1
 
 
 if __name__ == "__main__":

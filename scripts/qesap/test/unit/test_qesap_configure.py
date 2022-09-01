@@ -1,12 +1,12 @@
 import os
-import yaml
 import logging
-log = logging.getLogger(__name__)
 
-#from unittest import mock
-import pytest
+import yaml
 
 from qesap import main
+
+
+log = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'assets')
 
@@ -34,7 +34,7 @@ def test_configure_no_tfvars(args_helper, config_yaml_sample):
     '''
     provider = 'pinocchio'
     conf = config_yaml_sample(provider)
-    args, tfvar_path, _, _ = args_helper(provider, conf, None)
+    args, *_ = args_helper(provider, conf, None)
     args.append('configure')
 
     assert main(args) == 0
@@ -67,14 +67,14 @@ terraform:
 ansible:
     hana_urls: something"""
     tfvar_template = [
-    "something = static\n",
-    "hananame = hahaha\n",
-    "ip_range = 10.0.4.0/24\n"]
+        "something = static\n",
+        "hananame = hahaha\n",
+        "ip_range = 10.0.4.0/24\n"]
     args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
 
-    with open(tfvar_path, 'r') as file:
+    with open(tfvar_path, 'r', encoding="utf-8") as file:
         data = file.readlines()
         assert tfvar_template == data
 
@@ -96,9 +96,9 @@ terraform:
 ansible:
     hana_urls: something"""
     tfvar_template = [
-    "something = static\n",
-    "hananame = hahaha\n",
-    "ip_range = 10.0.4.0/24\n"]
+        "something = static\n",
+        "hananame = hahaha\n",
+        "ip_range = 10.0.4.0/24\n"]
     args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
@@ -106,7 +106,7 @@ ansible:
     expected_tfvars = tfvar_template
     expected_tfvars.append("region = eu1\n")
     expected_tfvars.append("deployment_name = rocket\n")
-    with open(tfvar_path, 'r') as file:
+    with open(tfvar_path, 'r', encoding="utf-8") as file:
         data = file.readlines()
         assert expected_tfvars == data
 
@@ -128,16 +128,16 @@ ansible:
     hana_urls: something"""
 
     tfvar_template = [
-    "something = static\n",
-    "somethingelse = keep\n"]
+        "something = static\n",
+        "somethingelse = keep\n"]
     args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
 
     expected_tfvars = [
-    "something = yamlrulez\n",
-    "somethingelse = keep\n"]
-    with open(tfvar_path, 'r') as file:
+        "something = yamlrulez\n",
+        "somethingelse = keep\n"]
+    with open(tfvar_path, 'r', encoding="utf-8") as file:
         data = file.readlines()
         assert expected_tfvars == data
 
@@ -166,7 +166,7 @@ def test_configure_ansible_vars_content(configure_helper, config_yaml_sample):
     args, _, hana_vars = configure_helper(provider, conf, [])
     main(args)
 
-    with open(hana_vars, 'r') as file:
+    with open(hana_vars, 'r', encoding="utf-8") as file:
         data = yaml.load(file, Loader=yaml.FullLoader)
         assert 'hana_urls' in data.keys()
         assert len(data['hana_urls']) == 3
@@ -190,9 +190,9 @@ terraform:
 ansible:
     hana_urls: something"""
     tfvar_template = [
-    "something = static\n",
-    "hananame = hahaha\n",
-    "ip_range = 10.0.4.0/24\n"]
+        "something = static\n",
+        "hananame = hahaha\n",
+        "ip_range = 10.0.4.0/24\n"]
     args, tfvar_path, hana_vars = configure_helper(provider, conf, tfvar_template)
     args.insert(0, '--dryrun')
 
@@ -210,8 +210,8 @@ def test_configure_checkfolder(base_args, tmpdir):
      - <BASEDIR>/ansible/playbooks/vars/
     """
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
-        file.write(f"""terraform:
+    with open(config_file_name, 'w', encoding="utf-8") as file:
+        file.write("""terraform:
   provider: Pinocchio""")
 
     folder_1 = tmpdir / '1'
@@ -244,7 +244,7 @@ def test_configure_checkfolder(base_args, tmpdir):
     os.makedirs(terraform_4)
     cloud_4 = terraform_4 / 'Pinocchio'
     os.makedirs(cloud_4)
-    with open(os.path.join(cloud_4, 'terraform.tfvars.template'), 'w') as file:
+    with open(os.path.join(cloud_4, 'terraform.tfvars.template'), 'w', encoding="utf-8") as file:
         file.write("")
     args = base_args(base_dir=folder_4, config_file=config_file_name)
     args.append('configure')
@@ -260,25 +260,25 @@ def test_configure_fail_at_missing_params(configure_helper):
     """
 
     # test has to fail as config is empty
-    args, tfvar_path, _ = configure_helper('pinocchio', "", [])
+    args, *_ = configure_helper('pinocchio', "", [])
     assert main(args) == 1
 
     # test has to fail as config has 'terraform' but no anything else
-    args, tfvar_path, _ = configure_helper('pinocchio', "terraform:", [])
+    args, *_ = configure_helper('pinocchio', "terraform:", [])
     assert main(args) == 1
 
     conf = """---
 terraform:
     provider:
 ansible:"""
-    args, tfvar_path, _ = configure_helper('pinocchio', conf, [])
+    args, *_ = configure_helper('pinocchio', conf, [])
     assert main(args) == 1
 
     conf = """---
 terraform:
     provider: something
 ansible:"""
-    args, tfvar_path, _ = configure_helper('pinocchio', conf, [])
+    args, *_ = configure_helper('pinocchio', conf, [])
     assert main(args) == 1
 
 
@@ -290,11 +290,11 @@ def test_configure_check_terraform_cloud_provider(base_args, tmpdir):
     """
     provider = 'pinocchio'
 
-    # create the <BASEDIR>/terraform but not the 
+    # create the <BASEDIR>/terraform but not the
     # <BASEDIR>/terraform/pinocchio
-    os.makedirs(os.path.join(tmpdir,'terraform'))
+    os.makedirs(os.path.join(tmpdir, 'terraform'))
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding="utf-8") as file:
         file.write(f"""terraform:
   provider: {provider}""")
 
@@ -310,9 +310,9 @@ def test_configure_tfvarstemplate(base_args, tmpdir):
     is missing
     """
     provider = 'pinocchio'
-    os.makedirs(os.path.join(tmpdir,'terraform', provider))
+    os.makedirs(os.path.join(tmpdir, 'terraform', provider))
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding="utf-8") as file:
         file.write(f"""terraform:
   provider: {provider}""")
 

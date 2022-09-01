@@ -1,5 +1,5 @@
 from qesap import subprocess_run
-import logging
+
 
 def test_no_command():
     '''
@@ -8,7 +8,7 @@ def test_no_command():
     '''
     exit_code, stdout_list = subprocess_run([])
     assert exit_code == 1
-    assert stdout_list  == []
+    assert stdout_list == []
 
 
 def test_echo():
@@ -18,7 +18,7 @@ def test_echo():
     test_text = '"Banana"'
     exit_code, stdout_list = subprocess_run(['echo', test_text])
     assert exit_code == 0
-    assert stdout_list  == [test_text]
+    assert stdout_list == [test_text]
 
 
 def test_multilines():
@@ -29,10 +29,10 @@ def test_multilines():
     test_text = ''
     for s in str_list:
         test_text += (s*10) + "\n"
-    exit_code, stdout_list = subprocess_run(['echo', test_text])
+    _, stdout_list = subprocess_run(['echo', test_text])
     assert len(stdout_list) == len(str_list)+1
-    for i in range(len(str_list)):
-        assert str_list[i]*10 == stdout_list[i].strip()
+    for i, line in enumerate(str_list):
+        assert line*10 == stdout_list[i].strip()
 
 
 def test_stderr():
@@ -42,7 +42,7 @@ def test_stderr():
     test_text = '"Banana"'
     exit_code, stdout_list = subprocess_run(['logger', '-s', test_text])
     assert exit_code == 0
-    assert stdout_list  == []
+    assert stdout_list == []
 
 
 def test_err():
@@ -53,4 +53,4 @@ def test_err():
 
     exit_code, stdout_list = subprocess_run(['cat', not_existing_file])
     assert exit_code == 1
-    assert stdout_list  == []
+    assert stdout_list == []
