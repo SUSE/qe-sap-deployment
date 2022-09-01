@@ -311,7 +311,7 @@ ansible:
 
     with open(hana_vars, 'r', encoding='utf-8') as file:
         data = yaml.load(file, Loader=yaml.FullLoader)
-        assert 'hana_urls' in data.keys()
+        assert 'hana_urls' in data
         assert len(data['hana_urls']) == 3
         assert 'SAPCAR_URL' in data['hana_urls']
         assert 'SAP_HANA_URL' in data['hana_urls']

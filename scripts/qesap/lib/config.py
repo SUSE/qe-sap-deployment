@@ -59,7 +59,7 @@ def terraform_yml(configure_data):
         log.error("No configure_data")
         return False
 
-    if 'terraform' not in configure_data.keys():
+    if 'terraform' not in configure_data:
         log.error("Missing 'terraform' key in configure_data")
         return False
 
@@ -67,7 +67,7 @@ def terraform_yml(configure_data):
         log.error("configure_data['terraform'] is empty")
         return False
 
-    if 'variables' not in configure_data['terraform'].keys():
+    if 'variables' not in configure_data['terraform']:
         log.error("Missing 'variables' key in configure_data['terraform'] ")
         return False
 

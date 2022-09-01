@@ -122,7 +122,7 @@ ansible:
     hana_urls: somesome"""
 
         for seq in ['create', 'destroy']:
-            if seq in playbooks.keys():
+            if seq in playbooks:
                 config_content += f"\n    {seq}:"""
                 for play in playbooks[seq]:
                     config_content += f"\n        - {play}.yaml"

@@ -116,16 +116,16 @@ def validate_ansible_config(config, sequence):
     '''
     log.debug("Configure data:%s", config)
 
-    if 'ansible' not in config.keys() or config['ansible'] is None:
+    if 'ansible' not in config or config['ansible'] is None:
         log.error("Error at 'ansible' in the config")
         return False
 
-    if 'hana_urls' not in config['ansible'].keys():
+    if 'hana_urls' not in config['ansible']:
         log.error("Missing 'hana_urls' in 'ansible' in the config")
         return False
 
     if sequence:
-        if sequence not in config['ansible'].keys() or config['ansible'][sequence] is None:
+        if sequence not in config['ansible'] or config['ansible'][sequence] is None:
             log.info('No Ansible playbooks to play in %s for sequence:%s', config['ansible'], sequence)
             return False
 
