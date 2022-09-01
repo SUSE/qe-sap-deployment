@@ -6,6 +6,7 @@ import re
 
 log = logging.getLogger('QESAPDEP')
 
+
 def yaml_to_tfvars_entry(key, value):
     if isinstance(value, (str, int)):
         entry = f'{key} = "{str(value)}"'
@@ -61,7 +62,7 @@ def terraform_yml(configure_data):
     if 'terraform' not in configure_data.keys():
         log.error("Missing 'terraform' key in configure_data")
         return False
-    
+
     if configure_data['terraform'] is None:
         log.error("configure_data['terraform'] is empty")
         return False
@@ -74,8 +75,8 @@ def terraform_yml(configure_data):
 
 
 def template_to_tfvars(tfvars_template, configure_data):
-    """ 
-    Takes data structure collected from yaml config. 
+    """
+    Takes data structure collected from yaml config.
     Values are converted into tfvars format and checked against terraform.tfvars.template.
     Variables from yaml config are overwritten by values from template file.
 
@@ -96,11 +97,11 @@ def template_to_tfvars(tfvars_template, configure_data):
             return tfvar_content
 
         log.debug("Config has terraform variables")
-        for k,v in configure_data['terraform']['variables'].items():
+        for k, v in configure_data['terraform']['variables'].items():
             key_replace = False
             # Look for k in the template file content
             for index, line in enumerate(tfvar_content):
-                match = re.search(k+r'\s?=.*', line)
+                match = re.search(k + r'\s?=.*', line)
                 if match:
                     log.debug("Replace template %s with [%s = %s]", line, k, v)
                     tfvar_content[index] = f"{k} = {v}\n"

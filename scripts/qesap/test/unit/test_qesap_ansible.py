@@ -1,9 +1,10 @@
 from unittest import mock
-import os
 import logging
-log = logging.getLogger(__name__)
 
 from qesap import main
+
+
+log = logging.getLogger(__name__)
 
 
 @mock.patch("qesap.subprocess_run")
@@ -97,7 +98,7 @@ def test_ansible_missing_inventory(run, tmpdir, base_args, ansible_config):
     """
     Stop and return non zero if inventory is missing
     """
-    config_content = ansible_config('grilloparlante', {'create':['get_cherry_wood']})
+    config_content = ansible_config('grilloparlante', {'create': ['get_cherry_wood']})
     config_file_name = str(tmpdir / 'config.yaml')
     with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(config_content)
@@ -161,7 +162,7 @@ def test_ansible_missing_playbook(run, tmpdir, base_args, create_inventory, crea
     run.assert_not_called()
 
 
-@mock.patch("qesap.subprocess_run", side_effect = [(0, []),(1, [])])
+@mock.patch("qesap.subprocess_run", side_effect=[(0, []), (1, [])])
 def test_ansible_stop(run, tmpdir, base_args, create_inventory, create_playbooks, ansible_config):
     """
     Stop the sequence of playbook at first one
@@ -265,7 +266,6 @@ ansible:
 
     run.assert_called()
     run.assert_has_calls(calls)
-
 
 
 @mock.patch("qesap.subprocess_run")

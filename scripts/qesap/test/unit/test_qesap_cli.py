@@ -1,8 +1,11 @@
-import yaml
 import logging
-log = logging.getLogger(__name__)
+import yaml
 
 from qesap import cli
+
+
+log = logging.getLogger(__name__)
+
 
 def test_cli_help(capsys):
     '''
@@ -34,8 +37,8 @@ def test_cli_configure_b_notexist(capsys, tmpdir):
 
     #Provide a valid config.yaml
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
-        yaml.dump(dict(), file)
+    with open(config_file_name, 'w', encoding='utf-8') as file:
+        yaml.dump({}, file)
 
     try:
         # Run with a not existing -b folder
@@ -64,7 +67,7 @@ def test_cli_configure_c_notyaml(capsys, tmpdir):
     -c has to be valid YAML
     '''
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write("this: is: invalid")
     try:
         cli(['-b', str(tmpdir), '-c', config_file_name, 'configure'])
@@ -78,9 +81,9 @@ def test_cli_configure(base_args, tmpdir):
     '''
     Test configure with minimal amount of arguments
     '''
-    data = {'cane':'pane'}
+    data = {'cane': 'pane'}
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         yaml.dump(data, file)
     args = base_args(base_dir=tmpdir, config_file=config_file_name)
     args.append('configure')

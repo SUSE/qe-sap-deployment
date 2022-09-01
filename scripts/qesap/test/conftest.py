@@ -1,5 +1,3 @@
-from unittest import mock
-import json
 import os
 
 import pytest
@@ -21,22 +19,23 @@ def config_data_sample():
         # Default values
         hana_ips = hana_ips if hana_ips else ['10.0.0.2', '10.0.0.3']
         hana_disk_configuration = hana_disk_configuration if \
-            hana_disk_configuration else {'disk_type': 'hdd,hdd,hdd',  'disks_size': '64,64,64'}
+            hana_disk_configuration else {'disk_type': 'hdd,hdd,hdd', 'disks_size': '64,64,64'}
 
         # Config template
-        config = {'name': 'geppetto',
-                  'terraform': {
-                      'provider': provider,
-                      'variables': {
-                          'az_region': az_region,
-                          'hana_ips': hana_ips,
-                          'hana_data_disks_configuration': hana_disk_configuration
-                      }
-                  },
-                  'ansible': {
-                      'hana_urls': ['SAPCAR_URL', 'SAP_HANA_URL', 'SAP_CLIENT_SAR_URL']
-                      }
-                  }
+        config = {
+            "name": "geppetto",
+            "terraform": {
+                "provider": provider,
+                "variables": {
+                    "az_region": az_region,
+                    "hana_ips": hana_ips,
+                    "hana_data_disks_configuration": hana_disk_configuration,
+                },
+            },
+            "ansible": {
+                "hana_urls": ["SAPCAR_URL", "SAP_HANA_URL", "SAP_CLIENT_SAR_URL"]
+            },
+        }
 
         return config
     return _callback
@@ -77,7 +76,7 @@ ansible:
 @pytest.fixture
 def provider_dir(tmpdir):
     def _callback(provider):
-        provider_path = os.path.join(tmpdir,'terraform', provider)
+        provider_path = os.path.join(tmpdir, 'terraform', provider)
         if not os.path.isdir(provider_path):
             os.makedirs(provider_path)
         return provider_path
@@ -88,7 +87,7 @@ def provider_dir(tmpdir):
 @pytest.fixture
 def playbooks_dir(tmpdir):
     def _callback():
-        playbooks_path = os.path.join(tmpdir,'ansible', 'playbooks')
+        playbooks_path = os.path.join(tmpdir, 'ansible', 'playbooks')
         if not os.path.isdir(playbooks_path):
             os.makedirs(playbooks_path)
         return playbooks_path
@@ -137,7 +136,7 @@ def create_inventory(provider_dir):
     """
     def _callback(provider):
         provider_path = provider_dir(provider)
-        inventory_filename = os.path.join(provider_path,'inventory.yaml')
+        inventory_filename = os.path.join(provider_path, 'inventory.yaml')
         with open(inventory_filename, 'w', encoding='utf-8') as f:
             f.write("")
         return inventory_filename
@@ -183,9 +182,9 @@ def args_helper(tmpdir, base_args, provider_dir):
     def _callback(provider, conf, tfvar_template):
 
         provider_path = provider_dir(provider)
-        tfvar_path = os.path.join(provider_path,'terraform.tfvars')
+        tfvar_path = os.path.join(provider_path, 'terraform.tfvars')
 
-        ansiblevars_path = os.path.join(tmpdir,'ansible', 'playbooks', 'vars')
+        ansiblevars_path = os.path.join(tmpdir, 'ansible', 'playbooks', 'vars')
         if not os.path.isdir(ansiblevars_path):
             os.makedirs(ansiblevars_path)
         hana_vars = os.path.join(ansiblevars_path, 'azure_hana_media.yaml')
@@ -219,7 +218,7 @@ def create_config():
     """Create one element for the list in the configure.json related to trento_deploy.py -s
     """
     def _callback(typ, reg, ver):
-        config = dict()
+        config = {}
         config['type'] = typ
         config['registry'] = reg
         if ver:
@@ -254,13 +253,13 @@ def check_duplicate():
         """
     def _callback(lines):
         for line in lines:
-            if len([s for s in lines if line.strip() in s.strip()]) != 1 :
-                return (False, "Line '"+line+"' appear more than one time")
+            if len([s for s in lines if line.strip() in s.strip()]) != 1:
+                return (False, "Line '" + line + "' appear more than one time")
             if '--set' in line:
                 setting = line.split(' ')[1]
                 setting_field = setting.split('=')[0]
-                if len([s for s in lines if setting_field in s]) != 1 :
-                    return (False, "Setting '"+setting_field+"' appear more than one time")
+                if len([s for s in lines if setting_field in s]) != 1:
+                    return (False, "Setting '" + setting_field + "' appear more than one time")
         return (True, '')
 
     return _callback
