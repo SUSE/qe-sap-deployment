@@ -1,5 +1,3 @@
-from unittest import mock
-
 from qesap import main
 
 

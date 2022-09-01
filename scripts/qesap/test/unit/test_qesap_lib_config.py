@@ -1,4 +1,3 @@
-import pytest
 import re
 from lib.config import yaml_to_tfvars
 

@@ -1,6 +1,5 @@
-from unittest import mock
-
 from qesap import main
+
 
 def test_ansible(base_args, tmpdir):
     """
