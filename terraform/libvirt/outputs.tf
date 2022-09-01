@@ -19,19 +19,19 @@ output "iscsisrv_public_name" {
 
 # Hana nodes
 
-output "cluster_nodes_ip" {
+output "hana_ip" {
   value = module.hana_node.output_data.private_addresses
 }
 
-#output "cluster_nodes_public_ip" {
+#output "hana_public_ip" {
 #  value = module.hana_node.output_data.addresses
 #}
 
-output "cluster_nodes_name" {
+output "hana_name" {
   value = module.hana_node.output_data.name
 }
 
-output "cluster_nodes_public_name" {
+output "hana_public_name" {
   value = []
 }
 
