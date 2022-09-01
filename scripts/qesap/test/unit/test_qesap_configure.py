@@ -87,10 +87,10 @@ def test_configure_no_tfvars_template(args_helper, config_yaml_sample):
     # to be used later in the verification against the generated terraform.tfvars
     regexp_set = []
     conf_dict = yaml.safe_load(conf)
-    for k, v in conf_dict['terraform']['variables'].items():
+    for key, value in conf_dict['terraform']['variables'].items():
         # just focus on the strings variables
-        if isinstance(v, str):
-            regexp_set.append(rf'{k}\s?=\s?"{v}"')
+        if isinstance(value, str):
+            regexp_set.append(rf'{key}\s?=\s?"{value}"')
 
     args, tfvar_path, *_ = args_helper(provider, conf, None)
     args.append('configure')
@@ -99,8 +99,8 @@ def test_configure_no_tfvars_template(args_helper, config_yaml_sample):
     assert main(args) == 0
 
     assert os.path.isfile(tfvar_file)
-    with open(tfvar_file, 'r') as f:
-        tfvars_lines = f.readlines()
+    with open(tfvar_file, 'r') as file:
+        tfvars_lines = file.readlines()
         for var_re in regexp_set:
             one_match = False
             for line in tfvars_lines:

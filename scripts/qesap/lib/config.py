@@ -97,21 +97,20 @@ def template_to_tfvars(tfvars_template, configure_data):
             return tfvar_content
 
         log.debug("Config has terraform variables")
-        for k, v in configure_data['terraform']['variables'].items():
+        for key, value in configure_data['terraform']['variables'].items():
             key_replace = False
-            # Look for k in the template file content
+            # Look for key in the template file content
             for index, line in enumerate(tfvar_content):
-                match = re.search(k + r'\s?=.*', line)
-                if match:
-                    log.debug("Replace template %s with [%s = %s]", line, k, v)
-                    tfvar_content[index] = f"{k} = {v}\n"
+                if re.search(rf'{key}\s?=.*', line):
+                    log.debug("Replace template %s with [%s = %s]", line, key, value)
+                    tfvar_content[index] = f"{key} = {value}\n"
                     key_replace = True
             # add the new key/value pair
             if not key_replace:
-                log.debug("[k:%s = v:%s] is not in the template, append it", k, v)
-                entry = yaml_to_tfvars_entry(k, v)
+                log.debug("[k:%s = v:%s] is not in the template, append it", key, value)
+                entry = yaml_to_tfvars_entry(key, value)
                 if entry is None:
                     return None
-                tfvar_content.append(entry + '\n')
+                tfvar_content.append(f"{entry}\n")
         log.debug("Result terraform.tfvars:\n%s", tfvar_content)
         return tfvar_content

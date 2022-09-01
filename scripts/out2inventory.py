@@ -18,25 +18,23 @@ def reasembled_output(data):
     for family in ['bastion', 'cluster_nodes', 'drbd', 'iscsisrv', 'monitoring', 'netweaver']:
         x_family = {}
         # Loop through the terraform output and look for data about this  family
-        for k, v in data.items():
-            if family in k:
-                # remove the family name from the sub-key
-                # iscsisrv_public_ip  -->  public_ip
-                data_key = k.replace(family + '_', '')
-
-                if isinstance(v['value'], (str, list)) and len(v['value']) == 0:
-                    data_value = None
-                elif not any(len(element) for element in v['value']):
-                    data_value = None
-                elif family == 'cluster_nodes':
-                    if any(len(element) for element in v['value'][0]):
-                        data_value = v['value'][0]
-                    else:
-                        data_value = None
+        for key, value in data.items():
+            if family not in key:
+                continue
+            # remove the family name from the sub-key
+            # iscsisrv_public_ip  -->  public_ip
+            data_key = key.replace(f"{family}_", '')
+            if isinstance(value['value'], (str, list)) and len(value['value']) == 0 or \
+                    not any(len(element) for element in value['value']):
+                data_value = None
+            elif family == 'cluster_nodes':
+                if any(len(element) for element in value['value'][0]):
+                    data_value = value['value'][0]
                 else:
-                    data_value = v['value']
-                #print("Before:", v['value'], "  After:", data_value)
-                x_family[data_key] = data_value
+                    data_value = None
+            else:
+                data_value = value['value']
+            x_family[data_key] = data_value
         for mandatory_key in ['ip', 'name', 'public_ip', 'public_name']:
             if mandatory_key not in x_family:
                 #print("Missing:", mandatory_key)
@@ -113,8 +111,8 @@ def main(command_line=None):
     '''
     parsed_args = cli(command_line)
 
-    with open(parsed_args.source, 'r', encoding="utf-8") as jf:
-        data = json.load(jf)
+    with open(parsed_args.source, 'r', encoding="utf-8") as file:
+        data = json.load(file)
 
     r_data = reasembled_output(data)
     #print(json.dumps(r_data))
