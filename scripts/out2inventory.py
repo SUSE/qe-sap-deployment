@@ -22,7 +22,7 @@ def reasembled_output(data):
             if family in k:
                 # remove the family name from the sub-key
                 # iscsisrv_public_ip  -->  public_ip
-                data_key = k.replace(family+'_', '')
+                data_key = k.replace(family + '_', '')
 
                 if isinstance(v['value'], (str, list)) and len(v['value']) == 0:
                     data_value = None

@@ -39,9 +39,9 @@ terraform:
 ansible:
     hana_urls: something"""
     tfvar_template = [
-    "something = static\n",
-    "hananame = hahaha\n",
-    "ip_range = 10.0.4.0/24\n"]
+        "something = static\n",
+        "hananame = hahaha\n",
+        "ip_range = 10.0.4.0/24\n"]
     args, tfvar_path, _ = configure_helper(provider, conf, [])
 
     assert main(args) == 1
@@ -53,9 +53,9 @@ terraform:
 ansible:
     hana_urls: something"""
     tfvar_template = [
-    "something = static\n",
-    "hananame = hahaha\n",
-    "ip_range = 10.0.4.0/24\n"]
+        "something = static\n",
+        "hananame = hahaha\n",
+        "ip_range = 10.0.4.0/24\n"]
     args, tfvar_path, _ = configure_helper(provider, conf, [])
 
     assert main(args) == 1
@@ -67,9 +67,9 @@ terraform:
 ansible:
     hana_urls: something"""
     tfvar_template = [
-    "something = static\n",
-    "hananame = hahaha\n",
-    "ip_range = 10.0.4.0/24\n"]
+        "something = static\n",
+        "hananame = hahaha\n",
+        "ip_range = 10.0.4.0/24\n"]
     args, tfvar_path, _ = configure_helper(provider, conf, [])
 
     assert main(args) == 1
@@ -90,7 +90,7 @@ def test_configure_no_tfvars_template(args_helper, config_yaml_sample):
     for k, v in conf_dict['terraform']['variables'].items():
         # just focus on the strings variables
         if isinstance(v, str):
-            regexp_set.append(r'{0}\s?=\s?"{1}"'.format(k,v))
+            regexp_set.append(rf'{k}\s?=\s?"{v}"')
 
     args, tfvar_path, *_ = args_helper(provider, conf, None)
     args.append('configure')
@@ -203,9 +203,9 @@ terraform:
 ansible:
     hana_urls: something"""
     tfvar_template = [
-    "something = static\n",
-    "hananame = hahaha\n",
-    "ip_range = 10.0.4.0/24"]
+        "something = static\n",
+        "hananame = hahaha\n",
+        "ip_range = 10.0.4.0/24"]
 
     args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
 
@@ -435,7 +435,7 @@ ansible:"""
     conf = """---
 apiver: 1
 provider: something
-terraform:    
+terraform:
 ansible:"""
     args, *_ = configure_helper('pinocchio', conf, [])
     assert main(args) == 1

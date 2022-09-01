@@ -370,4 +370,4 @@ then
 fi
 export ANSIBLE_PIPELINING=True
     """
-    pass
+    return

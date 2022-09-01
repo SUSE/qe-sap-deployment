@@ -28,11 +28,11 @@ def test_multilines():
     str_list = ['a', 'b', 'c']
     test_text = ''
     for s in str_list:
-        test_text += (s*10) + "\n"
+        test_text += (s * 10) + "\n"
     _, stdout_list = subprocess_run(['echo', test_text])
-    assert len(stdout_list) == len(str_list)+1
+    assert len(stdout_list) == len(str_list) + 1
     for i, line in enumerate(str_list):
-        assert line*10 == stdout_list[i].strip()
+        assert line * 10 == stdout_list[i].strip()
 
 
 def test_stderr():

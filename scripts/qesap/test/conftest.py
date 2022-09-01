@@ -153,7 +153,7 @@ def base_args(tmpdir):
         config_file (str): used for -c
     """
     def _callback(base_dir=None, config_file=None, verbose=True):
-        args = list()
+        args = []
         if verbose:
             args.append('--verbose')
 

@@ -55,7 +55,7 @@ def test_cli_configure_c_notexist(capsys, tmpdir):
     -c has to be an existing file.
     '''
     try:
-        cli(['-b', str(tmpdir), '-c', str(tmpdir/'config.yml'), 'configure'])
+        cli(['-b', str(tmpdir), '-c', str(tmpdir / 'config.yml'), 'configure'])
     except SystemExit:
         pass
     captured = capsys.readouterr()

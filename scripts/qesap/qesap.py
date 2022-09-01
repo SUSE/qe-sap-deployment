@@ -113,19 +113,11 @@ def validate_config(config):
         log.error("Empty config")
         return False
 
-    if (
-        "apiver" not in config.keys()
-        or config["apiver"] is None
-        or not isinstance(config["apiver"], int)
-    ):
+    if "apiver" not in config or not isinstance(config["apiver"], int):
         log.error("Error at 'apiver' in the config")
         return False
 
-    if (
-        "provider" not in config.keys()
-        or config["provider"] is None
-        or not isinstance(config["provider"], str)
-    ):
+    if "provider" not in config or not isinstance(config["provider"], str):
         log.error("Error at 'provider' in the config")
         return False
 

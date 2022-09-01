@@ -48,8 +48,7 @@ def test_terraform_call_terraform(run, terraform_cmd_args, args_helper, config_y
     run.assert_has_calls(calls)
 
 
-
-@mock.patch("qesap.subprocess_run", side_effect = [(0, []),(1, []),(1, [])])
+@mock.patch("qesap.subprocess_run", side_effect=[(0, []), (1, []), (1, [])])
 def test_terraform_stop_at_failure(run, args_helper, config_yaml_sample):
     """
     Command stop at first subprocess(terraform) with not zero exit code.
@@ -75,7 +74,7 @@ def test_terraform_stop_at_failure(run, args_helper, config_yaml_sample):
 
     run.assert_called()
     run.assert_has_calls(calls)
-    assert not any(['apply' in name[0] for name, args in run.call_args_list]), 'Unexpected terraform apply call'
+    assert not any('apply' in name[0] for name, args in run.call_args_list), 'Unexpected terraform apply call'
 
 
 @mock.patch("qesap.subprocess_run")
