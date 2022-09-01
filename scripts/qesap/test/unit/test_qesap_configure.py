@@ -99,7 +99,7 @@ def test_configure_no_tfvars_template(args_helper, config_yaml_sample):
     assert main(args) == 0
 
     assert os.path.isfile(tfvar_file)
-    with open(tfvar_file, 'r') as file:
+    with open(tfvar_file, 'r', encoding="utf-8") as file:
         tfvars_lines = file.readlines()
         for var_re in regexp_set:
             one_match = False
