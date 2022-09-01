@@ -37,7 +37,7 @@ def test_cli_configure_b_notexist(capsys, tmpdir):
 
     #Provide a valid config.yaml
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding="utf-8") as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         yaml.dump({}, file)
 
     try:
@@ -67,7 +67,7 @@ def test_cli_configure_c_notyaml(capsys, tmpdir):
     -c has to be valid YAML
     '''
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding="utf-8") as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write("this: is: invalid")
     try:
         cli(['-b', str(tmpdir), '-c', config_file_name, 'configure'])
@@ -83,7 +83,7 @@ def test_cli_configure(base_args, tmpdir):
     '''
     data = {'cane': 'pane'}
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding="utf-8") as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         yaml.dump(data, file)
     args = base_args(base_dir=tmpdir, config_file=config_file_name)
     args.append('configure')

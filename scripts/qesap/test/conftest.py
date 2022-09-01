@@ -19,20 +19,23 @@ def config_data_sample():
         # Default values
         hana_ips = hana_ips if hana_ips else ['10.0.0.2', '10.0.0.3']
         hana_disk_configuration = hana_disk_configuration if \
-            hana_disk_configuration else {'disk_type': 'hdd,hdd,hdd',  'disks_size': '64,64,64'}
+            hana_disk_configuration else {'disk_type': 'hdd,hdd,hdd', 'disks_size': '64,64,64'}
 
         # Config template
-        config = {'name': 'geppetto',
-                  'terraform': {
-                      'provider': provider,
-                      'variables': {
-                          'az_region': az_region,
-                          'hana_ips': hana_ips,
-                          'hana_data_disks_configuration': hana_disk_configuration
-                      }
-                  },
-                  'ansible': {'hana_urls': ['SAPCAR_URL', 'SAP_HANA_URL', 'SAP_CLIENT_SAR_URL']}
-                  }
+        config = {
+            "name": "geppetto",
+            "terraform": {
+                "provider": provider,
+                "variables": {
+                    "az_region": az_region,
+                    "hana_ips": hana_ips,
+                    "hana_data_disks_configuration": hana_disk_configuration,
+                },
+            },
+            "ansible": {
+                "hana_urls": ["SAPCAR_URL", "SAP_HANA_URL", "SAP_CLIENT_SAR_URL"]
+            },
+        }
 
         return config
     return _callback
@@ -46,8 +49,9 @@ def config_yaml_sample():
     dict based data structure
     """
     config = """---
+apiver: 1
+provider: {}
 terraform:
-  provider: {}
   variables:
     az_region: "westeurope"
     hana_ips: ["10.0.0.2", "10.0.0.3"]
@@ -70,6 +74,77 @@ ansible:
 
 
 @pytest.fixture
+def provider_dir(tmpdir):
+    def _callback(provider):
+        provider_path = os.path.join(tmpdir, 'terraform', provider)
+        if not os.path.isdir(provider_path):
+            os.makedirs(provider_path)
+        return provider_path
+
+    return _callback
+
+
+@pytest.fixture
+def playbooks_dir(tmpdir):
+    def _callback():
+        playbooks_path = os.path.join(tmpdir, 'ansible', 'playbooks')
+        if not os.path.isdir(playbooks_path):
+            os.makedirs(playbooks_path)
+        return playbooks_path
+
+    return _callback
+
+
+@pytest.fixture
+def create_playbooks(playbooks_dir):
+    def _callback(playbook_list):
+        playbook_filename_list = []
+        for playbook in playbook_list:
+            ans_plybk_path = playbooks_dir()
+            playbook_filename = os.path.join(ans_plybk_path, playbook + '.yaml')
+            with open(playbook_filename, 'w', encoding='utf-8') as f:
+                f.write("")
+            playbook_filename_list.append(playbook_filename)
+        return playbook_filename_list
+
+    return _callback
+
+
+@pytest.fixture
+def ansible_config():
+    def _callback(provider, playbooks):
+        config_content = f"""---
+apiver: 1
+provider: {provider}
+ansible:
+    hana_urls: somesome"""
+
+        for seq in ['create', 'destroy']:
+            if seq in playbooks.keys():
+                config_content += f"\n    {seq}:"""
+                for play in playbooks[seq]:
+                    config_content += f"\n        - {play}.yaml"
+        return config_content
+
+    return _callback
+
+
+@pytest.fixture
+def create_inventory(provider_dir):
+    """
+    Create an empty inventory file
+    """
+    def _callback(provider):
+        provider_path = provider_dir(provider)
+        inventory_filename = os.path.join(provider_path, 'inventory.yaml')
+        with open(inventory_filename, 'w', encoding='utf-8') as f:
+            f.write("")
+        return inventory_filename
+
+    return _callback
+
+
+@pytest.fixture
 def base_args(tmpdir):
     """
     Return bare minimal list of arguments to run any sub-command
@@ -77,12 +152,12 @@ def base_args(tmpdir):
         base_dir (str): used for -b
         config_file (str): used for -c
     """
-    def _callback(base_dir=None, config_file=None):
-        args = [
-            '--verbose',
-            '--base-dir'
-        ]
+    def _callback(base_dir=None, config_file=None, verbose=True):
+        args = list()
+        if verbose:
+            args.append('--verbose')
 
+        args.append('--base-dir')
         if base_dir is None:
             args.append(str(tmpdir))
         else:
@@ -90,8 +165,9 @@ def base_args(tmpdir):
 
         args.append('--config-file')
         if config_file is None:
+            # create an empty config.yaml
             config_file_name = str(tmpdir / 'config.yaml')
-            with open(config_file_name, 'w', encoding="utf-8") as file:
+            with open(config_file_name, 'w', encoding='utf-8') as file:
                 file.write("")
             args.append(config_file_name)
         else:
@@ -102,11 +178,9 @@ def base_args(tmpdir):
 
 
 @pytest.fixture
-def args_helper(tmpdir, base_args):
+def args_helper(tmpdir, base_args, provider_dir):
     def _callback(provider, conf, tfvar_template):
-        provider_path = os.path.join(tmpdir, 'terraform', provider)
-        if not os.path.isdir(provider_path):
-            os.makedirs(provider_path)
+        provider_path = provider_dir(provider)
         tfvar_path = os.path.join(provider_path, 'terraform.tfvars')
 
         ansiblevars_path = os.path.join(tmpdir, 'ansible', 'playbooks', 'vars')
@@ -115,10 +189,10 @@ def args_helper(tmpdir, base_args):
         hana_vars = os.path.join(ansiblevars_path, 'azure_hana_media.yaml')
 
         config_file_name = str(tmpdir / 'config.yaml')
-        with open(config_file_name, 'w', encoding="utf-8") as file:
+        with open(config_file_name, 'w', encoding='utf-8') as file:
             file.write(conf)
         if tfvar_template is not None and len(tfvar_template) > 0:
-            with open(os.path.join(provider_path, 'terraform.tfvars.template'), 'w', encoding="utf-8") as file:
+            with open(os.path.join(provider_path, 'terraform.tfvars.template'), 'w', encoding='utf-8') as file:
                 for line in tfvar_template:
                     file.write(line)
 
@@ -179,46 +253,12 @@ def check_duplicate():
     def _callback(lines):
         for line in lines:
             if len([s for s in lines if line.strip() in s.strip()]) != 1:
-                return (False, "Line '"+line+"' appear more than one time")
+                return (False, "Line '" + line + "' appear more than one time")
             if '--set' in line:
                 setting = line.split(' ')[1]
                 setting_field = setting.split('=')[0]
                 if len([s for s in lines if setting_field in s]) != 1:
-                    return (False, "Setting '"+setting_field+"' appear more than one time")
-        return (True, '')
-
-    return _callback
-
-
-@pytest.fixture
-def check_multilines():
-    """
-    Fixture to test trento_cluster_install.sh content
-    This bash script is written to file as multiple line single command
-    This fixture check that:
-     - each lines (out of the last one) ends with \\ and EOL
-     - all needed EOL are present
-     - all and only needed spaces are present at the end of each line
-
-    Args:
-        lines (list(str)): list of string, each string is a trento_cluster_install.sh line
-
-        Returns:
-            tuple: True/False result, if False str about the error message
-        """
-    def _callback(lines):
-        if len(lines) <= 1:
-            return False, "trento_cluster_install.sh should be a multi line script but it is only " + str(len(lines)) + " lines long."
-        for l in lines[:-1]:
-            if l[-1] != "\n":
-                return False, "Last char in ["+l+"] is not \n"
-            # in multi line command the '\' has to be the last char in the line
-            if l[-2] != "\\":
-                return False, "One by last char in ["+l+"] is not \\"
-            if l[-3] != " ":
-                return False, "One by last char in ["+l+"] is not a space"
-            if "\\-" in l:
-                return False, "Something like '\\--set' in ["+l+"]. Maybe a missing EOL"
+                    return (False, "Setting '" + setting_field + "' appear more than one time")
         return (True, '')
 
     return _callback
