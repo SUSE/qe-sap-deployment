@@ -92,7 +92,7 @@ def test_configure_no_tfvars_template(args_helper, config_yaml_sample):
         if isinstance(v, str):
             regexp_set.append(r'{0}\s?=\s?"{1}"'.format(k,v))
 
-    args, tfvar_path, _, _ = args_helper(provider, conf, None)
+    args, tfvar_path, *_ = args_helper(provider, conf, None)
     args.append('configure')
     tfvar_file = os.path.join(tfvar_path, 'terraform.tfvars')
 
@@ -167,7 +167,7 @@ ansible:
 
     assert main(args) == 0
 
-    with open(tfvar_path, 'r') as file:
+    with open(tfvar_path, 'r', encoding='utf-8') as file:
         data = file.readlines()
         assert tfvar_template == data
 
@@ -206,6 +206,7 @@ ansible:
     "something = static\n",
     "hananame = hahaha\n",
     "ip_range = 10.0.4.0/24"]
+
     args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
@@ -250,7 +251,7 @@ ansible:
     expected_tfvars.append('deployment_name = "rocket"\n')
     expected_tfvars.append('os_image = "SUSE:sles-sap-15-sp3-byos:gen2:2022.05.05"\n')
     expected_tfvars.append('public_key = "/root/secret/id_rsa.pub"\n')
-    with open(tfvar_path, 'r') as file:
+    with open(tfvar_path, 'r', encoding='utf-8') as file:
         data = file.readlines()
         assert expected_tfvars == data
 
@@ -362,7 +363,7 @@ def test_configure_checkfolder(base_args, tmpdir):
     """
     provider = 'pinocchio'
     config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w') as file:
+    with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(f"""---
 apiver: 1
 provider: {provider}

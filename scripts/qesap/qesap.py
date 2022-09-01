@@ -79,7 +79,7 @@ def subprocess_run(cmd):
                         log.error("fd:%s proc.stdout.fileno():%s", fdout_stream, proc.stdout.fileno())
                         continue
                     data = os.read(fdout_stream, 1024)
-                    data_str = data.decode(encoding="utf-8", errors="ignore")
+                    data_str = data.decode(encoding='utf-8', errors='ignore')
                     if data_str:
                         log.debug("Split:%s", data_str.splitlines())
                         stdout += data_str.splitlines()

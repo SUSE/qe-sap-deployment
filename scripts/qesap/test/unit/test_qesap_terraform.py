@@ -185,7 +185,7 @@ def test_terraform_call_terraform_destroy(run, args_helper, config_yaml_sample):
     provider = 'mangiafuoco'
     conf = config_yaml_sample(provider)
 
-    args, terraform_dir, _, _ = args_helper(provider, conf, '')
+    args, terraform_dir, *_ = args_helper(provider, conf, '')
 
     args.append('terraform')
     args.append('-d')

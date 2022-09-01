@@ -180,7 +180,6 @@ def base_args(tmpdir):
 @pytest.fixture
 def args_helper(tmpdir, base_args, provider_dir):
     def _callback(provider, conf, tfvar_template):
-
         provider_path = provider_dir(provider)
         tfvar_path = os.path.join(provider_path, 'terraform.tfvars')
 

@@ -24,19 +24,19 @@ output "iscsisrv_public_name" {
 
 # Hana nodes
 
-output "cluster_nodes_ip" {
-  value = module.hana_node.cluster_nodes_ip
+output "hana_ip" {
+  value = module.hana_node.hana_ip
 }
 
-output "cluster_nodes_public_ip" {
-  value = module.hana_node.cluster_nodes_public_ip
+output "hana_public_ip" {
+  value = module.hana_node.hana_public_ip
 }
 
-output "cluster_nodes_name" {
-  value = module.hana_node.cluster_nodes_name
+output "hana_name" {
+  value = module.hana_node.hana_name
 }
 
-output "cluster_nodes_public_name" {
+output "hana_public_name" {
   value = []
 }
 
@@ -104,8 +104,8 @@ output "bastion_public_ip" {
 resource "local_file" "ansible_inventory" {
   content = templatefile("inventory.tmpl",
     {
-      hana-name     = module.hana_node.cluster_nodes_name,
-      hana-pip      = module.hana_node.cluster_nodes_public_ip,
+      hana-name     = module.hana_node.hana_name,
+      hana-pip      = module.hana_node.hana_public_ip,
       iscsi-name    = module.iscsi_server.iscsisrv_name,
       iscsi-pip     = module.iscsi_server.iscsisrv_public_ip,
       iscsi-enabled = local.iscsi_enabled
