@@ -3,6 +3,8 @@ import os
 import pytest
 
 
+# pylint: disable=redefined-outer-name
+
 @pytest.fixture()
 def config_data_sample():
     """
