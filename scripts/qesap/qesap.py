@@ -113,11 +113,11 @@ def validate_basedir(basedir, config):
 
     if not os.path.isdir(terraform_dir):
         log.error("Missing %s", terraform_dir)
-        return False, None
+        return False
     result['provider'] = os.path.join(terraform_dir, config['provider'])
     if not os.path.isdir(result['provider']):
         log.error("Missing %s", result['terraform'])
-        return False, None
+        return False
     tfvar_template_path = os.path.join(result['provider'], 'terraform.tfvars.template')
     # In case of template missing, it will be created from config.yaml
     if os.path.isfile(tfvar_template_path):
@@ -126,12 +126,12 @@ def validate_basedir(basedir, config):
     ansible_pl_vars_dir = os.path.join(basedir, 'ansible', 'playbooks', 'vars')
     if not os.path.isdir(ansible_pl_vars_dir):
         log.error("Missing %s", ansible_pl_vars_dir)
-        return False, None
+        return False
 
     result['tfvars'] = os.path.join(result['provider'], 'terraform.tfvars')
     result['hana_vars'] = os.path.join(ansible_pl_vars_dir, 'azure_hana_media.yaml')
 
-    return True, result
+    return result
 
 
 def cmd_configure(configure_data, base_project, dryrun):
@@ -152,8 +152,8 @@ def cmd_configure(configure_data, base_project, dryrun):
     # Validations
     if not validate_config(configure_data):
         return 1, f"Invalid configuration file content in {configure_data}"
-    res, cfg_paths = validate_basedir(base_project, configure_data)
-    if not res:
+    cfg_paths = validate_basedir(base_project, configure_data)
+    if not cfg_paths:
         return 1, f"Invalid folder structure at {base_project}"
 
     # Just an handy alias
@@ -235,8 +235,8 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
     # Validations
     if not validate_config(configure_data):
         return 1, f"Invalid configuration file content in {configure_data}"
-    res, cfg_paths = validate_basedir(base_project, configure_data)
-    if not res:
+    cfg_paths = validate_basedir(base_project, configure_data)
+    if not cfg_paths:
         return 1, f"Invalid folder structure at {base_project}"
 
     cmds = []
