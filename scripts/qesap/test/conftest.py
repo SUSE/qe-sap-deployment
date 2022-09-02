@@ -3,6 +3,8 @@ import os
 import pytest
 
 
+# pylint: disable=redefined-outer-name
+
 @pytest.fixture()
 def config_data_sample():
     """
@@ -102,8 +104,8 @@ def create_playbooks(playbooks_dir):
         for playbook in playbook_list:
             ans_plybk_path = playbooks_dir()
             playbook_filename = os.path.join(ans_plybk_path, playbook + '.yaml')
-            with open(playbook_filename, 'w', encoding='utf-8') as f:
-                f.write("")
+            with open(playbook_filename, 'w', encoding='utf-8') as file:
+                file.write("")
             playbook_filename_list.append(playbook_filename)
         return playbook_filename_list
 
@@ -120,7 +122,7 @@ ansible:
     hana_urls: somesome"""
 
         for seq in ['create', 'destroy']:
-            if seq in playbooks.keys():
+            if seq in playbooks:
                 config_content += f"\n    {seq}:"""
                 for play in playbooks[seq]:
                     config_content += f"\n        - {play}.yaml"
@@ -137,8 +139,8 @@ def create_inventory(provider_dir):
     def _callback(provider):
         provider_path = provider_dir(provider)
         inventory_filename = os.path.join(provider_path, 'inventory.yaml')
-        with open(inventory_filename, 'w', encoding='utf-8') as f:
-            f.write("")
+        with open(inventory_filename, 'w', encoding='utf-8') as file:
+            file.write("")
         return inventory_filename
 
     return _callback
@@ -153,7 +155,7 @@ def base_args(tmpdir):
         config_file (str): used for -c
     """
     def _callback(base_dir=None, config_file=None, verbose=True):
-        args = list()
+        args = []
         if verbose:
             args.append('--verbose')
 
@@ -217,9 +219,10 @@ def create_config():
     """Create one element for the list in the configure.json related to trento_deploy.py -s
     """
     def _callback(typ, reg, ver):
-        config = {}
-        config['type'] = typ
-        config['registry'] = reg
+        config = {
+            'type': typ,
+            'registry': reg
+        }
         if ver:
             config['version'] = ver
         return config

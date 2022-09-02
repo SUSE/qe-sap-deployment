@@ -27,7 +27,7 @@ def test_terraform_call_terraform(run, terraform_cmd_args, args_helper, config_y
     provider = 'mangiafuoco'
     conf = config_yaml_sample(provider)
 
-    args, terraform_dir, _, _ = args_helper(provider, conf, '')
+    args, terraform_dir, *_ = args_helper(provider, conf, '')
     args.append('terraform')
     run.return_value = (0, [])
     assert main(args) == 0
@@ -48,8 +48,7 @@ def test_terraform_call_terraform(run, terraform_cmd_args, args_helper, config_y
     run.assert_has_calls(calls)
 
 
-
-@mock.patch("qesap.subprocess_run", side_effect = [(0, []),(1, []),(1, [])])
+@mock.patch("qesap.subprocess_run", side_effect=[(0, []), (1, []), (1, [])])
 def test_terraform_stop_at_failure(run, args_helper, config_yaml_sample):
     """
     Command stop at first subprocess(terraform) with not zero exit code.
@@ -75,7 +74,7 @@ def test_terraform_stop_at_failure(run, args_helper, config_yaml_sample):
 
     run.assert_called()
     run.assert_has_calls(calls)
-    assert not any(['apply' in name[0] for name, args in run.call_args_list]), 'Unexpected terraform apply call'
+    assert not any('apply' in name[0] for name, args in run.call_args_list), 'Unexpected terraform apply call'
 
 
 @mock.patch("qesap.subprocess_run")
@@ -137,14 +136,14 @@ def test_integration_terraform(terraform_cmd_args, args_helper, config_yaml_samp
     config_file_name = 'config.yaml'
     with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(conf)
-    args = []
-    args.append('--verbose')
-    args.append('--base-dir')
-    args.append(str(os.path.abspath(os.path.join(os.getcwd(), '..', '..'))))
-    args.append('--config-file')
-    args.append(config_file_name)
-    args.append('terraform')
-    terraform_output = ['This is the terraform output\n', 'Two lines of that\n']
+    args = [
+        '--verbose',
+        '--base-dir',
+        str(os.path.abspath(os.path.join(os.getcwd(), '..', '..'))),
+        '--config-file',
+        config_file_name,
+        'terraform'
+    ]
 
     assert main(args) == 0
 
@@ -187,8 +186,7 @@ def test_terraform_call_terraform_destroy(run, args_helper, config_yaml_sample):
 
     args, terraform_dir, *_ = args_helper(provider, conf, '')
 
-    args.append('terraform')
-    args.append('-d')
+    args.extend(['terraform', '-d'])
 
     run.return_value = (0, [])
     calls = []

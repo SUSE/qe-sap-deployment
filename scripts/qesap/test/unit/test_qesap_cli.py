@@ -35,7 +35,7 @@ def test_cli_configure_b_notexist(capsys, tmpdir):
     user is in charge to create it in advance
     '''
 
-    #Provide a valid config.yaml
+    # Provide a valid config.yaml
     config_file_name = str(tmpdir / 'config.yaml')
     with open(config_file_name, 'w', encoding='utf-8') as file:
         yaml.dump({}, file)
@@ -55,7 +55,7 @@ def test_cli_configure_c_notexist(capsys, tmpdir):
     -c has to be an existing file.
     '''
     try:
-        cli(['-b', str(tmpdir), '-c', str(tmpdir/'config.yml'), 'configure'])
+        cli(['-b', str(tmpdir), '-c', str(tmpdir / 'config.yml'), 'configure'])
     except SystemExit:
         pass
     captured = capsys.readouterr()
@@ -87,9 +87,9 @@ def test_cli_configure(base_args, tmpdir):
         yaml.dump(data, file)
     args = base_args(base_dir=tmpdir, config_file=config_file_name)
     args.append('configure')
-    p = cli(args)
-    assert p.basedir == str(tmpdir)
-    assert p.configfile == data
+    cli_args = cli(args)
+    assert cli_args.basedir == str(tmpdir)
+    assert cli_args.configfile == data
 
 
 def test_cli_deploy(base_args):
