@@ -57,7 +57,9 @@ def subprocess_run(cmd):
         if proc.returncode != 0:
             log.error("Error %d in %s", proc.returncode, ' '.join(cmd[0:1]))
             for err_line in proc.stderr.decode('UTF-8').splitlines():
-                log.error("          %s", err_line)
+                log.error("STDERR:          %s", err_line)
+            for err_line in proc.stdout.decode('UTF-8').splitlines():
+                log.error("STDOUT:          %s", err_line)
             return (proc.returncode, [])
         stdout = [line.decode("utf-8") for line in proc.stdout.splitlines()]
     else:
