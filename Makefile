@@ -2,8 +2,21 @@
 # Flake8 codes:
 # E501 line too long (XX > 79 characters)
 
-test:
+all: static test
+
+static: static-bash static-py
+
+static-bash:
 	@find -type f -name \*.sh -exec bash -n {} \;
-	@find scripts -type f -name \*.py -exec pylint --disable=line-too-long,missing-class-docstring,missing-function-docstring,missing-module-docstring,too-many-branches,unused-argument,too-many-locals,too-many-arguments,duplicate-code {} +
+	@find -type f -name \*.sh -exec shellcheck {} -o all -s bash -S info \;
+
+static-pylint:
+	@find scripts -type f -name \*.py -exec pylint --rcfile=scripts/qesap/pylint.rc qesap.py {} +
+
+static-flake8:
 	@find scripts -type f -name \*.py -exec flake8 --ignore=E501 {} +
+
+static-py: static-pylint static-flake8
+
+test:
 	@PYTHONPATH=scripts/qesap pytest
