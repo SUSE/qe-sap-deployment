@@ -5,7 +5,6 @@
 import os
 import argparse
 import logging
-import select
 import sys
 import subprocess
 import re
@@ -38,52 +37,13 @@ def subprocess_run(cmd):
         return (1, [])
 
     log.info("Run:       %s", ' '.join(cmd))
-    stdout = []
-    if sys.version_info.major == 3 and sys.version_info.minor > 7:
-        proc = subprocess.run(cmd, capture_output=True, check=False)
-        if proc.returncode != 0:
-            log.error("Error %d in %s", proc.returncode, ' '.join(cmd[0:1]))
-            for err_line in proc.stderr.decode('UTF-8').splitlines():
-                log.error("          %s", err_line)
-            return (proc.returncode, [])
-        stdout = [line.decode("utf-8") for line in proc.stdout.splitlines()]
-    else:
-        with subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE) as proc:
-            poller_out = select.epoll()
-            poller_out.register(proc.stdout.fileno(), select.EPOLLIN)
-            poller_err = select.epoll()
-            poller_err.register(proc.stderr.fileno(), select.EPOLLIN)
-
-            while True:
-                events_out = poller_out.poll(1)
-                # log.debug("Events out:%s", events_out)
-                for fdout_stream, _ in events_out:
-                    if fdout_stream != proc.stdout.fileno():
-                        log.error("fd:%s proc.stdout.fileno():%s", fdout_stream, proc.stdout.fileno())
-                        continue
-                    data = os.read(fdout_stream, 1024)
-                    data_str = data.decode(encoding='utf-8', errors='ignore')
-                    if data_str:
-                        log.debug("Split:%s", data_str.splitlines())
-                        stdout += data_str.splitlines()
-                if proc.poll() is not None:
-                    log.info('Done')
-                    break
-            if proc.returncode != 0:
-                log.error("Error %d in %s", proc.returncode, ' '.join(cmd[0:1]))
-                events_err = poller_err.poll(1)
-                log.debug("Events err:%s", events_err)
-                for fdout_stream, _ in events_err:
-                    if fdout_stream != proc.stderr.fileno():
-                        log.error("fd:%s proc.stderr.fileno():%s", fdout_stream, proc.stdout.fileno())
-                        continue
-                    data = os.read(fdout_stream, 1024)
-                    log.error(data.decode(encoding="utf-8", errors="ignore").strip())
-                log.info("Stdout:%s", stdout)
-                return (proc.returncode, [])
+    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+    if proc.returncode != 0:
+        log.error("Error %d in %s", proc.returncode, ' '.join(cmd[0:1]))
+        for err_line in proc.stderr.decode('UTF-8').splitlines():
+            log.error("          %s", err_line)
+        return (proc.returncode, [])
+    stdout = [line.decode("utf-8") for line in proc.stdout.splitlines()]
 
     for line in stdout:
         log.debug('Stdout:%s', line)
