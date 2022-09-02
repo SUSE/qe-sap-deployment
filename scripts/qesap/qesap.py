@@ -5,6 +5,7 @@
 import os
 import argparse
 import logging
+import select
 import sys
 import subprocess
 import re
@@ -21,20 +22,6 @@ DESCRIBE = '''qe-sap-deployment helper script'''
 # Logging config
 logging.basicConfig()
 log = logging.getLogger('QESAPDEP')
-
-
-def os_path_exists(path):
-    """Tiny os.path.exists wrapper
-    Mostly used to be able to mock os.path.exists only for the code under test
-    and not in the overall runtime. It is to avoid problems using the debugger
-
-    Args:
-        path (Union[AnyStr, _PathLike[AnyStr]]): path
-
-    Returns:
-        bool: Test whether a path exists.
-    """
-    return os.path.exists(path)
 
 
 def subprocess_run(cmd):
@@ -63,7 +50,6 @@ def subprocess_run(cmd):
             return (proc.returncode, [])
         stdout = [line.decode("utf-8") for line in proc.stdout.splitlines()]
     else:
-        import select
         with subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -115,19 +101,11 @@ def validate_config(config):
         log.error("Empty config")
         return False
 
-    if (
-        "apiver" not in config.keys()
-        or config["apiver"] is None
-        or not isinstance(config["apiver"], int)
-    ):
+    if "apiver" not in config or not isinstance(config["apiver"], int):
         log.error("Error at 'apiver' in the config")
         return False
 
-    if (
-        "provider" not in config.keys()
-        or config["provider"] is None
-        or not isinstance(config["provider"], str)
-    ):
+    if "provider" not in config or not isinstance(config["provider"], str):
         log.error("Error at 'provider' in the config")
         return False
 
@@ -140,16 +118,16 @@ def validate_ansible_config(config, sequence):
     '''
     log.debug("Configure data:%s", config)
 
-    if 'ansible' not in config.keys() or config['ansible'] is None:
+    if 'ansible' not in config or config['ansible'] is None:
         log.error("Error at 'ansible' in the config")
         return False
 
-    if 'hana_urls' not in config['ansible'].keys():
+    if 'hana_urls' not in config['ansible']:
         log.error("Missing 'hana_urls' in 'ansible' in the config")
         return False
 
     if sequence:
-        if sequence not in config['ansible'].keys() or config['ansible'][sequence] is None:
+        if sequence not in config['ansible'] or config['ansible'][sequence] is None:
             log.info('No Ansible playbooks to play in %s for sequence:%s', config['ansible'], sequence)
             return False
 
@@ -299,15 +277,11 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
 
     cmds = []
     for seq in ['init', 'plan', 'apply'] if not destroy else ['destroy']:
-        this_cmd = []
-        this_cmd.append('terraform')
-        this_cmd.append('-chdir=' + cfg_paths['provider'])
-        this_cmd.append(seq)
+        this_cmd = ['terraform', f"-chdir={cfg_paths['provider']}", seq]
         if seq == 'plan':
             this_cmd.append('-out=plan.zip')
         elif seq == 'apply':
-            this_cmd.append('-auto-approve')
-            this_cmd.append('plan.zip')
+            this_cmd.extend(['-auto-approve', 'plan.zip'])
         elif seq == 'destroy':
             this_cmd.append('-auto-approve')
         this_cmd.append('-no-color')
@@ -370,10 +344,9 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
     ansible_cmd_seq = []
     ssh_share = ansible_common.copy()
     ssh_share[0] = 'ansible'
-    ssh_share.append('all')
-    ssh_share.append('-a')
-    ssh_share.append('true')
-    ssh_share.append('--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"')
+    ssh_share.extend([
+        'all', '-a', 'true',
+        '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'])
     ansible_cmd_seq.append(ssh_share)
 
     for playbook in configure_data['ansible'][sequence]:
@@ -505,7 +478,7 @@ def cli(command_line=None):
     return parsed_args
 
 
-def main(command_line=None):
+def main(command_line=None):  # pylint: disable=too-many-return-statements
     '''
     Main script entry point for command line execution
     '''

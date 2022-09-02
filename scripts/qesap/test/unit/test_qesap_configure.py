@@ -11,8 +11,8 @@ log = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'assets')
 
-#@pytest.mark.datafiles(os.path.join(DATA_DIR,'repo'))
-#def test_some(datafiles):
+# @pytest.mark.datafiles(os.path.join(DATA_DIR,'repo'))
+# def test_some(datafiles):
 #    log.error(datafiles)
 
 
@@ -23,7 +23,7 @@ def test_configure(configure_helper, config_yaml_sample):
     """
     provider = 'pinocchio'
     conf = config_yaml_sample(provider)
-    args, _, _ = configure_helper(provider, conf, [])
+    args, *_ = configure_helper(provider, conf, [])
 
     assert main(args) == 0
 
@@ -38,11 +38,7 @@ provider: {provider}
 terraform:
 ansible:
     hana_urls: something"""
-    tfvar_template = [
-    "something = static\n",
-    "hananame = hahaha\n",
-    "ip_range = 10.0.4.0/24\n"]
-    args, tfvar_path, _ = configure_helper(provider, conf, [])
+    args, *_ = configure_helper(provider, conf, [])
 
     assert main(args) == 1
 
@@ -52,11 +48,7 @@ provider: {provider}
 terraform:
 ansible:
     hana_urls: something"""
-    tfvar_template = [
-    "something = static\n",
-    "hananame = hahaha\n",
-    "ip_range = 10.0.4.0/24\n"]
-    args, tfvar_path, _ = configure_helper(provider, conf, [])
+    args, *_ = configure_helper(provider, conf, [])
 
     assert main(args) == 1
 
@@ -66,11 +58,7 @@ provider: {provider}
 terraform:
 ansible:
     hana_urls: something"""
-    tfvar_template = [
-    "something = static\n",
-    "hananame = hahaha\n",
-    "ip_range = 10.0.4.0/24\n"]
-    args, tfvar_path, _ = configure_helper(provider, conf, [])
+    args, *_ = configure_helper(provider, conf, [])
 
     assert main(args) == 1
 
@@ -87,10 +75,10 @@ def test_configure_no_tfvars_template(args_helper, config_yaml_sample):
     # to be used later in the verification against the generated terraform.tfvars
     regexp_set = []
     conf_dict = yaml.safe_load(conf)
-    for k, v in conf_dict['terraform']['variables'].items():
+    for key, value in conf_dict['terraform']['variables'].items():
         # just focus on the strings variables
-        if isinstance(v, str):
-            regexp_set.append(r'{0}\s?=\s?"{1}"'.format(k,v))
+        if isinstance(value, str):
+            regexp_set.append(rf'{key}\s?=\s?"{value}"')
 
     args, tfvar_path, *_ = args_helper(provider, conf, None)
     args.append('configure')
@@ -99,12 +87,11 @@ def test_configure_no_tfvars_template(args_helper, config_yaml_sample):
     assert main(args) == 0
 
     assert os.path.isfile(tfvar_file)
-    with open(tfvar_file, 'r') as f:
-        tfvars_lines = f.readlines()
+    with open(tfvar_file, 'r', encoding="utf-8") as file:
+        tfvars_lines = file.readlines()
         for var_re in regexp_set:
             one_match = False
             for line in tfvars_lines:
-                #log.debug("Check %s", line)
                 if not one_match:
                     match = re.search(var_re, line)
                     if match:
@@ -140,7 +127,7 @@ apiver: 1
 provider: {provider}
 ansible:
     hana_urls: something"""
-    args, tfvar_path, _ = configure_helper(provider, conf, None)
+    args, *_ = configure_helper(provider, conf, None)
 
     assert main(args) == 1
 
@@ -203,9 +190,9 @@ terraform:
 ansible:
     hana_urls: something"""
     tfvar_template = [
-    "something = static\n",
-    "hananame = hahaha\n",
-    "ip_range = 10.0.4.0/24"]
+        "something = static\n",
+        "hananame = hahaha\n",
+        "ip_range = 10.0.4.0/24"]
 
     args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
 
@@ -243,14 +230,15 @@ ansible:
 
     assert main(args) == 0
 
-    expected_tfvars = []
     # EOL is expected to be added in terraform.tfvars
     # if missing at the end of the template
-    expected_tfvars.append(tfvar_template[0] + '\n')
-    expected_tfvars.append('region = "eu1"\n')
-    expected_tfvars.append('deployment_name = "rocket"\n')
-    expected_tfvars.append('os_image = "SUSE:sles-sap-15-sp3-byos:gen2:2022.05.05"\n')
-    expected_tfvars.append('public_key = "/root/secret/id_rsa.pub"\n')
+    expected_tfvars = [
+        tfvar_template[0] + '\n',
+        'region = "eu1"\n',
+        'deployment_name = "rocket"\n',
+        'os_image = "SUSE:sles-sap-15-sp3-byos:gen2:2022.05.05"\n',
+        'public_key = "/root/secret/id_rsa.pub"\n'
+    ]
     with open(tfvar_path, 'r', encoding='utf-8') as file:
         data = file.readlines()
         assert expected_tfvars == data
@@ -324,7 +312,7 @@ ansible:
 
     with open(hana_vars, 'r', encoding='utf-8') as file:
         data = yaml.load(file, Loader=yaml.FullLoader)
-        assert 'hana_urls' in data.keys()
+        assert 'hana_urls' in data
         assert len(data['hana_urls']) == 3
         assert 'SAPCAR_URL' in data['hana_urls']
         assert 'SAP_HANA_URL' in data['hana_urls']
@@ -435,7 +423,7 @@ ansible:"""
     conf = """---
 apiver: 1
 provider: something
-terraform:    
+terraform:
 ansible:"""
     args, *_ = configure_helper('pinocchio', conf, [])
     assert main(args) == 1
