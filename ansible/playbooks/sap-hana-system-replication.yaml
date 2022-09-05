@@ -6,5 +6,39 @@
   pre_tasks:
     - name: Include hana system replication variables
       include_vars: ./vars/hana_hsr_parameters.yaml
-  roles:
-    - { role: ../roles/sap_ha_install_hana_hsr }
+      
+  vars:
+    install_path: /var/lib/qedep
+    hsr_cnf_file: "{{ install_path }}/{{ sap_hana_sid }}_hsr_configured"
+
+  tasks:
+
+  - name: Check for previous HSR configuration
+    ansible.builtin.file:
+      path: "{{ hsr_cnf_file }}"
+      state: file
+    check_mode: yes
+    register: hsr_file_check
+    changed_when: no
+    failed_when: no
+
+  - name: Set install facts
+    ansible.builtin.set_fact:
+      hsr_configured: "{{ hsr_file_check.state }}"
+
+  - name: Execute hana system replication role
+    ansible.builtin.include_role:
+      role: ../roles/sap_ha_install_hana_hsr
+    when: hsr_configured == 'absent'
+
+  - name: Write status file
+    ansible.builtin.file:
+      path: "{{ item.path }}"
+      state: "{{ item.state }}"
+      owner: root
+      group: root
+      mode: '0700'
+    with_items:
+     - { 'path': "{{ install_path }}",     'state': 'directory' }
+     - { 'path': "{{ hsr_cnf_file }}", 'state': 'touch' }
+    when: hsr_configured == 'absent'
