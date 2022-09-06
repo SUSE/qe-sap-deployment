@@ -1,4 +1,4 @@
 ansible==4.10.0
 ansible-core==2.11.12
 awscli==1.19.48
-jmespath==0.9.3
+jmespath==0.10.0
