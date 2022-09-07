@@ -8,6 +8,12 @@
     saptune_inst: "{{ ansible_facts.packages.saptune[0].version | default('not-installed') }}"
     tuned_inst: "{{ ansible_facts.packages.tuned[0].version | default('not-installed') }}"
 
+- name: Ensure saptune is on latest version. Fix for failing service check.
+  community.general.zypper:
+    name: saptune
+    state: latest
+  when: saptune_inst != 'not-installed'
+
 - name: Ensure saptune is stopped and disabled (if installed)
   ansible.builtin.systemd:
     name: saptune
