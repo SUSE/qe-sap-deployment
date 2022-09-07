@@ -15,7 +15,7 @@
       state: present
     loop:
       - targetcli-fb
-      - dbus-1-python
+      - python3-dbus-python
     when: ansible_distribution_version == '15.3'
 
   - name: Install iscsi server packages SLES 15.4
