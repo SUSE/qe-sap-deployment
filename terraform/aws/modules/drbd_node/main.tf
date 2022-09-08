@@ -46,7 +46,7 @@ resource "aws_instance" "drbd" {
   vpc_security_group_ids      = [var.security_group_id]
   availability_zone           = element(var.availability_zones, count.index)
   source_dest_check           = false
-  user_data                   = templatefile("${path.root}/adminuser.tpl", { username = var.common_variables["authorized_user"], publickey = var.common_variables["public_key"] })
+  user_data                   = templatefile("${path.root}/adminuser.tpl", { username = var.common_variables["authorized_user"], publickey = var.common_variables["public_key"], hostname = "${var.name}${format("%02d", count.index +1)}" })
 
   root_block_device {
     volume_type = "gp2"

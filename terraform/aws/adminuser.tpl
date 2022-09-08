@@ -9,3 +9,4 @@ users:
     shell: /bin/bash
     ssh-authorized-keys: 
     - ${publickey}
+fqdn: ${hostname}

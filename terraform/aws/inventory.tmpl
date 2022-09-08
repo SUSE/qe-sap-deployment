@@ -3,7 +3,7 @@ all:
     hana:
       hosts:
 %{ for index, value in hana-pip ~}
-        ${hana-name[index]}:
+        ${hana_hostname}${format("%02d", index + 1)}:
           ansible_host: ${value}
           ansible_python_interpreter: /usr/bin/python3
 %{ endfor ~}
@@ -11,7 +11,7 @@ all:
     iscsi:
       hosts:
  %{ for index, value in iscsi-pip ~}
-        ${iscsi-name[index]}:
+        ${iscsi_hostname}${format("%02d", index + 1)}:
           ansible_host: ${value}
           ansible_python_interpreter: /usr/bin/python3
 %{ endfor ~}
