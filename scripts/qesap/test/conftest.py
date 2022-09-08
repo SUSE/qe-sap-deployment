@@ -1,5 +1,5 @@
 import os
-
+from unittest import mock
 import pytest
 
 
@@ -300,5 +300,19 @@ def check_manadatory_args(capsys, tmpdir):
         if 'error:' not in captured.err:
             return False
         return True
+
+    return _callback
+
+
+@pytest.fixture
+def mock_call_ansibleplaybook():
+    '''
+    create a mock.call with some default elements
+    ```
+    mock.call(['ansible-playbook', '-i', inventory, playbook], env={'ANSIBLE_PIPELINING', 'True'})
+    ```
+    '''
+    def _callback(playbook_cmd):
+        return mock.call(cmd=playbook_cmd, env={'ANSIBLE_PIPELINING': 'True'})
 
     return _callback

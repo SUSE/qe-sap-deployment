@@ -6,9 +6,12 @@ from qesap import main
 
 log = logging.getLogger(__name__)
 
+ANSIBLE_EXE = '/bin/ansible'
+ANSIBLEPB_EXE = '/paese/della/cuccagna/ansible-playbook'
 
+@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
 @mock.patch("qesap.subprocess_run")
-def test_ansible_create(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
+def test_ansible_create(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
     Test that the ansible subcommand plays playbooks
     listed in the ansible::create part of the config.yml
@@ -29,7 +32,8 @@ def test_ansible_create(run, base_args, tmpdir, create_inventory, create_playboo
     playbook_files_list = create_playbooks(playbooks['create'])
     calls = []
     for playbook in playbook_files_list:
-        calls.append(mock.call(['ansible-playbook', '-i', inventory, playbook]))
+        cmd = [ANSIBLEPB_EXE, '-i', inventory, playbook]
+        calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) == 0
 
@@ -37,8 +41,9 @@ def test_ansible_create(run, base_args, tmpdir, create_inventory, create_playboo
     run.assert_has_calls(calls)
 
 
+@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
 @mock.patch("qesap.subprocess_run")
-def test_ansible_verbose(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
+def test_ansible_verbose(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
     run with -vvvv if qesap ansible --verbose
     (probably not supported in qesap deploy/destroy)
@@ -60,7 +65,8 @@ def test_ansible_verbose(run, base_args, tmpdir, create_inventory, create_playbo
     playbook_list = create_playbooks(playbooks['create'])
     calls = []
     for playbook in playbook_list:
-        calls.append(mock.call(['ansible-playbook', '-vvvv', '-i', inventory, playbook]))
+        cmd = [ANSIBLEPB_EXE, '-vvvv', '-i', inventory, playbook]
+        calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) == 0
 
@@ -162,8 +168,9 @@ def test_ansible_missing_playbook(run, tmpdir, base_args, create_inventory, crea
     run.assert_not_called()
 
 
+@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
 @mock.patch("qesap.subprocess_run", side_effect=[(0, []), (1, [])])
-def test_ansible_stop(run, tmpdir, base_args, create_inventory, create_playbooks, ansible_config):
+def test_ansible_stop(run, _, tmpdir, base_args, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
     Stop the sequence of playbook at first one
     that is failing and return non zero
@@ -182,7 +189,8 @@ def test_ansible_stop(run, tmpdir, base_args, create_inventory, create_playbooks
 
     playbook_list = create_playbooks(playbooks['create'])
     calls = []
-    calls.append(mock.call(['ansible-playbook', '-i', inventory, playbook_list[0]]))
+    cmd = [ANSIBLEPB_EXE, '-i', inventory, playbook_list[0]]
+    calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) != 0
 
@@ -190,8 +198,9 @@ def test_ansible_stop(run, tmpdir, base_args, create_inventory, create_playbooks
     run.assert_has_calls(calls)
 
 
+@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
 @mock.patch("qesap.subprocess_run")
-def test_ansible_destroy(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
+def test_ansible_destroy(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
     Test that ansible subcommand, called with -d,
     call the destroy list of playbooks
@@ -214,7 +223,8 @@ def test_ansible_destroy(run, base_args, tmpdir, create_inventory, create_playbo
     playbook_list = create_playbooks(playbooks['destroy'])
     calls = []
     for playbook in playbook_list:
-        calls.append(mock.call(['ansible-playbook', '-i', inventory, playbook]))
+        cmd = [ANSIBLEPB_EXE, '-i', inventory, playbook]
+        calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) == 0
 
@@ -222,8 +232,9 @@ def test_ansible_destroy(run, base_args, tmpdir, create_inventory, create_playbo
     run.assert_has_calls(calls)
 
 
+@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
 @mock.patch("qesap.subprocess_run")
-def test_ansible_env_reg(run, base_args, tmpdir, create_inventory, create_playbooks):
+def test_ansible_e_reg(run, _, base_args, tmpdir, create_inventory, create_playbooks, mock_call_ansibleplaybook):
     """
     Replace email and code before to run
     ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/registration.yaml -e "reg_code=${REG_CODE}" -e "email_address=${EMAIL}"
@@ -252,14 +263,14 @@ ansible:
 
     playbook_list = create_playbooks(['registration'])
     calls = []
-    ansible_cmd = [
-        'ansible-playbook',
+    cmd = [
+        ANSIBLEPB_EXE,
         '-i', inventory,
         playbook_list[0],
         '-e', 'reg_code=1234-5678-90XX',
         '-e', 'email_address=mastro.geppetto@collodi.it'
     ]
-    calls.append(mock.call(ansible_cmd))
+    calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) == 0
 
@@ -267,8 +278,9 @@ ansible:
     run.assert_has_calls(calls)
 
 
+@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
 @mock.patch("qesap.subprocess_run")
-def test_ansible_env_sapconf(run, base_args, tmpdir, create_inventory, create_playbooks):
+def test_ansible_e_sapconf(run, _, base_args, tmpdir, create_inventory, create_playbooks, mock_call_ansibleplaybook):
     """
     Replace sapconf flag before to run
     ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/sap-hana-preconfigure.yaml -e "use_sapconf=${SAPCONF}"
@@ -296,13 +308,13 @@ ansible:
 
     playbook_list = create_playbooks(['sap-hana-preconfigure'])
     calls = []
-    ansible_cmd = [
-        'ansible-playbook',
+    cmd = [
+        ANSIBLEPB_EXE,
         '-i', inventory,
         playbook_list[0],
         '-e', '"use_sapconf=True"'
     ]
-    calls.append(mock.call(ansible_cmd))
+    calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) == 0
 
@@ -310,8 +322,9 @@ ansible:
     run.assert_has_calls(calls)
 
 
+@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
 @mock.patch("qesap.subprocess_run")
-def test_ansible_ssh(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
+def test_ansible_ssh(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
     This first Ansible command has to be called before all the others
 
@@ -349,10 +362,11 @@ def test_ansible_ssh(run, base_args, tmpdir, create_inventory, create_playbooks,
 
     playbook_list = create_playbooks(playbooks['create'])
     calls = []
-    ssh_share = ['ansible', '-i', inventory, 'all', '-a', 'true', '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"']
-    calls.append(mock.call(ssh_share))
+    ssh_share = [ANSIBLE_EXE, '-i', inventory, 'all', '-a', 'true', '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"']
+    calls.append(mock.call(cmd=ssh_share))
     for playbook in playbook_list:
-        calls.append(mock.call(['ansible-playbook', '-i', inventory, playbook]))
+        cmd = [ANSIBLEPB_EXE, '-i', inventory, playbook]
+        calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) == 0
 
@@ -360,7 +374,9 @@ def test_ansible_ssh(run, base_args, tmpdir, create_inventory, create_playbooks,
     run.assert_has_calls(calls)
 
 
-def test_ansible_env_config():
+@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
+@mock.patch("qesap.subprocess_run")
+def test_ansible_env_config(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
     """
 if [ ${quite} -eq 1 ]
 then
@@ -369,5 +385,25 @@ then
 fi
 export ANSIBLE_PIPELINING=True
     """
-    # TODO
-    return
+    provider = 'grilloparlante'
+    playbooks = {'create': ['get_cherry_wood', 'made_pinocchio_head']}
+    config_content = ansible_config(provider, playbooks)
+    config_file_name = str(tmpdir / 'config.yaml')
+    with open(config_file_name, 'w', encoding='utf-8') as file:
+        file.write(config_content)
+
+    args = base_args(None, config_file_name, False)
+    args.append('ansible')
+    run.return_value = (0, [])
+
+    inventory = create_inventory(provider)
+
+    playbook_files_list = create_playbooks(playbooks['create'])
+    calls = []
+    for playbook in playbook_files_list:
+        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-i', inventory, playbook], env={'ANSIBLE_PIPELINING': 'True'}))
+
+    assert main(args) == 0
+
+    run.assert_called()
+    run.assert_has_calls(calls)
