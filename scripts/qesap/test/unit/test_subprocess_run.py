@@ -54,3 +54,14 @@ def test_err():
     exit_code, stdout_list = subprocess_run(['cat', not_existing_file])
     assert exit_code == 1
     assert stdout_list == []
+
+
+def test_env():
+    '''
+    Check that env variable are controllable
+    '''
+    _, stdout_list = subprocess_run(['printenv'])
+    assert 'BANANA_VALUE' not in stdout_list
+    exit_code, stdout_list = subprocess_run(['printenv'], env={'BANANA_VALUE' : '1234'})
+    assert exit_code == 0
+    assert 'BANANA_VALUE=1234' in stdout_list

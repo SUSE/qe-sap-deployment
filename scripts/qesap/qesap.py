@@ -6,6 +6,7 @@ import os
 import argparse
 import logging
 import sys
+import shutil
 import subprocess
 import re
 import yaml
@@ -23,7 +24,7 @@ logging.basicConfig()
 log = logging.getLogger('QESAPDEP')
 
 
-def subprocess_run(cmd):
+def subprocess_run(cmd, env=None):
     """Tiny wrapper around subprocess
 
     Args:
@@ -36,8 +37,11 @@ def subprocess_run(cmd):
         log.error("Empty command")
         return (1, [])
 
-    log.info("Run:       %s", ' '.join(cmd))
-    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+    log.info("Run:       '%s'", ' '.join(cmd))
+    if env is not None:
+        log.info("with env %s", env)
+
+    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, env=env)
     if proc.returncode != 0:
         log.error("Error %d in %s", proc.returncode, ' '.join(cmd[0:1]))
         for err_line in proc.stderr.decode('UTF-8').splitlines():
@@ -293,7 +297,7 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
         log.error("Missing inventory at %s", inventory)
         return 1, "Missing inventory"
 
-    ansible_common = ['ansible-playbook']
+    ansible_common = [shutil.which('ansible-playbook')]
     if verbose:
         ansible_common.append('-vvvv')
 
@@ -303,11 +307,11 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
     ansible_cmd = []
     ansible_cmd_seq = []
     ssh_share = ansible_common.copy()
-    ssh_share[0] = 'ansible'
+    ssh_share[0] = shutil.which('ansible')
     ssh_share.extend([
         'all', '-a', 'true',
         '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'])
-    ansible_cmd_seq.append(ssh_share)
+    ansible_cmd_seq.append({'cmd': ssh_share})
 
     for playbook in configure_data['ansible'][sequence]:
         ansible_cmd = ansible_common.copy()
@@ -326,13 +330,13 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
                 ansible_cmd.append(re.sub(r'\${(.*)}', value, ply_cmd))
             else:
                 ansible_cmd.append(ply_cmd)
-        ansible_cmd_seq.append(ansible_cmd)
+        ansible_cmd_seq.append({'cmd': ansible_cmd, 'env': {'ANSIBLE_PIPELINING': 'True'}})
 
     for command in ansible_cmd_seq:
         if dryrun:
-            print(' '.join(command))
+            print(' '.join(command['cmd']))
         else:
-            ret, out = subprocess_run(command)
+            ret, out = subprocess_run(**command)
             for out_line in out:
                 log.debug(">    %s", out_line)
             log.debug("Ansible process return ret:%d", ret)
