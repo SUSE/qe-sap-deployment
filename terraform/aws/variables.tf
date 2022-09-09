@@ -228,59 +228,6 @@ variable "hana_ips" {
   }
 }
 
-variable "hana_inst_master" {
-  description = "S3 bucket folder path where hana installation software is available"
-  type        = string
-}
-
-variable "hana_inst_folder" {
-  description = "Folder where the hana installation software will be downloaded"
-  type        = string
-  default     = "/sapmedia/HANA"
-}
-
-variable "hana_platform_folder" {
-  description = "Path to the hana platform media, relative to the 'hana_inst_master' mounting point"
-  type        = string
-  default     = ""
-}
-
-variable "hana_sapcar_exe" {
-  description = "Path to the sapcar executable, relative to the 'hana_inst_master' mounting point. Only needed if HANA installation software comes in a SAR file (like IMDB_SERVER.SAR)"
-  type        = string
-  default     = ""
-}
-
-variable "hana_archive_file" {
-  description = "Path to the HANA database server installation SAR archive (for SAR files, `hana_sapcar_exe` variable is mandatory) or HANA platform archive file in ZIP or RAR (EXE) format, relative to the 'hana_inst_master' mounting point. Use this parameter if the HANA media archive is not already extracted"
-  type        = string
-  default     = ""
-}
-
-variable "hana_extract_dir" {
-  description = "Absolute path to folder where SAP HANA archive will be extracted. This folder cannot be the same as `hana_inst_folder`!"
-  type        = string
-  default     = "/sapmedia_extract/HANA"
-}
-
-variable "hana_client_folder" {
-  description = "Path to the extracted HANA Client folder, relative to the 'hana_inst_master' mounting point"
-  type        = string
-  default     = ""
-}
-
-variable "hana_client_archive_file" {
-  description = "Path to the HANA Client SAR archive , relative to the 'hana_inst_master' mounting point. Use this parameter if the HANA Client archive is not already extracted"
-  type        = string
-  default     = ""
-}
-
-variable "hana_client_extract_dir" {
-  description = "Absolute path to folder where SAP HANA Client archive will be extracted"
-  type        = string
-  default     = "/sapmedia_extract/HANA_CLIENT"
-}
-
 variable "hana_data_disk_type" {
   description = "Disk type of the disks used to store HANA database content"
   type        = string
