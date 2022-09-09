@@ -147,50 +147,6 @@ private_key = "/home/myuser/.ssh/id_rsa"
 # not work with any memory size and will most likely fail with less than 16 GiB
 #hana_ignore_min_mem_check = false
 
-# The next variables define how the HANA installation software is obtained.
-# The installation software must be located in a AWS S3 bucket
-
-# 'hana_inst_master' is a S3 bucket where HANA installation files (extracted or not) are stored
-# `hana_inst_master` must be used always! It is used as the reference path to the other variables
-
-# Local folder where HANA installation master will be mounted
-#hana_inst_folder = "/sapmedia/HANA"
-
-# To configure the usage there are multiple options:
-# 1. Use an already extracted HANA Platform folder structure.
-# The last numbered folder is the HANA Platform folder with the extracted files with
-# something like `HDB:HANA:2.0:LINUX_X86_64:SAP HANA PLATFORM EDITION 2.0::XXXXXX` in the LABEL.ASC file
-hana_inst_master = "s3://sapdata/sap_inst_media/51053381"
-
-# 2. Combine the `hana_inst_master` with `hana_platform_folder` variable.
-#hana_inst_master = "s3://sapdata/sap_inst_media/"
-# Specify the path to already extracted HANA platform installation media, relative to hana_inst_master mounting point.
-# This will have preference over hana archive installation media
-#hana_platform_folder = "51053381"
-
-# 3. Specify the path to the HANA installation archive file in either of SAR, RAR, ZIP, EXE formats, relative to the 'hana_inst_master' mounting point
-# For multipart RAR archives, provide the first part EXE file name.
-#hana_archive_file = "51053381_part1.exe"
-
-# 4. If using HANA SAR archive, provide the compatible version of sapcar executable to extract the SAR archive
-# HANA installation archives be extracted to path specified at hana_extract_dir (optional, by default /sapmedia/HANA)
-#hana_archive_file = "IMDB_SERVER.SAR"
-#hana_sapcar_exe = "SAPCAR"
-
-# For option 3 and 4, HANA installation archives are extracted to the path specified
-# at hana_extract_dir (optional, by default /sapmedia_extract/HANA). This folder cannot be the same as `hana_inst_folder`!
-#hana_extract_dir = "/sapmedia_extract/HANA"
-
-# The following SAP HANA Client variables are needed only when you are using a HANA database SAR archive for HANA installation.
-# HANA Client is used by monitoring & cost-optimized scenario and it is already included in HANA platform media unless a HANA database SAR archive is used
-# You can provide HANA Client in one of the two options below:
-# 1. Path to already extracted hana client folder, relative to hana_inst_master mounting point
-#hana_client_folder = "SAP_HANA_CLIENT"
-# 2. Or specify the path to the hana client SAR archive file, relative to the 'hana_inst_master'. To extract the SAR archive, you need to also provide compatible version of sapcar executable in variable hana_sapcar_exe
-# It will be extracted to hana_client_extract_dir path (optional, by default /sapmedia_extract/HANA_CLIENT)
-#hana_client_archive_file = "IMDB_CLIENT20_003_144-80002090.SAR"
-#hana_client_extract_dir = "/sapmedia_extract/HANA_CLIENT"
-
 # IP address used to configure the hana cluster floating IP. It must belong to the same subnet than the machines!
 #hana_cluster_vip = "192.168.1.10"
 

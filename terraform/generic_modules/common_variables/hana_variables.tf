@@ -42,25 +42,6 @@ variable "hana_cost_optimized_instance_number" {
   }
 }
 
-variable "hana_master_password" {
-  description = "Master password for the HANA system (sidadm user included)"
-  type        = string
-  validation {
-    condition = (
-      can(regex("[0-9]+", var.hana_master_password)) &&
-      can(regex("[a-z]+", var.hana_master_password)) &&
-      can(regex("[A-Z]+", var.hana_master_password)) &&
-      can(regex("^[\\w]{8,}$", var.hana_master_password))
-    )
-    error_message = "The password must contain at least 8 characters, comprising 1 digit, 1 upper-case character, 1 lower-case character and no special characters."
-  }
-}
-
-variable "hana_cost_optimized_master_password" {
-  description = "Master password for the HANA system (sidadm user included)"
-  type        = string
-}
-
 variable "hana_primary_site" {
   description = "HANA system replication primary site name"
   type        = string
@@ -71,53 +52,8 @@ variable "hana_secondary_site" {
   type        = string
 }
 
-variable "hana_inst_master" {
-  description = "Shared storage path where the SAP HANA software installer is stored. This media shall be mounted in `hana_inst_folder`. Depending on cloud provider, it can be S3 bucket folder path in AWS, an Azure storage account path or a NFS share url in Libvirt "
-  type        = string
-}
-
-variable "hana_inst_folder" {
-  description = "Folder where SAP HANA installation files are stored"
-  type        = string
-}
-
 variable "hana_fstype" {
   description = "Filesystem type used by the disk where hana is installed"
-  type        = string
-}
-
-variable "hana_platform_folder" {
-  description = "Path to the hana platform media, relative to the 'hana_inst_master' mounting point"
-  type        = string
-}
-
-variable "hana_sapcar_exe" {
-  description = "Path to the sapcar executable, relative to the 'hana_inst_master' mounting point"
-  type        = string
-}
-
-variable "hana_archive_file" {
-  description = "Path to the HANA database server installation SAR archive or HANA platform archive file in zip or rar format, relative to the 'hana_inst_master' mounting point. Use this parameter if the hana media archive is not already extracted"
-  type        = string
-}
-
-variable "hana_extract_dir" {
-  description = "Absolute path to folder where SAP HANA archive will be extracted"
-  type        = string
-}
-
-variable "hana_client_folder" {
-  description = "Path to the extracted HANA Client folder, relative to the 'hana_inst_master' mounting point"
-  type        = string
-}
-
-variable "hana_client_archive_file" {
-  description = "Path to the HANA Client SAR archive , relative to the 'hana_inst_master' mounting point. Use this parameter if the HANA Client archive is not already extracted"
-  type        = string
-}
-
-variable "hana_client_extract_dir" {
-  description = "Absolute path to folder where SAP HANA Client archive will be extracted"
   type        = string
 }
 
