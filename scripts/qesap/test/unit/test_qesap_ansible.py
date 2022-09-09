@@ -6,12 +6,12 @@ from qesap import main
 
 log = logging.getLogger(__name__)
 
-ANSIBLE_EXE = '/bin/ansible'
-ANSIBLEPB_EXE = '/paese/della/cuccagna/ansible-playbook'
+ANSIBLE_EXE = 'ansible'
+ANSIBLEPB_EXE = 'ansible-playbook'
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
+
 @mock.patch("qesap.subprocess_run")
-def test_ansible_create(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
+def test_ansible_create(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
     Test that the ansible subcommand plays playbooks
     listed in the ansible::create part of the config.yml
@@ -41,9 +41,8 @@ def test_ansible_create(run, _, base_args, tmpdir, create_inventory, create_play
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
 @mock.patch("qesap.subprocess_run")
-def test_ansible_verbose(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
+def test_ansible_verbose(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
     """
     run with -vvvv if qesap ansible --verbose
     (probably not supported in qesap deploy/destroy)
@@ -65,8 +64,7 @@ def test_ansible_verbose(run, _, base_args, tmpdir, create_inventory, create_pla
     playbook_list = create_playbooks(playbooks['create'])
     calls = []
     for playbook in playbook_list:
-        cmd = [ANSIBLEPB_EXE, '-vvvv', '-i', inventory, playbook]
-        calls.append(mock_call_ansibleplaybook(cmd))
+        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-vvvv', '-i', inventory, playbook], env={'ANSIBLE_PIPELINING': 'True', 'ANSIBLE_NOCOLOR': 'True'}))
 
     assert main(args) == 0
 
@@ -168,9 +166,8 @@ def test_ansible_missing_playbook(run, tmpdir, base_args, create_inventory, crea
     run.assert_not_called()
 
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
 @mock.patch("qesap.subprocess_run", side_effect=[(0, []), (1, [])])
-def test_ansible_stop(run, _, tmpdir, base_args, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
+def test_ansible_stop(run, tmpdir, base_args, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
     Stop the sequence of playbook at first one
     that is failing and return non zero
@@ -198,9 +195,8 @@ def test_ansible_stop(run, _, tmpdir, base_args, create_inventory, create_playbo
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
 @mock.patch("qesap.subprocess_run")
-def test_ansible_destroy(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
+def test_ansible_destroy(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
     Test that ansible subcommand, called with -d,
     call the destroy list of playbooks
@@ -232,9 +228,8 @@ def test_ansible_destroy(run, _, base_args, tmpdir, create_inventory, create_pla
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
 @mock.patch("qesap.subprocess_run")
-def test_ansible_e_reg(run, _, base_args, tmpdir, create_inventory, create_playbooks, mock_call_ansibleplaybook):
+def test_ansible_e_reg(run, base_args, tmpdir, create_inventory, create_playbooks, mock_call_ansibleplaybook):
     """
     Replace email and code before to run
     ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/registration.yaml -e "reg_code=${REG_CODE}" -e "email_address=${EMAIL}"
@@ -278,9 +273,8 @@ ansible:
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
 @mock.patch("qesap.subprocess_run")
-def test_ansible_e_sapconf(run, _, base_args, tmpdir, create_inventory, create_playbooks, mock_call_ansibleplaybook):
+def test_ansible_e_sapconf(run, base_args, tmpdir, create_inventory, create_playbooks, mock_call_ansibleplaybook):
     """
     Replace sapconf flag before to run
     ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/sap-hana-preconfigure.yaml -e "use_sapconf=${SAPCONF}"
@@ -322,9 +316,8 @@ ansible:
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
 @mock.patch("qesap.subprocess_run")
-def test_ansible_ssh(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
+def test_ansible_ssh(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
     This first Ansible command has to be called before all the others
 
@@ -374,9 +367,8 @@ def test_ansible_ssh(run, _, base_args, tmpdir, create_inventory, create_playboo
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
 @mock.patch("qesap.subprocess_run")
-def test_ansible_env_config(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
+def test_ansible_env_config(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
     """
 if [ ${quite} -eq 1 ]
 then

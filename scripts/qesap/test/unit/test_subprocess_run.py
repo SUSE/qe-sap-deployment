@@ -65,3 +65,12 @@ def test_env():
     exit_code, stdout_list = subprocess_run(['printenv'], env={'BANANA_VALUE' : '1234'})
     assert exit_code == 0
     assert 'BANANA_VALUE=1234' in stdout_list
+
+
+def test_env_append():
+    '''
+    Check that env variable are appended
+    '''
+    _, stdout_list_before = subprocess_run(['printenv'])
+    _, stdout_list = subprocess_run(['printenv'], env={'BANANA_VALUE' : '1234'})
+    assert all([ this_before in stdout_list for this_before in stdout_list_before])

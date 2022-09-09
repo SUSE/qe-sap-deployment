@@ -6,7 +6,6 @@ import os
 import argparse
 import logging
 import sys
-import shutil
 import subprocess
 import re
 import yaml
@@ -54,6 +53,7 @@ def subprocess_run(cmd, env=None):
 
     Args:
         cmd (list of string): directly used as input for subprocess.run
+        env (dict): dict of environment variable (name/value pair) to be appended at the external environment
 
     Returns:
         (int, list of string): exit code and list of stdout
@@ -63,10 +63,14 @@ def subprocess_run(cmd, env=None):
         return (1, [])
 
     log.info("Run:       '%s'", ' '.join(cmd))
+
+    external_env = dict(os.environ)
     if env is not None:
         log.info("with env %s", env)
+        # external_env |= env supported from python 3.9
+        external_env = {**external_env, **env}
 
-    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, env=env)
+    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, env=external_env)
     if proc.returncode != 0:
         log.error("Error %d in %s", proc.returncode, ' '.join(cmd[0:1]))
         for err_line in proc.stderr.decode('UTF-8').splitlines():
@@ -275,6 +279,7 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
             this_cmd.append('-auto-approve')
         this_cmd.append('-no-color')
         cmds.append(this_cmd)
+
     for command in cmds:
         if dryrun:
             print(' '.join(command))
@@ -322,9 +327,11 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
         log.error("Missing inventory at %s", inventory)
         return Status("Missing inventory")
 
-    ansible_common = [shutil.which('ansible-playbook')]
+    ansible_env = {'ANSIBLE_PIPELINING': 'True'}
+    ansible_common = ['ansible-playbook']
     if verbose:
         ansible_common.append('-vvvv')
+        ansible_env['ANSIBLE_NOCOLOR'] = 'True'
 
     ansible_common.append('-i')
     ansible_common.append(inventory)
@@ -332,7 +339,7 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
     ansible_cmd = []
     ansible_cmd_seq = []
     ssh_share = ansible_common.copy()
-    ssh_share[0] = shutil.which('ansible')
+    ssh_share[0] = 'ansible'
     ssh_share.extend([
         'all', '-a', 'true',
         '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'])
@@ -355,7 +362,7 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
                 ansible_cmd.append(re.sub(r'\${(.*)}', value, ply_cmd))
             else:
                 ansible_cmd.append(ply_cmd)
-        ansible_cmd_seq.append({'cmd': ansible_cmd, 'env': {'ANSIBLE_PIPELINING': 'True'}})
+        ansible_cmd_seq.append({'cmd': ansible_cmd, 'env': ansible_env})
 
     for command in ansible_cmd_seq:
         if dryrun:
