@@ -28,6 +28,11 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install tox tox-gh-actions
+    - name: PyLint with tox
+      working-directory: scripts/qesap/
+      run: tox -e pylint
+      env:
+        PLATFORM: ${{ matrix.platform }}
     - name: Test with tox
       working-directory: scripts/qesap/
       run: tox
