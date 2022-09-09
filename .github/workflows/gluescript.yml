@@ -33,6 +33,11 @@ jobs:
       run: tox -e pylint
       env:
         PLATFORM: ${{ matrix.platform }}
+    - name: flake8 with tox
+      working-directory: scripts/qesap/
+      run: tox -e flake8
+      env:
+        PLATFORM: ${{ matrix.platform }}
     - name: Test with tox
       working-directory: scripts/qesap/
       run: tox
