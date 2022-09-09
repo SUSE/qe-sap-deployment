@@ -24,6 +24,31 @@ logging.basicConfig()
 log = logging.getLogger('QESAPDEP')
 
 
+class Status(int):
+    """
+    This class inherits from int (interpreted as a return value) to add an error message
+    >>> e = Status("ok")
+    >>> print(e, e.msg)
+    0 ok
+    >>> e = Status("something bad happened")
+    >>> print(e, e.msg)
+    1 something bad happened
+    >>> e = Status(777)
+    >>> print(e, e.msg)
+    777 777
+    """
+    msg = ""
+
+    def __new__(cls, str_or_int):
+        if isinstance(str_or_int, str):
+            value = 0 if str_or_int == "ok" else 1
+        elif isinstance(str_or_int, int):
+            value = int(str_or_int)
+        obj = super().__new__(cls, value)
+        obj.msg = str(str_or_int)
+        return obj
+
+
 def subprocess_run(cmd, env=None):
     """Tiny wrapper around subprocess
 
@@ -113,11 +138,11 @@ def validate_basedir(basedir, config):
 
     if not os.path.isdir(terraform_dir):
         log.error("Missing %s", terraform_dir)
-        return False, None
+        return False
     result['provider'] = os.path.join(terraform_dir, config['provider'])
     if not os.path.isdir(result['provider']):
         log.error("Missing %s", result['terraform'])
-        return False, None
+        return False
     tfvar_template_path = os.path.join(result['provider'], 'terraform.tfvars.template')
     # In case of template missing, it will be created from config.yaml
     if os.path.isfile(tfvar_template_path):
@@ -126,12 +151,12 @@ def validate_basedir(basedir, config):
     ansible_pl_vars_dir = os.path.join(basedir, 'ansible', 'playbooks', 'vars')
     if not os.path.isdir(ansible_pl_vars_dir):
         log.error("Missing %s", ansible_pl_vars_dir)
-        return False, None
+        return False
 
     result['tfvars'] = os.path.join(result['provider'], 'terraform.tfvars')
     result['hana_vars'] = os.path.join(ansible_pl_vars_dir, 'azure_hana_media.yaml')
 
-    return True, result
+    return result
 
 
 def cmd_configure(configure_data, base_project, dryrun):
@@ -151,10 +176,10 @@ def cmd_configure(configure_data, base_project, dryrun):
 
     # Validations
     if not validate_config(configure_data):
-        return 1, f"Invalid configuration file content in {configure_data}"
-    res, cfg_paths = validate_basedir(base_project, configure_data)
-    if not res:
-        return 1, f"Invalid folder structure at {base_project}"
+        return Status(f"Invalid configuration file content in {configure_data}")
+    cfg_paths = validate_basedir(base_project, configure_data)
+    if not cfg_paths:
+        return Status(f"Invalid folder structure at {base_project}")
 
     # Just an handy alias
     tfvar_path = cfg_paths['tfvars']
@@ -167,9 +192,9 @@ def cmd_configure(configure_data, base_project, dryrun):
         log.debug("tfvar template not present")
         tfvar_content = yaml_to_tfvars(configure_data)
         if tfvar_content is None:
-            return 1, "Problem converting config.yaml content to terraform.tfvars"
+            return Status("Problem converting config.yaml content to terraform.tfvars")
     else:
-        return 1, "No terraform.tfvars.template neither terraform in the configuration"
+        return Status("No terraform.tfvars.template neither terraform in the configuration")
 
     if validate_ansible_config(configure_data, None):
         hanavar_content = {'hana_urls': configure_data['ansible']['hana_urls']}
@@ -185,7 +210,7 @@ def cmd_configure(configure_data, base_project, dryrun):
         log.info("Write %s", hana_vars)
         with open(hana_vars, 'w', encoding='utf-8') as file:
             yaml.dump(hanavar_content, file)
-    return 0, 'ok'
+    return Status('ok')
 
 
 def cmd_deploy(configure_data, base_project, dryrun):
@@ -229,15 +254,15 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
         dryrun (bool): enable dryrun execution mode
 
     Returns:
-        int: execution result, 0 means OK. It is mind to be used as script exit code
+        Status: execution result, 0 means OK. It is mind to be used as script exit code
     """
 
     # Validations
     if not validate_config(configure_data):
-        return 1, f"Invalid configuration file content in {configure_data}"
-    res, cfg_paths = validate_basedir(base_project, configure_data)
-    if not res:
-        return 1, f"Invalid folder structure at {base_project}"
+        return Status(f"Invalid configuration file content in {configure_data}")
+    cfg_paths = validate_basedir(base_project, configure_data)
+    if not cfg_paths:
+        return Status(f"Invalid folder structure at {base_project}")
 
     cmds = []
     for seq in ['init', 'plan', 'apply'] if not destroy else ['destroy']:
@@ -263,8 +288,8 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
                 log_file.write('\n'.join(out))
             if ret != 0:
                 log.error("command:%s returned non zero %d", command, ret)
-                return ret, f"Error at {command}"
-    return 0, 'Ok'
+                return Status(f"Error at {command}")
+    return Status('ok')
 
 
 def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
@@ -277,12 +302,12 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
         dryrun (bool): enable dryrun execution mode
 
     Returns:
-        int: execution result, 0 means OK. It is mind to be used as script exit code
+        Status: execution result, 0 means OK. It is mind to be used as script exit code
     """
 
     # Validations
     if not validate_config(configure_data):
-        return 1, f"Invalid configuration file content in {configure_data}"
+        return Status(f"Invalid configuration file content in {configure_data}")
 
     sequence = 'create'
     if destroy:
@@ -290,12 +315,12 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
 
     if not validate_ansible_config(configure_data, sequence):
         log.info('No Ansible playbooks to play in %s', configure_data)
-        return 0
+        return Status("ok")
 
     inventory = os.path.join(base_project, 'terraform', configure_data['provider'], 'inventory.yaml')
     if not os.path.isfile(inventory):
         log.error("Missing inventory at %s", inventory)
-        return 1, "Missing inventory"
+        return Status("Missing inventory")
 
     ansible_common = [shutil.which('ansible-playbook')]
     if verbose:
@@ -320,7 +345,7 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
         playbook_filename = os.path.join(base_project, 'ansible', 'playbooks', playbook_cmd[0])
         if not os.path.isfile(playbook_filename):
             log.error("Missing playbook at %s", playbook_filename)
-            return 1
+            return Status("Missing playbook")
         ansible_cmd.append(playbook_filename)
         for ply_cmd in playbook_cmd[1:]:
             match = re.search(r'\${(.*)}', ply_cmd)
@@ -342,8 +367,8 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
             log.debug("Ansible process return ret:%d", ret)
             if ret != 0:
                 log.error("command:%s returned non zero %d", command, ret)
-                return ret
-    return 0
+                return Status(ret)
+    return Status("ok")
 
 
 def is_yaml(path):
@@ -462,7 +487,7 @@ def main(command_line=None):  # pylint: disable=too-many-return-statements
             parsed_args.basedir,
             parsed_args.dryrun
         )
-        return res[0]
+        return res
     if parsed_args.command == "deploy":
         log.info("Deploying...")
         return cmd_deploy(
@@ -479,14 +504,14 @@ def main(command_line=None):  # pylint: disable=too-many-return-statements
         )
     if parsed_args.command == "terraform":
         log.info("Running Terraform...")
-        res, err = cmd_terraform(
+        res = cmd_terraform(
             parsed_args.configfile,
             parsed_args.basedir,
             parsed_args.dryrun,
             destroy=parsed_args.destroy
         )
         if res != 0:
-            print(err)
+            print(res.msg)  # should we use file=sys.stderr here?
         return res
     if parsed_args.command == "ansible":
         log.info("Running Ansible...")
