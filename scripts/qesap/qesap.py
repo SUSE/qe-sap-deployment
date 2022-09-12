@@ -359,7 +359,7 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
 
     for command in ansible_cmd_seq:
         if dryrun:
-            print(' '.join(command['cmd']))
+            print(' '.join(command))
         else:
             ret, out = subprocess_run(**command)
             for out_line in out:
