@@ -18,3 +18,7 @@ output "hana_name" {
 output "hana_public_name" {
   value = data.aws_instance.hana.*.public_dns
 }
+
+output "hana_vip" {
+  value = split("/", aws_route.hana-cluster-vip.0.destination_cidr_block)[0]
+}

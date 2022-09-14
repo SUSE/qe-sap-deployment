@@ -1,0 +1,73 @@
+---
+- name: Get cluster status
+  ansible.builtin.command: crm configure show
+  register: crm_conf_hana_show 
+  changed_when: no
+  when: is_primary
+
+- name: Set hana crm facts
+  ansible.builtin.set_fact:
+    crm_maintainence_mode:  "{{ (crm_conf_hana_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] | default('unknown') }}"
+    hana_topology_clone: "{{ crm_conf_hana_show.stdout | regex_search('clone cln_SAPHanaTopology') }}"
+    stonith_timeout: "{{ crm_conf_hana_show.stdout | regex_search('stonith-timeout') }}" # this should be variable!
+    hana_topology_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaTopology') }}"
+    hana_resource_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms msl_SAPHana_') }}"
+    hana_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHana_') }}"
+    ip_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_ip_') }}"
+    ip_nc: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_socat_') }}"
+    ip_grp: "{{ crm_conf_hana_show.stdout | regex_search('group g_ip_') }}"
+    ip_colo: "{{ crm_conf_hana_show.stdout | regex_search('colocation col_saphana_ip_') }}"
+    order: "{{ crm_conf_hana_show.stdout | regex_search('order ord_SAPHana_') }}"
+  when: is_primary
+  changed_when: no
+
+- name: Ensure maintainence mode is active
+  ansible.builtin.command: crm configure property maintenance-mode=true
+  when: crm_maintainence_mode is false or crm_maintainence_mode == 'unknown'
+
+- name: Create HANA topology resource
+  ansible.builtin.command: crm configure primitive rsc_SAPHanaTopology_HDB_HDB00 ocf:suse:SAPHanaTopology operations \$id="rsc_sap2_HDB_HDB00-operations" op monitor interval="10" timeout="600" op start interval="0" timeout="600" op stop interval="0" timeout="300" params SID="HDB" InstanceNumber="00" 
+  when: 
+    - hana_topology_resource | length == 0
+    - is_primary
+
+- name: Create HANA topology clone
+  ansible.builtin.command: crm configure clone cln_SAPHanaTopology_HDB_HDB00 rsc_SAPHanaTopology_HDB_HDB00 meta clone-node-max="1" target-role="Started" interleave="true"
+  when: 
+    - hana_topology_clone | length == 0
+    - is_primary
+
+- name: Create HANA resource
+  ansible.builtin.command: crm configure primitive rsc_SAPHana_HDB_HDB00 ocf:suse:SAPHana operations \$id="rsc_sap_HDB_HDB00-operations" op start interval="0" timeout="3600" op stop interval="0" timeout="3600" op promote interval="0" timeout="3600" op monitor interval="60" role="Master" timeout="700" op monitor interval="61" role="Slave" timeout="700" params SID="HDB" InstanceNumber="00" PREFER_SITE_TAKEOVER="true" DUPLICATE_PRIMARY_TIMEOUT="7200" AUTOMATED_REGISTER="false" 
+  when: 
+    - hana_resource | length == 0
+    - is_primary
+
+- name: Create HANA resource clone
+  ansible.builtin.command: crm configure ms msl_SAPHana_HDB_HDB00 rsc_SAPHana_HDB_HDB00 meta notify="true" clone-max="2" clone-node-max="1" target-role="Started" interleave="true" 
+  when:
+    - hana_resource_clone | length == 0
+    - is_primary
+
+- name: Configure colocation
+  ansible.builtin.command: 'crm configure colocation col_saphana_ip_HDB_HDB00 2000: rsc_ip_HDB_HDB00:Started msl_SAPHana_HDB_HDB00:Master'                                          
+  when: ip_colo | length == 0
+
+- name: Configure order
+  ansible.builtin.command: 'crm configure order ord_SAPHana 2000: cln_SAPHanaTopology_HDB_HDB00 msl_SAPHana_HDB_HDB00'
+  when: order | length == 0
+
+# Get current maintainence state
+- name: Refresh cluster status
+  ansible.builtin.command: crm configure show
+  register: refreshed_crm_conf_show 
+  changed_when: no
+
+- name: Set crm facts
+  ansible.builtin.set_fact:
+    refreshed_crm_maintainence_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] | default('unknown') }}"
+  changed_when: no
+
+- name: Ensure maintainence mode is disabled
+  ansible.builtin.command: crm configure property maintenance-mode=false
+  when: refreshed_crm_maintainence_mode is true or refreshed_crm_maintainence_mode == 'unknown'

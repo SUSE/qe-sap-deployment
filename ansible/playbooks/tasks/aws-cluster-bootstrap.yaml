@@ -7,13 +7,16 @@
     state: directory
     mode: '0700'
 
-- name: Upload aws credentials
+- name: Upload aws files
   ansible.builtin.copy:
-    src: ~/.aws/credentials
-    dest: /root/.aws/credentials
+    src: "~/.aws/{{ item }}"
+    dest: "/root/.aws/{{ item }}"
     owner: root
     group: root
     mode: '0600'
+  loop:
+    - credentials
+    - config
 
 - name: Ensure cluster dependencies are installed
   community.general.zypper:
@@ -191,55 +194,71 @@
     stonith_enabled: "{{ (crm_conf_show.stdout | regex_search('stonith-enabled=([a-z]*)', '\\1' ))[0] | default('false') }}"
     stonith_action: "{{ (crm_conf_show.stdout | regex_search('stonith-action=([a-z]*)', '\\1' ))[0] | default('false') }}"
     stonith_timeout: "{{ (crm_conf_show.stdout | regex_search('stonith-timeout=([a-z0-9]*)', '\\1' ))[0] | default('false') }}"
+    rsc_ip: "{{ crm_conf_show.stdout | regex_search('(rsc_ip_)') }}"
     resource_stickiness: "{{ (crm_rsc_options_show.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1' ))[0] | default('false') }}"
     migration_threshold: "{{ (crm_rsc_options_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1' ))[0] | default('false') }}"
     op_default_timeout: "{{ (crm_op_options_show.stdout | regex_search('timeout=([0-9]*)', '\\1' ))[0] | default('false') }}"
 
-- name: Enable SBD
+- name: Enable SBD [sbd]
   ansible.builtin.command: crm configure primitive rsc_iscsi_sbd stonith:external/sbd    
   when :
     - sbd_stonith | string | lower  == 'false'
     - use_sbd
     - is_primary
+  
+- name: Set stonith-timeout [sdb]
+  ansible.builtin.command: crm configure property stonith-timeout=144
+  when:
+    - stonith_timeout != '144'
+    - use_sbd | bool
+    - is_primary
+
+- name: Set stonith timeout [native]
+  ansible.builtin.command: crm configure property \$id="cib-bootstrap-options" stonith-timeout=600s
+  when:
+    - stonith_timeout != '600s'
+    - is_primary
+    - not (use_sbd | bool)
 
 - name: Enable stonith
-  ansible.builtin.command: crm_attribute -s cib-bootstrap-options --name stonith-enabled --update true
+  ansible.builtin.command: crm configure property \$id="cib-bootstrap-options" stonith-enabled=true
   when:
     - stonith_enabled | string | lower != 'true'
     - is_primary
 
 - name: Disable stonith action
-  ansible.builtin.command: crm_attribute -s cib-bootstrap-options --name stonith-action --update off
+  ansible.builtin.command: crm configure property \$id="cib-bootstrap-options" stonith-action=off
   when:
     - stonith_action != 'off'
     - is_primary
 
-- name: Set stonith timeout
-  ansible.builtin.command: crm_attribute -s cib-bootstrap-options --name stonith-timeout --update 600s
-  when:
-    - stonith_timeout != '600s'
-    - is_primary
-
-- name: sleep
-  ansible.builtin.command: sleep 30
-  when: is_primary    
-
 - name: Set rsc_defaults resource stickiness
-  ansible.builtin.command: crm_attribute --type rsc_defaults -s rsc-options --attr-name resource-stickiness --attr-value 1000
+  ansible.builtin.command: crm configure rsc_defaults \$id="rsc-options" resource-stickiness=1000
   when:
     - resource_stickiness != '1000'
     - is_primary
+  register: reg_rsc_defaults
+  until: reg_rsc_defaults.rc == 0
+  retries: 10
+  delay: 10
 
 - name: Set rsc_defaults migration threshold
-  ansible.builtin.command: crm_attribute --type rsc_defaults -s rsc-options --attr-name migration-threshold --attr-value 5000
+  ansible.builtin.command: crm configure rsc_defaults \$id="rsc-options" migration-threshold=5000
   when:
     - migration_threshold != '5000'
     - is_primary
 
 - name: Set op_defaults timeout
-  ansible.builtin.command: crm_attribute --type op_defaults -s op-options --attr-name timeout --attr-value 600
+  ansible.builtin.command: crm configure rsc_defaults \$id="op-options" timeout=600
   when:
     - op_default_timeout != '600'
     - is_primary
+
+- name: Configure cluster IP 
+  ansible.builtin.command: "crm configure primitive rsc_ip_HDB_HDB00 ocf:suse:aws-vpc-move-ip params ip={{ aws_cluster_ip }} routing_table={{ aws_route_table }} interface=eth0 profile=default op start interval=0 timeout=180 op stop interval=0 timeout=180 op monitor interval=60 timeout=60"
+  when:
+    - rsc_ip | length == 0
+    - is_primary
+
     
   

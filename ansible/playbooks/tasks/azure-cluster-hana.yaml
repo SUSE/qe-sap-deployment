@@ -20,7 +20,7 @@
     order: "{{ crm_conf_show.stdout | regex_search('order ord_SAPHana_') }}"
     resource_stickiness: "{{ (crm_conf_show.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1' ))[0] }}"
     migration_threshold: "{{ (crm_conf_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1' ))[0] }}"
-  when: ansible_hostname == 'vmhana01'
+  when: ansible_hostname == is_primary
   changed_when: no
 
 - name: Ensure maintainence mode is active
