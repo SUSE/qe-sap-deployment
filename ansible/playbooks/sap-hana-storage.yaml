@@ -4,10 +4,22 @@
   become: true
   become_user : root
   pre_tasks:
-    - name: Source hana storage variables
-      include_vars: ./vars/hana_storage_profile.yaml
+    - name: Detect cloud platform
+      ansible.builtin.include_tasks:
+        ./tasks/detect-cloud-platform.yaml
+    - name: Detection result
+      ansible.builtin.debug:
+        msg: "Cloud platform appears to be {{ cloud_platform_name }}"
 
   tasks:
+
+  - name: Load AWS disk configuration
+    ansible.builtin.include_vars: ./vars/aws_hana_storage_profile.yaml
+    when: cloud_platform_is_aws    
+
+  - name: Load Azure disk configuration
+    ansible.builtin.include_vars: ./vars/azure_hana_storage_profile.yaml
+    when: cloud_platform_is_azure
 
   - name: HANA storage preparation
     vars:

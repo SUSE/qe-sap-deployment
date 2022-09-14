@@ -2,26 +2,53 @@
     "version": "0.2",
     "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
     "words": [
-        "HANA",
-        "venv",
-        "SAPCONF",
-        "tfvars",
-        "SLES",
+        "authfile",
+        "authkey",
+        "authkeys",
+        "backuplv",
+        "backupvg",
         "cloudadmin",
+        "elif",
         "gcloud",
+        "HANA",
+        "hanadata",
+        "hanadatalv",
+        "hanadatavg",
+        "hanalog",
+        "hanaloglv",
+        "hanalogvg",
+        "hanashared",
+        "hanasharedlv",
+        "hanasharedvg",
+        "iscsi",
+        "logd",
+        "noqa",
+        "nosum",
+        "numluns",
+        "nvme",
+        "publickey",
         "Quickstart",
+        "rsyslog",
+        "SAPCONF",
+        "SLES",
+        "stripesize",
+        "tfvars",
         "tvars",
-        "iscsi"
+        "usrsap",
+        "usrsaplv",
+        "usrsapvg",
+        "venv",
+        "yast"
     ],
     "languageSettings": [
         {
-          // use with Markdown files
-          "languageId": "markdown",
-          // Exclude fenced text
-          "ignoreRegExpList": [
-            "`.*`",
-            "```([\\n\\(\\)]|[^(\\$\\$)])*```"
-          ]
+            // use with Markdown files
+            "languageId": "markdown",
+            // Exclude fenced text
+            "ignoreRegExpList": [
+                "`.*`",
+                "```([\\n\\(\\)]|[^(\\$\\$)])*```"
+            ]
         }
-      ]
+    ]
 }

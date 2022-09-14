@@ -4,14 +4,27 @@
   become: true
   become_user: root
   pre_tasks:
-    - name: Include hana system replication variables
-      include_vars: ./vars/hana_hsr_parameters.yaml
+    - name: Detect cloud platform
+      ansible.builtin.include_tasks:
+        ./tasks/detect-cloud-platform.yaml
+    - name: Detection result
+      ansible.builtin.debug:
+        msg: "Cloud platform appears to be {{ cloud_platform_name }}"
       
   vars:
     install_path: /var/lib/qedep
     hsr_cnf_file: "{{ install_path }}/{{ sap_hana_sid }}_hsr_configured"
 
   tasks:
+
+  #TODO: Use terraform or ansible to populate the system replication var file - this hardcoded method is not scalable!
+  - name: Load AWS system replication vars
+    include_vars: ./vars/aws_hana_hsr_parameters.yaml
+    when: cloud_platform_is_aws
+
+  - name: Load Azure system replication vars
+    include_vars: ./vars/azure_hana_hsr_parameters.yaml
+    when: cloud_platform_is_azure
 
   - name: Check for previous HSR configuration
     ansible.builtin.file:

@@ -7,10 +7,10 @@ all:
           ansible_host: ${value}
           ansible_python_interpreter: /usr/bin/python3
 %{ endfor ~}
- %{ if iscsi-enabled }
+%{ if iscsi-enabled }
     iscsi:
       hosts:
- %{ for index, value in iscsi-pip ~}
+%{ for index, value in iscsi-pip ~}
         ${iscsi_hostname}${format("%02d", index + 1)}:
           ansible_host: ${value}
           ansible_python_interpreter: /usr/bin/python3

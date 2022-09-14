@@ -52,7 +52,7 @@
 
 # The code needs to decide if it is necessary to set DefaultTasksMax to 4096.  
 # The value may be set to a larger or smaller integer or infinity
-- name: Get DefaultTasksMax value
+- name: Get DefaultTasksMax value # noqa command-instead-of-module
   ansible.builtin.command: systemctl --no-pager show 
   register: systemd_result
   changed_when: no

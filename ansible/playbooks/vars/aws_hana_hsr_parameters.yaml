@@ -1,0 +1,16 @@
+sap_hana_sid: "HDB"
+sap_hana_instance_number: "00"
+sap_hana_install_master_password: "EasyPassw0rd!"
+sap_domain: "qe-test.suse.com"
+
+sap_hana_cluster_nodes:
+  - node_name: vmhana01
+    node_ip: 10.0.1.10
+    node_role: primary
+    hana_site: node01
+
+  - node_name: vmhana02
+    node_ip: 10.0.2.11
+    node_role: secondary
+    hana_site: node02
+
