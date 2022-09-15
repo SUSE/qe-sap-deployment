@@ -20,7 +20,7 @@ locals {
   iscsi_ip_start = 5
   iscsi_ips      = length(var.iscsi_ips) != 0 ? var.iscsi_ips : [for ip_index in range(local.iscsi_ip_start, var.iscsi_count + local.iscsi_ip_start) : cidrhost(local.infra_subnet_address_range, ip_index)]
 
-  
+
 
   # The next locals are used to map the ip index with the subnet range (something like python enumerate method)
   hana_ip_start              = 10

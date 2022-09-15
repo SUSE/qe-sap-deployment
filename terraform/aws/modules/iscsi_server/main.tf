@@ -20,7 +20,7 @@ resource "aws_instance" "iscsisrv" {
   private_ip                  = element(var.host_ips, count.index)
   vpc_security_group_ids      = [var.security_group_id]
   #availability_zone           = element(var.availability_zones, count.index)
-  user_data                   = templatefile("${path.root}/adminuser.tpl", { username = var.common_variables["authorized_user"], publickey = var.common_variables["public_key"], hostname = "${var.name}${format("%02d", count.index +1)}", domain = var.network_domain })
+  user_data = templatefile("${path.root}/adminuser.tpl", { username = var.common_variables["authorized_user"], publickey = var.common_variables["public_key"], hostname = "${var.name}${format("%02d", count.index + 1)}", domain = var.network_domain })
 
   root_block_device {
     volume_type = "gp2"

@@ -53,12 +53,12 @@ resource "aws_instance" "hana" {
   key_name                    = var.key_name
   associate_public_ip_address = true
   #disable_api_stop            = false # see https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-on-aws-cluster-configuration.html
-  subnet_id                   = element(aws_subnet.hana-subnet.*.id, count.index)
-  private_ip                  = element(var.host_ips, count.index)
-  vpc_security_group_ids      = [var.security_group_id]
-  availability_zone           = element(var.availability_zones, count.index)
-  source_dest_check           = false
-  user_data                   = templatefile("${path.root}/adminuser.tpl", { username = var.common_variables["authorized_user"], publickey = var.common_variables["public_key"], hostname = "${var.name}${format("%02d", count.index + 1)}", domain = var.network_domain })
+  subnet_id              = element(aws_subnet.hana-subnet.*.id, count.index)
+  private_ip             = element(var.host_ips, count.index)
+  vpc_security_group_ids = [var.security_group_id]
+  availability_zone      = element(var.availability_zones, count.index)
+  source_dest_check      = false
+  user_data              = templatefile("${path.root}/adminuser.tpl", { username = var.common_variables["authorized_user"], publickey = var.common_variables["public_key"], hostname = "${var.name}${format("%02d", count.index + 1)}", domain = var.network_domain })
 
   root_block_device {
     volume_type = "gp2"

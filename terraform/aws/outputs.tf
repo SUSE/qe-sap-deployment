@@ -111,7 +111,7 @@ resource "local_file" "ansible_inventory" {
 resource "local_file" "cluster_data" {
   content = templatefile("aws_cluster_data.tftpl",
     {
-      routetable_id  = aws_route_table.route-table.id,
+      routetable_id = aws_route_table.route-table.id,
       virtual_ip    = module.hana_node.hana_vip
   })
   filename = "aws_cluster_data.yaml"
