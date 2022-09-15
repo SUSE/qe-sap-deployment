@@ -198,7 +198,7 @@
   
 - name: Set crm maintenance facts
   ansible.builtin.set_fact:
-    crm_maintenance_mode: "{{ (crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] | default('unknown') }}"
+    crm_maintenance_mode: "{{ (crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0]  }}"
     rsc_azure_events: "{{ crm_conf_show.stdout | regex_search('primitive rsc_azure-events') }}"
     cln_azure_events: "{{ crm_conf_show.stdout | regex_search('clone cln_azure-events') }}"
     rsc_st_azure: "{{ crm_conf_show.stdout | regex_search('rsc_st_azure') }}"

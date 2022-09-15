@@ -16,8 +16,11 @@ module "local_execution" {
 # DRBD cluster vip: 192.168.1.20 (virtual ip address must be in a different range than the vpc)
 # If the addresses are provided by the user will always have preference
 locals {
-  iscsi_ip      = var.iscsi_srv_ip != "" ? var.iscsi_srv_ip : cidrhost(local.infra_subnet_address_range, 4)
-  monitoring_ip = var.monitoring_srv_ip != "" ? var.monitoring_srv_ip : cidrhost(local.infra_subnet_address_range, 5)
+  monitoring_ip  = var.monitoring_srv_ip != "" ? var.monitoring_srv_ip : cidrhost(local.infra_subnet_address_range, 4)
+  iscsi_ip_start = 5
+  iscsi_ips      = length(var.iscsi_ips) != 0 ? var.iscsi_ips : [for ip_index in range(local.iscsi_ip_start, var.iscsi_count + local.iscsi_ip_start) : cidrhost(local.infra_subnet_address_range, ip_index)]
+
+  
 
   # The next locals are used to map the ip index with the subnet range (something like python enumerate method)
   hana_ip_start              = 10
@@ -181,7 +184,7 @@ module "iscsi_server" {
   common_variables   = module.common_variables.configuration
   name               = var.iscsi_name
   network_domain     = var.iscsi_network_domain == "" ? var.network_domain : var.iscsi_network_domain
-  iscsi_count        = local.iscsi_enabled == true ? 1 : 0
+  iscsi_count        = local.iscsi_enabled == true ? var.iscsi_count : 0
   aws_region         = var.aws_region
   availability_zones = data.aws_availability_zones.available.names
   subnet_ids         = aws_subnet.infra-subnet.*.id
@@ -190,7 +193,7 @@ module "iscsi_server" {
   instance_type      = var.iscsi_instancetype
   key_name           = aws_key_pair.key-pair.key_name
   security_group_id  = local.security_group_id
-  host_ips           = [local.iscsi_ip]
+  host_ips           = local.iscsi_ips
   lun_count          = var.iscsi_lun_count
   iscsi_disk_size    = var.iscsi_disk_size
 }

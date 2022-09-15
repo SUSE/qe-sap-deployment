@@ -7,7 +7,7 @@
 # iSCSI server
 
 output "iscsisrv_ip" {
-  value = join("", module.iscsi_server.iscsisrv_ip)
+  value = module.iscsi_server.iscsisrv_ip
 }
 
 output "iscsisrv_public_ip" {
