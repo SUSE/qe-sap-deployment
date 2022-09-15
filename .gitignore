@@ -11,7 +11,7 @@ terraform/**/.terraform.lock.hcl
 terraform/**/.terraform.tfstate.lock.info
 terraform/**/inventory.yaml
 terraform/**/plan.zip
-terraform/aws/plan.zip/aws_cluster_data.yaml
+terraform/aws/aws_cluster_data.yaml
 terraform/azure/fence_data.json
 ansible/playbooks/tmp
 ansible/playbooks/roles/sap_storage
