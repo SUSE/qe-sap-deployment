@@ -30,19 +30,19 @@ output "iscsisrv_public_name" {
 # Hana nodes
 
 output "hana_ip" {
-  value = module.hana_node.hana_ip
+  value = compact(module.hana_node.hana_ip)
 }
 
 output "hana_public_ip" {
-  value = module.hana_node.hana_public_ip
+  value = compact(module.hana_node.hana_public_ip)
 }
 
 output "hana_name" {
-  value = module.hana_node.hana_name
+  value = compact(module.hana_node.hana_name)
 }
 
 output "hana_public_name" {
-  value = module.hana_node.hana_public_name
+  value = compact(module.hana_node.hana_public_name)
 }
 
 # Monitoring
@@ -109,8 +109,8 @@ output "bastion_public_ip" {
 resource "local_file" "ansible_inventory" {
   content = templatefile("inventory.tmpl",
     {
-      hana-name           = module.hana_node.hana_name[0],
-      hana-pip            = module.hana_node.hana_public_ip[0],
+      hana-name           = module.hana_node.hana_name,
+      hana-pip            = module.hana_node.hana_public_ip,
       hana-major-version  = local.hana_major_version
       iscsi-name          = module.iscsi_server.iscsisrv_name,
       iscsi-pip           = module.iscsi_server.iscsisrv_public_ip,
