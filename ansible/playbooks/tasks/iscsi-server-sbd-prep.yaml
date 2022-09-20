@@ -41,6 +41,11 @@
     ansible.builtin.include_vars: ./vars/azure-iscsi-storage-profile.yaml
     when: cloud_platform_is_azure
 
+  - name: Load GCP disk configuration
+    ansible.builtin.include_vars: ./vars/gcp-iscsi-storage-profile.yaml
+    when: cloud_platform_is_gcp
+      
+
   - name: Prepare iscsi disks
     vars:
       sap_storage_cloud_type: 'generic'

@@ -18,8 +18,9 @@ module "local_execution" {
 # Netweaver virtual ips: 10.0.0.34, 10.0.0.35, 10.0.0.36, 10.0.0.37
 # If the addresses are provided by the user they will always have preference
 locals {
-  iscsi_srv_ip      = var.iscsi_srv_ip != "" ? var.iscsi_srv_ip : cidrhost(local.subnet_address_range, 4)
-  monitoring_srv_ip = var.monitoring_srv_ip != "" ? var.monitoring_srv_ip : cidrhost(local.subnet_address_range, 5)
+  monitoring_srv_ip = var.monitoring_srv_ip != "" ? var.monitoring_srv_ip : cidrhost(local.subnet_address_range, 4)
+  iscsi_ip_start = 5
+  iscsi_ips      = length(var.iscsi_ips) != 0 ? var.iscsi_ips : [for ip_index in range(local.iscsi_ip_start, var.iscsi_count + local.iscsi_ip_start) : cidrhost(local.subnet_address_range, ip_index)]
 
   hana_ip_start = 10
   hana_ips      = length(var.hana_ips) != 0 ? var.hana_ips : [for ip_index in range(local.hana_ip_start, local.hana_ip_start + var.hana_count) : cidrhost(local.subnet_address_range, ip_index)]
@@ -240,12 +241,12 @@ module "iscsi_server" {
   name                = var.iscsi_name
   network_domain      = var.iscsi_network_domain == "" ? var.network_domain : var.iscsi_network_domain
   bastion_host        = module.bastion.public_ip
-  iscsi_count         = local.iscsi_enabled == true ? 1 : 0
+  iscsi_count         = local.iscsi_enabled == true ? var.iscsi_count : 0
   machine_type        = var.machine_type_iscsi_server
   compute_zones       = local.compute_zones
   network_subnet_name = local.subnet_name
   os_image            = local.iscsi_os_image
-  host_ips            = [local.iscsi_srv_ip]
+  host_ips            = local.iscsi_ips
   lun_count           = var.iscsi_lun_count
   iscsi_disk_size     = var.iscsi_disk_size
 }

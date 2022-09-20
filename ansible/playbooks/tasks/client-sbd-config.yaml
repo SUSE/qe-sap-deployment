@@ -33,18 +33,19 @@
 - name: Check that the sbd is not already initialised
   ansible.builtin.command: sbd -d {{ item }} dump
   loop: "{{ sbd_list }}"
-  delegate_to: vmhana01
   changed_when: false
   failed_when: false
   register: sdb_safe
+  when: is_primary
 
 # Only create an sbd device when we didn't get a clean return code from the dump command
 - name: Create sdb devices
   ansible.builtin.command: sbd -d {{ item.item }} -1 60 -4 120 create
-  when: item.rc != 0
+  when: 
+    - is_primary
+    - item.rc != 0
   loop: "{{ sdb_safe.results }}"
-  delegate_to: vmhana01
-
+  
 - name: Ensure that sbd configuration file exits
   ansible.builtin.file:
     path: /etc/sysconfig/sbd
