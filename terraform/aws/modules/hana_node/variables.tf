@@ -85,6 +85,58 @@ variable "hana_data_disk_size" {
   type        = number
 }
 
+variable "hana_data_disks_configuration" {
+  type = list(object({
+    device_name = string
+    disk_type   = string
+    disk_size   = number
+  }))
+  default = [{
+    device_name = "/dev/sdb"
+    disk_type   = "gp2"
+    disk_size   = 128
+    },
+    {
+      device_name = "/dev/sdc"
+      disk_type   = "gp2"
+      disk_size   = 128
+    },
+    {
+      device_name = "/dev/sdd"
+      disk_type   = "gp2"
+      disk_size   = 128
+    },
+    {
+      device_name = "/dev/sde"
+      disk_type   = "gp2"
+      disk_size   = 128
+    },
+    {
+      device_name = "/dev/sdf"
+      disk_type   = "gp2"
+      disk_size   = 128
+    },
+    {
+      device_name = "/dev/sdg"
+      disk_type   = "gp2"
+      disk_size   = 128
+    },
+    {
+      device_name = "/dev/sdh"
+      disk_type   = "gp2"
+      disk_size   = 128
+  }]
+  description = <<EOF
+    This list of object describes how the disks will be created for AWS HANA Nodes and is very similar to Azure. Ansible expects seven disks for HANA
+    2 disks for /hana/data (would be three in a real production system)
+    2 disks for /hana/log
+    1 disk  for /hana/shared
+    1 disk  for /usr/sap
+    1 disk  for /backup
+    The default size for all disks is 128GiB, which provides a balance of performance and cost
+  EOF
+}
+
 variable "iscsi_srv_ip" {
   description = "iscsi server address"
   type        = string

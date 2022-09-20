@@ -3,6 +3,13 @@
   remote_user: cloudadmin
   become: true
   become_user : root
+  pre_tasks:
+  - name: Detect cloud platform
+    ansible.builtin.include_tasks:
+      ./tasks/detect-cloud-platform.yaml
+  - name: Detection result
+    ansible.builtin.debug:
+      msg: "Cloud platform appears to be {{ cloud_platform_name }}"
 
   tasks:
 
@@ -72,7 +79,17 @@
       loop_var: idx
     when: inventory_hostname in groups.hana
 
-
+  - name: Ensure hostnames are preserved [aws]
+    ansible.builtin.lineinfile:
+      path: /etc/cloud/cloud.cfg
+      regexp: '^preserve_hostname:'
+      line: 'preserve_hostname: true'
+      mode: '0544'
+      owner: root
+      group: root
+      create: yes
+      backup: yes
+    when: cloud_platform_is_aws
       
   
 

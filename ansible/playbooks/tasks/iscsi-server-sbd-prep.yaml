@@ -33,6 +33,14 @@
       - yast2-iscsi-lio-server
       - targetcli-fb
 
+  - name: Load AWS disk configuration
+    ansible.builtin.include_vars: ./vars/aws-iscsi-storage-profile.yaml
+    when: cloud_platform_is_aws
+
+  - name: Load Azure disk configuration
+    ansible.builtin.include_vars: ./vars/azure-iscsi-storage-profile.yaml
+    when: cloud_platform_is_azure
+
   - name: Prepare iscsi disks
     vars:
       sap_storage_cloud_type: 'generic'

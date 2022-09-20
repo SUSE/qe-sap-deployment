@@ -52,27 +52,36 @@ resource "aws_instance" "hana" {
   instance_type               = var.instance_type
   key_name                    = var.key_name
   associate_public_ip_address = true
-  subnet_id                   = element(aws_subnet.hana-subnet.*.id, count.index)
-  private_ip                  = element(var.host_ips, count.index)
-  vpc_security_group_ids      = [var.security_group_id]
-  availability_zone           = element(var.availability_zones, count.index)
-  source_dest_check           = false
-  user_data                   = templatefile("${path.root}/adminuser.tpl", { username = var.common_variables["authorized_user"], publickey = var.common_variables["public_key"] })
+  #disable_api_stop            = false # see https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-on-aws-cluster-configuration.html
+  subnet_id              = element(aws_subnet.hana-subnet.*.id, count.index)
+  private_ip             = element(var.host_ips, count.index)
+  vpc_security_group_ids = [var.security_group_id]
+  availability_zone      = element(var.availability_zones, count.index)
+  source_dest_check      = false
+  user_data              = templatefile("${path.root}/adminuser.tpl", { username = var.common_variables["authorized_user"], publickey = var.common_variables["public_key"], hostname = "${var.name}${format("%02d", count.index + 1)}", domain = var.network_domain })
 
   root_block_device {
     volume_type = "gp2"
     volume_size = "60"
   }
 
-  ebs_block_device {
-    volume_type = var.hana_data_disk_type
-    volume_size = var.hana_data_disk_size
-    device_name = "/dev/sdb"
+  dynamic "ebs_block_device" {
+    for_each = var.hana_data_disks_configuration
+    content {
+      volume_type = ebs_block_device.value["disk_type"]
+      volume_size = ebs_block_device.value["disk_size"]
+      device_name = ebs_block_device.value["device_name"]
+
+    }
   }
 
   volume_tags = {
     Name = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
   }
+
+  #maintenance_options {
+  #  auto_recovery = "disabled" # see https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-on-aws-cluster-configuration.html
+  #}
 
   tags = {
     Name                                                 = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"

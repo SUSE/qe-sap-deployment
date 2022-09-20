@@ -4,8 +4,12 @@
   become: true
   become_user: root
   pre_tasks:
-    - name: include iscsi storage profile
-      ansible.builtin.include_vars: ./vars/iscsi-storage-profile.yaml
+    - name: Detect cloud platform
+      ansible.builtin.include_tasks:
+        ./tasks/detect-cloud-platform.yaml
+    - name: Detection result
+      ansible.builtin.debug:
+        msg: "Cloud platform appears to be {{ cloud_platform_name }}"
     - name: include sdb vars
       ansible.builtin.include_vars: ./vars/sbd-parameters.yaml
   vars:

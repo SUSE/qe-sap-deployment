@@ -496,6 +496,21 @@ variable "iscsi_name" {
   default     = "vmiscsi"
 }
 
+# If iscsi is selected as sbd_storage_type
+# Use the next variables for advanced configuration
+
+variable "iscsi_count" {
+  description = "The number of iscsi servers to deploy"
+  type        = number
+  default     = 1
+  validation {
+    condition = (
+      var.iscsi_count >= 1 && var.iscsi_count <= 3
+    )
+    error_message = "The number of iscsi server must be 1, 2 or 3."
+  }
+}
+
 variable "iscsi_network_domain" {
   description = "hostname's network domain"
   type        = string
@@ -529,6 +544,19 @@ variable "iscsi_srv_ip" {
       var.iscsi_srv_ip == "" || can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", var.iscsi_srv_ip))
     )
     error_message = "Invalid IP address format."
+  }
+}
+
+variable "iscsi_ips" {
+  description = "ip addresses to set to the iscsi nodes. If it's not set the addresses will be auto generated from the provided vnet address range.  Up to three IP addresses may be set"
+  type        = list(string)
+  default     = []
+  validation {
+    condition = (
+      can([for v in var.iscsi_ips : regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", v)])
+    )
+    error_message = "Invalid IP address format."
+
   }
 }
 

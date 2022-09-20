@@ -7,7 +7,7 @@
 # iSCSI server
 
 output "iscsisrv_ip" {
-  value = join("", module.iscsi_server.iscsisrv_ip)
+  value = module.iscsi_server.iscsisrv_ip
 }
 
 output "iscsisrv_public_ip" {
@@ -98,11 +98,21 @@ output "netweaver_public_name" {
 resource "local_file" "ansible_inventory" {
   content = templatefile("inventory.tmpl",
     {
-      hana-name     = module.hana_node.hana_name,
-      hana-pip      = module.hana_node.hana_public_ip,
-      iscsi-name    = module.iscsi_server.iscsisrv_name,
-      iscsi-pip     = module.iscsi_server.iscsisrv_public_ip,
-      iscsi-enabled = local.iscsi_enabled
+      hana_hostname  = var.hana_name,
+      hana-pip       = module.hana_node.hana_public_ip,
+      iscsi_hostname = var.iscsi_name,
+      iscsi-pip      = module.iscsi_server.iscsisrv_public_ip,
+      iscsi-enabled  = local.iscsi_enabled
   })
   filename = "inventory.yaml"
+}
+
+# Additional cluster information
+resource "local_file" "cluster_data" {
+  content = templatefile("aws_cluster_data.tftpl",
+    {
+      routetable_id = aws_route_table.route-table.id,
+      virtual_ip    = module.hana_node.hana_vip
+  })
+  filename = "aws_cluster_data.yaml"
 }

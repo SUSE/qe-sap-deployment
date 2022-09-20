@@ -1,0 +1,64 @@
+---
+- name: Set base facts
+  ansible.builtin.set_fact:
+    cloud_platform_is_aws:   false
+    cloud_platform_is_gcp:   false
+    cloud_platform_is_azure: false
+    
+- name: "Detect AWS"
+  block:
+
+    - name: "Probe for AWS"
+      ansible.builtin.command: dmidecode -s system-manufacturer # | grep -iq "Amazon EC2"
+      changed_when: false
+      failed_when: false
+      register: probe_aws
+    
+    - name: Set AWS discovery fact
+      ansible.builtin.set_fact:
+        cloud_platform_is_aws: true
+      when:
+        - probe_aws.rc == 0
+        - probe_aws.stdout | lower == 'amazon ec2'
+
+# SEE: https://stackoverflow.com/questions/30911775/how-to-know-if-a-machine-is-an-google-compute-engine-instance
+- name: "Detect GCP"
+  block:
+
+    - name: "Probe for GCP"
+      ansible.builtin.command: dmidecode -s bios-version #| grep -iq "google"
+      changed_when: false
+      failed_when: false
+      register: probe_gcp
+    
+    - name: Set GCP discovery fact
+      ansible.builtin.set_fact:
+        cloud_platform_is_gcp: true
+      when:
+        - probe_gcp.rc == 0
+        - probe_gcp.stdout | lower == 'google'
+
+# SEE: https://stackoverflow.com/questions/11570965/how-to-detect-azure-amazon-vm
+- name: "Detect Azure"
+  block:
+
+    - name: "Probe for Azure 1/2"
+      ansible.builtin.command: dmidecode -s system-manufacturer # | grep -iq "microsoft corporation"
+      changed_when: false
+      failed_when: false
+      register: probe_azure_1
+    
+    - name: "Probe for Azure 2/2"
+      ansible.builtin.command: dmidecode -s system-product-name #| grep -iq "virtual machine"
+      changed_when: false
+      failed_when: false
+      register: probe_azure_2
+    
+    - name: Set Azure Discovery Fact
+      ansible.builtin.set_fact:
+       cloud_platform_is_azure: true
+      when: probe_azure_1.rc == 0 and probe_azure_1.stdout | lower == 'microsoft corporation' or probe_azure_2.rc == 0 and probe_azure_2.stdout | lower == 'virtual machine'
+
+- name: "Set Cloud Platform"
+  set_fact:
+    cloud_platform_name: "{% if cloud_platform_is_azure %}azure{% elif cloud_platform_is_aws %}aws{% elif cloud_platform_is_gcp %}gcp{% else %}unknown{% endif %}"

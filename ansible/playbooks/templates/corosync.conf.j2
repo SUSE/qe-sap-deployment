@@ -1,0 +1,46 @@
+totem {
+        version: 2
+        token: 30000
+        consensus: 36000
+        token_retransmits_before_loss_const: 6
+        crypto_cipher: {{ crypto_cipher }}
+        crypto_hash: {{ crypto_hash }}
+        clear_node_high_bit: yes
+        rrp_mode: passive
+
+        interface {
+                ringnumber: 0
+                bindnetaddr: {{ ansible_facts['eth0']['ipv4']['address'] }}
+                mcastport: 5405
+                ttl: 1
+        }
+        transport: udpu
+}
+logging {
+        fileline: off
+        to_logfile: yes
+        to_syslog: yes
+        logfile: /var/log/cluster/corosync.log
+        debug: off
+        timestamp: on
+        logger_subsys {
+                subsys: QUORUM
+                debug: off
+        }
+}
+nodelist {
+{% for host in ansible_play_batch %}
+       node {
+               ring0_addr: {{ hostvars[host]['ansible_facts']['eth0']['ipv4']['address'] }}
+               nodeid: {{ loop.index }}
+       }
+{% endfor %}
+}
+
+        quorum {
+        # Enable and configure quorum subsystem (default: off)
+        # see also corosync.conf.5 and votequorum.5
+        provider: corosync_votequorum
+        expected_votes: 2
+        two_node: 1
+        }

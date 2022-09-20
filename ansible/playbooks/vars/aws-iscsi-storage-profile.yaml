@@ -1,0 +1,10 @@
+sap_storage_dict:
+  iscsi:
+    name: 'sbd'
+    directory: '/srv/sbd'
+    vg: 'sbdvg'
+    lv: 'sbdlv'
+    pv: ["/dev/nvme1n1"]
+    numluns: '1'
+    stripesize: ''
+    

@@ -4,7 +4,8 @@
   become: true
   become_user: root
   vars:
-    provider: azure # only provider for now
+    # is_primary is selected so that tasks that need to be issued one are honoured correctly
+    is_primary: "{{ ansible_play_hosts[0] == inventory_hostname }}"
     use_sbd: yes
     #Azure fencing specific vars
     subscription_id: 
@@ -12,24 +13,57 @@
     tenant_id:
     application_id:
     app_password:
-  
+    # corosync variables
+    crypto_hash: sha1
+    crypto_cipher: aes256
+      
   handlers:
   - name: Restart systemd daemon
     ansible.builtin.systemd:
       daemon_reload: yes
 
+  - name: Start pacemaker
+    ansible.builtin.systemd:
+      name: pacemaker
+      state: started
+
+  pre_tasks:
+    - name: Detect cloud platform
+      ansible.builtin.include_tasks:
+        ./tasks/detect-cloud-platform.yaml
+    - name: Detection result
+      ansible.builtin.debug:
+        msg: "Cloud platform appears to be {{ cloud_platform_name }}"
+
   tasks:
 
-  - name: Base Cluster [azure]
+  - name: Include AWS variables
+    ansible.builtin.include_vars: ../../terraform/aws/aws_cluster_data.yaml
+    when: cloud_platform_is_aws
+      
+
+  - name: Base Cluster Configuration [azure]
     ansible.builtin.include_tasks: ./tasks/azure-cluster-bootstrap.yaml
-    when: provider == "azure"
+    when: cloud_platform_is_azure
     tags: bootstrap
 
+  - name: Base Cluster Configuration [aws]
+    ansible.builtin.include_tasks: ./tasks/aws-cluster-bootstrap.yaml
+    when: cloud_platform_is_aws
+    tags: bootstrap
+    
+
+  #TODO: Get rid of hardcoded hostnames!!!
   - name: Add HANA to cluster [azure]
     ansible.builtin.include_tasks: ./tasks/azure-cluster-hana.yaml
     when:
-      - provider == "azure"
-      - ansible_hostname == 'vmhana01'
+      - cloud_platform_is_azure
+      - is_primary
     tags: hana_cluster
 
- 
+  - name: Add HANA to cluster [aws]
+    ansible.builtin.include_tasks: ./tasks/aws-cluster-hana.yaml
+    when:
+      - cloud_platform_is_aws
+      - is_primary
+
