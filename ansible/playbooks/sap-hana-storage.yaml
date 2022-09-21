@@ -21,6 +21,10 @@
     ansible.builtin.include_vars: ./vars/azure_hana_storage_profile.yaml
     when: cloud_platform_is_azure
 
+  - name: Load Azure disk configuration
+    ansible.builtin.include_vars: ./vars/gcp_hana_storage_profile.yaml
+    when: cloud_platform_is_gcp
+
   - name: HANA storage preparation
     vars:
       sap_storage_cloud_type: 'generic'
