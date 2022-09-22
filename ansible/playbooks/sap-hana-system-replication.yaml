@@ -26,6 +26,10 @@
     include_vars: ./vars/azure_hana_hsr_parameters.yaml
     when: cloud_platform_is_azure
 
+  - name: Load GCP system replication vars
+    include_vars: ./vars/gcp_hana_hsr_parameters.yaml
+    when: cloud_platform_is_gcp
+
   - name: Check for previous HSR configuration
     ansible.builtin.file:
       path: "{{ hsr_cnf_file }}"

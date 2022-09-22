@@ -40,7 +40,10 @@
   - name: Include AWS variables
     ansible.builtin.include_vars: ../../terraform/aws/aws_cluster_data.yaml
     when: cloud_platform_is_aws
-      
+
+  - name: Include GCP variables
+    ansible.builtin.include_vars: ../../terraform/gcp/gcp_cluster_data.yaml
+    when: cloud_platform_is_gcp      
 
   - name: Base Cluster Configuration [azure]
     ansible.builtin.include_tasks: ./tasks/azure-cluster-bootstrap.yaml
@@ -50,6 +53,11 @@
   - name: Base Cluster Configuration [aws]
     ansible.builtin.include_tasks: ./tasks/aws-cluster-bootstrap.yaml
     when: cloud_platform_is_aws
+    tags: bootstrap
+
+  - name: Base Cluster Configuration [gcp]
+    ansible.builtin.include_tasks: ./tasks/cluster-bootstrap.yaml
+    when: cloud_platform_is_gcp
     tags: bootstrap
     
 

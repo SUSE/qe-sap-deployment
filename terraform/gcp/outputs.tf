@@ -112,3 +112,14 @@ resource "local_file" "ansible_inventory" {
   })
   filename = "inventory.yaml"
 }
+
+# Cluster data for ansible
+resource "local_file" "cluster_data" {
+  content = templatefile("gcp_cluster_data.tfpl",
+    {
+      virtual_ip    = local.hana_cluster_vip_route,
+      cidr_netmask  = local.subnet_address_range
+   
+  })
+  filename = "gcp_cluster_data.yaml"
+}
