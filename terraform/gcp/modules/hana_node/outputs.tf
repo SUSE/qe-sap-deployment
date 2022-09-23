@@ -13,3 +13,8 @@ output "hana_name" {
 output "hana_public_name" {
   value = []
 }
+
+output "hana_vip" {
+  description = "The cluster IP address"
+  value = var.common_variables["hana"]["cluster_vip"]
+}

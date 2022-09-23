@@ -6,6 +6,7 @@
   vars:
     # is_primary is selected so that tasks that need to be issued one are honoured correctly
     is_primary: "{{ ansible_play_hosts[0] == inventory_hostname }}"
+    primary_hostname: "{{ ansible_play_hosts[0] }}"
     use_sbd: yes
     #Azure fencing specific vars
     subscription_id: 
@@ -73,5 +74,11 @@
     ansible.builtin.include_tasks: ./tasks/aws-cluster-hana.yaml
     when:
       - cloud_platform_is_aws
+      - is_primary
+
+  - name: Add HANA to cluster [gcp]
+    ansible.builtin.include_tasks: ./tasks/cluster-hana.yaml
+    when:
+      - cloud_platform_is_gcp
       - is_primary
 

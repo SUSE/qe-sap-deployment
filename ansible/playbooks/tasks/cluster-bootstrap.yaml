@@ -211,9 +211,13 @@
     stonith_action: "{{ (crm_conf_show.stdout | regex_search('stonith-action=([a-z]*)', '\\1' ))[0] | default('false') }}"
     stonith_timeout: "{{ (crm_conf_show.stdout | regex_search('stonith-timeout=([a-z0-9]*)', '\\1' ))[0] | default('false') }}"
     rsc_ip: "{{ crm_conf_show.stdout | regex_search('(rsc_ip_)') }}"
+    rsc_healthcheck_primary: "{{ crm_conf_show.stdout | regex_search('(rsc_healthcheck_primary)') }}"
+    grp_ip_hc: "{{ crm_conf_show.stdout | regex_search('(grp_ip_hc)') }}"
     resource_stickiness: "{{ (crm_rsc_options_show.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1' ))[0] | default('false') }}"
     migration_threshold: "{{ (crm_rsc_options_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1' ))[0] | default('false') }}"
     op_default_timeout: "{{ (crm_op_options_show.stdout | regex_search('timeout=([0-9]*)', '\\1' ))[0] | default('false') }}"
+  
+    
 
 - name: Enable SBD [sbd]
   ansible.builtin.command: crm configure primitive rsc_iscsi_sbd stonith:external/sbd    
@@ -283,6 +287,7 @@
     - is_primary
 
 - name: Configure cluster IP [aws]
+#TODO Contains hardcoded SID and instance number that should be based on a variable
   ansible.builtin.command: "crm configure primitive rsc_ip_HDB_HDB00 ocf:suse:aws-vpc-move-ip params ip={{ aws_cluster_ip }} routing_table={{ aws_route_table }} interface=eth0 profile=default op start interval=0 timeout=180 op stop interval=0 timeout=180 op monitor interval=60 timeout=60"
   when:
     - rsc_ip | length == 0
@@ -290,10 +295,51 @@
     - cloud_platform_is_aws
 
 - name: Configure cluster IP [gcp]
-  ansible.builtin.command: "crm configure primitive rsc_ip_HDB_HDB00 ocf:suse:aws-vpc-move-ip params ip={{ aws_cluster_ip }} routing_table={{ aws_route_table }} interface=eth0 profile=default op start interval=0 timeout=180 op stop interval=0 timeout=180 op monitor interval=60 timeout=60"
+#TODO Contains hardcoded SID and instance number that should be based on a variable
+  ansible.builtin.command: "crm configure primitive rsc_ip_HDB_HDB00 IPaddr2 params ip={{ gcp_cluster_ip }} cidr_netmask=32 nic=eth0 op monitor interval=3600s timeout=60s"
   when:
     - rsc_ip | length == 0
     - is_primary
-    - cloud_platform_is_aws
-    
-  
+    - cloud_platform_is_gcp
+
+#TODO - ensure VIP is located on the primary before continuing 
+- name: Locate cluster IP
+#TODO Contains hardcoded SID and instance number that should be based on a variable
+  ansible.builtin.command: "crm resource locate rsc_ip_HDB_HDB00"
+  register: reg_vip_location
+  changed_when: no
+  when: is_primary
+
+- name: Move cluster IP to primary HANA node
+#TODO Contains hardcoded SID and instance number that should be based on a variable
+  ansible.builtin.command: "crm resource move rsc_ip_HDB_HDB00 {{ primary_hostname }}"
+  when: 
+    - is_primary
+    - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
+
+- name: Wait for move IP move to complete
+#TODO Contains hardcoded SID and instance number that should be based on a variable
+  ansible.builtin.command: "crm resource locate rsc_ip_HDB_HDB00"
+  register: reg_vip_location2
+  when:
+    - is_primary
+    - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
+  until: reg_vip_location2.stdout | trim | split(' ') | last == primary_hostname
+  retries: 10
+  delay: 6    
+
+- name: Configure primary health check [gcp] 
+#TODO Contains hardcoded instance number that should be based on a variable
+  ansible.builtin.command: "crm configure primitive rsc_healthcheck_primary anything params binfile=\"/usr/bin/socat\" cmdline_options=\"-U TCP-LISTEN:62600,backlog=10,fork,reuseaddr /dev/null\" op monitor timeout=20s interval=10s op_params depth=0"    
+  when:
+    - is_primary
+    - cloud_platform_is_gcp
+    - rsc_healthcheck_primary | length == 0
+
+- name: Configure cluster IP and health check probe [gcp]
+#TODO Contains hardcoded instance number that should be based on a variable
+  ansible.builtin.command: crm configure group grp_ip_hc rsc_ip_HDB_HDB00 rsc_healthcheck_primary
+  when:
+    - is_primary
+    - grp_ip_hc | length == 0
+    - cloud_platform_is_gcp

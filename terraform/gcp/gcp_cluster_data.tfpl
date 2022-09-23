@@ -1,0 +1,1 @@
+gcp_cluster_ip: ${virtual_ip}

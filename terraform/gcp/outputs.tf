@@ -117,9 +117,7 @@ resource "local_file" "ansible_inventory" {
 resource "local_file" "cluster_data" {
   content = templatefile("gcp_cluster_data.tfpl",
     {
-      virtual_ip    = local.hana_cluster_vip_route,
-      cidr_netmask  = local.subnet_address_range
-   
+      virtual_ip    = module.hana_node.hana_vip
   })
   filename = "gcp_cluster_data.yaml"
 }
