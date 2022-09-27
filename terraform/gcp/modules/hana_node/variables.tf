@@ -60,7 +60,7 @@ variable "host_ips" {
 
 variable "iscsi_srv_ip" {
   description = "iscsi server address"
-  type        = string
+  type        = list(string)
 }
 
 variable "hana_data_disk_type" {

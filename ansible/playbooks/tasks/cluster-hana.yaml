@@ -17,7 +17,7 @@
     ip_nc: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_socat_') }}"
     ip_grp: "{{ crm_conf_hana_show.stdout | regex_search('group g_ip_') }}"
     ip_colo: "{{ crm_conf_hana_show.stdout | regex_search('colocation col_saphana_ip_') }}"
-    order: "{{ crm_conf_hana_show.stdout | regex_search('order ord_SAPHana_') }}"
+    order: "{{ crm_conf_hana_show.stdout | regex_search('order ord_SAPHana') }}"
   when: is_primary
   changed_when: no
 
@@ -93,3 +93,16 @@
   when:
     - is_primary
     - refreshed_crm_maintainence_mode is true or refreshed_crm_maintainence_mode == 'unknown'
+  
+- name: Get cluster state
+  ansible.builtin.command: crm status
+  register: reg_crm_status
+  when: is_primary
+
+- name: Cleanup if needed
+  #TODO this task has hardcoded SID and instance number values which should be variables!  
+  ansible.builtin.command: crm resource cleanup rsc_SAPHana_HDB_HDB00
+  when:
+    - reg_crm_status.stdout | regex_search('Failed Resource Actions') | trim | length != 0 
+    - is_primary
+    

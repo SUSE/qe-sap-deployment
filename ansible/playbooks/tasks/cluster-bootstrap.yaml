@@ -256,11 +256,12 @@
     - stonith_enabled | string | lower != 'true'
     - is_primary
 
-- name: Disable stonith action
+- name: Disable stonith action [aws]
   ansible.builtin.command: crm configure property \$id="cib-bootstrap-options" stonith-action=off
   when:
     - stonith_action != 'off'
     - is_primary
+    - cloud_platform_is_aws
 
 - name: Set rsc_defaults resource stickiness [aws/gcp]
   ansible.builtin.command: crm configure rsc_defaults \$id="rsc-options" resource-stickiness=1000
@@ -310,12 +311,28 @@
   changed_when: no
   when: is_primary
 
-- name: Move cluster IP to primary HANA node
-#TODO Contains hardcoded SID and instance number that should be based on a variable
-  ansible.builtin.command: "crm resource move rsc_ip_HDB_HDB00 {{ primary_hostname }}"
+- name: Where is the IP?
+  ansible.builtin.debug:
+    var: reg_vip_location.stdout
+  when: is_primary
+
+- name: This is the command
+  ansible.builtin.debug:
+    msg: "crm resource move rsc_ip_HDB_HDB00 {{ primary_hostname }}"
   when: 
     - is_primary
     - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
+
+- name: Move cluster IP to primary HANA node
+#TODO Contains hardcoded SID and instance number that should be based on a variable
+  ansible.builtin.command: "crm resource move rsc_ip_HDB_HDB00 {{ primary_hostname }}"
+  register: reg_move_cmd
+  when: 
+    - is_primary
+    - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
+  until: reg_move_cmd.rc == 0
+  retries: 10
+  delay: 6
 
 - name: Wait for move IP move to complete
 #TODO Contains hardcoded SID and instance number that should be based on a variable
@@ -330,7 +347,7 @@
 
 - name: Configure primary health check [gcp] 
 #TODO Contains hardcoded instance number that should be based on a variable
-  ansible.builtin.command: "crm configure primitive rsc_healthcheck_primary anything params binfile=\"/usr/bin/socat\" cmdline_options=\"-U TCP-LISTEN:62600,backlog=10,fork,reuseaddr /dev/null\" op monitor timeout=20s interval=10s op_params depth=0"    
+  ansible.builtin.command: "crm configure primitive rsc_healthcheck_primary anything params binfile=\"/usr/bin/socat\" cmdline_options=\"-U TCP-LISTEN:62500,backlog=10,fork,reuseaddr /dev/null\" op monitor timeout=20s interval=10s op_params depth=0"    
   when:
     - is_primary
     - cloud_platform_is_gcp
