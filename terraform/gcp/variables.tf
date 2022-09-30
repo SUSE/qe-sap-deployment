@@ -856,3 +856,41 @@ variable "pre_deployment" {
   type        = bool
   default     = false
 }
+
+# The following variables provide an opportunity to override the automatic major os detection if it proves problematic
+
+variable hana_os_major_version {
+  description = "The major OS version of SLES HANA VMs.  If not set, this value will be computed.  Example: 15"
+  type = string
+  default = ""
+}
+
+variable iscsi_os_major_version {
+  description = "The major OS version of iscsi HANA VMs.  If not set, this value will be computed.  Example: 15"
+  type = string
+  default = ""
+}
+
+variable drdb_os_major_version {
+  description = "The major OS version of iscsi drdb VMs.  If not set, this value will be computed.  Example: 15"
+  type = string
+  default = ""
+}
+
+variable netweaver_os_major_version {
+  description = "The major OS version of netweaver drdb VMs.  If not set, this value will be computed.  Example: 15"
+  type = string
+  default = ""
+}
+
+variable "bastion_os_major_version" {
+  description = "The major OS version of SLES bastion VMs.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
+}
+
+variable "monitoring_os_major_version" {
+  description = "The major OS version of SLES monitoring VMs.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
+}

@@ -109,6 +109,8 @@ resource "local_file" "ansible_inventory" {
       iscsi-name    = module.iscsi_server.iscsisrv_name,
       iscsi-pip     = module.iscsi_server.iscsisrv_public_ip,
       iscsi-enabled = local.iscsi_enabled
+      hana-major-version  = local.hana_major_version
+      iscsi-major-version = local.iscsi_major_version
   })
   filename = "inventory.yaml"
 }

@@ -311,18 +311,6 @@
   changed_when: no
   when: is_primary
 
-- name: Where is the IP?
-  ansible.builtin.debug:
-    var: reg_vip_location.stdout
-  when: is_primary
-
-- name: This is the command
-  ansible.builtin.debug:
-    msg: "crm resource move rsc_ip_HDB_HDB00 {{ primary_hostname }}"
-  when: 
-    - is_primary
-    - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
-
 - name: Move cluster IP to primary HANA node
 #TODO Contains hardcoded SID and instance number that should be based on a variable
   ansible.builtin.command: "crm resource move rsc_ip_HDB_HDB00 {{ primary_hostname }}"
@@ -344,6 +332,14 @@
   until: reg_vip_location2.stdout | trim | split(' ') | last == primary_hostname
   retries: 10
   delay: 6    
+
+- name: Clear the move constraint
+#TODO Contains hardcoded SID and instance number that should be based on a variable
+  ansible.builtin.command: crm resource clear rsc_ip_HDB_HDB00
+  when:
+    - is_primary
+    - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
+    
 
 - name: Configure primary health check [gcp] 
 #TODO Contains hardcoded instance number that should be based on a variable
