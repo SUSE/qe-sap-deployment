@@ -19,8 +19,8 @@ module "local_execution" {
 # If the addresses are provided by the user they will always have preference
 locals {
   monitoring_srv_ip = var.monitoring_srv_ip != "" ? var.monitoring_srv_ip : cidrhost(local.subnet_address_range, 4)
-  iscsi_ip_start = 5
-  iscsi_ips      = length(var.iscsi_ips) != 0 ? var.iscsi_ips : [for ip_index in range(local.iscsi_ip_start, var.iscsi_count + local.iscsi_ip_start) : cidrhost(local.subnet_address_range, ip_index)]
+  iscsi_ip_start    = 5
+  iscsi_ips         = length(var.iscsi_ips) != 0 ? var.iscsi_ips : [for ip_index in range(local.iscsi_ip_start, var.iscsi_count + local.iscsi_ip_start) : cidrhost(local.subnet_address_range, ip_index)]
 
   hana_ip_start = 10
   hana_ips      = length(var.hana_ips) != 0 ? var.hana_ips : [for ip_index in range(local.hana_ip_start, local.hana_ip_start + var.hana_count) : cidrhost(local.subnet_address_range, ip_index)]

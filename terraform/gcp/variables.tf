@@ -516,7 +516,7 @@ variable "iscsi_ips" {
   default     = []
   validation {
     condition = (
-       can([for v in var.iscsi_ips : regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", v)])
+      can([for v in var.iscsi_ips : regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", v)])
     )
     error_message = "Invalid IP address format."
   }
@@ -859,28 +859,28 @@ variable "pre_deployment" {
 
 # The following variables provide an opportunity to override the automatic major os detection if it proves problematic
 
-variable hana_os_major_version {
+variable "hana_os_major_version" {
   description = "The major OS version of SLES HANA VMs.  If not set, this value will be computed.  Example: 15"
-  type = string
-  default = ""
+  type        = string
+  default     = ""
 }
 
-variable iscsi_os_major_version {
+variable "iscsi_os_major_version" {
   description = "The major OS version of iscsi HANA VMs.  If not set, this value will be computed.  Example: 15"
-  type = string
-  default = ""
+  type        = string
+  default     = ""
 }
 
-variable drdb_os_major_version {
+variable "drdb_os_major_version" {
   description = "The major OS version of iscsi drdb VMs.  If not set, this value will be computed.  Example: 15"
-  type = string
-  default = ""
+  type        = string
+  default     = ""
 }
 
-variable netweaver_os_major_version {
+variable "netweaver_os_major_version" {
   description = "The major OS version of netweaver drdb VMs.  If not set, this value will be computed.  Example: 15"
-  type = string
-  default = ""
+  type        = string
+  default     = ""
 }
 
 variable "bastion_os_major_version" {
