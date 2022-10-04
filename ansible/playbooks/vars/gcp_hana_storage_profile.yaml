@@ -1,0 +1,51 @@
+sap_storage_dict:
+  hanadata:
+    name: 'hanadata'
+    directory: '/hana/data'
+    vg: 'hanadatavg'
+    lv: 'hanadatalv'
+    pv: ["/dev/disk/by-id/google-hana-data"]
+    numluns: '1'
+    stripesize: ''
+# LVM striped partition
+  hanalog:
+    name: 'hanalog'
+    directory: '/hana/log'
+    vg: 'hanalogvg'
+    lv: 'hanaloglv'
+    pv: ["/dev/disk/by-id/google-hana-log"]
+    numluns: '1'
+    stripesize: ''
+  hanashared:
+    name: 'hanashared'
+    directory: '/hana/shared'
+    vg: 'hanasharedvg'
+    lv: 'hanasharedlv'
+    pv: ["/dev/disk/by-id/google-hana-shared"]
+    numluns: '1'
+    stripesize: ''
+  usrsap:
+    name: 'usrsap'
+    directory: '/usr/sap'
+    vg: 'usrsapvg'
+    lv: 'usrsaplv'
+    pv: ["/dev/disk/by-id/google-usr-sap"]
+    numluns: '1'
+    stripesize: ''
+  backup:
+    name: 'backup'
+    directory: '/backup'
+    vg: 'backupvg'
+    lv: 'backuplv'
+    pv: ["/dev/disk/by-id/google-hana-backup"]
+    numluns: '1'
+    stripesize: ''
+  install:
+    name: 'install'
+    directory: '/hana/install'
+    vg: 'installvg'
+    lv: 'installlv'
+    pv: ["/dev/disk/by-id/google-hana-software"]
+    numluns: '1'
+    stripesize: ''
+  

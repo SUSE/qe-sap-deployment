@@ -11,23 +11,47 @@ locals {
 # HANA disks configuration information: https://cloud.google.com/solutions/sap/docs/sap-hana-planning-guide#storage_configuration
 resource "google_compute_disk" "data" {
   count = var.hana_count
-  name  = "${var.common_variables["deployment_name"]}-hana-data-${count.index}"
+  name  = "hana-data"
   type  = var.hana_data_disk_type
   size  = var.hana_data_disk_size
   zone  = element(var.compute_zones, count.index)
 }
 
+resource "google_compute_disk" "log" {
+  count = var.hana_count
+  name  = "hana-log"
+  type  = var.hana_log_disk_type
+  size  = var.hana_log_disk_size
+  zone  = element(var.compute_zones, count.index)
+}
+
+resource "google_compute_disk" "shared" {
+  count = var.hana_count
+  name  = "hana-shared"
+  type  = var.hana_shared_disk_type
+  size  = var.hana_shared_disk_size
+  zone  = element(var.compute_zones, count.index)
+}
+
 resource "google_compute_disk" "backup" {
   count = var.hana_count
-  name  = "${var.common_variables["deployment_name"]}-hana-backup-${count.index}"
+  name  = "hana-backup"
   type  = var.hana_backup_disk_type
   size  = var.hana_backup_disk_size
   zone  = element(var.compute_zones, count.index)
 }
 
+resource "google_compute_disk" "usr_sap" {
+  count = var.hana_count
+  name  = "usr-sap"
+  type  = var.hana_usr_sap_disk_type
+  size  = var.hana_usr_sap_disk_size
+  zone  = element(var.compute_zones, count.index)
+}
+
 resource "google_compute_disk" "hana-software" {
   count = var.hana_count
-  name  = "${var.common_variables["deployment_name"]}-hana-software-${count.index}"
+  name  = "hana-software"
   type  = "pd-standard"
   size  = "20"
   zone  = element(var.compute_zones, count.index)
@@ -140,8 +164,26 @@ resource "google_compute_instance" "clusternodes" {
   }
 
   attached_disk {
+    source      = element(google_compute_disk.log.*.self_link, count.index)
+    device_name = element(google_compute_disk.log.*.name, count.index)
+    mode        = "READ_WRITE"
+  }
+
+  attached_disk {
+    source      = element(google_compute_disk.shared.*.self_link, count.index)
+    device_name = element(google_compute_disk.shared.*.name, count.index)
+    mode        = "READ_WRITE"
+  }
+
+  attached_disk {
     source      = element(google_compute_disk.backup.*.self_link, count.index)
     device_name = element(google_compute_disk.backup.*.name, count.index)
+    mode        = "READ_WRITE"
+  }
+
+  attached_disk {
+    source      = element(google_compute_disk.usr_sap.*.self_link, count.index)
+    device_name = element(google_compute_disk.usr_sap.*.name, count.index)
     mode        = "READ_WRITE"
   }
 
@@ -150,6 +192,7 @@ resource "google_compute_instance" "clusternodes" {
     device_name = element(google_compute_disk.hana-software.*.name, count.index)
     mode        = "READ_WRITE"
   }
+
 
   metadata = {
     sshKeys = "${var.common_variables["authorized_user"]}:${var.common_variables["public_key"]}"

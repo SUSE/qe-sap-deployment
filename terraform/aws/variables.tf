@@ -499,6 +499,12 @@ variable "iscsi_name" {
 # If iscsi is selected as sbd_storage_type
 # Use the next variables for advanced configuration
 
+variable "iscsi_network_domain" {
+  description = "hostname's network domain"
+  type        = string
+  default     = ""
+}
+
 variable "iscsi_count" {
   description = "The number of iscsi servers to deploy"
   type        = number
@@ -509,12 +515,6 @@ variable "iscsi_count" {
     )
     error_message = "The number of iscsi server must be 1, 2 or 3."
   }
-}
-
-variable "iscsi_network_domain" {
-  description = "hostname's network domain"
-  type        = string
-  default     = ""
 }
 
 variable "iscsi_os_image" {
@@ -533,18 +533,6 @@ variable "iscsi_instancetype" {
   description = "The instance type of the iscsi server node."
   type        = string
   default     = "t3.micro"
-}
-
-variable "iscsi_srv_ip" {
-  description = "iscsi server address. It should be in same iprange as host_ips"
-  type        = string
-  default     = ""
-  validation {
-    condition = (
-      var.iscsi_srv_ip == "" || can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", var.iscsi_srv_ip))
-    )
-    error_message = "Invalid IP address format."
-  }
 }
 
 variable "iscsi_ips" {

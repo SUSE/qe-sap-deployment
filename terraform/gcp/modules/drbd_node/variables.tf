@@ -73,7 +73,7 @@ variable "host_ips" {
 
 variable "iscsi_srv_ip" {
   description = "IP for iSCSI server"
-  type        = string
+  type        = list(string)
 }
 
 variable "nfs_mounting_point" {

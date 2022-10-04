@@ -18,8 +18,9 @@ module "local_execution" {
 # Netweaver virtual ips: 10.0.0.34, 10.0.0.35, 10.0.0.36, 10.0.0.37
 # If the addresses are provided by the user they will always have preference
 locals {
-  iscsi_srv_ip      = var.iscsi_srv_ip != "" ? var.iscsi_srv_ip : cidrhost(local.subnet_address_range, 4)
-  monitoring_srv_ip = var.monitoring_srv_ip != "" ? var.monitoring_srv_ip : cidrhost(local.subnet_address_range, 5)
+  monitoring_srv_ip = var.monitoring_srv_ip != "" ? var.monitoring_srv_ip : cidrhost(local.subnet_address_range, 4)
+  iscsi_ip_start    = 5
+  iscsi_ips         = length(var.iscsi_ips) != 0 ? var.iscsi_ips : [for ip_index in range(local.iscsi_ip_start, var.iscsi_count + local.iscsi_ip_start) : cidrhost(local.subnet_address_range, ip_index)]
 
   hana_ip_start = 10
   hana_ips      = length(var.hana_ips) != 0 ? var.hana_ips : [for ip_index in range(local.hana_ip_start, local.hana_ip_start + var.hana_count) : cidrhost(local.subnet_address_range, ip_index)]
@@ -66,6 +67,17 @@ locals {
   drbd_os_image       = var.drbd_os_image != "" ? var.drbd_os_image : var.os_image
   netweaver_os_image  = var.netweaver_os_image != "" ? var.netweaver_os_image : var.os_image
   bastion_os_image    = var.bastion_os_image != "" ? var.bastion_os_image : var.os_image
+
+  # For SLES 12 we need to instruct ansible to use python2.7 and for SLES 15 it's python3.
+  # These locals calculate the major version of the os from the OS image but assumes the OS image format is consistent
+  # The regex is only used if the var.x_os_major is not set, so if the regex is failing, the user can manually set their major OS.
+  hana_major_version       = var.hana_os_major_version != "" ? var.hana_os_major_version : regex(".+sles-([0-9]+)-", local.hana_os_image)[0]
+  iscsi_major_version      = var.iscsi_os_major_version != "" ? var.iscsi_os_major_version : regex(".+sles-([0-9]+)-", local.iscsi_os_image)[0]
+  monitoring_major_version = var.monitoring_os_major_version != "" ? var.monitoring_os_major_version : regex(".+sles-([0-9]+)-", local.monitoring_os_image)[0]
+  drbd_major_version       = var.drdb_os_major_version != "" ? var.drdb_os_major_version : regex(".+sles-([0-9]+)-", local.drbd_os_image)[0]
+  netweaver_major_version  = var.netweaver_os_major_version != "" ? var.netweaver_os_major_version : regex(".+sles-([0-9]+)-", local.netweaver_os_image)[0]
+  bastion_major_version    = var.bastion_os_major_version != "" ? var.bastion_os_major_version : regex(".+sles-([0-9]+)-", local.bastion_os_image)[0]
+
 
   # Netweaver password checking
   # If Netweaver is not enabled, a dummy password is passed to pass the variable validation and not require
@@ -240,12 +252,12 @@ module "iscsi_server" {
   name                = var.iscsi_name
   network_domain      = var.iscsi_network_domain == "" ? var.network_domain : var.iscsi_network_domain
   bastion_host        = module.bastion.public_ip
-  iscsi_count         = local.iscsi_enabled == true ? 1 : 0
+  iscsi_count         = local.iscsi_enabled == true ? var.iscsi_count : 0
   machine_type        = var.machine_type_iscsi_server
   compute_zones       = local.compute_zones
   network_subnet_name = local.subnet_name
   os_image            = local.iscsi_os_image
-  host_ips            = [local.iscsi_srv_ip]
+  host_ips            = local.iscsi_ips
   lun_count           = var.iscsi_lun_count
   iscsi_disk_size     = var.iscsi_disk_size
 }

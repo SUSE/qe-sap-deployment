@@ -60,47 +60,65 @@ variable "host_ips" {
 
 variable "iscsi_srv_ip" {
   description = "iscsi server address"
-  type        = string
+  type        = list(string)
 }
 
 variable "hana_data_disk_type" {
-  description = "Disk type of the disks used to store hana database content"
+  description = "Disk type of the hana data volume"
   type        = string
   default     = "pd-ssd"
 }
 
 variable "hana_data_disk_size" {
-  description = "Disk size of the disks used to store hana database content"
+  description = "Disk size of the data volume"
   type        = string
-  default     = "834"
+  default     = "256"
+}
+
+variable "hana_log_disk_type" {
+  description = "Disk type of the hana log volume"
+  type        = string
+  default     = "pd-ssd"
+}
+
+variable "hana_log_disk_size" {
+  description = "Disk size of the hana log volume"
+  type        = string
+  default     = "128"
+}
+
+variable "hana_shared_disk_type" {
+  description = "Disk type of /hana/shared"
+  type        = string
+  default     = "pd-standard"
+}
+
+variable "hana_shared_disk_size" {
+  description = "Disk size of /hana/shared"
+  type        = string
+  default     = "128"
 }
 
 variable "hana_backup_disk_type" {
-  description = "Disk type of the disks used to store hana database backup content"
+  description = "Disk type of the disk used for /hana/backup"
   type        = string
   default     = "pd-standard"
 }
 
 variable "hana_backup_disk_size" {
-  description = "Disk size of the disks used to store hana database backup content"
+  description = "Disk size of the disk used for /hana/backup"
   type        = string
-  default     = "416"
+  default     = "256"
 }
 
-variable "hana_disk_device" {
-  description = "Device where hana is installed"
+variable "hana_usr_sap_disk_type" {
+  description = "Disk type of the disk used for /usr/sap"
   type        = string
-  default     = "/dev/sdb"
+  default     = "pd-standard"
 }
 
-variable "hana_backup_device" {
-  description = "Device where hana backup is stored"
+variable "hana_usr_sap_disk_size" {
+  description = "Disk size of the disk used for /hana/backup"
   type        = string
-  default     = "/dev/sdc"
-}
-
-variable "hana_inst_disk_device" {
-  description = "Device where hana installation software CIFS share is mounted"
-  type        = string
-  default     = "/dev/sdd"
+  default     = "64"
 }

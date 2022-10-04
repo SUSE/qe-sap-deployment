@@ -486,6 +486,18 @@ variable "iscsi_network_domain" {
   default     = ""
 }
 
+variable "iscsi_count" {
+  description = "The number of iscsi servers to deploy"
+  type        = number
+  default     = 1
+  validation {
+    condition = (
+      var.iscsi_count >= 1 && var.iscsi_count <= 3
+    )
+    error_message = "The number of iscsi server must be 1, 2 or 3."
+  }
+}
+
 variable "iscsi_os_image" {
   description = "The image used to create the iscsi machines"
   type        = string
@@ -498,13 +510,13 @@ variable "machine_type_iscsi_server" {
   default     = "custom-1-2048"
 }
 
-variable "iscsi_srv_ip" {
+variable "iscsi_ips" {
   description = "IP for iSCSI server. It must be in the same network addresses range defined in `ip_cidr_range`"
-  type        = string
-  default     = ""
+  type        = list(string)
+  default     = []
   validation {
     condition = (
-      var.iscsi_srv_ip == "" || can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", var.iscsi_srv_ip))
+      can([for v in var.iscsi_ips : regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", v)])
     )
     error_message = "Invalid IP address format."
   }
@@ -843,4 +855,42 @@ variable "pre_deployment" {
   description = "Enable pre deployment local execution. Only available for clients running Linux"
   type        = bool
   default     = false
+}
+
+# The following variables provide an opportunity to override the automatic major os detection if it proves problematic
+
+variable "hana_os_major_version" {
+  description = "The major OS version of SLES HANA VMs.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
+}
+
+variable "iscsi_os_major_version" {
+  description = "The major OS version of iscsi HANA VMs.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
+}
+
+variable "drdb_os_major_version" {
+  description = "The major OS version of iscsi drdb VMs.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
+}
+
+variable "netweaver_os_major_version" {
+  description = "The major OS version of netweaver drdb VMs.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
+}
+
+variable "bastion_os_major_version" {
+  description = "The major OS version of SLES bastion VMs.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
+}
+
+variable "monitoring_os_major_version" {
+  description = "The major OS version of SLES monitoring VMs.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
 }
