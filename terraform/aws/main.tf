@@ -55,7 +55,7 @@ locals {
   drbd_os_owner       = var.drbd_os_owner != "" ? var.drbd_os_owner : var.os_owner
   netweaver_os_image  = var.netweaver_os_image != "" ? var.netweaver_os_image : var.os_image
   netweaver_os_owner  = var.netweaver_os_owner != "" ? var.netweaver_os_owner : var.os_owner
-  
+
 
   # For SLES 12 we need to instruct ansible to use python2.7 and for SLES 15 it's python3.
   # These locals calculate the major version of the os from the OS image but assumes the OS image format is consistent
