@@ -851,3 +851,37 @@ variable "pre_deployment" {
   type        = bool
   default     = false
 }
+
+#Different versions of python are used by ansible in SLES 12 and SLES 15.  The code will try and indetify the correct
+#version of SLES installed and select the appropriate version of the python interpretor for the inventory.yaml file
+#SLES 12 needs to user 2.7 and SLES 15 uses 3.0.
+#However, if the automatic selection proves problematic, the following values can be used as overrides
+variable "hana_os_major_version" {
+  description = "The major OS version of SLES for the HANA VMs.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
+}
+
+variable "iscsi_os_major_version" {
+  description = "The major OS version of SLES for the iscsi VMs.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
+}
+
+variable "monitoring_os_major_version" {
+  description = "The major OS version of SLES for the monitoring VMs.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
+}
+
+variable "drdb_os_major_version" {
+  description = "The major OS version of SLES for the drdb VMs.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
+}
+
+variable "netweaver_os_major_version" {
+  description = "The major OS version of SLES for the netweaver VMs.  If not set, this value will be computed.  Example: 15"
+  type        = string
+  default     = ""
+}

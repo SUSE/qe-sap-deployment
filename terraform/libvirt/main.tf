@@ -64,17 +64,17 @@ resource "libvirt_cloudinit_disk" "userdata" {
 
 
 module "common_variables" {
-  source                              = "../generic_modules/common_variables"
-  provider_type                       = "libvirt"
-  deployment_name                     = local.deployment_name
-  deployment_name_in_hostname         = var.deployment_name_in_hostname
-  reg_code                            = var.reg_code
-  reg_email                           = var.reg_email
-  reg_additional_modules              = var.reg_additional_modules
-  ha_sap_deployment_repo              = var.ha_sap_deployment_repo
-  additional_packages                 = var.additional_packages
-  authorized_keys                     = var.authorized_keys
-  authorized_user                     = "root"
+  source                      = "../generic_modules/common_variables"
+  provider_type               = "libvirt"
+  deployment_name             = local.deployment_name
+  deployment_name_in_hostname = var.deployment_name_in_hostname
+  reg_code                    = var.reg_code
+  reg_email                   = var.reg_email
+  reg_additional_modules      = var.reg_additional_modules
+  ha_sap_deployment_repo      = var.ha_sap_deployment_repo
+  additional_packages         = var.additional_packages
+  authorized_keys             = var.authorized_keys
+  authorized_user             = "root"
   /*
   provisioner                         = var.provisioner
   provisioning_log_level              = var.provisioning_log_level
