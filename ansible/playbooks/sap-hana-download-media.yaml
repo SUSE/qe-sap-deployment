@@ -12,7 +12,7 @@
   tasks:
 
     - name: Include external variables
-      ansible.builtin.include_vars: ./vars/azure_hana_media.yaml
+      ansible.builtin.include_vars: ./vars/hana_media.yaml
 
     - name: Create software directory
       ansible.builtin.file:

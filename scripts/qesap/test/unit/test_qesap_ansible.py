@@ -241,7 +241,7 @@ def test_ansible_e_reg(run, _, base_args, tmpdir, create_inventory, create_playb
     """
     provider = 'grilloparlante'
     config_content = """---
-apiver: 1
+apiver: 2
 provider: grilloparlante
 ansible:
     hana_urls: somesome
@@ -287,7 +287,7 @@ def test_ansible_e_sapconf(run, _, base_args, tmpdir, create_inventory, create_p
     """
     provider = 'grilloparlante'
     config_content = """---
-apiver: 1
+apiver: 2
 provider: grilloparlante
 ansible:
     hana_urls: somesome

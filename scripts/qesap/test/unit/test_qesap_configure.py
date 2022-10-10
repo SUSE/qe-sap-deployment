@@ -123,7 +123,7 @@ def test_configure_tfvars_novariables_notemplate(configure_helper):
     provider = 'pinocchio'
 
     conf = f"""---
-apiver: 1
+apiver: 2
 provider: {provider}
 ansible:
     hana_urls: something"""
@@ -145,7 +145,7 @@ def test_configure_tfvars_novariables(configure_helper):
         "ip_range = 10.0.4.0/24\n"]
 
     conf = f"""---
-apiver: 1
+apiver: 2
 provider: {provider}
 terraform:
 ansible:
@@ -159,7 +159,7 @@ ansible:
         assert tfvar_template == data
 
     conf = f"""---
-apiver: 1
+apiver: 2
 provider: {provider}
 ansible:
     hana_urls: something"""
@@ -181,7 +181,7 @@ def test_configure_tfvars_with_variables(configure_helper):
     """
     provider = 'pinocchio'
     conf = f"""---
-apiver: 1
+apiver: 2
 provider: {provider}
 terraform:
   variables:
@@ -215,7 +215,7 @@ def test_configure_tfvars_string_commas(configure_helper):
     """
     provider = 'pinocchio'
     conf = f"""---
-apiver: 1
+apiver: 2
 provider: {provider}
 terraform:
   variables:
@@ -253,7 +253,7 @@ def test_configure_tfvars_overwrite_variables(configure_helper):
     provider = 'pinocchio'
 
     conf = f"""---
-apiver: 1
+apiver: 2
 provider: {provider}
 terraform:
   variables:
@@ -278,7 +278,7 @@ ansible:
 
 def test_configure_create_ansible_vars(configure_helper, config_yaml_sample):
     """
-    Test that 'configure' write an azure_hana_media.yaml file in
+    Test that 'configure' write an hana_media.yaml file in
     <BASE_DIR>/ansible/playbooks/vars
     """
     provider = 'pinocchio'
@@ -292,12 +292,12 @@ def test_configure_create_ansible_vars(configure_helper, config_yaml_sample):
 
 def test_configure_ansible_vars_content(configure_helper, config_yaml_sample):
     """
-    Test that 'configure' write an azure_hana_media.yaml with
+    Test that 'configure' write an hana_media.yaml with
     expected content
     """
     provider = 'pinocchio'
     conf = f"""---
-apiver: 1
+apiver: 2
 provider: {provider}
 terraform:
     variables:
@@ -324,7 +324,7 @@ def test_configure_dryrun(config_yaml_sample, configure_helper):
     Test that 'configure' in DryRun mode
     does NOT write a terraform.tfvars file in
     <BASE_DIR>/terraform/<PROVIDER>
-    and azure_hana_media.yaml file in
+    and hana_media.yaml file in
     <BASE_DIR>/ansible/playbooks/vars
     """
     provider = 'pinocchio'
@@ -353,7 +353,7 @@ def test_configure_checkfolder(base_args, tmpdir):
     config_file_name = str(tmpdir / 'config.yaml')
     with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(f"""---
-apiver: 1
+apiver: 2
 provider: {provider}
 ansible:
     hana_urls: onlyone
@@ -413,7 +413,7 @@ def test_configure_fail_at_missing_params(configure_helper):
     assert main(args) == 1
 
     conf = """---
-apiver: 1
+apiver: 2
 provider:
 terraform:
 ansible:"""
@@ -421,7 +421,7 @@ ansible:"""
     assert main(args) == 1
 
     conf = """---
-apiver: 1
+apiver: 2
 provider: something
 terraform:
 ansible:"""
@@ -443,7 +443,7 @@ def test_configure_check_terraform_cloud_provider(base_args, tmpdir):
     config_file_name = str(tmpdir / 'config.yaml')
     with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(f"""---
-apiver: 1
+apiver: 2
 provider: {provider}
 ansible:
     hana_urls: onlyone

@@ -54,11 +54,11 @@ Copy the `terraform.tfvars.example` of the provided of your choice and configure
 cp terraform/azure/terraform.tfvars.example terraform/azure/terraform.tfvars
 ```
 
-Copy the `azure_hana_media.example.yaml` file and edit the values so that ansible knows where to download the installation media.
+Copy the `hana_media.example.yaml` file and edit the values so that ansible knows where to download the installation media.
 For Azure, it is preferred to upload the media to blobs in an Azure storage account.
 
 ```shell
-cp ansible/playbooks/vars/azure_hana_media.example.yaml ansible/playbooks/vars/azure_hana_media.yaml
+cp ansible/playbooks/vars/hana_media.example.yaml ansible/playbooks/vars/hana_media.yaml
 ```
 
 Once these steps are completed, it should be possible to run the `build.sh` script to create the infrastructure and install HANA on both VMs.

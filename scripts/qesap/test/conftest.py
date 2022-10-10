@@ -51,7 +51,7 @@ def config_yaml_sample():
     dict based data structure
     """
     config = """---
-apiver: 1
+apiver: 2
 provider: {}
 terraform:
   variables:
@@ -116,7 +116,7 @@ def create_playbooks(playbooks_dir):
 def ansible_config():
     def _callback(provider, playbooks):
         config_content = f"""---
-apiver: 1
+apiver: 2
 provider: {provider}
 ansible:
     hana_urls: somesome"""
@@ -188,7 +188,7 @@ def args_helper(tmpdir, base_args, provider_dir):
         ansiblevars_path = os.path.join(tmpdir, 'ansible', 'playbooks', 'vars')
         if not os.path.isdir(ansiblevars_path):
             os.makedirs(ansiblevars_path)
-        hana_vars = os.path.join(ansiblevars_path, 'azure_hana_media.yaml')
+        hana_vars = os.path.join(ansiblevars_path, 'hana_media.yaml')
 
         config_file_name = str(tmpdir / 'config.yaml')
         with open(config_file_name, 'w', encoding='utf-8') as file:
