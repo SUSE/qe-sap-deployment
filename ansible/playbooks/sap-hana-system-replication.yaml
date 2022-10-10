@@ -4,31 +4,35 @@
   become: true
   become_user: root
   pre_tasks:
-    - name: Detect cloud platform
-      ansible.builtin.include_tasks:
-        ./tasks/detect-cloud-platform.yaml
-    - name: Detection result
-      ansible.builtin.debug:
-        msg: "Cloud platform appears to be {{ cloud_platform_name }}"
-      
+    
+  - name: Check host count
+    ansible.builtin.fail:
+      msg: "There are {{ ansible_play_hosts | length }} hosts in this play but this playbook supports two nodes hosts"
+    when: ansible_play_hosts | length != 2 
+
+  - name: Load HANA vars
+    include_vars: ./vars/hana-vars.yaml
+  
   vars:
     install_path: /var/lib/qedep
     hsr_cnf_file: "{{ install_path }}/{{ sap_hana_sid }}_hsr_configured"
+    is_primary: "{{ ansible_play_hosts[0] == inventory_hostname }}"
+    primary_hostname: "{{ ansible_play_hosts[0] }}"
+    secondary_hostname: "{{ ansible_play_hosts[1] }}"
 
   tasks:
+  
+  - name: Set SAP HANA System replication host facts
+    ansible.builtin.set_fact:
+      sap_hana_cluster_nodes: "{{ sap_hana_cluster_nodes | default([]) + [{ 'node_name' : item.node_name, 'node_ip': item.node_ip, 'node_role' : item.node_role, 'hana_site' : item.hana_site }] }}"
+    loop:
+      - { 'node_name': "{{ primary_hostname }}", 'node_ip': "{{ hostvars[primary_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}", 'node_role': 'primary',   'hana_site' : "{{ primary_site }}" }
+      - { 'node_name': "{{ secondary_hostname }}", 'node_ip': "{{ hostvars[secondary_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}", 'node_role': 'secondary', 'hana_site' : "{{ secondary_site }}" }
 
-  #TODO: Use terraform or ansible to populate the system replication var file - this hardcoded method is not scalable!
-  - name: Load AWS system replication vars
-    include_vars: ./vars/aws_hana_hsr_parameters.yaml
-    when: cloud_platform_is_aws
-
-  - name: Load Azure system replication vars
-    include_vars: ./vars/azure_hana_hsr_parameters.yaml
-    when: cloud_platform_is_azure
-
-  - name: Load GCP system replication vars
-    include_vars: ./vars/gcp_hana_hsr_parameters.yaml
-    when: cloud_platform_is_gcp
+  - name: Set System Replication facts based on install vars
+    ansible.builtin.set_fact:
+      sap_hana_sid: "{{ sap_hana_install_sid }}"
+      sap_hana_instance_number: "{{ sap_hana_install_instance_number }}"
 
   - name: Check for previous HSR configuration
     ansible.builtin.file:
