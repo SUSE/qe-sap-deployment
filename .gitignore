@@ -18,6 +18,7 @@ ansible/playbooks/roles/sap_storage
 ansible/playbooks/go.sh
 ansible/playbooks/destroy.sh
 ansible/playbooks/vars/azure_hana_media.yaml
+ansible/playbooks/vars/hana-vars.yaml
 oldbuild.sh
 olddestroy.sh
 terraform.apply.log
@@ -26,3 +27,4 @@ terraform.plan.log
 settings.json
 variables.sh
 justansibuilt.sh
+altbuild.sh
