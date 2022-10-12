@@ -20,7 +20,7 @@ DESCRIBE = '''qe-sap-deployment helper script'''
 
 
 # Logging config
-logging.basicConfig()
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('QESAPDEP')
 
 
@@ -77,7 +77,7 @@ def subprocess_run(cmd, env=None):
     stdout = [line.decode("utf-8") for line in proc.stdout.splitlines()]
 
     for line in stdout:
-        log.debug('Stdout:%s', line)
+        log.info('Stdout:%s', line)
     return (0, stdout)
 
 
