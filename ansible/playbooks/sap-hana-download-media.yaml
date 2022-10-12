@@ -12,7 +12,7 @@
   tasks:
 
     - name: Include external variables
-      ansible.builtin.include_vars: ./vars/azure_hana_media.yaml
+      ansible.builtin.include_vars: ./vars/hana_media.yaml
 
     - name: Create software directory
       ansible.builtin.file:
@@ -24,7 +24,7 @@
 
     - name: Download HANA media
       ansible.builtin.get_url:
-        url: "{{ item }}"
+        url: "https://{{ az_storage_account_name }}.blob.core.windows.net/{{ az_container_name }}/{{ item }}?{{ az_sas_token }}"
         dest: "{{ hana_download_path + '/' + item | split('/')| last }}"
         owner: root
         group: root
@@ -34,6 +34,6 @@
       until: result is succeeded
       retries: "{{ url_retries_cnt }}"
       delay: "{{ url_retries_delay }}"
-      with_items: "{{ hana_urls }}"
+      with_items: "{{ az_blobs }}"
 
     
