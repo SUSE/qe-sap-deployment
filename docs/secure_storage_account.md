@@ -64,8 +64,6 @@ az storage container generate-sas --account-name qesapmedia --expiry 2025-01-01 
 A string will be returned in the form of a string.  Copy this string a store it
 securely.  This string will not be recoverable from Azure!
 
-`se=2025-01-01&sp=r&sv=2021-06-08&sr=c&sig=eVeeKemQgXN5e2ilTgpOq89xmuiOCPkbkFbCH2rJOS0%3D`
-
 ## Uploading blobs
 
 Blobs can be uploaded using `az` cli tool or in the portal. To upload a file
@@ -91,7 +89,7 @@ However, appending the SAS key to the URL will allow it to be securely
 downloaded.  As long as the URL and SAS token are stored securely, there is
 no public access to the data.
 
-### How to consume with Ansible
+## How to consume with Ansible
 
 The old playbook used to take a single variable which was a list of blob urls.
 The new version of the playbook will take four variables:
@@ -106,3 +104,9 @@ correctly.
 
 The playbook will compile the complete urls and download the media to `hana_download_path`
 which by default is `/hana/shared/install`.
+
+## Next Steps
+
+The proposal at the moment is to have a long standing SAS token which is
+reusable, however, a better approach may be use short lived SAS tokens
+which are generated on demand.
