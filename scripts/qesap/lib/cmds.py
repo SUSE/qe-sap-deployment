@@ -258,7 +258,7 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
         return Status("Missing inventory")
 
     ansible_common = [shutil.which('ansible-playbook')]
-    if verbose:
+    if 'verbosity' in configure_data['ansible'] and configure_data['ansible']['verbosity']:
         ansible_common.append('-vvvv')
 
     ansible_common.append('-i')

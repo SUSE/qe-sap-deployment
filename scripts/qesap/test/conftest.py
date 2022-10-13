@@ -150,17 +150,17 @@ def create_playbooks(playbooks_dir):
                 file.write("")
             playbook_filename_list.append(playbook_filename)
         return playbook_filename_list
-
     return _callback
 
 
 @pytest.fixture
 def ansible_config():
-    def _callback(provider, playbooks):
+    def _callback(provider, playbooks, verbosity=False):
         config_content = f"""---
 apiver: 2
 provider: {provider}
 ansible:
+    verbosity: {verbosity}
     hana_urls: somesome"""
 
         for seq in ['create', 'destroy']:

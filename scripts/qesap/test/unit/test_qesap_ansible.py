@@ -44,9 +44,9 @@ def test_ansible_create(run, _, base_args, tmpdir, create_inventory, create_play
 
 @mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
 @mock.patch("lib.process_manager.subprocess_run")
-def test_ansible_verbose(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
+def test_ansible_verbose_cmd(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
-    run with -vvvv if qesap ansible --verbose
+    running - 'qesap ansible --verbose' should not trigger '-vvvv'.
     (probably not supported in qesap deploy/destroy)
     """
     provider = 'grilloparlante'
@@ -66,7 +66,7 @@ def test_ansible_verbose(run, _, base_args, tmpdir, create_inventory, create_pla
     playbook_list = create_playbooks(playbooks['create'])
     calls = []
     for playbook in playbook_list:
-        cmd = [ANSIBLEPB_EXE, '-vvvv', '-i', inventory, playbook]
+        cmd = [ANSIBLEPB_EXE, '-i', inventory, playbook]
         calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) == 0
