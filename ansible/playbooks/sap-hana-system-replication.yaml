@@ -15,7 +15,7 @@
   
   vars:
     install_path: /var/lib/qedep
-    hsr_cnf_file: "{{ install_path }}/{{ sap_hana_sid }}_hsr_configured"
+    hsr_cnf_file: "{{ install_path }}/{{ sap_hana_install_sid }}_hsr_configured"
     is_primary: "{{ ansible_play_hosts[0] == inventory_hostname }}"
     primary_hostname: "{{ ansible_play_hosts[0] }}"
     secondary_hostname: "{{ ansible_play_hosts[1] }}"
