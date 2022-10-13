@@ -12,6 +12,7 @@ The playbooks in this project are written to be executed after
 * sap-hana-install.yaml
 * sap-hana-system-replication.yaml
 * sap-hana-system-replication-hooks.yaml
+* sap-hana-cluster.yaml
 
 This README describes what each playbook seek to achieve and the inputs
 required.
