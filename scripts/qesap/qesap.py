@@ -14,7 +14,7 @@ from yaml.parser import ParserError
 from yaml.scanner import ScannerError
 from lib.config import yaml_to_tfvars, template_to_tfvars, terraform_yml
 
-VERSION = '0.1'
+VERSION = '0.2'
 
 DESCRIBE = '''qe-sap-deployment helper script'''
 
@@ -94,6 +94,10 @@ def validate_config(config):
         log.error("Error at 'apiver' in the config")
         return False
 
+    if config["apiver"] != 2:
+        log.error("Error at 'apiver' in the config is %d but script expect 2", config["apiver"])
+        return False
+
     if "provider" not in config or not isinstance(config["provider"], str):
         log.error("Error at 'provider' in the config")
         return False
@@ -141,7 +145,7 @@ def validate_basedir(basedir, config):
         return False
     result['provider'] = os.path.join(terraform_dir, config['provider'])
     if not os.path.isdir(result['provider']):
-        log.error("Missing %s", result['terraform'])
+        log.error("Missing %s", result['provider'])
         return False
     tfvar_template_path = os.path.join(result['provider'], 'terraform.tfvars.template')
     # In case of template missing, it will be created from config.yaml
@@ -154,7 +158,7 @@ def validate_basedir(basedir, config):
         return False
 
     result['tfvars'] = os.path.join(result['provider'], 'terraform.tfvars')
-    result['hana_vars'] = os.path.join(ansible_pl_vars_dir, 'azure_hana_media.yaml')
+    result['hana_vars'] = os.path.join(ansible_pl_vars_dir, 'hana_media.yaml')
 
     return result
 
