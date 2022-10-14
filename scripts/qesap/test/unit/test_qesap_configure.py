@@ -386,6 +386,44 @@ ansible:
         assert data['moustique'] == 'komarac'
         assert len(data) == 8
 
+def test_configure_ansible_hanavar_values(configure_helper):
+    """
+    Test about value of mandatory fields
+    sap_hana_install_software_directory: string of path where to find HANA software
+    sap_hana_install_master_password: password for <SID>adm user and databases
+    sap_hana_install_sid: Three character SID of the DB.  See restrictions -> https://launchpad.support.sap.com/#/notes/1979280
+    sap_hana_install_instance_number: two digit instance number
+    sap_domain: FQDN with the actual hostname"""
+    provider = 'pinocchio'
+    conf = """---
+apiver: 2
+provider: {}
+terraform:
+    variables:
+        az_region: "westeurope"
+ansible:
+  hana_urls:
+    - SAPCAR_URL
+  hana_vars:
+    sap_hana_install_software_directory: {}
+    sap_hana_install_master_password: ''
+    sap_hana_install_sid: '{}'
+    sap_hana_install_instance_number: '{}'
+    sap_domain: "qe-test.example.com"
+"""
+    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HDB', '00'), [])
+    assert main(args) == 0
+    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, 'ccc', 'HDB', '00'), [])
+    assert main(args) != 0, "Wrong 'sap_hana_install_software_directory'='ccc' not detected."
+    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HD', '00'), [])
+    assert main(args) != 0, "Wrong 'sap_hana_install_sid'='HD' not detected."
+    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HDB', '0'), [])
+    assert main(args) != 0, "Wrong 'sap_hana_install_instance_number'='0' not detected."
+    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HDB', 'AA'), [])
+    assert main(args) != 0, "Wrong 'sap_hana_install_instance_number'='AA' not detected."
+    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HDB', '000'), [])
+    assert main(args) != 0, "Wrong 'sap_hana_install_instance_number'='000' not detected."
+
 def test_configure_ansible_hana(configure_helper):
     """
     Test that 'configure' fails if manadatory params are missing

@@ -33,6 +33,26 @@ def yaml_to_tfvars_entry(key, value):
     return entry
 
 
+def validate_ansible_hana_var(hana_var):
+    """
+    Validate hana_vars
+    """
+    mandatory = [('sap_hana_install_software_directory', lambda value: re.search(r'/.*', value)),
+                 ('sap_hana_install_master_password', None),
+                 ('sap_hana_install_sid', lambda value: len(hana_var['sap_hana_install_sid']) == 3),
+                 ('sap_hana_install_instance_number', lambda value: re.search(r'^[0-9]{2}$', value)),
+                 ('sap_domain', None)]
+    for mandatory_value in mandatory:
+        if mandatory_value[0] not in hana_var:
+            log.error("Mandatory %s not present in 'hana_var'", mandatory_value[0])
+            return False
+        if mandatory_value[1] is not None:
+            if not mandatory_value[1](hana_var[mandatory_value[0]]):
+                log.error("Invalid value '%s':%s", mandatory_value[0], hana_var[mandatory_value[0]])
+                return False
+    return True
+
+
 class CONF:
     """
     Class to manipulate data from the config.yaml
@@ -161,16 +181,9 @@ class CONF:
                 return False
 
         if 'hana_vars' in self.conf['ansible']:
-            mandatory = [
-                'sap_hana_install_software_directory',
-                'sap_hana_install_master_password',
-                'sap_hana_install_sid',
-                'sap_hana_install_instance_number',
-                'sap_domain']
-            for mandatory_value in mandatory:
-                if mandatory_value not in self.conf['ansible']['hana_vars']:
-                    log.error("Mandatory %s not present in 'hana_var'", mandatory_value)
-                    return False
+            if not validate_ansible_hana_var(self.conf['ansible']['hana_vars']):
+                return False
+
         return True
 
     def validate_basedir(self, basedir):
