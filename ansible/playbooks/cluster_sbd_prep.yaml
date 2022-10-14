@@ -11,7 +11,7 @@
       ansible.builtin.debug:
         msg: "Cloud platform appears to be {{ cloud_platform_name }}"
     - name: include sdb vars
-      ansible.builtin.include_vars: ./vars/sbd-parameters.yaml
+      ansible.builtin.include_vars: ./vars/sbd_parameters.yaml
   vars:
     iscsi_prefix: /dev/disk/by-id/scsi-
     is_primary: "{{ groups.hana[0] == inventory_hostname }}"

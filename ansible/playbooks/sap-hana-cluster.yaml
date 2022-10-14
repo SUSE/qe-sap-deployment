@@ -37,7 +37,7 @@
         msg: "Cloud platform appears to be {{ cloud_platform_name }}"
 
     - name: Load SAP HANA variables
-      ansible.builtin.include_vars: ./vars/hana-vars.yaml
+      ansible.builtin.include_vars: ./vars/hana_vars.yaml
         
 
   tasks:

@@ -6,7 +6,7 @@ The playbooks in this project are written to be executed after
 * registration.yaml
 * pre-cluster.yaml
 * sap-hana-preconfigure.yaml
-* cluster_sbd_prep.yaml
+* cluster-sbd_prep.yaml
 * sap-hana-storage.yaml
 * sap-hana-download-media.yaml
 * sap-hana-install.yaml
@@ -229,13 +229,13 @@ secondary_site:
 
 Variable Sources:
 
-* ./ansible/playbooks/vars/hana-vars.yaml
+* ./ansible/playbooks/vars/hana_vars.yaml
 
 The sap-hana-install playbook, like the sap-hana-storage playbook, uses an
 external role. The playbook consumes the role to install HANA on both
 HANA nodes. The minimal configuration example is pre-populated in the supplied
-vars file `./ansible/playbooks/vars/hana-vars-example.yaml`. This file can be
-used as a template for `./ansible/playbooks/vars/hana-vars.yaml`, which must be
+vars file `./ansible/playbooks/vars/hana_vars_example.yaml`. This file can be
+used as a template for `./ansible/playbooks/vars/hana_vars.yaml`, which must be
 present! The vars is sourced by various playbooks and contains more fields
 than are strictly necessary for just installing HANA. However, this vars file
 is sourced by multiple playbooks and enables system replication and clustering.
@@ -260,11 +260,11 @@ secondary_site:
 
 Variable Sources:
 
-* ./ansible/playbooks/vars/hana-vars.yaml
+* ./ansible/playbooks/vars/hana_vars.yaml
 
 The sap-hana-system-replication playbook cnfigures SAP system replication 
 across two HANA nodes.  Like the sap-hana-install playbook, it requires
-the `./ansible/playbooks/vars/hana-vars.yaml` vars file.  The playbook
+the `./ansible/playbooks/vars/hana_vars.yaml` vars file.  The playbook
 will ensure backups exists of all primary databases and then configure
 HANA System Replication.  Again, this playbook uses an external role
 provided by the SAP Linux Lab.
@@ -287,13 +287,13 @@ secondary_site:
 
 Variable Sources:
 
-* ./ansible/playbooks/vars/hana-vars.yaml
+* ./ansible/playbooks/vars/hana_vars.yaml
 
 Following the system replication playbook, it is necessary to install and
 configure the system replication hooks. This playbook performs the steps
 required to ensure the hooks are installed and that sudo is correctly
 configured.  Like the previous two playbooks, this one also uses the
-`hana-vars.yaml` vars file for consistency.
+`hana_vars.yaml` vars file for consistency.
 
 ## sap-hana-cluster
 
@@ -313,7 +313,7 @@ secondary_site:
 
 Variable Sources:
 
-* ./ansible/playbooks/vars/hana-vars.yaml
+* ./ansible/playbooks/vars/hana_vars.yaml
 
 The sap-hana-cluster playbook is a complicated one. The playbook can currently
 create clusters two two fencing types: SBD and native fencing. The table
@@ -326,7 +326,7 @@ below shows which are clouds are currently supported.
 | GCP | Yes | No |
 
 Like the other playbooks that are directly connected to HANA operations,
-this playbook also sources `hana-vars.yaml` for consistency. By default,
+this playbook also sources `hana_vars.yaml` for consistency. By default,
 the an SBD based cluster will be created.
 
 ### Azure native fencing
