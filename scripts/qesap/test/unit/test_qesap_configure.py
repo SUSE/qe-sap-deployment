@@ -107,7 +107,7 @@ def test_configure_create_tfvars_file(configure_helper, config_yaml_sample):
     """
     provider = 'pinocchio'
     conf = config_yaml_sample(provider)
-    args, tfvar_file, _ = configure_helper(provider, conf, [])
+    args, tfvar_file, *_ = configure_helper(provider, conf, [])
 
     assert main(args) == 0
 
@@ -150,7 +150,7 @@ provider: {provider}
 terraform:
 ansible:
     hana_urls: something"""
-    args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
+    args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
 
@@ -163,7 +163,7 @@ apiver: 2
 provider: {provider}
 ansible:
     hana_urls: something"""
-    args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
+    args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
 
@@ -194,7 +194,7 @@ ansible:
         "hananame = hahaha\n",
         "ip_range = 10.0.4.0/24"]
 
-    args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
+    args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
 
@@ -226,7 +226,7 @@ terraform:
 ansible:
     hana_urls: something"""
     tfvar_template = ["something = static"]
-    args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
+    args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
 
@@ -264,7 +264,7 @@ ansible:
     tfvar_template = [
         "something = static\n",
         "somethingelse = keep\n"]
-    args, tfvar_path, _ = configure_helper(provider, conf, tfvar_template)
+    args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
 
@@ -276,23 +276,23 @@ ansible:
         assert expected_tfvars == data
 
 
-def test_configure_create_ansible_vars(configure_helper, config_yaml_sample):
+def test_configure_create_ansible_hanamedia(configure_helper, config_yaml_sample):
     """
-    Test that 'configure' write an hana_media.yaml file in
+    Test that 'configure' write a hana_media.yaml file in
     <BASE_DIR>/ansible/playbooks/vars
     """
     provider = 'pinocchio'
     conf = config_yaml_sample(provider)
-    args, _, hana_vars = configure_helper(provider, conf, [])
+    args, _, hana_media, _ = configure_helper(provider, conf, [])
 
-    main(args)
+    assert main(args) == 0
 
-    assert os.path.isfile(hana_vars)
+    assert os.path.isfile(hana_media)
 
 
-def test_configure_ansible_vars_content(configure_helper, config_yaml_sample):
+def test_configure_ansible_hanamedia_content(configure_helper):
     """
-    Test that 'configure' write an hana_media.yaml with
+    Test that 'configure' write a hana_media.yaml with
     expected content
     """
     provider = 'pinocchio'
@@ -307,16 +307,104 @@ ansible:
     - SAPCAR_URL
     - SAP_HANA_URL
     - SAP_CLIENT_SAR_URL"""
-    args, _, hana_vars = configure_helper(provider, conf, [])
-    main(args)
+    args, _, hana_media, _ = configure_helper(provider, conf, [])
+    assert main(args) == 0
 
-    with open(hana_vars, 'r', encoding='utf-8') as file:
+    with open(hana_media, 'r', encoding='utf-8') as file:
         data = yaml.load(file, Loader=yaml.FullLoader)
         assert 'hana_urls' in data
         assert len(data['hana_urls']) == 3
         assert 'SAPCAR_URL' in data['hana_urls']
         assert 'SAP_HANA_URL' in data['hana_urls']
         assert 'SAP_CLIENT_SAR_URL' in data['hana_urls']
+
+
+def test_configure_create_ansible_hanavars(configure_helper, config_yaml_sample):
+    """
+    Test that 'configure' write a hana-vars.yaml file in
+    <BASE_DIR>/ansible/playbooks/vars
+    """
+    provider = 'pinocchio'
+    conf = config_yaml_sample(provider)
+    args, _, _, hana_vars = configure_helper(provider, conf, [])
+
+    assert main(args) == 0
+
+    assert os.path.isfile(hana_vars)
+
+
+def test_configure_not_create_ansible_hanavars_apiver1(configure_helper, config_yaml_sample):
+    """
+    Test that 'configure' does not write a hana-vars.yaml file in
+    <BASE_DIR>/ansible/playbooks/vars
+    if apiver < 2
+    """
+    this_provider = 'pinocchio'
+    conf = config_yaml_sample(provider=this_provider, apiver=1)
+    args, _, _, hana_vars = configure_helper(this_provider, conf, [])
+
+    assert main(args) == 0
+
+    assert not os.path.isfile(hana_vars)
+
+
+def test_configure_ansible_hanavar_content(configure_helper):
+    """
+    Test that 'configure' write a hana-vars.yaml with
+    expected content
+    """
+    provider = 'pinocchio'
+    conf = f"""---
+apiver: 2
+provider: {provider}
+terraform:
+    variables:
+        az_region: "westeurope"
+ansible:
+  hana_urls:
+    - SAPCAR_URL
+  hana_vars:
+    sap_hana_install_software_directory: /hana/shared/install
+    sap_hana_install_master_password: 'DoNotUseThisPassw0rd'
+    sap_hana_install_sid: 'HDB'
+    sap_hana_install_instance_number: '00'
+    sap_domain: "qe-test.example.com"
+    zanzara: mosquito
+    Moskito: komar
+    moustique: komarac
+"""
+    args, _, _, hana_vars = configure_helper(provider, conf, [])
+    assert main(args) == 0
+
+    with open(hana_vars, 'r', encoding='utf-8') as file:
+        data = yaml.load(file, Loader=yaml.FullLoader)
+        assert 'zanzara' in data
+        assert 'Moskito' in data
+        assert 'moustique' in data
+        assert data['zanzara'] == 'mosquito'
+        assert data['Moskito'] == 'komar'
+        assert data['moustique'] == 'komarac'
+        assert len(data) == 8
+
+def test_configure_ansible_hana(configure_helper):
+    """
+    Test that 'configure' fails if manadatory params are missing
+    """
+    provider = 'pinocchio'
+    conf = f"""---
+apiver: 2
+provider: {provider}
+terraform:
+    variables:
+        az_region: "westeurope"
+ansible:
+  hana_urls:
+    - SAPCAR_URL
+  hana_vars:
+    zanzara: mosquito
+"""
+    args, _, _, hana_vars = configure_helper(provider, conf, [])
+    assert main(args) != 0
 
 
 def test_configure_dryrun(config_yaml_sample, configure_helper):
@@ -333,12 +421,13 @@ def test_configure_dryrun(config_yaml_sample, configure_helper):
         "something = static\n",
         "hananame = hahaha\n",
         "ip_range = 10.0.4.0/24\n"]
-    args, tfvar_path, hana_vars = configure_helper(provider, conf, tfvar_template)
+    args, tfvar_path, hana_media, hana_vars = configure_helper(provider, conf, tfvar_template)
     args.insert(0, '--dryrun')
 
     assert 0 == main(args)
 
     assert not os.path.isfile(tfvar_path)
+    assert not os.path.isfile(hana_media)
     assert not os.path.isfile(hana_vars)
 
 

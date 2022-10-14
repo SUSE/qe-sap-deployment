@@ -57,7 +57,7 @@ def test_terraform_stop_at_failure(run, args_helper, config_yaml_sample):
     provider = 'mangiafuoco'
     conf = config_yaml_sample(provider)
 
-    args, terraform_dir, _, _ = args_helper(provider, conf, '')
+    args, terraform_dir, *_ = args_helper(provider, conf, '')
     args.append('terraform')
 
     calls = []
@@ -127,7 +127,7 @@ def test_terraform_logs_content(run, terraform_cmd_args, args_helper, config_yam
 
 @pytest.mark.skip(reason="Run a true deployment")
 @pytest.mark.parametrize("terraform_cmd_args", [('init')])
-def test_integration_terraform(terraform_cmd_args, args_helper, config_yaml_sample, tmpdir):
+def test_integration_terraform(terraform_cmd_args, config_yaml_sample, tmpdir):
     """
     Run a test with the true Terraform
     """
