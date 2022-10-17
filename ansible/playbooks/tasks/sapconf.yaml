@@ -30,18 +30,25 @@
 
 - name: Ensure sapconf is installed
   community.general.zypper:
-    name: sapconf>=5.0.3 # weak version control 
-    state: present    
-    
+    name: sapconf>=5.0.3 # weak version control
+    state: present
+
 - name: Ensure sapconf daemon is started and enabled
   ansible.builtin.systemd:
     name: sapconf
     state: started
     enabled: yes
 
+- name: Check if sapconf_check is present
+  stat:
+    path: '/usr/sbin/sapconf_check'
+  register: sapconf_check
+  failed_when: false
+
 - name: Run sapconf_check
   ansible.builtin.command: sapconf_check
   changed_when: false
+  when: sapconf_check.stat.exists
 
 #2205917 - SAP HANA DB: Recommended OS settings for SLES 12 / SLES for SAP Applications 12
 # Increase UserTasksMax doesn't seem to be handled by sapconf
@@ -75,6 +82,5 @@
     value: '0'
     sysctl_set: yes
     state: present
-    reload: yes   
+    reload: yes
 
-    
