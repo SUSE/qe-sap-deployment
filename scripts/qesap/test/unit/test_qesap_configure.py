@@ -386,7 +386,7 @@ ansible:
         assert data['zanzara'] == 'mosquito'
         assert data['Moskito'] == 'komar'
         assert data['moustique'] == 'komarac'
-        assert len(data) == 8
+        assert len(data) == 10
 
 def test_configure_ansible_hanavar_values(configure_helper):
     """
