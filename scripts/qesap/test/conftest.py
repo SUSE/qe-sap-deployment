@@ -193,7 +193,7 @@ def args_helper(tmpdir, base_args, provider_dir):
         if not os.path.isdir(ansiblevars_path):
             os.makedirs(ansiblevars_path)
         hana_media = os.path.join(ansiblevars_path, 'hana_media.yaml')
-        hana_vars = os.path.join(ansiblevars_path, 'hana-vars.yaml')
+        hana_vars = os.path.join(ansiblevars_path, 'hana_vars.yaml')
 
         config_file_name = str(tmpdir / 'config.yaml')
         with open(config_file_name, 'w', encoding='utf-8') as file:
