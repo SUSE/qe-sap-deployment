@@ -369,6 +369,8 @@ ansible:
     sap_hana_install_sid: 'HDB'
     sap_hana_install_instance_number: '00'
     sap_domain: "qe-test.example.com"
+    primary_site: 'goofy'
+    secondary_site: 'miky'
     zanzara: mosquito
     Moskito: komar
     moustique: komarac
@@ -393,7 +395,10 @@ def test_configure_ansible_hanavar_values(configure_helper):
     sap_hana_install_master_password: password for <SID>adm user and databases
     sap_hana_install_sid: Three character SID of the DB.  See restrictions -> https://launchpad.support.sap.com/#/notes/1979280
     sap_hana_install_instance_number: two digit instance number
-    sap_domain: FQDN with the actual hostname"""
+    sap_domain: FQDN with the actual hostname
+    primary_site: name of the primary 'site' for HANA System Replication
+    secondary_site: name of the secondary 'site' for HANA System Replication
+    """
     provider = 'pinocchio'
     conf = """---
 apiver: 2
@@ -410,6 +415,8 @@ ansible:
     sap_hana_install_sid: '{}'
     sap_hana_install_instance_number: '{}'
     sap_domain: "qe-test.example.com"
+    primary_site: 'goofy'
+    secondary_site: 'miky'
 """
     args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HDB', '00'), [])
     assert main(args) == 0
