@@ -71,6 +71,8 @@ ansible:
     sap_hana_install_sid: 'HDB'
     sap_hana_install_instance_number: '00'
     sap_domain: "qe-test.example.com"
+    primary_site: 'goofy'
+    secondary_site: 'miky'
 """
 
     def _callback(provider='pinocchio', apiver=2):
