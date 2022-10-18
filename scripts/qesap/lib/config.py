@@ -41,7 +41,9 @@ def validate_ansible_hana_var(hana_var):
                  ('sap_hana_install_master_password', None),
                  ('sap_hana_install_sid', lambda value: len(hana_var['sap_hana_install_sid']) == 3),
                  ('sap_hana_install_instance_number', lambda value: re.search(r'^[0-9]{2}$', value)),
-                 ('sap_domain', None)]
+                 ('sap_domain', None),
+                 ('primary_site', None),
+                 ('secondary_site', None)]
     for mandatory_value in mandatory:
         if mandatory_value[0] not in hana_var:
             log.error("Mandatory %s not present in 'hana_var'", mandatory_value[0])
