@@ -219,6 +219,6 @@ class CONF:
 
         result['tfvars_file'] = os.path.join(result['provider'], 'terraform.tfvars')
         result['hana_media_file'] = os.path.join(ansible_pl_vars_dir, 'hana_media.yaml')
-        result['hana_vars_file'] = os.path.join(ansible_pl_vars_dir, 'hana-vars.yaml')
+        result['hana_vars_file'] = os.path.join(ansible_pl_vars_dir, 'hana_vars.yaml')
 
         return result
