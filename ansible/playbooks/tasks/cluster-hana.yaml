@@ -27,35 +27,35 @@
 
 - name: Create HANA topology resource
   #TODO this task has hardcoded SID and instance number values which should be variables!
-  ansible.builtin.command: crm configure primitive rsc_SAPHanaTopology_HDB_HDB00 ocf:suse:SAPHanaTopology operations \$id="rsc_sap2_HDB_HDB00-operations" op monitor interval="10" timeout="600" op start interval="0" timeout="600" op stop interval="0" timeout="300" params SID="HDB" InstanceNumber="00" 
+  ansible.builtin.command: "crm configure primitive rsc_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} ocf:suse:SAPHanaTopology operations $id=\"rsc_sap2_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations\" op monitor interval=\"10\" timeout=\"600\" op start interval=\"0\" timeout=\"600\" op stop interval=\"0\" timeout=\"300\" params SID=\"{{ sap_hana_install_sid }}\" InstanceNumber=\"{{ sap_hana_install_instance_number }}\""
   when:
     - is_primary
     - hana_topology_resource | length == 0
 
 - name: Create HANA topology clone
   #TODO this task has hardcoded SID and instance number values which should be variables!
-  ansible.builtin.command: crm configure clone cln_SAPHanaTopology_HDB_HDB00 rsc_SAPHanaTopology_HDB_HDB00 meta clone-node-max="1" target-role="Started" interleave="true"
+  ansible.builtin.command: "crm configure clone cln_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} rsc_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} meta clone-node-max=\"1\" target-role=\"Started\" interleave=\"true\""
   when:
     - is_primary 
     - hana_topology_clone | length == 0
 
 - name: Create HANA resource
   #TODO this task has hardcoded SID and instance number values which should be variables!
-  ansible.builtin.command: crm configure primitive rsc_SAPHana_HDB_HDB00 ocf:suse:SAPHana operations \$id="rsc_sap_HDB_HDB00-operations" op start interval="0" timeout="3600" op stop interval="0" timeout="3600" op promote interval="0" timeout="3600" op demote interval="0" timeout="3600" op monitor interval="60" role="Master" timeout="700" op monitor interval="61" role="Slave" timeout="700" params SID="HDB" InstanceNumber="00" PREFER_SITE_TAKEOVER="true" DUPLICATE_PRIMARY_TIMEOUT="7200" AUTOMATED_REGISTER="true" 
+  ansible.builtin.command: "crm configure primitive rsc_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} ocf:suse:SAPHana operations $id=\"rsc_sap_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations\" op start interval=\"0\" timeout=\"3600\" op stop interval=\"0\" timeout=\"3600\" op promote interval=\"0\" timeout=\"3600\" op demote interval=\"0\" timeout=\"3600\" op monitor interval=\"60\" role=\"Master\" timeout=\"700\" op monitor interval=\"61\" role=\"Slave\" timeout=\"700\" params SID=\"{{ sap_hana_install_sid }}\" InstanceNumber=\"{{ sap_hana_install_instance_number }}\" PREFER_SITE_TAKEOVER=\"true\" DUPLICATE_PRIMARY_TIMEOUT=\"7200\" AUTOMATED_REGISTER=\"true\"" 
   when:
     - is_primary
     - hana_resource | length == 0
 
 - name: Create HANA resource clone
   #TODO this task has hardcoded SID and instance number values which should be variables!
-  ansible.builtin.command: crm configure ms msl_SAPHana_HDB_HDB00 rsc_SAPHana_HDB_HDB00 meta notify="true" clone-max="2" clone-node-max="1" target-role="Started" interleave="true" 
+  ansible.builtin.command: "crm configure ms msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} rsc_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} meta notify=\"true\" clone-max=\"2\" clone-node-max=\"1\" target-role=\"Started\" interleave=\"true\""
   when:
     - is_primary
     - hana_resource_clone | length == 0
     
 - name: Configure colocation [aws]
   #TODO this task has hardcoded SID and instance number values which should be variables!
-  ansible.builtin.command: 'crm configure colocation col_saphana_ip_HDB_HDB00 2000: rsc_ip_HDB_HDB00:Started msl_SAPHana_HDB_HDB00:Master'                                          
+  ansible.builtin.command: "crm configure colocation col_saphana_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} 2000: rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Started msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Master"
   when:
    - is_primary
    - ip_colo | length == 0
@@ -63,7 +63,7 @@
 
 - name: Configure colocation [gcp]
   #TODO this task has hardcoded SID and instance number values which should be variables!
-  ansible.builtin.command: 'crm configure colocation col_saphana_ip_HDB_HDB00 4000: rsc_ip_HDB_HDB00:Started msl_SAPHana_HDB_HDB00:Master'                                          
+  ansible.builtin.command: "crm configure colocation col_saphana_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} 4000: rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Started msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Master"
   when:
    - is_primary
    - ip_colo | length == 0
@@ -71,7 +71,7 @@
 
 - name: Configure order
   #TODO this task has hardcoded SID and instance number values which should be variables!  
-  ansible.builtin.command: 'crm configure order ord_SAPHana 2000: cln_SAPHanaTopology_HDB_HDB00 msl_SAPHana_HDB_HDB00'
+  ansible.builtin.command: "crm configure order ord_SAPHana 2000: cln_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}"
   when: 
     - is_primary
     - order | length == 0
@@ -101,7 +101,7 @@
 
 - name: Cleanup if needed
   #TODO this task has hardcoded SID and instance number values which should be variables!  
-  ansible.builtin.command: crm resource cleanup rsc_SAPHana_HDB_HDB00
+  ansible.builtin.command: "crm resource cleanup rsc_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}"
   when:
     - reg_crm_status.stdout | regex_search('Failed Resource Actions') | trim | length != 0 
     - is_primary

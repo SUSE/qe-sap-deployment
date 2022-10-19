@@ -1,0 +1,24 @@
+# REQUIRED_PARAMETERS #
+sap_hana_install_software_directory: /hana/shared/install
+sap_hana_install_master_password: 'DoNotUseThisPassw0rd'
+sap_hana_install_sid: 'HDB'
+sap_hana_install_instance_number: '00'
+sap_domain: "qe-test.example.com"
+
+# OPTIONAL PARAMETERS #
+# sap_hana_install_components: 'all'
+
+# Unix User
+# Leave this blank if you want this set automatically by hdblcm
+# For production systems, it's highly advisable to set this manually according to your environment's Unix ID policies
+# sap_hana_install_userid: 3000
+# sap_hana_install_groupid:
+
+# Adjust these accordingly for your installation type
+# sap_hana_install_env_type: 'production'
+# sap_hana_install_mem_restrict: 'n'
+# sap_hana_install_max_mem:
+# sap_hana_install_system_restart: 'n'
+
+# Pass some extra arguments to the hdblcm cli, e.g.  --ignore=<check1>[,<check2>]...
+# sap_hana_install_hdblcm_extraargs:
