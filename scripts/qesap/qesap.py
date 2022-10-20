@@ -134,7 +134,7 @@ def cmd_configure(configure_data, base_project, dryrun):
             yaml.dump(hanamedia_content, file)
 
         if 'hana_vars' in configure_data['ansible'] and configure_data['apiver'] >= 2:
-            log.info("Write hana-vars %s", cfg_paths['hana_vars_file'])
+            log.info("Write hana_vars %s", cfg_paths['hana_vars_file'])
             with open(cfg_paths['hana_vars_file'], 'w', encoding='utf-8') as file:
                 yaml.dump(configure_data['ansible']['hana_vars'], file)
     return Status('ok')

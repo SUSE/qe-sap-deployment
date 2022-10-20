@@ -1,0 +1,31 @@
+provider: <PROVIDER>
+apiver: 2
+terraform:
+  variables:
+    az_region: <YOUR_REGION>
+    deployment_name: <YOUR_NAME>
+    os_image: <YOUR_FAVORITE_SLE_IMAGE>
+    public_key: <YOUR_KEY_PATH>/id_rsa_cloud.pub
+
+ansible:
+  hana_urls:
+    - <YOUR_SAPCAR>
+    - <IMDB_SERVER>
+    - <IMDB_CLIENT>
+  create:
+    - registration.yaml -e reg_code=${REG_CODE} -e email_address=${EMAIL}
+    - pre-cluster.yaml
+    - sap-hana-preconfigure.yaml -e use_sapconf=${SAPCONF}
+    - cluster_sbd_prep.yaml
+    - sap-hana-storage.yaml
+    - sap-hana-download-media.yaml
+    - sap-hana-install.yaml
+    - sap-hana-system-replication.yaml
+    - sap-hana-system-replication-hooks.yaml
+    - sap-hana-cluster.yaml
+  destroy:
+    - deregister.yaml
+  variables:
+    REG_CODE: <YOUR_CODE>
+    EMAIL: <YOUR_REG_EMAIL>
+    SAPCONF: true
