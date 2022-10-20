@@ -20,7 +20,7 @@ DESCRIBE = '''qe-sap-deployment helper script'''
 
 
 # Logging config
-logging.basicConfig()
+logging.basicConfig(format="%(levelname)-8s %(message)s")
 log = logging.getLogger('QESAPDEP')
 
 
@@ -66,18 +66,16 @@ def subprocess_run(cmd, env=None):
     if env is not None:
         log.info("with env %s", env)
 
-    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, env=env)
+    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False, env=env)
     if proc.returncode != 0:
-        log.error("Error %d in %s", proc.returncode, ' '.join(cmd[0:1]))
-        for err_line in proc.stderr.decode('UTF-8').splitlines():
-            log.error("STDERR:          %s", err_line)
-        for err_line in proc.stdout.decode('UTF-8').splitlines():
-            log.error("STDOUT:          %s", err_line)
+        log.error("ERROR %d in %s", proc.returncode, ' '.join(cmd[0:1]))
+        for line in proc.stdout.decode('UTF-8').splitlines():
+            log.error("OUTPUT:          %s", line)
         return (proc.returncode, [])
     stdout = [line.decode("utf-8") for line in proc.stdout.splitlines()]
 
     for line in stdout:
-        log.debug('Stdout:%s', line)
+        log.debug('OUTPUT: %s', line)
     return (0, stdout)
 
 

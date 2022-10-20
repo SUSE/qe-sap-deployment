@@ -32,15 +32,15 @@ ssh-add id_rsa_cloud
 
 ### Build and Destroy Terraform and Ansible components
 
-To get started you must should create a yml configuration file
+To get started, the user must create a yml configuration file
 
 ```shell
 cp config.yaml.example config.yaml
 ```
 
-Edit the values of `config.yaml` to match your configuration.
+Edit the values of `config.yaml`:
 
-Run the `config` step to get all the needed Terraform and Ansible configuration file generated.
+Run the `config` step to get all the needed Terraform and Ansible configuration files generated.
 
 ```shell
 (venv) python3 scripts/qesap/qesap.py --verbose -c config.yaml -b <FOLDER_OF_YOUR_CLONED_REPO> configure
@@ -66,20 +66,20 @@ The destruction of the infrastructure, including the de-registration of SLES, ca
 
 The scripts currently work for the 'azure' provider only.
 
-To get started you must should create a new `variables.sh`:
+To get started, user must create a new `variables.sh`:
 
 ```shell
 cp variables.example variables.sh
 ```
 
-Edit the values of variables.sh to match your configuration.
+Edit the values of `variables.sh`:
 
 * PROVIDER : one of the folders in the terraform folder
 * REG_CODE : SCC registration code used in the `registration.yaml` playbook
 * EMAIL : email address used in the registration.yaml playbook
 * SAPCONF : true/false
 
-Copy the `terraform.tfvars.example` of the provided of your choice and configure it.
+Copy the `terraform.tfvars.example` of the provided of choice and configure it.
 
 ```shell
 cp terraform/azure/terraform.tfvars.example terraform/azure/terraform.tfvars

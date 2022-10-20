@@ -37,12 +37,12 @@ def test_multilines():
 
 def test_stderr():
     '''
-    Run subprocess_run redirect the stderr only on the log
+    Run subprocess_run redirect the stderr to stdout
     '''
     test_text = '"Banana"'
     exit_code, stdout_list = subprocess_run(['logger', '-s', test_text])
     assert exit_code == 0
-    assert stdout_list == []
+    assert stdout_list != []
 
 
 def test_err():
