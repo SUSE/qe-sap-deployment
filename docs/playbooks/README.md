@@ -1,7 +1,7 @@
 # Ansible Playbooks
 
 The playbooks in this project are written to be executed after
-`terrform apply` and in the following order:
+`terraform apply` and in the following order:
 
 * registration.yaml
 * pre-cluster.yaml
@@ -21,7 +21,7 @@ required.
 
 All playbooks are written to be idempotent. The playbooks are intended to be
 run on freshly created systems which have not been manually managed. If run
-against manually configured systems the some plays may not act as expected.
+against manually configured systems, then some plays may not act as expected.
 
 ## registration
 
@@ -61,7 +61,7 @@ completed before the HANA clustering can commence. No variables need to
 be set for this playbook.
 
 Firstly, the playbook ensure that the `/etc/hosts` on each system contains
-a valid entry for all other hosts. 
+a valid entry for all other hosts.
 
 After this first step the rest of the plays are only conducted on the `hana`
 node group. A ssh key-pair is created (if one doesn't already exist) for the
@@ -84,7 +84,7 @@ Variable Source = ./variables.sh
 The 'sap-hana-preconfigure' playbook is used to tune the HANA nodes for
 SAP HANA. It will install any additionally required packages and then
 attempt to tune the OS for HANA. If the variable `use_sapconf` is true, then
-sapconf will be used to tune the installation. If `use_sapconf is not set or
+sapconf will be used to tune the installation. If `use_sapconf` is not set or
 is set to false, not tuning will take place. In the future the system will
 be tuned by saptune by default.
 
@@ -131,7 +131,7 @@ significant changes have been made to the iscsi Terraform configuration.
 
 The iscsi server tasks will ensure that the correct packages are installed and
 remove any packages that are known to conflict with these. It then ensures
-that the iscsi services is enabled and running. The playbook then creates am
+that the iscsi services are enabled and running. The playbook then creates an
 LVG, LV and file system which is to be used to store the iscsi LUN. The file
 system is mounted and added to `/etc/fstab`. Finally, the iscsi LUN is
 created and ACLs are added to allow the clients to access the LUN.
@@ -220,12 +220,12 @@ Target hosts:
 Mandatory variables:
 
 sap_hana_install_software_directory
-sap_hana_install_master_password: 
-sap_hana_install_sid: 
-sap_hana_install_instance_number: 
-sap_domain: 
-primary_site: 
-secondary_site: 
+sap_hana_install_master_password:
+sap_hana_install_sid:
+sap_hana_install_instance_number:
+sap_domain:
+primary_site:
+secondary_site:
 
 Variable Sources:
 
@@ -239,7 +239,7 @@ used as a template for `./ansible/playbooks/vars/hana_vars.yaml`, which must be
 present! The vars is sourced by various playbooks and contains more fields
 than are strictly necessary for just installing HANA. However, this vars file
 is sourced by multiple playbooks and enables system replication and clustering.
-By having the HANA vars in a sinle file, consistency is assured across the 
+By having the HANA vars in a single file, consistency is assured across the
 playbooks that rely on HANA related variables.
 
 ## sap-hana-system-replication
@@ -262,11 +262,11 @@ Variable Sources:
 
 * ./ansible/playbooks/vars/hana_vars.yaml
 
-The sap-hana-system-replication playbook cnfigures SAP system replication 
+The sap-hana-system-replication playbook configures SAP system replication
 across two HANA nodes.  Like the sap-hana-install playbook, it requires
 the `./ansible/playbooks/vars/hana_vars.yaml` vars file.  The playbook
 will ensure backups exists of all primary databases and then configure
-HANA System Replication.  Again, this playbook uses an external role
+HANA System Replication. Again, this playbook uses an external role
 provided by the SAP Linux Lab.
 
 ## sap-hana-system-replication-hooks
@@ -291,7 +291,7 @@ Variable Sources:
 
 Following the system replication playbook, it is necessary to install and
 configure the system replication hooks. This playbook performs the steps
-required to ensure the hooks are installed and that sudo is correctly
+required to ensure the hooks are installed and that `sudo` is correctly
 configured.  Like the previous two playbooks, this one also uses the
 `hana_vars.yaml` vars file for consistency.
 
@@ -315,8 +315,9 @@ Variable Sources:
 
 * ./ansible/playbooks/vars/hana_vars.yaml
 
-The sap-hana-cluster playbook is a complicated one. The playbook can currently
-create clusters two two fencing types: SBD and native fencing. The table
+The sap-hana-cluster playbook is a complicated one.
+The playbook can currently create clusters using either of
+two fencing types: SBD or native fencing. The table
 below shows which are clouds are currently supported.
 
 | Type | SBD Fencing | Native Fencing |
@@ -327,11 +328,11 @@ below shows which are clouds are currently supported.
 
 Like the other playbooks that are directly connected to HANA operations,
 this playbook also sources `hana_vars.yaml` for consistency. By default,
-the an SBD based cluster will be created.
+an SBD based cluster will be created.
 
 ### Azure native fencing
 
-To use azuere native fencing you must:
+To use Azure native fencing you must:
 
 * Be using the azure provider in terraform
 * Set the variable `use_sbd` to 'no'
@@ -342,7 +343,7 @@ To use azuere native fencing you must:
   * application_id:
   * app_password:
 
-The five additional varibles all releate to the SAP fencing application
+The five additional variables all relate to the SAP fencing application
 that needs to be created. At this point, the creation of the fencing
 application is not automated. Follow [these instructions](https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/high-availability-guide-suse-pacemaker#create-azure-fence-agent-stonith-device)
 to create the fencing application.

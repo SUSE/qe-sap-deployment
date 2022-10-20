@@ -45,7 +45,8 @@
         "usrsaplv",
         "usrsapvg",
         "venv",
-        "yast"
+        "yast",
+        "qesap"
     ],
     "languageSettings": [
         {

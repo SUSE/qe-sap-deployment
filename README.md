@@ -32,7 +32,38 @@ ssh-add id_rsa_cloud
 
 ### Build and Destroy Terraform and Ansible components
 
-The build and destroy scripts are still an early stage of development and represent the progress made so far.
+To get started you must should create a yml configuration file
+
+```shell
+cp config.yaml.example config.yaml
+```
+
+Edit the values of `config.yaml` to match your configuration.
+
+Run the `config` step to get all the needed Terraform and Ansible configuration file generated.
+
+```shell
+(venv) python3 scripts/qesap/qesap.py --verbose -c config.yaml -b <FOLDER_OF_YOUR_CLONED_REPO> configure
+```
+
+Terraform and Ansible deployment steps can be executed like:
+
+```shell
+(venv) python3 scripts/qesap/qesap.py --verbose -c config.yaml -b <FOLDER_OF_YOUR_CLONED_REPO> terraform
+
+(venv) python3 scripts/qesap/qesap.py --verbose -c config.yaml -b <FOLDER_OF_YOUR_CLONED_REPO> ansible
+```
+
+The destruction of the infrastructure, including the de-registration of SLES, can be conducted with:
+
+```shell
+(venv) python3 scripts/qesap/qesap.py --verbose -c config.yaml -b <FOLDER_OF_YOUR_CLONED_REPO> ansible -d
+
+(venv) python3 scripts/qesap/qesap.py --verbose -c config.yaml -b <FOLDER_OF_YOUR_CLONED_REPO> terraform -d
+```
+
+### Old shell script based approach
+
 The scripts currently work for the 'azure' provider only.
 
 To get started you must should create a new `variables.sh`:
@@ -127,6 +158,8 @@ Or to execute a specific action:
 
 ```shell
 cd <THIS_REPO_FOLDER>
-podman run -it -v .:/src -v ~/.azure:/root/.azure -v $(pwd)/secret:/root/.ssh my-tag ./build.sh -k <SECRET_FOLDER>/id_rsa_cloud
-podman run -it -v .:/src -v ~/.azure:/root/.azure -v $(pwd)/secret:/root/.ssh my-tag ./destroy.sh -k <SECRET_FOLDER>/id_rsa_cloud
+podman run -it \
+    -v .:/src -v ~/.azure:/root/.azure -v $(pwd)/secret:/root/.ssh my-tag \
+    python3 /src/scripts/qesap/qesap.py --verbose -c config.yaml -b /src terraform
+    python3 /src/scripts/qesap/qesap.py --verbose -c config.yaml -b /src ansible
 ```

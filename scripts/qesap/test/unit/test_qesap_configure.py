@@ -321,7 +321,7 @@ ansible:
 
 def test_configure_create_ansible_hanavars(configure_helper, config_yaml_sample):
     """
-    Test that 'configure' write a hana-vars.yaml file in
+    Test that 'configure' write a hana_vars.yaml file in
     <BASE_DIR>/ansible/playbooks/vars
     """
     provider = 'pinocchio'
@@ -335,7 +335,7 @@ def test_configure_create_ansible_hanavars(configure_helper, config_yaml_sample)
 
 def test_configure_not_create_ansible_hanavars_apiver1(configure_helper, config_yaml_sample):
     """
-    Test that 'configure' does not write a hana-vars.yaml file in
+    Test that 'configure' does not write a hana_vars.yaml file in
     <BASE_DIR>/ansible/playbooks/vars
     if apiver < 2
     """
@@ -350,7 +350,7 @@ def test_configure_not_create_ansible_hanavars_apiver1(configure_helper, config_
 
 def test_configure_ansible_hanavar_content(configure_helper):
     """
-    Test that 'configure' write a hana-vars.yaml with
+    Test that 'configure' write a hana_vars.yaml with
     expected content
     """
     provider = 'pinocchio'
