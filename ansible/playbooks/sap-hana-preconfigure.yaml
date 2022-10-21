@@ -9,7 +9,7 @@
     saptune_solution: HANA
     platform: azure
     cluster_node: true
-        
+
   tasks:
 
   # Ensure required installation of required packages
@@ -18,6 +18,12 @@
         name: libssh2-1 # Caution, no version control here (yet)
         state: present
       when: scale_out | bool
+
+    # https://jira.suse.com/browse/TEAM-6887
+    - name: Update old SAPHanaSR on SLE 15-SP1
+      ansible.builtin.command: zypper -n in --replacefiles 'SAPHanaSR=0.154.0'
+      when:
+        - ansible_facts['distribution_version'] == '15.1'
 
     # 3018133 - Linux: Running SAP applications compiled with GCC 10.x
     - name: Ensure minimum version of GCC10 are installed on SLE12
@@ -58,7 +64,7 @@
         - 'libatomic1=11.2.1+git610-150000.1.6.6'
       when:
         - ansible_facts['distribution_version'] == '15.4'
-    
+
     - name: Configure sapconf based systems
       ansible.builtin.include_tasks: ./tasks/sapconf.yaml
       when: use_sapconf | bool
@@ -66,8 +72,8 @@
     # saptune to be handled here with more included tasks!
     - name: Configure saptune based systems
       ansible.builtin.include_tasks: ./tasks/saptune.yaml
-      when: not use_sapconf | bool 
-    
+      when: not use_sapconf | bool
+
   handlers:
     - name: reboot
       ansible.builtin.reboot:
