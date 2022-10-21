@@ -29,10 +29,9 @@
   when: tuned_inst != 'not-installed'
 
 - name: Ensure sapconf is installed
-  community.general.zypper:
-    name: sapconf>=5.0.3 # weak version control 
-    state: present    
-    
+  # using command instead of zypper module as workaround
+  ansible.builtin.command: zypper -n in --replacefiles 'sapconf=5.0.3'
+
 - name: Ensure sapconf daemon is started and enabled
   ansible.builtin.systemd:
     name: sapconf
@@ -82,6 +81,5 @@
     value: '0'
     sysctl_set: yes
     state: present
-    reload: yes   
+    reload: yes
 
-    
