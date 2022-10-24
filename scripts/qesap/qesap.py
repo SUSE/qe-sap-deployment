@@ -51,10 +51,8 @@ class Status(int):
 
 def subprocess_run(cmd, env=None):
     """Tiny wrapper around subprocess
-
     Args:
         cmd (list of string): directly used as input for subprocess.run
-
     Returns:
         (int, list of string): exit code and list of stdout
     """
@@ -266,6 +264,8 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
         'all', '-a', 'true',
         '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'])
     ansible_cmd_seq.append({'cmd': ssh_share})
+    original_env = dict(os.environ)
+    original_env['ANSIBLE_PIPELINING'] = 'True'
 
     for playbook in configure_data['ansible'][sequence]:
         ansible_cmd = ansible_common.copy()
@@ -284,11 +284,11 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
                 ansible_cmd.append(re.sub(r'\${(.*)}', value, ply_cmd))
             else:
                 ansible_cmd.append(ply_cmd)
-        ansible_cmd_seq.append({'cmd': ansible_cmd, 'env': {'ANSIBLE_PIPELINING': 'True'}})
+        ansible_cmd_seq.append({'cmd': ansible_cmd, 'env': original_env})
 
     for command in ansible_cmd_seq:
         if dryrun:
-            print(' '.join(command))
+            print(' '.join(command['cmd']))
         else:
             ret, out = subprocess_run(**command)
             for out_line in out:

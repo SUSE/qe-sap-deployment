@@ -1,3 +1,4 @@
+import os
 from unittest import mock
 import logging
 
@@ -378,6 +379,8 @@ def test_ansible_ssh(run, _, base_args, tmpdir, create_inventory, create_playboo
 @mock.patch("qesap.subprocess_run")
 def test_ansible_env_config(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
     """
+    Test that ANSIBLE_PIPELINING is added to the env used to run Ansible. In the build.sh it was:
+
 if [ ${quite} -eq 1 ]
 then
   export ANSIBLE_NOCOLOR=True
@@ -400,8 +403,10 @@ export ANSIBLE_PIPELINING=True
 
     playbook_files_list = create_playbooks(playbooks['create'])
     calls = []
+    original_env = dict(os.environ)
+    original_env['ANSIBLE_PIPELINING'] = 'True'
     for playbook in playbook_files_list:
-        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-i', inventory, playbook], env={'ANSIBLE_PIPELINING': 'True'}))
+        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-i', inventory, playbook], env=original_env))
 
     assert main(args) == 0
 
