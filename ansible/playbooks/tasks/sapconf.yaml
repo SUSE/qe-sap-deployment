@@ -38,6 +38,11 @@
     state: started
     enabled: yes
 
+- name: Select HANA profile on SLE12
+  ansible.builtin.shell: sapconf stop && sapconf hana
+  changed_when: false
+  when: ansible_facts['distribution_major_version'] == "12"
+
 - name: Test that sapconf_check is available
   ansible.builtin.command: which sapconf_check
   register: which_sapconf
