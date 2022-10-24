@@ -320,6 +320,8 @@ def mock_call_ansibleplaybook():
     ```
     '''
     def _callback(playbook_cmd):
-        return mock.call(cmd=playbook_cmd, env={'ANSIBLE_PIPELINING': 'True'})
+        original_env = dict(os.environ)
+        original_env['ANSIBLE_PIPELINING'] = 'True'
+        return mock.call(cmd=playbook_cmd, env=original_env)
 
     return _callback
