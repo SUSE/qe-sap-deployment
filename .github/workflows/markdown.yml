@@ -16,7 +16,7 @@ jobs:
     environment: production
     strategy:
       matrix:
-        docfile: ['README.md', 'terraform/aws/README.md', 'terraform/azure/README.md', 'docs/playbooks/README.md']
+        docfile: ['README.md', 'terraform/aws/README.md', 'terraform/azure/README.md']
 
     steps:
     # Checkout the repository to the GitHub Actions runner
@@ -30,7 +30,7 @@ jobs:
         config_file: .markdownlint.json
 
     - name: Spell-check Markdown files
-      uses: streetsidesoftware/cspell-action@v2.2.0
+      uses: streetsidesoftware/cspell-action@v2.11.0
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         incremental_files_only: false
