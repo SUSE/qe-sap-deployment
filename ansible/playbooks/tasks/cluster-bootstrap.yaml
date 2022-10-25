@@ -38,6 +38,10 @@
   community.general.zypper:
     name: [ 'corosync', 'crmsh', 'fence-agents', 'ha-cluster-bootstrap', 'pacemaker', 'patterns-ha-ha_sles', 'resource-agents', 'cluster-glue', 'rsyslog', 'socat' ] # Caution, no version control here (yet)
     state: present
+  register: result
+  until: result is succeeded
+  retries: 3
+  delay: 60
 
 #The following tasks check that the file /etc/corosync/authkey exists on each node and that all nodes have an identical copy
 #if either of the the above conditions are false the back `Create authkeys` is run.  

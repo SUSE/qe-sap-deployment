@@ -24,6 +24,10 @@
       ansible.builtin.command: zypper -n in --replacefiles 'SAPHanaSR=0.154.0'
       when:
         - ansible_facts['distribution_version'] == '15.1'
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
 
     # 3018133 - Linux: Running SAP applications compiled with GCC 10.x
     - name: Ensure minimum version of GCC10 are installed on SLE12
@@ -38,6 +42,10 @@
       when:
         - ansible_facts['distribution_version'] == '12.4' or
           ansible_facts['distribution_version'] == '12.5'
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
 
     - name: Ensure minimum version of GCC10 are installed on SLE 15-SP[123]
       community.general.zypper:
@@ -52,6 +60,10 @@
         - ansible_facts['distribution_version'] == '15.1' or
           ansible_facts['distribution_version'] == '15.2' or
           ansible_facts['distribution_version'] == '15.3'
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
 
     - name: Ensure minimum version of GCC10 are installed on SLE 15-SP4
       community.general.zypper:
@@ -64,6 +76,10 @@
         - 'libatomic1=11.2.1+git610-150000.1.6.6'
       when:
         - ansible_facts['distribution_version'] == '15.4'
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
 
     - name: Configure sapconf based systems
       ansible.builtin.include_tasks: ./tasks/sapconf.yaml
