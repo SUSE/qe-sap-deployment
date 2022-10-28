@@ -118,7 +118,7 @@ public_key  = "/home/user/.ssh/id.rsa.key"
 
 # Enable bastion usage. If this option is enabled, it will create a unique public ip address that is attached to the bastion machine.
 # The rest of the machines won't have a public ip address and the SSH connection must be done through the bastion
-bastion_enabled = false
+#bastion_enabled = true
 
 # Bastion SSH keys. If they are not set the public_key and private_key are used
 #bastion_public_key  = "/home/myuser/.ssh/id_rsa_bastion.pub"
