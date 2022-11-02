@@ -42,6 +42,10 @@
 
     - name: registercloudguest registration
       ansible.builtin.command: registercloudguest --force-new -r "{{ reg_code }}" -e "{{ email_address }}"
+      register: result
+      until: result is succeeded
+      retries: 10
+      delay: 60
       when: 
         - rcg.rc == 0
         - repos.rc != 0
@@ -49,6 +53,10 @@
     #If registercloudguest is not present fall back on SUSEConnect
     - name: SUSEConnect registration
       ansible.builtin.command: SUSEConnect -r "{{ reg_code }}" -e "{{ email_address }}"
+      register: result
+      until: result is succeeded
+      retries: 10
+      delay: 60
       when:
         - rcg.rc != 0
         - repos.rc != 0
@@ -56,6 +64,10 @@
     #There are additional repos to add.  These are handled differently for SLES 15 and SLES12
     - name: Add SLES 12 Advanced Systems Modules
       ansible.builtin.command: SUSEConnect -p sle-module-adv-systems-management/12/{{ ansible_facts['architecture'] }} -r "{{ reg_code }}"
+      register: result
+      until: result is succeeded
+      retries: 10
+      delay: 60
       when:
         - rcg.rc != 0
         - repos.rc != 0
@@ -63,6 +75,10 @@
 
     - name: Add SLES 12 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/12/{{ ansible_facts['architecture'] }}
+      register: result
+      until: result is succeeded
+      retries: 10
+      delay: 60
       when:
         - rcg.rc != 0
         - repos.rc != 0
@@ -70,6 +86,10 @@
     
     - name: Add SLES 15 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/{{ ansible_facts['distribution_version'] }}/{{ ansible_facts['architecture'] }}
+      register: result
+      until: result is succeeded
+      retries: 10
+      delay: 60
       when:
         - rcg.rc != 0
         - repos.rc != 0

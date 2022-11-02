@@ -39,9 +39,16 @@
     state: started
     enabled: yes
 
+- name: Test that sapconf_check is available
+  ansible.builtin.command: which sapconf_check
+  register: which_sapconf
+  changed_when: no
+  failed_when: no
+
 - name: Run sapconf_check
   ansible.builtin.command: sapconf_check
   changed_when: false
+  when: which_sapconf.rc == 0 # don't run sapconf_check if sapconf_check is not found in the path.
 
 #2205917 - SAP HANA DB: Recommended OS settings for SLES 12 / SLES for SAP Applications 12
 # Increase UserTasksMax doesn't seem to be handled by sapconf

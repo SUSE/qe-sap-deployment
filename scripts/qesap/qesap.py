@@ -12,15 +12,15 @@ import re
 import yaml
 from yaml.parser import ParserError
 from yaml.scanner import ScannerError
-from lib.config import yaml_to_tfvars, template_to_tfvars, terraform_yml
+from lib.config import CONF
 
-VERSION = '0.1'
+VERSION = '0.2'
 
 DESCRIBE = '''qe-sap-deployment helper script'''
 
 
 # Logging config
-logging.basicConfig()
+logging.basicConfig(format="%(levelname)-8s %(message)s")
 log = logging.getLogger('QESAPDEP')
 
 
@@ -51,10 +51,8 @@ class Status(int):
 
 def subprocess_run(cmd, env=None):
     """Tiny wrapper around subprocess
-
     Args:
         cmd (list of string): directly used as input for subprocess.run
-
     Returns:
         (int, list of string): exit code and list of stdout
     """
@@ -66,97 +64,17 @@ def subprocess_run(cmd, env=None):
     if env is not None:
         log.info("with env %s", env)
 
-    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, env=env)
+    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False, env=env)
     if proc.returncode != 0:
-        log.error("Error %d in %s", proc.returncode, ' '.join(cmd[0:1]))
-        for err_line in proc.stderr.decode('UTF-8').splitlines():
-            log.error("STDERR:          %s", err_line)
-        for err_line in proc.stdout.decode('UTF-8').splitlines():
-            log.error("STDOUT:          %s", err_line)
+        log.error("ERROR %d in %s", proc.returncode, ' '.join(cmd[0:1]))
+        for line in proc.stdout.decode('UTF-8').splitlines():
+            log.error("OUTPUT:          %s", line)
         return (proc.returncode, [])
     stdout = [line.decode("utf-8") for line in proc.stdout.splitlines()]
 
     for line in stdout:
-        log.debug('Stdout:%s', line)
+        log.debug('OUTPUT: %s', line)
     return (0, stdout)
-
-
-def validate_config(config):
-    """
-    Validate the mandatory and common part of the internal structure of the configure.yaml
-    """
-    log.debug("Configure data:%s", config)
-    if config is None:
-        log.error("Empty config")
-        return False
-
-    if "apiver" not in config or not isinstance(config["apiver"], int):
-        log.error("Error at 'apiver' in the config")
-        return False
-
-    if "provider" not in config or not isinstance(config["provider"], str):
-        log.error("Error at 'provider' in the config")
-        return False
-
-    return True
-
-
-def validate_ansible_config(config, sequence):
-    '''
-    Validate the ansible part of the internal structure of the configure.yaml
-    '''
-    log.debug("Configure data:%s", config)
-
-    if 'ansible' not in config or config['ansible'] is None:
-        log.error("Error at 'ansible' in the config")
-        return False
-
-    if 'hana_urls' not in config['ansible']:
-        log.error("Missing 'hana_urls' in 'ansible' in the config")
-        return False
-
-    if sequence:
-        if sequence not in config['ansible'] or config['ansible'][sequence] is None:
-            log.info('No Ansible playbooks to play in %s for sequence:%s', config['ansible'], sequence)
-            return False
-
-    return True
-
-
-def validate_basedir(basedir, config):
-    '''
-    Validate the file and folder structure of the main repository
-    '''
-    terraform_dir = os.path.join(basedir, 'terraform')
-    result = {
-        'terraform': terraform_dir,
-        'provider': None,
-        'tfvars': None,
-        'tfvars_template': None,
-        'hana_vars': None
-    }
-
-    if not os.path.isdir(terraform_dir):
-        log.error("Missing %s", terraform_dir)
-        return False
-    result['provider'] = os.path.join(terraform_dir, config['provider'])
-    if not os.path.isdir(result['provider']):
-        log.error("Missing %s", result['terraform'])
-        return False
-    tfvar_template_path = os.path.join(result['provider'], 'terraform.tfvars.template')
-    # In case of template missing, it will be created from config.yaml
-    if os.path.isfile(tfvar_template_path):
-        result['tfvars_template'] = tfvar_template_path
-
-    ansible_pl_vars_dir = os.path.join(basedir, 'ansible', 'playbooks', 'vars')
-    if not os.path.isdir(ansible_pl_vars_dir):
-        log.error("Missing %s", ansible_pl_vars_dir)
-        return False
-
-    result['tfvars'] = os.path.join(result['provider'], 'terraform.tfvars')
-    result['hana_vars'] = os.path.join(ansible_pl_vars_dir, 'azure_hana_media.yaml')
-
-    return result
 
 
 def cmd_configure(configure_data, base_project, dryrun):
@@ -175,41 +93,48 @@ def cmd_configure(configure_data, base_project, dryrun):
     """
 
     # Validations
-    if not validate_config(configure_data):
+    config = CONF(configure_data)
+    if not config.validate():
         return Status(f"Invalid configuration file content in {configure_data}")
-    cfg_paths = validate_basedir(base_project, configure_data)
+    cfg_paths = config.validate_basedir(base_project)
     if not cfg_paths:
         return Status(f"Invalid folder structure at {base_project}")
 
-    # Just an handy alias
-    tfvar_path = cfg_paths['tfvars']
-    hana_vars = cfg_paths['hana_vars']
-
     if cfg_paths['tfvars_template']:
         log.debug("tfvar template %s", cfg_paths['tfvars_template'])
-        tfvar_content = template_to_tfvars(cfg_paths['tfvars_template'], configure_data)
-    elif terraform_yml(configure_data):
+        tfvar_content = config.template_to_tfvars(cfg_paths['tfvars_template'])
+    elif config.terraform_yml():
         log.debug("tfvar template not present")
-        tfvar_content = yaml_to_tfvars(configure_data)
+        tfvar_content = config.yaml_to_tfvars()
         if tfvar_content is None:
             return Status("Problem converting config.yaml content to terraform.tfvars")
     else:
         return Status("No terraform.tfvars.template neither terraform in the configuration")
 
-    if validate_ansible_config(configure_data, None):
-        hanavar_content = {'hana_urls': configure_data['ansible']['hana_urls']}
-        log.debug("Result %s:\n%s", hana_vars, hanavar_content)
+    if not config.validate_ansible_config(None):
+        return Status("Problems in the ansible part of the configuration")
+
+    hanamedia_content = {'hana_urls': configure_data['ansible']['hana_urls']}
+    log.debug("Hana media %s:\n%s", cfg_paths['hana_media_file'], hanamedia_content)
+    if 'hana_vars' in configure_data['ansible'] and configure_data['apiver'] >= 2:
+        log.debug("Hana variables %s:\n%s", cfg_paths['hana_vars_file'], configure_data['ansible']['hana_vars'])
 
     if dryrun:
-        print(f"Create {tfvar_path} with content {tfvar_content}")
-        print(f"Create {hana_vars} with content {hanavar_content}")
+        print(f"Create {cfg_paths['tfvars_file']} with content {tfvar_content}")
+        print(f"Create {cfg_paths['hana_media_file']} with content {hanamedia_content}")
     else:
-        log.info("Write %s", tfvar_path)
-        with open(tfvar_path, 'w', encoding='utf-8') as file:
+        log.info("Write .tfvars %s", cfg_paths['tfvars_file'])
+        with open(cfg_paths['tfvars_file'], 'w', encoding='utf-8') as file:
             file.write(''.join(tfvar_content))
-        log.info("Write %s", hana_vars)
-        with open(hana_vars, 'w', encoding='utf-8') as file:
-            yaml.dump(hanavar_content, file)
+
+        log.info("Write hana_media %s", cfg_paths['hana_media_file'])
+        with open(cfg_paths['hana_media_file'], 'w', encoding='utf-8') as file:
+            yaml.dump(hanamedia_content, file)
+
+        if 'hana_vars' in configure_data['ansible'] and configure_data['apiver'] >= 2:
+            log.info("Write hana_vars %s", cfg_paths['hana_vars_file'])
+            with open(cfg_paths['hana_vars_file'], 'w', encoding='utf-8') as file:
+                yaml.dump(configure_data['ansible']['hana_vars'], file)
     return Status('ok')
 
 
@@ -258,9 +183,10 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
     """
 
     # Validations
-    if not validate_config(configure_data):
+    config = CONF(configure_data)
+    if not config.validate():
         return Status(f"Invalid configuration file content in {configure_data}")
-    cfg_paths = validate_basedir(base_project, configure_data)
+    cfg_paths = config.validate_basedir(base_project)
     if not cfg_paths:
         return Status(f"Invalid folder structure at {base_project}")
 
@@ -306,14 +232,15 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
     """
 
     # Validations
-    if not validate_config(configure_data):
+    config = CONF(configure_data)
+    if not config.validate():
         return Status(f"Invalid configuration file content in {configure_data}")
 
     sequence = 'create'
     if destroy:
         sequence = 'destroy'
 
-    if not validate_ansible_config(configure_data, sequence):
+    if not config.validate_ansible_config(sequence):
         log.info('No Ansible playbooks to play in %s', configure_data)
         return Status("ok")
 
@@ -337,6 +264,8 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
         'all', '-a', 'true',
         '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'])
     ansible_cmd_seq.append({'cmd': ssh_share})
+    original_env = dict(os.environ)
+    original_env['ANSIBLE_PIPELINING'] = 'True'
 
     for playbook in configure_data['ansible'][sequence]:
         ansible_cmd = ansible_common.copy()
@@ -355,11 +284,11 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
                 ansible_cmd.append(re.sub(r'\${(.*)}', value, ply_cmd))
             else:
                 ansible_cmd.append(ply_cmd)
-        ansible_cmd_seq.append({'cmd': ansible_cmd, 'env': {'ANSIBLE_PIPELINING': 'True'}})
+        ansible_cmd_seq.append({'cmd': ansible_cmd, 'env': original_env})
 
     for command in ansible_cmd_seq:
         if dryrun:
-            print(' '.join(command))
+            print(' '.join(command['cmd']))
         else:
             ret, out = subprocess_run(**command)
             for out_line in out:
@@ -415,9 +344,9 @@ def is_dir(path):
 
 
 def cli(command_line=None):
-    '''
+    """
     Command line argument parser
-    '''
+    """
     parser = argparse.ArgumentParser(description=DESCRIBE)
 
     parser.add_argument('--version', action='version', version=VERSION)
@@ -468,9 +397,9 @@ def cli(command_line=None):
 
 
 def main(command_line=None):  # pylint: disable=too-many-return-statements
-    '''
+    """
     Main script entry point for command line execution
-    '''
+    """
     parsed_args = cli(command_line)
 
     if parsed_args.verbose:

@@ -80,7 +80,7 @@ variable "authorized_user" {
 variable "bastion_enabled" {
   description = "Create a VM to work as a bastion to avoid the usage of public ip addresses and manage the ssh connection to the other machines"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "bastion_public_key" {

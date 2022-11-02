@@ -51,7 +51,7 @@ def config_yaml_sample():
     dict based data structure
     """
     config = """---
-apiver: 1
+apiver: {}
 provider: {}
 terraform:
   variables:
@@ -64,13 +64,19 @@ ansible:
   hana_urls:
     - SAPCAR_URL
     - SAP_HANA_URL
-    - SAP_CLIENT_SAR_URL"""
+    - SAP_CLIENT_SAR_URL
+  hana_vars:
+    sap_hana_install_software_directory: /hana/shared/install
+    sap_hana_install_master_password: 'DoNotUseThisPassw0rd'
+    sap_hana_install_sid: 'HDB'
+    sap_hana_install_instance_number: '00'
+    sap_domain: "qe-test.example.com"
+    primary_site: 'goofy'
+    secondary_site: 'miky'
+"""
 
-    def _callback(provider=None):
-        internal_prov = provider
-        if internal_prov is None:
-            internal_prov = 'pinocchio'
-        return config.format(internal_prov)
+    def _callback(provider='pinocchio', apiver=2):
+        return config.format(apiver, provider)
 
     return _callback
 
@@ -116,7 +122,7 @@ def create_playbooks(playbooks_dir):
 def ansible_config():
     def _callback(provider, playbooks):
         config_content = f"""---
-apiver: 1
+apiver: 2
 provider: {provider}
 ansible:
     hana_urls: somesome"""
@@ -188,7 +194,8 @@ def args_helper(tmpdir, base_args, provider_dir):
         ansiblevars_path = os.path.join(tmpdir, 'ansible', 'playbooks', 'vars')
         if not os.path.isdir(ansiblevars_path):
             os.makedirs(ansiblevars_path)
-        hana_vars = os.path.join(ansiblevars_path, 'azure_hana_media.yaml')
+        hana_media = os.path.join(ansiblevars_path, 'hana_media.yaml')
+        hana_vars = os.path.join(ansiblevars_path, 'hana_vars.yaml')
 
         config_file_name = str(tmpdir / 'config.yaml')
         with open(config_file_name, 'w', encoding='utf-8') as file:
@@ -199,7 +206,7 @@ def args_helper(tmpdir, base_args, provider_dir):
                     file.write(line)
 
         args = base_args(base_dir=tmpdir, config_file=config_file_name)
-        return args, provider_path, tfvar_path, hana_vars
+        return args, provider_path, tfvar_path, hana_media, hana_vars
 
     return _callback
 
@@ -207,9 +214,9 @@ def args_helper(tmpdir, base_args, provider_dir):
 @pytest.fixture
 def configure_helper(args_helper):
     def _callback(provider, conf, tfvar):
-        args, _, tfvar_path, hana_vars = args_helper(provider, conf, tfvar)
+        args, _, tfvar_path, hana_media, hana_vars = args_helper(provider, conf, tfvar)
         args.append('configure')
-        return args, tfvar_path, hana_vars
+        return args, tfvar_path, hana_media, hana_vars
 
     return _callback
 
@@ -313,6 +320,8 @@ def mock_call_ansibleplaybook():
     ```
     '''
     def _callback(playbook_cmd):
-        return mock.call(cmd=playbook_cmd, env={'ANSIBLE_PIPELINING': 'True'})
+        original_env = dict(os.environ)
+        original_env['ANSIBLE_PIPELINING'] = 'True'
+        return mock.call(cmd=playbook_cmd, env=original_env)
 
     return _callback

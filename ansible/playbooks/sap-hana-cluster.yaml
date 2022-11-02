@@ -36,6 +36,10 @@
       ansible.builtin.debug:
         msg: "Cloud platform appears to be {{ cloud_platform_name }}"
 
+    - name: Load SAP HANA variables
+      ansible.builtin.include_vars: ./vars/hana_vars.yaml
+        
+
   tasks:
 
   - name: Include AWS variables
@@ -52,7 +56,7 @@
     tags: bootstrap
 
   - name: Base Cluster Configuration [aws]
-    ansible.builtin.include_tasks: ./tasks/aws-cluster-bootstrap.yaml
+    ansible.builtin.include_tasks: ./tasks/cluster-bootstrap.yaml
     when: cloud_platform_is_aws
     tags: bootstrap
 
@@ -62,7 +66,6 @@
     tags: bootstrap
     
 
-  #TODO: Get rid of hardcoded hostnames!!!
   - name: Add HANA to cluster [azure]
     ansible.builtin.include_tasks: ./tasks/azure-cluster-hana.yaml
     when:
@@ -71,7 +74,7 @@
     tags: hana_cluster
 
   - name: Add HANA to cluster [aws]
-    ansible.builtin.include_tasks: ./tasks/aws-cluster-hana.yaml
+    ansible.builtin.include_tasks: ./tasks/cluster-hana.yaml
     when:
       - cloud_platform_is_aws
       - is_primary

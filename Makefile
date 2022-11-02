@@ -6,6 +6,8 @@ all: static test
 
 static: static-bash static-py
 
+static-py: static-pylint static-flake8
+
 static-bash:
 	bash -n build.sh
 	shellcheck build.sh -o all -s bash -S info
@@ -18,7 +20,7 @@ static-pylint:
 static-flake8:
 	@find scripts -type f -not -path "scripts/qesap/.tox/*" -not -path "scripts/qesap/.venv/*" -name \*.py -exec flake8 --ignore=E501 {} +
 
-static-py: static-pylint static-flake8
+
 
 test:
 	@PYTHONPATH=scripts/qesap pytest

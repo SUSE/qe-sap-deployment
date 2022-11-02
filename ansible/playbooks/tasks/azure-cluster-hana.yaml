@@ -6,7 +6,7 @@
 
 - name: Set crm facts
   ansible.builtin.set_fact:
-    crm_maintainence_mode: "{{ (crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] }}"
+    crm_maintenance_mode: "{{ (crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] }}"
     stonith_enabled: "{{ (crm_conf_show.stdout | regex_search('stonith-enabled=([a-z]*)', '\\1' ))[0] | default('false') }}"
     hana_topology_clone: "{{ crm_conf_show.stdout | regex_search('clone cln_SAPHanaTopology') }}"
     stonith_timeout: "{{ crm_conf_show.stdout | regex_search('stonith-timeout') }}" # this should be variable!
@@ -22,12 +22,12 @@
     migration_threshold: "{{ (crm_conf_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1' ))[0] }}"
   changed_when: no
 
-- name: Ensure maintainence mode is active
+- name: Ensure maintenance mode is active
   ansible.builtin.command: crm configure property maintenance-mode=true
-  when: crm_maintainence_mode is false
+  when: crm_maintenance_mode is false
     
 - name: Create HANA topology resource
-  ansible.builtin.command: crm configure primitive rsc_SAPHanaTopology_HDB_HDB00 ocf:suse:SAPHanaTopology operations \$id="rsc_sap2_HDB_HDB00-operations" op monitor interval="10" timeout="600" op start interval="0" timeout="600" op stop interval="0" timeout="300" params SID="HDB" InstanceNumber="00" 
+  ansible.builtin.command: "crm configure primitive rsc_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} ocf:suse:SAPHanaTopology operations $id=\"rsc_sap2_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations\" op monitor interval=\"10\" timeout=\"600\" op start interval=\"0\" timeout=\"600\" op stop interval=\"0\" timeout=\"300\" params SID=\"{{ sap_hana_install_sid }}\" InstanceNumber=\"{{ sap_hana_install_instance_number }}\""
   when: hana_topology_resource | length == 0
 
 - name: Set stonith-timeout [sdb]
@@ -47,35 +47,36 @@
   when: stonith_enabled != 'true'
 
 - name: Create HANA topology clone
-  ansible.builtin.command: crm configure clone cln_SAPHanaTopology_HDB_HDB00 rsc_SAPHanaTopology_HDB_HDB00 meta clone-node-max="1" target-role="Started" interleave="true"
+  ansible.builtin.command: "crm configure clone cln_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} rsc_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} meta clone-node-max=\"1\" target-role=\"Started\" interleave=\"true\""
   when: hana_topology_clone | length == 0
 
 - name: Create HANA resource
-  ansible.builtin.command: crm configure primitive rsc_SAPHana_HDB_HDB00 ocf:suse:SAPHana operations \$id="rsc_sap_HDB_HDB00-operations" op start interval="0" timeout="3600" op stop interval="0" timeout="3600" op promote interval="0" timeout="3600" op monitor interval="60" role="Master" timeout="700" op monitor interval="61" role="Slave" timeout="700" params SID="HDB" InstanceNumber="00" PREFER_SITE_TAKEOVER="true" DUPLICATE_PRIMARY_TIMEOUT="7200" AUTOMATED_REGISTER="false" 
+  ansible.builtin.command: "crm configure primitive rsc_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} ocf:suse:SAPHana operations $id=\"rsc_sap_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations\" op start interval=\"0\" timeout=\"3600\" op stop interval=\"0\" timeout=\"3600\" op promote interval=\"0\" timeout=\"3600\" op monitor interval=\"60\" role=\"Master\" timeout=\"700\" op monitor interval=\"61\" role=\"Slave\" timeout=\"700\" params SID=\"{{ sap_hana_install_sid }}\" InstanceNumber=\"{{ sap_hana_install_instance_number }}\" PREFER_SITE_TAKEOVER=\"true\" DUPLICATE_PRIMARY_TIMEOUT=\"7200\" AUTOMATED_REGISTER=\"false\"" 
   when: hana_resource | length == 0
 
 - name: Create HANA resource clone
-  ansible.builtin.command: crm configure ms msl_SAPHana_HDB_HDB00 rsc_SAPHana_HDB_HDB00 meta notify="true" clone-max="2" clone-node-max="1" target-role="Started" interleave="true" 
+  ansible.builtin.command: "crm configure ms msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} rsc_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} meta notify=\"true\" clone-max=\"2\" clone-node-max=\"1\" target-role=\"Started\" interleave=\"true\"" 
   when: hana_resource_clone | length == 0
 
 - name: Create IP resource
-  ansible.builtin.command: crm configure primitive rsc_ip_HDB_HDB00 ocf:heartbeat:IPaddr2 meta target-role="Started" operations \$id="rsc_ip_HDB_HDB00-operations" op monitor interval="10s" timeout="20s" params ip="10.10.1.12"
+  #TODO - IP address is hardcoded here, that's not good and will only work when the VIP perfectly matches.
+  ansible.builtin.command: "crm configure primitive rsc_ip_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} ocf:heartbeat:IPaddr2 meta target-role=\"Started\" operations $id=\"rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations\" op monitor interval=\"10s\" timeout=\"20s\" params ip=\"10.10.1.12\""
   when: ip_resource | length == 0
 
 - name: Create socat resource
-  ansible.builtin.command: crm configure primitive rsc_socat_HDB_HDB00 azure-lb params port=62500 op monitor timeout=20 interval=10 op_params depth=0 meta resource-stickiness=0
+  ansible.builtin.command: "crm configure primitive rsc_socat_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} azure-lb params port=625{{ sap_hana_install_instance_number }} op monitor timeout=20 interval=10 op_params depth=0 meta resource-stickiness=0"
   when: ip_nc | length == 0
 
 - name: Configure IP group
-  ansible.builtin.command: crm configure group g_ip_HDB_HDB00 rsc_ip_HDB_HDB00 rsc_socat_HDB_HDB00
+  ansible.builtin.command: "crm configure group g_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} rsc_ip_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} rsc_socat_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}"
   when: ip_grp | length == 0
 
 - name: Configure hana/IP colocation
-  ansible.builtin.command: 'crm configure colocation col_saphana_ip_HDB_HDB00 4000: g_ip_HDB_HDB00:Started msl_SAPHana_HDB_HDB00:Master'
+  ansible.builtin.command: "crm configure colocation col_saphana_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} 4000: g_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Started msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Master"
   when: ip_colo | length == 0
 
 - name: Configure order
-  ansible.builtin.command: 'crm configure order ord_SAPHana_HDB_HDB00 Optional: cln_SAPHanaTopology_HDB_HDB00 msl_SAPHana_HDB_HDB00'
+  ansible.builtin.command: "crm configure order ord_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} Optional: cln_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}"
   when: order | length == 0
 
 - name: Wait for cluster to settle
@@ -86,13 +87,13 @@
 # There really should be a way of checking if this needs to be run!
 # Plus the linter doesn't like it!
 - name: Cleanup
-  ansible.builtin.command: crm resource cleanup rsc_SAPHana_HDB_HDB00
+  ansible.builtin.command: crm resource cleanup rsc_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
 
 - name: Wait for cluster to settle
   ansible.builtin.pause:
     seconds: 30
 
-# Get current maintainence state
+# Get current maintenance state
 - name: Refresh cluster status
   ansible.builtin.command: crm configure show
   register: refreshed_crm_conf_show 
@@ -100,12 +101,12 @@
 
 - name: Set crm facts
   ansible.builtin.set_fact:
-    refreshed_crm_maintainence_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] }}"
+    refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] }}"
   changed_when: no
 
-- name: Ensure maintainence mode is disabled
+- name: Ensure maintenance mode is disabled
   ansible.builtin.command: crm configure property maintenance-mode=false
-  when: refreshed_crm_maintainence_mode is true
+  when: refreshed_crm_maintenance_mode is true
 
 - name: Ensure resource-stickiness is configured
   ansible.builtin.command: crm configure rsc_defaults resource-stickiness=1000

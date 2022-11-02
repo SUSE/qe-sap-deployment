@@ -34,15 +34,15 @@
       - targetcli-fb
 
   - name: Load AWS disk configuration
-    ansible.builtin.include_vars: ./vars/aws-iscsi-storage-profile.yaml
+    ansible.builtin.include_vars: ./vars/aws_iscsi_storage_profile.yaml
     when: cloud_platform_is_aws
 
   - name: Load Azure disk configuration
-    ansible.builtin.include_vars: ./vars/azure-iscsi-storage-profile.yaml
+    ansible.builtin.include_vars: ./vars/azure_iscsi_storage_profile.yaml
     when: cloud_platform_is_azure
 
   - name: Load GCP disk configuration
-    ansible.builtin.include_vars: ./vars/gcp-iscsi-storage-profile.yaml
+    ansible.builtin.include_vars: ./vars/gcp_iscsi_storage_profile.yaml
     when: cloud_platform_is_gcp
       
 
