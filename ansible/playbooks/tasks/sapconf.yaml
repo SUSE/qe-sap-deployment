@@ -3,6 +3,12 @@
   ansible.builtin.package_facts:
     manager: auto
 
+- name: Remove tuned on SLE12
+  community.general.zypper:
+    name: tuned
+    state: absent
+  when: ansible_facts['distribution_major_version'] == "12"
+
 - name: Set saptune installation status
   ansible.builtin.set_fact:
     saptune_inst: "{{ ansible_facts.packages.saptune[0].version | default('not-installed') }}"
@@ -26,7 +32,7 @@
     name: tuned
     state: stopped
     enabled: no
-  when: tuned_inst != 'not-installed'
+  when: tuned_inst != 'not-installed' and ansible_facts['distribution_major_version'] != "12"
 
 - name: Ensure sapconf is installed
   # using command instead of zypper module as workaround
@@ -41,11 +47,6 @@
     name: sapconf
     state: started
     enabled: yes
-
-- name: Select HANA profile on SLE12
-  ansible.builtin.shell: sapconf stop && sapconf hana
-  changed_when: false
-  when: ansible_facts['distribution_major_version'] == "12"
 
 - name: Test that sapconf_check is available
   ansible.builtin.command: which sapconf_check
