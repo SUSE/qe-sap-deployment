@@ -8,8 +8,9 @@ This project is in a very early stage of development.
 
 Tools needed
 
+* Python 3.9
 * terraform v1.1.7
-* ansible 4.10.0 (ansible-core 2.11.12)
+* ansible 6.5.0 (ansible-core 2.13.5). Please refer to the **requirements.txt** file
 * cloud provider cli tools (`az`, `aws`, `gcloud`)
 
 The Python requirements could be managed with a virtual environment
@@ -60,48 +61,6 @@ The destruction of the infrastructure, including the de-registration of SLES, ca
 (venv) python3 scripts/qesap/qesap.py --verbose -c config.yaml -b <FOLDER_OF_YOUR_CLONED_REPO> ansible -d
 
 (venv) python3 scripts/qesap/qesap.py --verbose -c config.yaml -b <FOLDER_OF_YOUR_CLONED_REPO> terraform -d
-```
-
-### Old shell script based approach
-
-The scripts currently work for the 'azure' provider only.
-
-To get started, user must create a new `variables.sh`:
-
-```shell
-cp variables.example variables.sh
-```
-
-Edit the values of `variables.sh`:
-
-* PROVIDER : one of the folders in the terraform folder
-* REG_CODE : SCC registration code used in the `registration.yaml` playbook
-* EMAIL : email address used in the registration.yaml playbook
-* SAPCONF : true/false
-
-Copy the `terraform.tfvars.example` of the provided of choice and configure it.
-
-```shell
-cp terraform/azure/terraform.tfvars.example terraform/azure/terraform.tfvars
-```
-
-Copy the `hana_media.example.yaml` file and edit the values so that ansible knows where to download the installation media.
-For Azure, it is preferred to upload the media to blobs in an Azure storage account.
-
-```shell
-cp ansible/playbooks/vars/hana_media.example.yaml ansible/playbooks/vars/hana_media.yaml
-```
-
-Once these steps are completed, it should be possible to run the `build.sh` script to create the infrastructure and install HANA on both VMs.
-
-```shell
-./build.sh -k <SECRET_FOLDER>/id_rsa_cloud
-```
-
-The destruction of the infrastructure, including the de-registration of SLES, can be conducted with the `destroy.sh` script.
-
-```shell
-./destroy.sh -k <SECRET_FOLDER>/id_rsa_cloud
 ```
 
 ### Manual terraform deployment
