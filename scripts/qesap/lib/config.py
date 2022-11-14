@@ -173,9 +173,22 @@ class CONF:
             log.error("Error at 'ansible' in the config")
             return False
 
-        if 'hana_urls' not in self.conf['ansible']:
-            log.error("Missing 'hana_urls' in 'ansible' in the config")
-            return False
+        if self.conf["apiver"] < 3:
+            if 'hana_urls' not in self.conf['ansible']:
+                log.error("Missing 'hana_urls' in 'ansible' in the config")
+                return False
+        else:
+            if 'hana_media' not in self.conf['ansible']:
+                log.error("Missing 'hana_media' in 'ansible' in the config")
+                return False
+            if 'az_storage_account_name' not in self.conf['ansible']:
+                log.error("Missing 'az_storage_account_name' in 'ansible' in the config")
+                return False
+            if 'az_container_name' not in self.conf['ansible']:
+                log.error("Missing 'az_container_name' in 'ansible' in the config")
+                return False
+            if 'az_sas_token' not in self.conf['ansible']:
+                log.warning("Missing 'az_sas_token' in 'ansible' in the config")
 
         if sequence:
             if sequence not in self.conf['ansible'] or self.conf['ansible'][sequence] is None:

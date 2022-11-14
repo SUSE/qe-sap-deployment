@@ -1,4 +1,5 @@
-ansible==4.10.0
-ansible-core==2.11.12
+ansible==6.5.0
+ansible-compat==2.2.1
+ansible-core==2.13.5
 awscli==1.19.48
 jmespath==0.10.0

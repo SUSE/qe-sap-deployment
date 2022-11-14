@@ -3,6 +3,12 @@
   ansible.builtin.package_facts:
     manager: auto
 
+- name: Remove tuned on SLE12
+  community.general.zypper:
+    name: tuned
+    state: absent
+  when: ansible_facts['distribution_major_version'] == "12"
+
 - name: Set saptune installation status
   ansible.builtin.set_fact:
     saptune_inst: "{{ ansible_facts.packages.saptune[0].version | default('not-installed') }}"
@@ -26,13 +32,16 @@
     name: tuned
     state: stopped
     enabled: no
-  when: tuned_inst != 'not-installed'
+  when: tuned_inst != 'not-installed' and ansible_facts['distribution_major_version'] != "12"
 
 - name: Ensure sapconf is installed
-  community.general.zypper:
-    name: sapconf>=5.0.3 # weak version control 
-    state: present    
-    
+  # using command instead of zypper module as workaround
+  ansible.builtin.command: zypper -n in --replacefiles 'sapconf=5.0.3'
+  register: result
+  until: result is succeeded
+  retries: 3
+  delay: 60
+
 - name: Ensure sapconf daemon is started and enabled
   ansible.builtin.systemd:
     name: sapconf
@@ -82,6 +91,5 @@
     value: '0'
     sysctl_set: yes
     state: present
-    reload: yes   
+    reload: yes
 
-    

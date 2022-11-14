@@ -114,8 +114,25 @@ def cmd_configure(configure_data, base_project, dryrun):
     if not config.validate_ansible_config(None):
         return Status("Problems in the ansible part of the configuration")
 
-    hanamedia_content = {'hana_urls': configure_data['ansible']['hana_urls']}
-    log.debug("Hana media %s:\n%s", cfg_paths['hana_media_file'], hanamedia_content)
+    hanamedia_content = {}
+    if configure_data['apiver'] < 3:
+        match = re.search(r'http.*://(?P<ACCOUNT>.*)\.blob\.core\.windows\.net/(?P<CONTAINER>.*)/(?P<EXE>.*)', configure_data['ansible']['hana_urls'][0])
+        if match:
+            hanamedia_content['az_storage_account_name'] = match.group('ACCOUNT')
+            hanamedia_content['az_container_name'] = match.group('CONTAINER')
+        hanamedia_content['az_blobs'] = []
+        for this_media in configure_data['ansible']['hana_urls']:
+            match = re.search(r'http.*://(?P<ACCOUNT>.*)\.blob\.core\.windows\.net/(?P<CONTAINER>.*)/(?P<EXE>.*)', this_media)
+            if match:
+                hanamedia_content['az_blobs'].append(match.group('EXE'))
+        log.debug("Hana media %s:\n%s", cfg_paths['hana_media_file'], hanamedia_content)
+    else:
+        hanamedia_content['az_storage_account_name'] = configure_data['ansible']['az_storage_account_name']
+        hanamedia_content['az_container_name'] = configure_data['ansible']['az_container_name']
+        if 'az_sas_token' in configure_data['ansible']:
+            hanamedia_content['az_sas_token'] = configure_data['ansible']['az_sas_token']
+        hanamedia_content['az_blobs'] = configure_data['ansible']['hana_media']
+
     if 'hana_vars' in configure_data['ansible'] and configure_data['apiver'] >= 2:
         log.debug("Hana variables %s:\n%s", cfg_paths['hana_vars_file'], configure_data['ansible']['hana_vars'])
 
