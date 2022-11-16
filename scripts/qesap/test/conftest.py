@@ -62,10 +62,12 @@ terraform:
       disk_type: "hdd,hdd,hdd"
       disks_size: "64,64,64"
 ansible:
-  hana_urls:
-    - SAPCAR_URL
-    - SAP_HANA_URL
-    - SAP_CLIENT_SAR_URL
+  az_storage_account_name: SOMEONE
+  az_container_name: SOMETHING
+  hana_media:
+    - SAPCAR_EXE
+    - SAP_HANA_EXE
+    - SAP_CLIENT_SAR_EXE
   hana_vars:
     sap_hana_install_software_directory: /hana/shared/install
     sap_hana_install_master_password: 'DoNotUseThisPassw0rd'
@@ -76,11 +78,44 @@ ansible:
     secondary_site: 'miky'
 """
 
-    def _callback(provider='pinocchio', apiver=2):
+    def _callback(provider='pinocchio', apiver=3):
         return config.format(apiver, provider)
 
     return _callback
 
+
+@pytest.fixture
+def config_yaml_sample_for_terraform():
+    """
+    create yaml config data sample with one string, list and dict variable.
+    :return:
+    dict based data structure
+    """
+    config = """---
+apiver: {}
+provider: {}
+{}
+ansible:
+  az_storage_account_name: SOMEONE
+  az_container_name: SOMETHING
+  hana_media:
+    - SAPCAR_EXE
+    - SAP_HANA_EXE
+    - SAP_CLIENT_SAR_EXE
+  hana_vars:
+    sap_hana_install_software_directory: /hana/shared/install
+    sap_hana_install_master_password: 'DoNotUseThisPassw0rd'
+    sap_hana_install_sid: 'HDB'
+    sap_hana_install_instance_number: '00'
+    sap_domain: "qe-test.example.com"
+    primary_site: 'goofy'
+    secondary_site: 'miky'
+"""
+
+    def _callback(terraform_section, provider='pinocchio', apiver=3):
+        return config.format(apiver, provider, terraform_section)
+
+    return _callback
 
 @pytest.fixture
 def provider_dir(tmpdir):

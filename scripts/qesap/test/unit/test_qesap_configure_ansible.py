@@ -62,6 +62,47 @@ ansible:
     assert res, msg
 
 
+def test_configure_ansible_hanamedia_content_apiver2_invalidurl(configure_helper, validate_hana_media):
+    """
+    Test conversion old apiver:2 config.yaml that is using invalid urls
+    """
+    provider = 'pinocchio'
+    wrong_hana_urls = [
+    ('MISSING ACCOUNT',"""
+    - https://.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT"""),
+    ('MISSING CONTAINER',"""
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
+    - https://SOMEONE.blob.core.windows.net//MY_IMDB_CLIENT
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT"""),
+    ('MISSING EXE',"""
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/"""),
+    ('DIFFERENT ACCOUNT',"""
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
+    - https://SOMEONEELSE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER       # This is the wrong one DIFFERENT ACCOUNT
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT"""),
+    ('DIFFERENT CONTAINER',"""
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER       # This is the wrong one DIFFERENT ACCOUNT
+    - https://SOMEONE.blob.core.windows.net/SOMETHINGELSE/MY_IMDB_CLIENT"""),
+    ]
+    for this_set in wrong_hana_urls:
+        conf = f"""---
+apiver: 2
+provider: {provider}
+terraform:
+    variables:
+        az_region: "westeurope"
+ansible:
+  hana_urls:
+{this_set[1]}"""
+        args, _, hana_media, _ = configure_helper(provider, conf, [])
+        assert main(args) != 0, f"{this_set[0]} error not detected"
+
+
 def test_configure_ansible_hanamedia_content_apiver3(configure_helper, validate_hana_media):
     """
     Test that an new apiver:3 config.yaml
@@ -169,7 +210,18 @@ def test_configure_not_create_ansible_hanavars_apiver1(configure_helper, config_
     if apiver < 2
     """
     this_provider = 'pinocchio'
-    conf = config_yaml_sample(provider=this_provider, apiver=1)
+    conf = f"""---
+apiver: 1
+provider: {this_provider}
+terraform:
+    variables:
+        az_region: "westeurope"
+ansible:
+  hana_urls:
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT"""
+
     args, _, _, hana_vars = configure_helper(this_provider, conf, [])
 
     assert main(args) == 0
@@ -184,14 +236,16 @@ def test_configure_ansible_hanavar_content(configure_helper):
     """
     provider = 'pinocchio'
     conf = f"""---
-apiver: 2
+apiver: 3
 provider: {provider}
 terraform:
     variables:
         az_region: "westeurope"
 ansible:
-  hana_urls:
-    - SAPCAR_URL
+  az_storage_account_name: SOMEONE
+  az_container_name: SOMETHING
+  hana_media:
+    - MY_SAPCAR_EXE
   hana_vars:
     sap_hana_install_software_directory: /hana/shared/install
     sap_hana_install_master_password: 'DoNotUseThisPassw0rd'
@@ -230,14 +284,16 @@ def test_configure_ansible_hanavar_values(configure_helper):
     """
     provider = 'pinocchio'
     conf = """---
-apiver: 2
+apiver: 3
 provider: {}
 terraform:
     variables:
         az_region: "westeurope"
 ansible:
-  hana_urls:
-    - SAPCAR_URL
+  az_storage_account_name: SOMEONE
+  az_container_name: SOMETHING
+  hana_media:
+    - MY_SAPCAR_EXE
   hana_vars:
     sap_hana_install_software_directory: {}
     sap_hana_install_master_password: ''
@@ -266,14 +322,16 @@ def test_configure_ansible_hana(configure_helper):
     """
     provider = 'pinocchio'
     conf = f"""---
-apiver: 2
+apiver: 3
 provider: {provider}
 terraform:
     variables:
         az_region: "westeurope"
 ansible:
-  hana_urls:
-    - SAPCAR_URL
+  az_storage_account_name: SOMEONE
+  az_container_name: SOMETHING
+  hana_media:
+    - MY_SAPCAR_EXE
   hana_vars:
     zanzara: mosquito
 """

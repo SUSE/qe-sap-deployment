@@ -11,7 +11,7 @@ ANSIBLE_EXE = '/bin/ansible'
 ANSIBLEPB_EXE = '/paese/della/cuccagna/ansible-playbook'
 
 @mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_create(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
     Test that the ansible subcommand plays playbooks
@@ -43,7 +43,7 @@ def test_ansible_create(run, _, base_args, tmpdir, create_inventory, create_play
 
 
 @mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_verbose(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
     run with -vvvv if qesap ansible --verbose
@@ -75,7 +75,7 @@ def test_ansible_verbose(run, _, base_args, tmpdir, create_inventory, create_pla
     run.assert_has_calls(calls)
 
 
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_dryrun(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
     """
     Command ansible does not call the Ansible executable in dryrun mode
@@ -100,7 +100,7 @@ def test_ansible_dryrun(run, base_args, tmpdir, create_inventory, create_playboo
     run.assert_not_called()
 
 
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_missing_inventory(run, tmpdir, base_args, ansible_config):
     """
     Stop and return non zero if inventory is missing
@@ -118,7 +118,7 @@ def test_ansible_missing_inventory(run, tmpdir, base_args, ansible_config):
     run.assert_not_called()
 
 
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_no_playbooks(run, tmpdir, base_args, create_inventory, ansible_config):
     """
     If no playbooks are listed, Ansible is not called
@@ -141,7 +141,7 @@ def test_ansible_no_playbooks(run, tmpdir, base_args, create_inventory, ansible_
     run.assert_not_called()
 
 
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_missing_playbook(run, tmpdir, base_args, create_inventory, create_playbooks, ansible_config):
     """
     ansible subcommand has not to run any commands if
@@ -170,7 +170,7 @@ def test_ansible_missing_playbook(run, tmpdir, base_args, create_inventory, crea
 
 
 @mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
-@mock.patch("qesap.subprocess_run", side_effect=[(0, []), (1, [])])
+@mock.patch("lib.process_manager.subprocess_run", side_effect=[(0, []), (1, [])])
 def test_ansible_stop(run, _, tmpdir, base_args, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
     Stop the sequence of playbook at first one
@@ -200,7 +200,7 @@ def test_ansible_stop(run, _, tmpdir, base_args, create_inventory, create_playbo
 
 
 @mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_destroy(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
     Test that ansible subcommand, called with -d,
@@ -234,7 +234,7 @@ def test_ansible_destroy(run, _, base_args, tmpdir, create_inventory, create_pla
 
 
 @mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_e_reg(run, _, base_args, tmpdir, create_inventory, create_playbooks, mock_call_ansibleplaybook):
     """
     Replace email and code before to run
@@ -280,7 +280,7 @@ ansible:
 
 
 @mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_e_sapconf(run, _, base_args, tmpdir, create_inventory, create_playbooks, mock_call_ansibleplaybook):
     """
     Replace sapconf flag before to run
@@ -324,7 +324,7 @@ ansible:
 
 
 @mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_ssh(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
     This first Ansible command has to be called before all the others
@@ -376,7 +376,7 @@ def test_ansible_ssh(run, _, base_args, tmpdir, create_inventory, create_playboo
 
 
 @mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_env_config(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
     """
     Test that ANSIBLE_PIPELINING is added to the env used to run Ansible. In the build.sh it was:

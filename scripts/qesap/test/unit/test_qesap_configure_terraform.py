@@ -60,25 +60,21 @@ def test_configure_create_tfvars_file(configure_helper, config_yaml_sample):
     assert os.path.isfile(tfvar_file)
 
 
-def test_configure_tfvars_novariables_notemplate(configure_helper):
+def test_configure_tfvars_novariables_notemplate(config_yaml_sample_for_terraform, configure_helper):
     """
     If no terraform.tfvars.template is present and
     no terraform::variables is present in the config.yaml
     it has to fails.
     """
     provider = 'pinocchio'
+    conf = config_yaml_sample_for_terraform('', provider)
 
-    conf = f"""---
-apiver: 2
-provider: {provider}
-ansible:
-    hana_urls: something"""
     args, *_ = configure_helper(provider, conf, None)
 
     assert main(args) == 1
 
 
-def test_configure_tfvars_novariables(configure_helper):
+def test_configure_tfvars_novariables(config_yaml_sample_for_terraform, configure_helper):
     """
     Test that 'configure' generated terraform.tfvars file
     content is like terraform.tfvars.template
@@ -90,12 +86,9 @@ def test_configure_tfvars_novariables(configure_helper):
         "hananame = hahaha\n",
         "ip_range = 10.0.4.0/24\n"]
 
-    conf = f"""---
-apiver: 2
-provider: {provider}
-terraform:
-ansible:
-    hana_urls: something"""
+    terraform_section = '''terraform:
+'''
+    conf = config_yaml_sample_for_terraform(terraform_section, provider)
     args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
@@ -104,11 +97,7 @@ ansible:
         data = file.readlines()
         assert tfvar_template == data
 
-    conf = f"""---
-apiver: 2
-provider: {provider}
-ansible:
-    hana_urls: something"""
+    conf = config_yaml_sample_for_terraform('', provider)
     args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
@@ -118,7 +107,7 @@ ansible:
         assert tfvar_template == data
 
 
-def test_configure_tfvars_with_variables(configure_helper):
+def test_configure_tfvars_with_variables(config_yaml_sample_for_terraform, configure_helper):
     """
     Test that 'configure' generated terraform.tfvars file
     content is like terraform.tfvars.template
@@ -126,20 +115,16 @@ def test_configure_tfvars_with_variables(configure_helper):
     the config.yaml
     """
     provider = 'pinocchio'
-    conf = f"""---
-apiver: 2
-provider: {provider}
-terraform:
-  variables:
-    region : eu1
-    deployment_name : "rocket"
-ansible:
-    hana_urls: something"""
     tfvar_template = [
         "something = static\n",
         "hananame = hahaha\n",
         "ip_range = 10.0.4.0/24"]
-
+    terraform_section = '''terraform:
+  variables:
+    region : eu1
+    deployment_name : "rocket"
+'''
+    conf = config_yaml_sample_for_terraform(terraform_section, provider)
     args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
@@ -155,23 +140,21 @@ ansible:
         assert expected_tfvars == data
 
 
-def test_configure_tfvars_string_commas(configure_helper):
+def test_configure_tfvars_string_commas(config_yaml_sample_for_terraform, configure_helper):
     """
     Terraform.tfvars need commas around all strings variables
     """
     provider = 'pinocchio'
-    conf = f"""---
-apiver: 2
-provider: {provider}
+    terraform_section = """
 terraform:
   variables:
     region : eu1
     deployment_name : "rocket"
     os_image: SUSE:sles-sap-15-sp3-byos:gen2:2022.05.05
     public_key: /root/secret/id_rsa.pub
-ansible:
-    hana_urls: something"""
+"""
     tfvar_template = ["something = static"]
+    conf = config_yaml_sample_for_terraform(terraform_section, provider)
     args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
@@ -190,7 +173,7 @@ ansible:
         assert expected_tfvars == data
 
 
-def test_configure_tfvars_overwrite_variables(configure_helper):
+def test_configure_tfvars_overwrite_variables(config_yaml_sample_for_terraform, configure_helper):
     """
     Test 'configure' generated terraform.tfvars file:
     if same key pair is both in the terraform.tfvars.template
@@ -198,18 +181,15 @@ def test_configure_tfvars_overwrite_variables(configure_helper):
     """
     provider = 'pinocchio'
 
-    conf = f"""---
-apiver: 2
-provider: {provider}
+    terraform_section = f"""
 terraform:
   variables:
-    something : yamlrulez
-ansible:
-    hana_urls: something"""
+    something : yamlrulez"""
 
     tfvar_template = [
         "something = static\n",
         "somethingelse = keep\n"]
+    conf = config_yaml_sample_for_terraform(terraform_section, provider)
     args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0

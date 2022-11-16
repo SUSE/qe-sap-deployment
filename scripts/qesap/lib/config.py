@@ -1,11 +1,11 @@
 """
 configuration file related libraries
 """
-import logging
 import re
 import os
+import logging
 
-log = logging.getLogger('QESAPDEP')
+log = logging.getLogger('QESAP')
 
 
 def yaml_to_tfvars_entry(key, value):
@@ -73,12 +73,13 @@ class CONF:
         """
         config_out = ''
         terraform_variables = self.conf['terraform']['variables']
-        log.debug(self.conf)
+        log.debug("terraform_variables:%s", terraform_variables)
         for key, value in terraform_variables.items():
             entry = yaml_to_tfvars_entry(key, value)
             if entry is None:
                 return None
             config_out += f'\n{entry}'
+        log.debug("config_out:%s", config_out)
         return config_out
 
     def terraform_yml(self):
