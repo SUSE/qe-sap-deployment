@@ -1,4 +1,5 @@
 import os
+import yaml
 from unittest import mock
 import pytest
 
@@ -61,10 +62,12 @@ terraform:
       disk_type: "hdd,hdd,hdd"
       disks_size: "64,64,64"
 ansible:
-  hana_urls:
-    - SAPCAR_URL
-    - SAP_HANA_URL
-    - SAP_CLIENT_SAR_URL
+  az_storage_account_name: SOMEONE
+  az_container_name: SOMETHING
+  hana_media:
+    - SAPCAR_EXE
+    - SAP_HANA_EXE
+    - SAP_CLIENT_SAR_EXE
   hana_vars:
     sap_hana_install_software_directory: /hana/shared/install
     sap_hana_install_master_password: 'DoNotUseThisPassw0rd'
@@ -75,11 +78,44 @@ ansible:
     secondary_site: 'miky'
 """
 
-    def _callback(provider='pinocchio', apiver=2):
+    def _callback(provider='pinocchio', apiver=3):
         return config.format(apiver, provider)
 
     return _callback
 
+
+@pytest.fixture
+def config_yaml_sample_for_terraform():
+    """
+    create yaml config data sample with one string, list and dict variable.
+    :return:
+    dict based data structure
+    """
+    config = """---
+apiver: {}
+provider: {}
+{}
+ansible:
+  az_storage_account_name: SOMEONE
+  az_container_name: SOMETHING
+  hana_media:
+    - SAPCAR_EXE
+    - SAP_HANA_EXE
+    - SAP_CLIENT_SAR_EXE
+  hana_vars:
+    sap_hana_install_software_directory: /hana/shared/install
+    sap_hana_install_master_password: 'DoNotUseThisPassw0rd'
+    sap_hana_install_sid: 'HDB'
+    sap_hana_install_instance_number: '00'
+    sap_domain: "qe-test.example.com"
+    primary_site: 'goofy'
+    secondary_site: 'miky'
+"""
+
+    def _callback(terraform_section, provider='pinocchio', apiver=3):
+        return config.format(apiver, provider, terraform_section)
+
+    return _callback
 
 @pytest.fixture
 def provider_dir(tmpdir):
@@ -323,5 +359,59 @@ def mock_call_ansibleplaybook():
         original_env = dict(os.environ)
         original_env['ANSIBLE_PIPELINING'] = 'True'
         return mock.call(cmd=playbook_cmd, env=original_env)
+
+    return _callback
+
+
+@pytest.fixture
+def validate_hana_media():
+    '''
+    Validate hana_media.yaml file needed by Ansible
+
+    ```
+    az_storage_account_name: <ACCOUNT>
+    az_container_name:       <CONTAINER>
+    az_sas_token:            <SAS_TOKEN>
+    az_blobs:
+      - <SAPCAR_EXE>
+      - <IMDB_SERVER_SAR>
+      - <IMDB_CLIENT_SAR>
+    ```
+    '''
+    def _callback(hana_media_file, account='ACCOUNT', container='CONTAINER', token=None, sapcar='SAPCAR_EXE', imdb_srv='IMDB_SERVER_SAR', imdb_cln='IMDB_CLIENT_SAR'):
+        with open(hana_media_file, 'r', encoding='utf-8') as file:
+            data = yaml.load(file, Loader=yaml.FullLoader)
+
+            if 'az_storage_account_name' not in data:
+                return False, 'az_storage_account_name missing in the generated hana_media.yaml'
+            if account != data['az_storage_account_name']:
+                return False, f"az_storage_account_name value is {data['az_storage_account_name']} and not expected {account}"
+
+            if 'az_container_name' not in data:
+                return False, 'az_container_name missing in the generated hana_media.yaml'
+            if container != data['az_container_name']:
+                return False, f"az_container_name value is {data['az_container_name']} and not expected {container}"
+
+            # az_sas_token is optional, test it only if requested
+            if token:
+                if 'az_sas_token' not in data:
+                    return False, 'az_sas_token missing in the generated hana_media.yaml'
+                if token != data['az_sas_token']:
+                    return False, f"az_sas_token value is {data['az_sas_token']} and not expected {token}"
+
+            blob_key = 'az_blobs'
+            if blob_key not in data:
+                return False, f"{blob_key} section missing in the generated hana_media.yaml"
+            urls_num = len(data[blob_key])
+            if urls_num != 3:
+                return False, f"Number of elements in {blob_key} is {urls_num} and not 3"
+            if sapcar not in data[blob_key]:
+                return False, f"{sapcar} missing in {blob_key}: {data[blob_key]}"
+            if imdb_srv not in data[blob_key]:
+                return False, f"{imdb_srv} missing in {blob_key}: {data[blob_key]}"
+            if imdb_cln not in data[blob_key]:
+                return False, f"{imdb_cln} missing in {blob_key}: {data[blob_key]}"
+
+        return (True, '')
 
     return _callback

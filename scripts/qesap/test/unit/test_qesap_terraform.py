@@ -15,7 +15,7 @@ terraform_cmds = [
 ]
 
 
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 @pytest.mark.parametrize("terraform_cmd_args", terraform_cmds)
 def test_terraform_call_terraform(run, terraform_cmd_args, args_helper, config_yaml_sample):
     """
@@ -48,7 +48,7 @@ def test_terraform_call_terraform(run, terraform_cmd_args, args_helper, config_y
     run.assert_has_calls(calls)
 
 
-@mock.patch("qesap.subprocess_run", side_effect=[(0, []), (1, []), (1, [])])
+@mock.patch("lib.process_manager.subprocess_run", side_effect=[(0, []), (1, []), (1, [])])
 def test_terraform_stop_at_failure(run, args_helper, config_yaml_sample):
     """
     Command stop at first subprocess(terraform) with not zero exit code.
@@ -77,7 +77,7 @@ def test_terraform_stop_at_failure(run, args_helper, config_yaml_sample):
     assert not any('apply' in name[0] for name, args in run.call_args_list), 'Unexpected terraform apply call'
 
 
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 @pytest.mark.parametrize("terraform_cmd_args", terraform_cmds)
 def test_terraform_logs(run, terraform_cmd_args, args_helper, config_yaml_sample, tmpdir):
     """
@@ -100,7 +100,7 @@ def test_terraform_logs(run, terraform_cmd_args, args_helper, config_yaml_sample
     assert os.path.isfile(f"terraform.{cmd}.log.txt")
 
 
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 @pytest.mark.parametrize("terraform_cmd_args", terraform_cmds)
 def test_terraform_logs_content(run, terraform_cmd_args, args_helper, config_yaml_sample, tmpdir):
     """
@@ -158,7 +158,7 @@ def test_integration_terraform(terraform_cmd_args, config_yaml_sample, tmpdir):
     assert 'Initializing modules...\n' in log_lines
 
 
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 def test_terraform_dryrun(run, args_helper, config_yaml_sample):
     """
     Command terraform does not call terraform executable in dryrun mode
@@ -176,7 +176,7 @@ def test_terraform_dryrun(run, args_helper, config_yaml_sample):
     run.assert_not_called()
 
 
-@mock.patch("qesap.subprocess_run")
+@mock.patch("lib.process_manager.subprocess_run")
 def test_terraform_call_terraform_destroy(run, args_helper, config_yaml_sample):
     """
     Command terraform with -d calls 'terraform destroy'
