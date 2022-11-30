@@ -8,7 +8,7 @@
 
     #Pre flight checks
 
-    #Do we have repos?  If yes, we need to register
+    #Do we have repos?  If not, we need to register
     - name: Check for registration
       ansible.builtin.command: zypper lr
       register: repos
@@ -20,15 +20,16 @@
       ansible.builtin.command:  which registercloudguest
       register: rcg
       failed_when: false
-      changed_when: false      
+      changed_when: false
+      when:
+        - repos.rc != 0
 
     # Execute Section
-
     - name: registercloudguest pre-run cleaning
       ansible.builtin.command: registercloudguest --clean
-      when: 
-        - rcg.rc == 0 
+      when:
         - repos.rc != 0
+        - rcg.rc == 0
 
     - name: registercloudguest registration
       ansible.builtin.command: registercloudguest --force-new -r "{{ reg_code }}" -e "{{ email_address }}"
@@ -36,9 +37,9 @@
       until: result is succeeded
       retries: 10
       delay: 60
-      when: 
-        - rcg.rc == 0
+      when:
         - repos.rc != 0
+        - rcg.rc == 0
 
     #If registercloudguest is not present fall back on SUSEConnect
     - name: SUSEConnect registration
@@ -48,8 +49,8 @@
       retries: 10
       delay: 60
       when:
-        - rcg.rc != 0
         - repos.rc != 0
+        - rcg.rc != 0
 
     #There are additional repos to add.  These are handled differently for SLES 15 and SLES12
     - name: Add SLES 12 Advanced Systems Modules
@@ -59,9 +60,9 @@
       retries: 10
       delay: 60
       when:
-        - rcg.rc != 0
-        - repos.rc != 0
         - ansible_facts['distribution_major_version'] == "12"
+        - repos.rc != 0
+        - rcg.rc != 0
 
     - name: Add SLES 12 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/12/{{ ansible_facts['architecture'] }}
@@ -70,10 +71,10 @@
       retries: 10
       delay: 60
       when:
-        - rcg.rc != 0
-        - repos.rc != 0
         - ansible_facts['distribution_major_version'] == "12"
-    
+        - repos.rc != 0
+        - rcg.rc != 0
+
     - name: Add SLES 15 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/{{ ansible_facts['distribution_version'] }}/{{ ansible_facts['architecture'] }}
       register: result
@@ -81,6 +82,13 @@
       retries: 10
       delay: 60
       when:
-        - rcg.rc != 0
-        - repos.rc != 0
         - ansible_facts['distribution_major_version'] == "15"
+        - repos.rc != 0
+        - rcg.rc != 0
+
+    - name: Check if repos are added after registration
+      ansible.builtin.command: zypper lr
+      register: repos_after
+      failed_when: repos_after.rc != 0
+      when:
+        - repos.rc != 0
