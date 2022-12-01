@@ -47,6 +47,10 @@
     ansible.builtin.set_fact:
       hsr_configured: "{{ hsr_file_check.state }}"
 
+  - name: Print sap_hana_cluster_nodes variable
+    ansible.builtin.debug:
+      var: sap_hana_cluster_nodes
+
   - name: Execute hana system replication role
     ansible.builtin.include_role:
       role: ../roles/sap_ha_install_hana_hsr
