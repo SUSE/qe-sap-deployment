@@ -138,7 +138,6 @@ variable "network_domain" {
 variable "os_image" {
   description = "Default OS image for all the machines. This value is not used if the specific nodes os_image is set (e.g. hana_os_image)"
   type        = string
-  default     = "suse-sap-cloud/sles-15-sp3-sap"
 }
 
 variable "timezone" {
