@@ -85,21 +85,6 @@ variable "ers_instance_number" {
   type        = string
 }
 
-variable "storage_account_name" {
-  description = "Azure storage account where SAP Netweaver installation files are stored"
-  type        = string
-}
-
-variable "storage_account_key" {
-  description = "Azure storage account access key"
-  type        = string
-}
-
-variable "storage_account_path" {
-  description = "Azure storage account path where SAP Netweaver installation files are stored"
-  type        = string
-}
-
 variable "xscs_accelerated_networking" {
   description = "Enable accelerated networking for netweaver xSCS machines"
   type        = bool

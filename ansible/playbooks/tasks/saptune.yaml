@@ -25,7 +25,7 @@
 
 - name: Ensure saptune_check executes correctly
   ansible.builtin.command: saptune_check
-  changed_when: no    
+  changed_when: no
 
 - name: Discover active solution
   ansible.builtin.command: saptune solution enabled
@@ -58,9 +58,9 @@
      net.ipv4.tcp_timestamps = 0
      net.ipv4.tcp_tw_reuse = 0
      net.ipv4.tcp_tw_recycle = 0
-  when: 
+  when:
     - cluster_node
-    - platform == 'azure'    
+    - platform == 'azure'
 
 - name: Check if saptune solution needs to be applied
   ansible.builtin.command: "saptune solution verify {{ saptune_solution }}"
@@ -80,4 +80,4 @@
 
 - name: Ensure solution was successful 
   ansible.builtin.command: "saptune solution verify {{ saptune_solution }}"
-  changed_when: no # We're only checking, not changing!    
+  changed_when: no # We're only checking, not changing!

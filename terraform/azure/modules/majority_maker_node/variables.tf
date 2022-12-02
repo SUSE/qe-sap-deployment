@@ -25,16 +25,6 @@ variable "storage_account" {
   type = string
 }
 
-variable "storage_account_name" {
-  description = "Azure storage account where SAP hana installation files are stored"
-  type        = string
-}
-
-variable "storage_account_key" {
-  description = "Azure storage account access key"
-  type        = string
-}
-
 variable "hana_count" {
   type = string
 }
