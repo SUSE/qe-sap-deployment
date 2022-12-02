@@ -172,7 +172,6 @@ variable "network_domain" {
 variable "os_image" {
   description = "Default OS image for all the machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: 'SUSE:sles-sap-15-sp3:gen2:latest'. This value is not used if the specific nodes os_image is set (e.g. hana_os_image)"
   type        = string
-  default     = "SUSE:sles-sap-15-sp3:gen2:latest"
 }
 
 variable "timezone" {
