@@ -442,8 +442,6 @@ module "hana_majority_maker" {
   resource_group_name           = var.resource_group_name
   network_subnet_id             = var.network_subnet_id
   storage_account               = var.storage_account
-  storage_account_name          = var.storage_account_name
-  storage_account_key           = var.storage_account_key
   enable_accelerated_networking = var.enable_accelerated_networking
   sles4sap_uri                  = var.sles4sap_uri
   os_image                      = var.os_image

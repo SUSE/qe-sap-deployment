@@ -120,10 +120,6 @@ module "common_variables" {
   netweaver_product_id                = var.netweaver_product_id
   netweaver_inst_folder               = var.netweaver_inst_folder
   netweaver_extract_dir               = var.netweaver_extract_dir
-  netweaver_swpm_folder               = var.netweaver_swpm_folder
-  netweaver_sapcar_exe                = var.netweaver_sapcar_exe
-  netweaver_swpm_sar                  = var.netweaver_swpm_sar
-  netweaver_sapexe_folder             = var.netweaver_sapexe_folder
   netweaver_additional_dvds           = var.netweaver_additional_dvds
   netweaver_nfs_share                 = var.drbd_enabled ? "${local.drbd_cluster_vip}:/${var.netweaver_sid}" : var.netweaver_nfs_share
   netweaver_sapmnt_path               = var.netweaver_sapmnt_path
@@ -199,9 +195,6 @@ module "netweaver_node" {
   storage_account             = azurerm_storage_account.mytfstorageacc.primary_blob_endpoint
   ascs_instance_number        = var.netweaver_ascs_instance_number
   ers_instance_number         = var.netweaver_ers_instance_number
-  storage_account_name        = var.netweaver_storage_account_name
-  storage_account_key         = var.netweaver_storage_account_key
-  storage_account_path        = var.netweaver_storage_account
   host_ips                    = local.netweaver_ips
   virtual_host_ips            = local.netweaver_virtual_ips
   iscsi_srv_ip                = join("", module.iscsi_server.iscsisrv_ip)
@@ -231,8 +224,6 @@ module "hana_node" {
   network_subnet_id             = local.subnet_id
   network_subnet_netapp_id      = local.subnet_netapp_id
   storage_account               = azurerm_storage_account.mytfstorageacc.primary_blob_endpoint
-  storage_account_name          = var.storage_account_name
-  storage_account_key           = var.storage_account_key
   enable_accelerated_networking = var.hana_enable_accelerated_networking
   sles4sap_uri                  = var.sles4sap_uri
   hana_instance_number          = var.hana_instance_number

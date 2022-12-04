@@ -75,10 +75,6 @@ output "configuration" {
       product_id            = var.netweaver_product_id
       inst_folder           = var.netweaver_inst_folder
       extract_dir           = var.netweaver_extract_dir
-      swpm_folder           = var.netweaver_swpm_folder
-      sapcar_exe            = var.netweaver_sapcar_exe
-      swpm_sar              = var.netweaver_swpm_sar
-      sapexe_folder         = var.netweaver_sapexe_folder
       additional_dvds       = var.netweaver_additional_dvds
       nfs_share             = var.netweaver_nfs_share
       sapmnt_path           = var.netweaver_sapmnt_path

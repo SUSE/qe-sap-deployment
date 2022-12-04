@@ -91,26 +91,6 @@ variable "netweaver_extract_dir" {
   type        = string
 }
 
-variable "netweaver_swpm_folder" {
-  description = "Netweaver software SWPM folder, path relative from the `netweaver_inst_media` mounted point"
-  type        = string
-}
-
-variable "netweaver_sapcar_exe" {
-  description = "Path to sapcar executable, relative from the `netweaver_inst_media` mounted point"
-  type        = string
-}
-
-variable "netweaver_swpm_sar" {
-  description = "SWPM installer sar archive containing the installer, path relative from the `netweaver_inst_media` mounted point"
-  type        = string
-}
-
-variable "netweaver_sapexe_folder" {
-  description = "Software folder where needed sapexe `SAR` executables are stored (sapexe, sapexedb, saphostagent), path relative from the `netweaver_inst_media` mounted point"
-  type        = string
-}
-
 variable "netweaver_additional_dvds" {
   description = "Software folder with additional SAP software needed to install netweaver (NW export folder and HANA HDB client for example), path relative from the `netweaver_inst_media` mounted point"
   type        = list(any)

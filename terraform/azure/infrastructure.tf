@@ -34,7 +34,8 @@ locals {
   anf_pool_name               = local.shared_storage_anf == 1 ? (var.anf_pool_name == "" ? azurerm_netapp_pool.mynetapp-pool.0.name : var.anf_pool_name) : ""
 }
 
-# Azure resource group and storage account resources
+# Azure resource group and storage account resources. Create one here
+# if not provided by external.
 resource "azurerm_resource_group" "myrg" {
   count    = var.resource_group_name == "" ? 1 : 0
   name     = "rg-ha-sap-${local.deployment_name}"

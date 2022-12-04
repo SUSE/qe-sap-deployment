@@ -78,18 +78,6 @@ variable "admin_user" {
   }
 }
 
-variable "storage_account_name" {
-  description = "Azure storage account name where HANA installation software is available"
-  type        = string
-  default     = ""
-}
-
-variable "storage_account_key" {
-  description = "Azure storage account secret key"
-  type        = string
-  default     = ""
-}
-
 variable "public_key" {
   description = "Content of a SSH public key or path to an already existing SSH public key. The key is only used to provision the machines and it is authorized for future accesses"
   type        = string
@@ -888,24 +876,6 @@ variable "netweaver_sapmnt_path" {
   default     = "/sapmnt"
 }
 
-variable "netweaver_storage_account_name" {
-  description = "Azure storage account where SAP Netweaver installation files are stored"
-  type        = string
-  default     = ""
-}
-
-variable "netweaver_storage_account_key" {
-  description = "Azure storage account access key"
-  type        = string
-  default     = ""
-}
-
-variable "netweaver_storage_account" {
-  description = "Azure storage account path"
-  type        = string
-  default     = ""
-}
-
 variable "netweaver_product_id" {
   description = "Netweaver installation product. Even though the module is about Netweaver, it can be used to install other SAP instances like S4/HANA"
   type        = string
@@ -922,30 +892,6 @@ variable "netweaver_extract_dir" {
   description = "Extraction path for Netweaver media archives of SWPM and netweaver additional dvds"
   type        = string
   default     = "/sapmedia_extract/NW"
-}
-
-variable "netweaver_swpm_folder" {
-  description = "Netweaver software SWPM folder, path relative from the `netweaver_inst_media` mounted point"
-  type        = string
-  default     = ""
-}
-
-variable "netweaver_sapcar_exe" {
-  description = "Path to sapcar executable, relative from the `netweaver_inst_media` mounted point"
-  type        = string
-  default     = ""
-}
-
-variable "netweaver_swpm_sar" {
-  description = "SWPM installer sar archive containing the installer, path relative from the `netweaver_inst_media` mounted point"
-  type        = string
-  default     = ""
-}
-
-variable "netweaver_sapexe_folder" {
-  description = "Software folder where needed sapexe `SAR` executables are stored (sapexe, sapexedb, saphostagent), path relative from the `netweaver_inst_media` mounted point"
-  type        = string
-  default     = ""
 }
 
 variable "netweaver_additional_dvds" {
