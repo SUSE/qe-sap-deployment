@@ -35,8 +35,9 @@
   when: tuned_inst != 'not-installed' and ansible_facts['distribution_major_version'] != "12"
 
 - name: Ensure sapconf is installed
-  # using command instead of zypper module as workaround
-  ansible.builtin.command: zypper -n in --replacefiles 'sapconf=5.0.3'
+  community.general.zypper:
+    name: sapconf=5.0.3
+    state: present
   register: result
   until: result is succeeded
   retries: 3
