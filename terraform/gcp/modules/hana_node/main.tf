@@ -3,15 +3,14 @@
 locals {
   create_scale_out       = var.hana_count > 1 && var.common_variables["hana"]["scale_out_enabled"] ? 1 : 0
   create_ha_infra        = var.hana_count > 1 && var.common_variables["hana"]["ha_enabled"] ? 1 : 0
-  bastion_enabled        = var.common_variables["bastion_enabled"]
-  provisioning_addresses = local.bastion_enabled ? google_compute_instance.clusternodes.*.network_interface.0.network_ip : google_compute_instance.clusternodes.*.network_interface.0.access_config.0.nat_ip
+  provisioning_addresses = google_compute_instance.clusternodes.*.network_interface.0.access_config.0.nat_ip
   hostname               = var.common_variables["deployment_name_in_hostname"] ? format("%s-%s", var.common_variables["deployment_name"], var.name) : var.name
 }
 
 # HANA disks configuration information: https://cloud.google.com/solutions/sap/docs/sap-hana-planning-guide#storage_configuration
 resource "google_compute_disk" "data" {
   count = var.hana_count
-  name  = "hana-data"
+  name  = "${var.common_variables["deployment_name"]}-hana-data"
   type  = var.hana_data_disk_type
   size  = var.hana_data_disk_size
   zone  = element(var.compute_zones, count.index)
@@ -19,7 +18,7 @@ resource "google_compute_disk" "data" {
 
 resource "google_compute_disk" "log" {
   count = var.hana_count
-  name  = "hana-log"
+  name  = "${var.common_variables["deployment_name"]}-hana-log"
   type  = var.hana_log_disk_type
   size  = var.hana_log_disk_size
   zone  = element(var.compute_zones, count.index)
@@ -27,7 +26,7 @@ resource "google_compute_disk" "log" {
 
 resource "google_compute_disk" "shared" {
   count = var.hana_count
-  name  = "hana-shared"
+  name  = "${var.common_variables["deployment_name"]}-hana-shared"
   type  = var.hana_shared_disk_type
   size  = var.hana_shared_disk_size
   zone  = element(var.compute_zones, count.index)
@@ -35,7 +34,7 @@ resource "google_compute_disk" "shared" {
 
 resource "google_compute_disk" "backup" {
   count = var.hana_count
-  name  = "hana-backup"
+  name  = "${var.common_variables["deployment_name"]}-hana-backup"
   type  = var.hana_backup_disk_type
   size  = var.hana_backup_disk_size
   zone  = element(var.compute_zones, count.index)
@@ -43,7 +42,7 @@ resource "google_compute_disk" "backup" {
 
 resource "google_compute_disk" "usr_sap" {
   count = var.hana_count
-  name  = "usr-sap"
+  name  = "${var.common_variables["deployment_name"]}-usr-sap"
   type  = var.hana_usr_sap_disk_type
   size  = var.hana_usr_sap_disk_size
   zone  = element(var.compute_zones, count.index)
@@ -51,7 +50,7 @@ resource "google_compute_disk" "usr_sap" {
 
 resource "google_compute_disk" "hana-software" {
   count = var.hana_count
-  name  = "hana-software"
+  name  = "${var.common_variables["deployment_name"]}-hana-software"
   type  = "pd-standard"
   size  = "20"
   zone  = element(var.compute_zones, count.index)
@@ -134,9 +133,9 @@ resource "google_compute_instance" "clusternodes" {
     subnetwork = var.network_subnet_name
     network_ip = element(var.host_ips, count.index)
 
-    # Set public IP address. Only if the bastion is not used
+    # Set public IP address.
     dynamic "access_config" {
-      for_each = local.bastion_enabled ? [] : [1]
+      for_each = [1]
       content {
         nat_ip = ""
       }
