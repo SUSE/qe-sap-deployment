@@ -19,9 +19,11 @@
         state: present
       when: scale_out | bool
 
-    # https://jira.suse.com/browse/TEAM-6887
     - name: Update old SAPHanaSR on SLE 15-SP1
-      ansible.builtin.command: zypper -n in --replacefiles 'SAPHanaSR=0.154.0'
+      community.general.zypper:
+        name: SAPHanaSR=0.154.0
+        state: present
+        replacefiles: true
       when:
         - ansible_facts['distribution_version'] == '15.1'
       register: result
