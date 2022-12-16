@@ -308,7 +308,7 @@ variable "hana_cluster_fencing_mechanism" {
 variable "hana_ha_enabled" {
   description = "Enable HA cluster in top of HANA system replication"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "hana_active_active" {
