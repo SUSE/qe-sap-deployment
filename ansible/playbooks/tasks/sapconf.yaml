@@ -24,14 +24,14 @@
   ansible.builtin.systemd:
     name: saptune
     state: stopped
-    enabled: no
+    enabled: false
   when: saptune_inst != 'not-installed'
 
 - name: Ensure tuned is stopped and disabled (if installed)
   ansible.builtin.systemd:
     name: tuned
     state: stopped
-    enabled: no
+    enabled: false
   when: tuned_inst != 'not-installed' and ansible_facts['distribution_major_version'] != "12"
 
 - name: Ensure sapconf is installed
@@ -47,26 +47,26 @@
   ansible.builtin.systemd:
     name: sapconf
     state: started
-    enabled: yes
+    enabled: true
 
 - name: Test that sapconf_check is available
   ansible.builtin.command: which sapconf_check
   register: which_sapconf
-  changed_when: no
-  failed_when: no
+  changed_when: false
+  failed_when: false
 
 - name: Run sapconf_check
   ansible.builtin.command: sapconf_check
   changed_when: false
-  when: which_sapconf.rc == 0 # don't run sapconf_check if sapconf_check is not found in the path.
+  when: which_sapconf.rc == 0  # don't run sapconf_check if sapconf_check is not found in the path.
 
-#2205917 - SAP HANA DB: Recommended OS settings for SLES 12 / SLES for SAP Applications 12
+# 2205917 - SAP HANA DB: Recommended OS settings for SLES 12 / SLES for SAP Applications 12
 # Increase UserTasksMax doesn't seem to be handled by sapconf
 - name: Configure UserTasksMax
   ansible.builtin.blockinfile:
-    create: yes
+    create: true
     path: /etc/systemd/logind.conf.d/sap.conf
-    backup: yes
+    backup: true
     owner: root
     group: root
     mode: '0644'
@@ -81,8 +81,8 @@
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
   with_items:
-    - { 'regexp': '^GOVERNOR=', 'line': 'GOVERNOR=performance'}
-    - { 'regexp': '^PERF_BIAS=', 'line': 'PERF_BIAS=performance'}
+    - {'regexp': '^GOVERNOR=', 'line': 'GOVERNOR=performance'}
+    - {'regexp': '^PERF_BIAS=', 'line': 'PERF_BIAS=performance'}
   notify: reboot
 
 # Usually handled by SAP tune and only really an issue on Azure
@@ -90,7 +90,6 @@
   ansible.posix.sysctl:
     name: net.ipv4.tcp_timestamps
     value: '0'
-    sysctl_set: yes
+    sysctl_set: true
     state: present
-    reload: yes
-
+    reload: true

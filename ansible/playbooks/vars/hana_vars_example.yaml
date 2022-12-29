@@ -1,3 +1,4 @@
+---
 # REQUIRED_PARAMETERS #
 sap_hana_install_software_directory: /hana/shared/install
 sap_hana_install_master_password: 'DoNotUseThisPassw0rd'

@@ -1,19 +1,20 @@
+---
 sap_storage_dict:
   hanadata:
     name: 'hanadata'
     directory: '/hana/data'
     vg: 'hanadatavg'
     lv: 'hanadatalv'
-    pv: ["/dev/nvme1n1","/dev/nvme2n1"]
+    pv: ["/dev/nvme1n1", "/dev/nvme2n1"]
     numluns: '1'
     stripesize: '256'
-# LVM striped partition
+  # LVM striped partition
   hanalog:
     name: 'hanalog'
     directory: '/hana/log'
     vg: 'hanalogvg'
     lv: 'hanaloglv'
-    pv: ["/dev/nvme3n1","/dev/nvme4n1"]
+    pv: ["/dev/nvme3n1", "/dev/nvme4n1"]
     numluns: '2'
     stripesize: '32'
   hanashared:

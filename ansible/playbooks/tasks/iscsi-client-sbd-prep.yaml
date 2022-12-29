@@ -1,9 +1,9 @@
 ---
 - name: Enable required services
   ansible.builtin.systemd:
-    name:  "{{ item }}"
-    enabled: yes
-  with_items: 
+    name: "{{ item }}"
+    enabled: true
+  with_items:
     - iscsid
     - iscsi
     - sbd
@@ -17,19 +17,19 @@
     regexp: '^InitiatorName='
     line: 'InitiatorName={{ item }}'
   when: inventory_hostname in groups.hana[index]
-  loop: "{{ client_list|flatten(levels=1) }}"
+  loop: "{{ client_list | flatten(levels=1) }}"
   loop_control:
     index_var: index
   notify:
     - Restart iscsi
 
 - name: Flush handlers
-  meta: flush_handlers   
+  meta: flush_handlers
 
 - name: Scan iscsi disks
   ansible.builtin.command:
     cmd: "iscsiadm -m discovery --type=st --portal={{ hostvars[item]['ansible_default_ipv4']['address'] }}:3260"
-    creates: "/etc/iscsi/nodes/{{ srv_iqn }}/{{ hostvars[item]['ansible_default_ipv4']['address'],3260,1 }}"
+    creates: "/etc/iscsi/nodes/{{ srv_iqn }}/{{ hostvars[item]['ansible_default_ipv4']['address'], 3260, 1 }}"
   loop: "{{ groups['iscsi'] }}"
   register: discovered_iscsi
 

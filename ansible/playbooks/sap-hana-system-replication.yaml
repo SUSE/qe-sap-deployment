@@ -3,16 +3,16 @@
   remote_user: cloudadmin
   become: true
   become_user: root
+
   pre_tasks:
-    
   - name: Check host count
     ansible.builtin.fail:
       msg: "There are {{ ansible_play_hosts | length }} hosts in this play but this playbook supports two nodes hosts"
-    when: ansible_play_hosts | length != 2 
+    when: ansible_play_hosts | length != 2
 
   - name: Load HANA vars
     include_vars: ./vars/hana_vars.yaml
-  
+
   vars:
     install_path: /var/lib/qedep
     hsr_cnf_file: "{{ install_path }}/{{ sap_hana_install_sid }}_hsr_configured"
@@ -21,13 +21,12 @@
     secondary_hostname: "{{ ansible_play_hosts[1] }}"
 
   tasks:
-  
   - name: Set SAP HANA System replication host facts
     ansible.builtin.set_fact:
-      sap_hana_cluster_nodes: "{{ sap_hana_cluster_nodes | default([]) + [{ 'node_name' : item.node_name, 'node_ip': item.node_ip, 'node_role' : item.node_role, 'hana_site' : item.hana_site }] }}"
+      sap_hana_cluster_nodes: "{{ sap_hana_cluster_nodes | default([]) + [{'node_name': item.node_name, 'node_ip': item.node_ip, 'node_role': item.node_role, 'hana_site': item.hana_site}] }}"
     loop:
-      - { 'node_name': "{{ primary_hostname }}", 'node_ip': "{{ hostvars[primary_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}", 'node_role': 'primary',   'hana_site' : "{{ primary_site }}" }
-      - { 'node_name': "{{ secondary_hostname }}", 'node_ip': "{{ hostvars[secondary_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}", 'node_role': 'secondary', 'hana_site' : "{{ secondary_site }}" }
+      - {'node_name': "{{ primary_hostname }}", 'node_ip': "{{ hostvars[primary_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}", 'node_role': 'primary', 'hana_site': "{{ primary_site }}"}
+      - {'node_name': "{{ secondary_hostname }}", 'node_ip': "{{ hostvars[secondary_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}", 'node_role': 'secondary', 'hana_site': "{{ secondary_site }}"}
 
   - name: Set System Replication facts based on install vars
     ansible.builtin.set_fact:
@@ -38,10 +37,10 @@
     ansible.builtin.file:
       path: "{{ hsr_cnf_file }}"
       state: file
-    check_mode: yes
+    check_mode: true
     register: hsr_file_check
-    changed_when: no
-    failed_when: no
+    changed_when: false
+    failed_when: false
 
   - name: Set install facts
     ansible.builtin.set_fact:
@@ -64,6 +63,6 @@
       group: root
       mode: '0700'
     with_items:
-     - { 'path': "{{ install_path }}",     'state': 'directory' }
-     - { 'path': "{{ hsr_cnf_file }}", 'state': 'touch' }
+      - {'path': "{{ install_path }}", 'state': 'directory'}
+      - {'path': "{{ hsr_cnf_file }}", 'state': 'touch'}
     when: hsr_configured == 'absent'

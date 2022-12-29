@@ -1,19 +1,19 @@
 ---
 - name: Set base facts
   ansible.builtin.set_fact:
-    cloud_platform_is_aws:   false
-    cloud_platform_is_gcp:   false
+    cloud_platform_is_aws: false
+    cloud_platform_is_gcp: false
     cloud_platform_is_azure: false
-    
+
 - name: "Detect AWS"
   block:
 
     - name: "Probe for AWS"
-      ansible.builtin.command: dmidecode -s system-manufacturer # | grep -iq "Amazon EC2"
+      ansible.builtin.command: dmidecode -s system-manufacturer  # | grep -iq "Amazon EC2"
       changed_when: false
       failed_when: false
       register: probe_aws
-    
+
     - name: Set AWS discovery fact
       ansible.builtin.set_fact:
         cloud_platform_is_aws: true
@@ -26,11 +26,11 @@
   block:
 
     - name: "Probe for GCP"
-      ansible.builtin.command: dmidecode -s bios-version #| grep -iq "google"
+      ansible.builtin.command: dmidecode -s bios-version  # | grep -iq "google"
       changed_when: false
       failed_when: false
       register: probe_gcp
-    
+
     - name: Set GCP discovery fact
       ansible.builtin.set_fact:
         cloud_platform_is_gcp: true
@@ -43,20 +43,20 @@
   block:
 
     - name: "Probe for Azure 1/2"
-      ansible.builtin.command: dmidecode -s system-manufacturer # | grep -iq "microsoft corporation"
+      ansible.builtin.command: dmidecode -s system-manufacturer  # | grep -iq "microsoft corporation"
       changed_when: false
       failed_when: false
       register: probe_azure_1
-    
+
     - name: "Probe for Azure 2/2"
-      ansible.builtin.command: dmidecode -s system-product-name #| grep -iq "virtual machine"
+      ansible.builtin.command: dmidecode -s system-product-name  # | grep -iq "virtual machine"
       changed_when: false
       failed_when: false
       register: probe_azure_2
-    
+
     - name: Set Azure Discovery Fact
       ansible.builtin.set_fact:
-       cloud_platform_is_azure: true
+        cloud_platform_is_azure: true
       when: probe_azure_1.rc == 0 and probe_azure_1.stdout | lower == 'microsoft corporation' or probe_azure_2.rc == 0 and probe_azure_2.stdout | lower == 'virtual machine'
 
 - name: "Set Cloud Platform"

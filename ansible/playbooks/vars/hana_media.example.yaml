@@ -1,6 +1,7 @@
+---
 az_storage_account_name: storageaccountname
-az_container_name:       sapmediacontainer
-az_sas_token:            <SAS_TOKEN>
+az_container_name: sapmediacontainer
+az_sas_token: <SAS_TOKEN>
 az_blobs:
   - SAPCAR.EXE
   - IMDB_SERVER20_062_0-80002031.SAR

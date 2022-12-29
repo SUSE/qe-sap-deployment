@@ -1,7 +1,7 @@
+---
 # The name of the file store which will hold the SBD lun/s
 config_backstore_name: 'sbdhana'
 
-# 
 # For compliance with RFC 3720 (as much as is practical), the first part of the IQN will be set as:
 # iqn.<current_year>-<current_month>.<naming_authority>:<meaningful_name>
 # A good example of this would be iqn:2022-08.com.suse:local:hana.cluster.sbd
