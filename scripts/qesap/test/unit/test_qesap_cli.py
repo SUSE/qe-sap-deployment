@@ -156,3 +156,23 @@ def test_cli_ansible(base_args):
     args = base_args()
     args.append('ansible')
     cli(args)
+
+
+def test_cli_ansible_destroy(base_args):
+    '''
+    Test ansible with -d to run destroy mode
+    '''
+    args = base_args()
+    args.append('ansible')
+    args.append('-d')
+    cli(args)
+
+
+def test_cli_ansible_profile(base_args):
+    '''
+    Test ansible with --profile mode
+    '''
+    args = base_args()
+    args.append('ansible')
+    args.append('--profile')
+    cli(args)

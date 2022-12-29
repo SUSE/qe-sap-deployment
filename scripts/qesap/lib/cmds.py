@@ -226,7 +226,7 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
     return Status('ok')
 
 
-def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
+def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, profile=False):
     """ Main executor for the deploy sub-command
 
     Args:
@@ -234,6 +234,9 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
         base_project (str): base project path where to
                       look for the Ansible files
         dryrun (bool): enable dryrun execution mode
+        verbose (bool): enable more verbosity
+        destroy (bool): select the playbook list
+        profile (bool): enable task profile
 
     Returns:
         Status: execution result, 0 means OK. It is mind to be used as script exit code
@@ -274,6 +277,8 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False):
     ansible_cmd_seq.append({'cmd': ssh_share})
     original_env = dict(os.environ)
     original_env['ANSIBLE_PIPELINING'] = 'True'
+    if profile:
+        original_env['ANSIBLE_CALLBACK_WHITELIST'] = 'ansible.posix.profile_tasks'
 
     for playbook in configure_data['ansible'][sequence]:
         ansible_cmd = ansible_common.copy()
