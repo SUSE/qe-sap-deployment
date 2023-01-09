@@ -5,6 +5,7 @@ locals {
   create_ha_infra        = var.hana_count > 1 && var.common_variables["hana"]["ha_enabled"] ? 1 : 0
   provisioning_addresses = google_compute_instance.clusternodes.*.network_interface.0.access_config.0.nat_ip
   hostname               = var.common_variables["deployment_name_in_hostname"] ? format("%s-%s", var.common_variables["deployment_name"], var.name) : var.name
+  balancer_groups        = var.hana_count > 1 && var.common_variables["hana"]["ha_enabled"] ? ["hana-primary-group", "hana-secondary-group"] : []
 }
 
 # HANA disks configuration information: https://cloud.google.com/solutions/sap/docs/sap-hana-planning-guide#storage_configuration
@@ -79,17 +80,11 @@ resource "google_compute_route" "hana-route-secondary" {
 }
 
 # GCP load balancer resource
-
-resource "google_compute_instance_group" "hana-primary-group" {
-  name      = "${var.common_variables["deployment_name"]}-hana-primary-group"
-  zone      = element(var.compute_zones, 0)
-  instances = [google_compute_instance.clusternodes.0.id]
-}
-
-resource "google_compute_instance_group" "hana-secondary-group" {
-  name      = "${var.common_variables["deployment_name"]}-hana-secondary-group"
-  zone      = element(var.compute_zones, 1)
-  instances = [google_compute_instance.clusternodes.1.id]
+resource "google_compute_instance_group" "hana-lb-groups" {
+  for_each  = toset(local.balancer_groups)
+  name      = each.value
+  zone      = element(var.compute_zones, index(local.balancer_groups, each.value))
+  instances = [google_compute_instance.clusternodes[index(local.balancer_groups, each.value)].id]
 }
 
 module "hana-load-balancer" {
@@ -99,8 +94,8 @@ module "hana-load-balancer" {
   region                = var.common_variables["region"]
   network_name          = var.network_name
   network_subnet_name   = var.network_subnet_name
-  primary_node_group    = google_compute_instance_group.hana-primary-group.id
-  secondary_node_group  = google_compute_instance_group.hana-secondary-group.id
+  primary_node_group    = google_compute_instance_group.hana-lb-groups["hana-primary-group"].id
+  secondary_node_group  = google_compute_instance_group.hana-lb-groups["hana-secondary-group"].id
   tcp_health_check_port = tonumber("625${var.common_variables["hana"]["instance_number"]}")
   target_tags           = ["hana-group"]
   ip_address            = var.common_variables["hana"]["cluster_vip"]
@@ -114,8 +109,8 @@ module "hana-secondary-load-balancer" {
   region                = var.common_variables["region"]
   network_name          = var.network_name
   network_subnet_name   = var.network_subnet_name
-  primary_node_group    = google_compute_instance_group.hana-secondary-group.id
-  secondary_node_group  = google_compute_instance_group.hana-primary-group.id
+  primary_node_group    = google_compute_instance_group.hana-lb-groups["hana-primary-group"].id
+  secondary_node_group  = google_compute_instance_group.hana-lb-groups["hana-secondary-group"].id
   tcp_health_check_port = tonumber("626${var.common_variables["hana"]["instance_number"]}")
   target_tags           = ["hana-group"]
   ip_address            = var.common_variables["hana"]["cluster_vip_secondary"]
