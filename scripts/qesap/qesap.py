@@ -108,12 +108,16 @@ def cli(command_line=None):
     parser_terraform.add_argument('-d',
                                   '--destroy',
                                   action='store_true',
-                                  help='Only destroy terraform setup, without executing ansible')
-    parser_ansible = subparsers.add_parser('ansible', help="Only run the Ansible part of the deployment")
+                                  help='Call terraform destroy')
+    parser_ansible = subparsers.add_parser('ansible', help="Run the Ansible part of the deployment")
     parser_ansible.add_argument('-d',
                                 '--destroy',
                                 action='store_true',
-                                help='Only destroy terraform setup, without executing ansible')
+                                help='Play ansible deregister playoooks')
+
+    parser_ansible.add_argument('--profile',
+                                action='store_true',
+                                help='Run Ansible with ansible.posix.profile_tasks')
 
     parsed_args = parser.parse_args(command_line)
     return parsed_args
@@ -171,7 +175,8 @@ def main(command_line=None):  # pylint: disable=too-many-return-statements
             parsed_args.basedir,
             parsed_args.dryrun,
             parsed_args.verbose,
-            destroy=parsed_args.destroy
+            destroy=parsed_args.destroy,
+            profile=parsed_args.profile
         )
     else:
         res = Status(f"Unknown command:{parsed_args.command}")
