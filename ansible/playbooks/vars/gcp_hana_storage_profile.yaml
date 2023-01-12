@@ -1,3 +1,4 @@
+---
 sap_storage_dict:
   hanadata:
     name: 'hanadata'
@@ -7,7 +8,7 @@ sap_storage_dict:
     pv: ["/dev/disk/by-id/google-hana-data"]
     numluns: '1'
     stripesize: ''
-# LVM striped partition
+  # LVM striped partition
   hanalog:
     name: 'hanalog'
     directory: '/hana/log'
@@ -48,4 +49,3 @@ sap_storage_dict:
     pv: ["/dev/disk/by-id/google-hana-software"]
     numluns: '1'
     stripesize: ''
-  

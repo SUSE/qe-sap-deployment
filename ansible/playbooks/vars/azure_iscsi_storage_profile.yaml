@@ -1,3 +1,4 @@
+---
 sap_storage_dict:
   iscsi:
     name: 'sbd'
@@ -7,4 +8,3 @@ sap_storage_dict:
     pv: ["/dev/disk/azure/scsi1/lun0"]
     numluns: '1'
     stripesize: ''
-    

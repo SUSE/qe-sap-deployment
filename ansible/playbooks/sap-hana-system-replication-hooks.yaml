@@ -2,9 +2,9 @@
 - hosts: hana
   remote_user: cloudadmin
   become: true
-  become_user : root
-  pre_tasks:
+  become_user: root
 
+  pre_tasks:
   - name: Source hana install variables
     include_vars: ./vars/hana_vars.yaml
 
@@ -17,18 +17,17 @@
 
   handlers:
   - name: Stop HANA
-    ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StopWait 600 10" # Stopwait will timeout after 600 seconds.    
-  
+    ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StopWait 600 10"  # Stopwait will timeout after 600 seconds.
+
   - name: Start HANA Primary
-    ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StartWait 600 10" # Stopwait will timeout after 600 seconds.    
+    ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StartWait 600 10"  # Stopwait will timeout after 600 seconds.
     when: is_primary
 
   - name: Start HANA Secondary
-    ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StartWait 600 10" # Stopwait will timeout after 600 seconds.    
+    ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StartWait 600 10"  # Stopwait will timeout after 600 seconds.
     when: not is_primary
 
   tasks:
-
   - name: Ensure hooks directory exists
     ansible.builtin.file:
       path: "/hana/shared/{{ hooks_dir }}"
@@ -39,14 +38,18 @@
 
   - name: Copy system replication hook file
     ansible.builtin.copy:
-      src:  /usr/share/SAPHanaSR/SAPHanaSR.py
-      remote_src: yes
+      src: /usr/share/SAPHanaSR/SAPHanaSR.py
+      remote_src: true
       dest: "/hana/shared/{{ hooks_dir }}/SAPHanaSR.py"
       owner: "{{ sap_hana_install_sid | lower }}adm"
       group: sapsys
       mode: '660'
-    
+
   - name: Ensure System Replication hooks are installed and configured
+    notify:
+      - Stop HANA
+      - Start HANA Primary
+      - Start HANA Secondary
     block:
       - name: Ensure ha_dr_provider_SAPHanaSR section exists in global.ini
         community.general.ini_file:
@@ -55,13 +58,13 @@
           option: "{{ item.key }}"
           value: "{{ item.value }}"
           mode: '0644'
-          backup: yes      
-        loop: 
-          - { 'section': 'ha_dr_provider_SAPHanaSR', 'key': 'provider', 'value': 'SAPHanaSR'}
-          - { 'section': 'ha_dr_provider_SAPHanaSR', 'key': 'path', 'value': '/hana/shared/{{ hooks_dir }}'}
-          - { 'section': 'ha_dr_provider_SAPHanaSR', 'key': 'execution_order', 'value': '1'}
-          - { 'section': 'trace', 'key': 'ha_dr_saphanasr', 'value': 'info'}
-  
+          backup: true
+        loop:
+          - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'provider', 'value': 'SAPHanaSR'}
+          - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'path', 'value': '/hana/shared/{{ hooks_dir }}'}
+          - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'execution_order', 'value': '1'}
+          - {'section': 'trace', 'key': 'ha_dr_saphanasr', 'value': 'info'}
+
       - name: Add hooks into sudoers
         ansible.builtin.lineinfile:
           path: /etc/sudoers.d/HanaSystemReplication
@@ -69,16 +72,12 @@
           regexp: "{{ item.regexp }}"
           line: "{{ item.line }}"
           validate: /usr/sbin/visudo -cf %s
-          create: yes
+          create: true
           mode: '0440'
-        loop: 
-         - { 'regexp': '^#ANSIBLE MANAGED DOCUMENT',    'line': '#ANSIBLE MANAGED DOCUMENT - no manual edits!'}
-         - { 'regexp': '^Cmnd_Alias SOK_SITEA',    'line': 'Cmnd_Alias SOK_SITEA = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ primary_site }} -v SOK -t crm_config -s SAPHanaSR'}
-         - { 'regexp': '^Cmnd_Alias SFAIL_SITEA ', 'line': 'Cmnd_Alias SFAIL_SITEA = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ primary_site }} -v SFAIL -t crm_config -s SAPHanaSR'}
-         - { 'regexp': '^Cmnd_Alias SOK_SITEB',    'line': 'Cmnd_Alias SOK_SITEB = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ secondary_site }} -v SOK -t crm_config -s SAPHanaSR'}
-         - { 'regexp': '^Cmnd_Alias SFAIL_SITEB',  'line': 'Cmnd_Alias SFAIL_SITEB = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ secondary_site }} -v SFAIL -t crm_config -s SAPHanaSR'}
-         - { 'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: SOK_SITEA, SFAIL_SITEA, SOK_SITEB, SFAIL_SITEB'}
-    notify:
-      - Stop HANA
-      - Start HANA Primary
-      - Start HANA Secondary
+        loop:
+          - {'regexp': '^#ANSIBLE MANAGED DOCUMENT', 'line': '#ANSIBLE MANAGED DOCUMENT - no manual edits!'}
+          - {'regexp': '^Cmnd_Alias SOK_SITEA', 'line': 'Cmnd_Alias SOK_SITEA = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ primary_site }} -v SOK -t crm_config -s SAPHanaSR'}
+          - {'regexp': '^Cmnd_Alias SFAIL_SITEA ', 'line': 'Cmnd_Alias SFAIL_SITEA = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ primary_site }} -v SFAIL -t crm_config -s SAPHanaSR'}
+          - {'regexp': '^Cmnd_Alias SOK_SITEB', 'line': 'Cmnd_Alias SOK_SITEB = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ secondary_site }} -v SOK -t crm_config -s SAPHanaSR'}
+          - {'regexp': '^Cmnd_Alias SFAIL_SITEB', 'line': 'Cmnd_Alias SFAIL_SITEB = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ secondary_site }} -v SFAIL -t crm_config -s SAPHanaSR'}
+          - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: SOK_SITEA, SFAIL_SITEA, SOK_SITEB, SFAIL_SITEB'}

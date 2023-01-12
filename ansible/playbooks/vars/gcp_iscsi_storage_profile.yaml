@@ -1,3 +1,4 @@
+---
 sap_storage_dict:
   iscsi:
     name: 'sbd'

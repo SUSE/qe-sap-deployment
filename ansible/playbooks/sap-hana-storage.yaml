@@ -2,7 +2,7 @@
 - hosts: hana
   remote_user: cloudadmin
   become: true
-  become_user : root
+  become_user: root
   pre_tasks:
     - name: Detect cloud platform
       ansible.builtin.include_tasks:
@@ -15,7 +15,7 @@
 
   - name: Load AWS disk configuration
     ansible.builtin.include_vars: ./vars/aws_hana_storage_profile.yaml
-    when: cloud_platform_is_aws    
+    when: cloud_platform_is_aws
 
   - name: Load Azure disk configuration
     ansible.builtin.include_vars: ./vars/azure_hana_storage_profile.yaml
@@ -30,5 +30,5 @@
       sap_storage_cloud_type: 'generic'
       sap_storage_sap_type: 'sap_hana'
       sap_storage_action: 'prepare'
-    include_role: 
+    include_role:
       name: ../roles/sap_storage

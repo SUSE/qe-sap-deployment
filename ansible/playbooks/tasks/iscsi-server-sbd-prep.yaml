@@ -1,87 +1,85 @@
 ---
-  - name: Remove unneeded packages from iscsi server
-    community.general.zypper:
-      name: "{{ item }}"
-      state: absent
-    with_items:
-      - lio-utils
-      - python-rtslib
-      - python-configshell
-      - targetcli
-    register: result
-    until: result is succeeded
-    retries: 3
-    delay: 60
-    
-  - name: Install iscsi server packages SLES 15.3
-    community.general.zypper:
-      name: "{{ item }}"
-      state: present
-    loop:
-      - targetcli-fb
-      - dbus-1-python
-    when: ansible_distribution_version == '15.3'
-    register: result
-    until: result is succeeded
-    retries: 3
-    delay: 60
+- name: Remove unneeded packages from iscsi server
+  community.general.zypper:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - lio-utils
+    - python-rtslib
+    - python-configshell
+    - targetcli
+  register: result
+  until: result is succeeded
+  retries: 3
+  delay: 60
 
-  - name: Install iscsi server packages SLES 15.4
-    community.general.zypper:
-      name: yast2-iscsi-lio-server
-      state: present
-    when: ansible_distribution_version == '15.4'
-    register: result
-    until: result is succeeded
-    retries: 3
-    delay: 60
+- name: Install iscsi server packages SLES 15.3
+  community.general.zypper:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - targetcli-fb
+    - dbus-1-python
+  when: ansible_distribution_version == '15.3'
+  register: result
+  until: result is succeeded
+  retries: 3
+  delay: 60
 
-  - name: Install iscsi server packages SLES 12
-    community.general.zypper:
-      name: "{{ item }}"
-      state: present
-    when: ansible_distribution_major_version == '12'
-    loop:
-      - yast2-iscsi-lio-server
-      - targetcli-fb
-    register: result
-    until: result is succeeded
-    retries: 3
-    delay: 60
+- name: Install iscsi server packages SLES 15.4
+  community.general.zypper:
+    name: yast2-iscsi-lio-server
+    state: present
+  when: ansible_distribution_version == '15.4'
+  register: result
+  until: result is succeeded
+  retries: 3
+  delay: 60
 
-  - name: Load AWS disk configuration
-    ansible.builtin.include_vars: ./vars/aws_iscsi_storage_profile.yaml
-    when: cloud_platform_is_aws
+- name: Install iscsi server packages SLES 12
+  community.general.zypper:
+    name: "{{ item }}"
+    state: present
+  when: ansible_distribution_major_version == '12'
+  loop:
+    - yast2-iscsi-lio-server
+    - targetcli-fb
+  register: result
+  until: result is succeeded
+  retries: 3
+  delay: 60
 
-  - name: Load Azure disk configuration
-    ansible.builtin.include_vars: ./vars/azure_iscsi_storage_profile.yaml
-    when: cloud_platform_is_azure
+- name: Load AWS disk configuration
+  ansible.builtin.include_vars: ./vars/aws_iscsi_storage_profile.yaml
+  when: cloud_platform_is_aws
 
-  - name: Load GCP disk configuration
-    ansible.builtin.include_vars: ./vars/gcp_iscsi_storage_profile.yaml
-    when: cloud_platform_is_gcp
-      
+- name: Load Azure disk configuration
+  ansible.builtin.include_vars: ./vars/azure_iscsi_storage_profile.yaml
+  when: cloud_platform_is_azure
 
-  - name: Prepare iscsi disks
-    vars:
-      sap_storage_cloud_type: 'generic'
-      sap_storage_sap_type: 'sap_hana'
-      sap_storage_action: 'prepare'
-    include_role: 
-      name: ../roles/sap_storage
-  
-  - name: Configure HANA SBD target 
-    ansible.builtin.command: 
-      cmd: "{{ item.command }}" 
-      creates: "{{ item.creates }}" 
-    with_items: 
-      - { 'command': 'targetcli backstores/fileio create {{ backstore_name }} /srv/sbd/{{ backstore_name }} 50M write_back=false', 'creates': '/srv/sbd/{{ backstore_name }}' } 
-      - { 'command': 'targetcli iscsi/ create {{ srv_iqn }}', 'creates': '/sys/kernel/config/target/iscsi/{{ srv_iqn }}' }
-      - { 'command': 'targetcli iscsi/{{ srv_iqn }}/tpg1/luns/ create /backstores/fileio/{{ backstore_name }}', 'creates': '/sys/kernel/config/target/iscsi/{{ srv_iqn }}/tpgt_1/lun/lun_0' }
+- name: Load GCP disk configuration
+  ansible.builtin.include_vars: ./vars/gcp_iscsi_storage_profile.yaml
+  when: cloud_platform_is_gcp
 
-  - name: Configure client ACLs
-    ansible.builtin.command: 
-      cmd: "targetcli iscsi/{{ srv_iqn }}/tpg1/acls/ create {{ item }}"
-      creates: '/sys/kernel/config/target/iscsi/{{ srv_iqn }}/tpgt_1/acls/{{ item }}'
-    with_items: "{{ client_list }}"
-    
+- name: Prepare iscsi disks
+  vars:
+    sap_storage_cloud_type: 'generic'
+    sap_storage_sap_type: 'sap_hana'
+    sap_storage_action: 'prepare'
+  include_role:
+    name: ../roles/sap_storage
+
+- name: Configure HANA SBD target
+  ansible.builtin.command:
+    cmd: "{{ item.command }}"
+    creates: "{{ item.creates }}"
+  with_items:
+    - {'command': 'targetcli backstores/fileio create {{ backstore_name }} /srv/sbd/{{ backstore_name }} 50M write_back=false', 'creates': '/srv/sbd/{{ backstore_name }}'}
+    - {'command': 'targetcli iscsi/ create {{ srv_iqn }}', 'creates': '/sys/kernel/config/target/iscsi/{{ srv_iqn }}'}
+    - {'command': 'targetcli iscsi/{{ srv_iqn }}/tpg1/luns/ create /backstores/fileio/{{ backstore_name }}', 'creates': '/sys/kernel/config/target/iscsi/{{ srv_iqn }}/tpgt_1/lun/lun_0'}
+
+- name: Configure client ACLs
+  ansible.builtin.command:
+    cmd: "targetcli iscsi/{{ srv_iqn }}/tpg1/acls/ create {{ item }}"
+    creates: '/sys/kernel/config/target/iscsi/{{ srv_iqn }}/tpgt_1/acls/{{ item }}'
+  with_items: "{{ client_list }}"

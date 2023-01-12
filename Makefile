@@ -20,7 +20,16 @@ static-pylint:
 static-flake8:
 	@find scripts -type f -not -path "scripts/qesap/.tox/*" -not -path "scripts/qesap/.venv/*" -name \*.py -exec flake8 --ignore=E501 {} +
 
+static-ansible-yaml:
+	@find ansible -type f -iname "*.yaml" -or -iname "*.yaml" -exec yamllint {} +
 
+static-ansible-syntax:
+	@find ansible/playbooks -type f -iname "*.yaml" -maxdepth 1  -exec ansible-playbook -l all -vvvv -i terraform/azure/inventory.yaml --syntax-check  {} +
+
+static-ansible-lint:
+	@ansible-lint ansible/
+
+static-ansible: static-ansible-yaml static-ansible-lint static-ansible-syntax
 
 test:
 	@PYTHONPATH=scripts/qesap pytest

@@ -12,7 +12,7 @@
   ansible.builtin.systemd:
     name: "{{ item }}"
     state: stopped
-    enabled: no
+    enabled: false
   loop:
     - sapconf
     - tuned
@@ -21,21 +21,21 @@
   ansible.builtin.systemd:
     name: saptune
     state: started
-    enabled: yes
+    enabled: true
 
 - name: Ensure saptune_check executes correctly
   ansible.builtin.command: saptune_check
-  changed_when: no
+  changed_when: false
 
 - name: Discover active solution
   ansible.builtin.command: saptune solution enabled
   register: saptune_status
-  changed_when: no
+  changed_when: false
 
 - name: Set fact for active solution
   ansible.builtin.set_fact:
-    solution_configured: "{{ (saptune_status.stdout | regex_search('(\\S+)', '\\1' ))[0] | default('NONE') }}" # Capture the first block on none whitespace
-    
+    solution_configured: "{{ (saptune_status.stdout | regex_search('(\\S+)', '\\1'))[0] | default('NONE') }}"  # Capture the first block on none whitespace
+
 - name: Show configured solution
   ansible.builtin.debug:
     var: solution_configured
@@ -47,8 +47,8 @@
 - name: Disable TCP timestamps, recycle & reuse
   ansible.builtin.blockinfile:
     path: /etc/saptune/override/2382421
-    create: yes
-    backup: yes
+    create: true
+    backup: true
     owner: root
     group: root
     mode: '0640'
@@ -65,12 +65,12 @@
 - name: Check if saptune solution needs to be applied
   ansible.builtin.command: "saptune solution verify {{ saptune_solution }}"
   register: verify
-  changed_when: no # We're only checking, not changing!
-  failed_when: no # We expect this to fail if it has not previously been applied
+  changed_when: false  # We're only checking, not changing!
+  failed_when: false  # We expect this to fail if it has not previously been applied
 
 - name: Ensure no solution is currently applied
   ansible.builtin.command: "saptune solution revert {{ solution_configured }}"
-  when: 
+  when:
     - solution_configured != 'NONE'
     - verify.rc != 0
 
@@ -78,6 +78,6 @@
   ansible.builtin.command: "saptune solution apply {{ saptune_solution }}"
   when: verify.rc != 0
 
-- name: Ensure solution was successful 
+- name: Ensure solution was successful
   ansible.builtin.command: "saptune solution verify {{ saptune_solution }}"
-  changed_when: no # We're only checking, not changing!
+  changed_when: false  # We're only checking, not changing!
