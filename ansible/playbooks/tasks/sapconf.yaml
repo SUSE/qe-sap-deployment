@@ -73,7 +73,7 @@
     block: |
       [Login]
       UserTasksMax=infinity
-  notify: reboot
+  notify: Reboot
 
 - name: Ensure Governor is set to Performance
   ansible.builtin.lineinfile:
@@ -83,7 +83,7 @@
   with_items:
     - {'regexp': '^GOVERNOR=', 'line': 'GOVERNOR=performance'}
     - {'regexp': '^PERF_BIAS=', 'line': 'PERF_BIAS=performance'}
-  notify: reboot
+  notify: Reboot
 
 # Usually handled by SAP tune and only really an issue on Azure
 - name: Turn off TCP timestamps
