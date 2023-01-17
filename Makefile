@@ -4,7 +4,7 @@
 
 all: static test
 
-static: static-bash static-py
+static: static-bash static-py static-ansible
 
 static-py: static-pylint static-flake8
 

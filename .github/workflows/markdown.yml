@@ -16,7 +16,7 @@ jobs:
     environment: production
     strategy:
       matrix:
-        docfile: ['README.md', 'terraform/aws/README.md', 'terraform/azure/README.md']
+        docfile: ['README.md', 'CONTRIBUTING.md', 'terraform/aws/README.md', 'terraform/azure/README.md']
 
     steps:
     # Checkout the repository to the GitHub Actions runner
