@@ -1,5 +1,5 @@
 provider: <PROVIDER>
-apiver: 2
+apiver: 3
 terraform:
   variables:
     az_region: <YOUR_REGION>
@@ -8,7 +8,10 @@ terraform:
     public_key: <YOUR_KEY_PATH>/id_rsa_cloud.pub
 
 ansible:
-  hana_urls:
+  az_storage_account_name: <YOUR_ACCOUNT>
+  az_container_name:  <YOUR_CONTAINER>
+  az_sas_token: <YOUR_TOKEN>
+  hana_media:
     - <YOUR_SAPCAR>
     - <IMDB_SERVER>
     - <IMDB_CLIENT>
