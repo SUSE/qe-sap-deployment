@@ -34,12 +34,12 @@
 
     - name: Append delete list
       ansible.builtin.set_fact:
-        files_to_delete: "{{ files_to_delete + ['/etc/SUSEConnect'] }}"
+        files_to_delete: "{{ files_to_delete.files | map(attribute='path') | list + ['/etc/SUSEConnect'] }}"
       when: rcg.rc != 0
 
     - name: File Cleanup
       ansible.builtin.file:
         state: absent
-        path: "{{ item.path }}"
+        path: "{{ item }}"
       with_items: "{{ files_to_delete }}"
       when: rcg.rc != 0
