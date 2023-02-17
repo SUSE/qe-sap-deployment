@@ -4,13 +4,6 @@
 # - Private node name
 # - Public node name
 
-# iSCSI server
-output "hana_os_major_verion" {
-  description = "The major version of the HANA OS"
-  value       = local.hana_major_version
-}
-
-
 output "iscsisrv_ip" {
   value = module.iscsi_server.iscsisrv_ip
 }
@@ -111,11 +104,11 @@ resource "local_file" "ansible_inventory" {
     {
       hana-name           = module.hana_node.hana_name,
       hana-pip            = module.hana_node.hana_public_ip,
-      hana-major-version  = local.hana_major_version
+      hana-remote-python  = var.hana_remote_python
       iscsi-name          = module.iscsi_server.iscsisrv_name,
       iscsi-pip           = module.iscsi_server.iscsisrv_public_ip,
-      iscsi-major-version = local.iscsi_major_version
       iscsi-enabled       = local.iscsi_enabled
+      iscsi-remote-python = var.iscsi_remote_python
   })
   filename = "inventory.yaml"
 }

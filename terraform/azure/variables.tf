@@ -1018,3 +1018,15 @@ variable "hana_scale_out_anf_quota_shared" {
   default     = "2000"
 }
 
+variable "hana_remote_python" {
+  description = "Remote python interpreter that Ansible will use on HANA nodes"
+  type        = string
+  default     = "/usr/bin/python3"
+}
+
+variable "iscsi_remote_python" {
+  description = "Remote python interpreter that Ansible will use on iscsi nodes"
+  type        = string
+  default     = "/usr/bin/python3"
+}
+
