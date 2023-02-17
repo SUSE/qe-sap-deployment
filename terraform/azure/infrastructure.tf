@@ -297,19 +297,3 @@ resource "azurerm_network_security_group" "mysecgroup" {
     workspace = local.deployment_name
   }
 }
-
-# Bastion
-
-module "bastion" {
-  source              = "./modules/bastion"
-  common_variables    = module.common_variables.configuration
-  name                = var.bastion_name
-  network_domain      = var.bastion_network_domain == "" ? var.network_domain : var.bastion_network_domain
-  az_region           = var.az_region
-  os_image            = local.bastion_os_image
-  vm_size             = "Standard_B1s"
-  resource_group_name = local.resource_group_name
-  vnet_name           = local.vnet_name
-  storage_account     = azurerm_storage_account.mytfstorageacc.primary_blob_endpoint
-  snet_address_range  = cidrsubnet(local.vnet_address_range, 8, 2)
-}

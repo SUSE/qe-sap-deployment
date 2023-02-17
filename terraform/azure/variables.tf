@@ -113,12 +113,6 @@ variable "bastion_enabled" {
   default     = false
 }
 
-variable "bastion_os_image" {
-  description = "sles4sap image used to create the bastion machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp3:gen2:latest"
-  type        = string
-  default     = ""
-}
-
 variable "bastion_os_major_version" {
   description = "The major OS version of SLES for the bastion.  If not set, this value will be computed.  Example: 15"
   type        = string
