@@ -4,7 +4,6 @@
 #################################
 vnet_address_range   = "10.10.0.0/16"
 subnet_address_range = "10.10.1.0/24"
-provisioner = "off"
 bastion_enabled = false
 hana_name = "vmhana"
 hana_vm_size = "Standard_E4s_v3"

@@ -72,9 +72,6 @@ module "common_variables" {
   authorized_keys                     = var.authorized_keys
   authorized_user                     = var.admin_user
   bastion_enabled                     = var.bastion_enabled
-  provisioner                         = var.provisioner
-  provisioning_log_level              = var.provisioning_log_level
-  provisioning_output_colored         = var.provisioning_output_colored
   background                          = var.background
   monitoring_enabled                  = var.monitoring_enabled
   monitoring_srv_ip                   = var.monitoring_enabled ? local.monitoring_ip : ""
