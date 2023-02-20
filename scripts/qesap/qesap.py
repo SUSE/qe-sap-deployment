@@ -18,7 +18,7 @@ logging.basicConfig(format="%(levelname)-8s %(message)s")
 log = logging.getLogger('QESAP')
 
 
-VERSION = '0.2'
+VERSION = '0.3'
 
 DESCRIBE = '''qe-sap-deployment helper script'''
 
@@ -75,6 +75,10 @@ def cli(command_line=None):
     parser.add_argument('--version', action='version', version=VERSION)
     parser.add_argument('--verbose', action='store_true', help="Increases log verbosity")
     parser.add_argument('--dryrun', action='store_true', help="Dry run execution mode")
+
+    parser.add_argument(
+        '-w', '--workspace', dest='workspace', default='default',
+        help="""Workspace to use in terraform commands. Defaults to 'default'""")
 
     parser.add_argument(
         '-c', '--config-file', dest='configfile',
@@ -163,6 +167,7 @@ def main(command_line=None):  # pylint: disable=too-many-return-statements
             parsed_args.configfile,
             parsed_args.basedir,
             parsed_args.dryrun,
+            parsed_args.workspace,
             destroy=parsed_args.destroy
         )
         if res != 0:

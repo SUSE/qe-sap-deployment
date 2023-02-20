@@ -176,7 +176,7 @@ def cmd_destroy(configure_data, base_project, dryrun):
     return Status('TBD')
 
 
-def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
+def cmd_terraform(configure_data, base_project, dryrun, workspace='default', destroy=False):
     """ Main executor for the deploy sub-command
 
     Args:
@@ -199,7 +199,13 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
         return Status(f"Invalid folder structure at {base_project}")
 
     cmds = []
-    for seq in ['init', 'plan', 'apply'] if not destroy else ['destroy']:
+    if destroy:
+        cmd_seq = ['destroy']
+    elif workspace != 'default':
+        cmd_seq = ['init', 'workspace', 'plan', 'apply']
+    else:
+        cmd_seq = ['init', 'plan', 'apply']
+    for seq in cmd_seq:
         this_cmd = ['terraform', f"-chdir={cfg_paths['provider']}", seq]
         if seq == 'plan':
             this_cmd.append('-out=plan.zip')
@@ -207,6 +213,8 @@ def cmd_terraform(configure_data, base_project, dryrun, destroy=False):
             this_cmd.extend(['-auto-approve', 'plan.zip'])
         elif seq == 'destroy':
             this_cmd.append('-auto-approve')
+        elif seq == 'workspace':
+            this_cmd.extend(['new', workspace])
         this_cmd.append('-no-color')
         cmds.append(this_cmd)
     for command in cmds:
