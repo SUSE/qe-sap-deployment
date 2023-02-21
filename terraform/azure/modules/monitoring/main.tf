@@ -59,10 +59,10 @@ resource "azurerm_image" "monitoring" {
 }
 
 # monitoring VM
-
 module "os_image_reference" {
-  source   = "../../modules/os_image_reference"
-  os_image = var.os_image
+  source           = "../../modules/os_image_reference"
+  os_image         = var.os_image
+  os_image_srv_uri = var.monitoring_uri != ""
 }
 
 resource "azurerm_virtual_machine" "monitoring" {

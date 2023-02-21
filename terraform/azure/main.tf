@@ -50,6 +50,12 @@ locals {
   drbd_os_image       = var.drbd_os_image != "" ? var.drbd_os_image : var.os_image
   netweaver_os_image  = var.netweaver_os_image != "" ? var.netweaver_os_image : var.os_image
 
+  hana_os_image_uri       = var.sles4sap_uri != "" ? var.sles4sap_uri : var.os_image_uri
+  iscsi_os_image_uri      = var.iscsi_srv_uri != "" ? var.iscsi_srv_uri : var.os_image_uri
+  monitoring_os_image_uri = var.monitoring_uri != "" ? var.monitoring_uri : var.os_image_uri
+  drbd_os_image_uri       = var.drbd_image_uri != "" ? var.drbd_image_uri : var.os_image_uri
+  netweaver_os_image_uri  = var.netweaver_image_uri != "" ? var.netweaver_image_uri : var.os_image_uri
+
   # Netweaver password checking
   # If Netweaver is not enabled, a dummy password is passed to pass the variable validation and not require
   # a password in this case
@@ -139,7 +145,7 @@ module "drbd_node" {
   az_region           = var.az_region
   drbd_count          = var.drbd_enabled == true ? 2 : 0
   vm_size             = var.drbd_vm_size
-  drbd_image_uri      = var.drbd_image_uri
+  drbd_image_uri      = local.drbd_os_image_uri
   os_image            = local.drbd_os_image
   resource_group_name = local.resource_group_name
   network_subnet_id   = local.subnet_id
@@ -171,7 +177,7 @@ module "netweaver_node" {
   data_disk_caching           = var.netweaver_data_disk_caching
   data_disk_size              = var.netweaver_data_disk_size
   data_disk_type              = var.netweaver_data_disk_type
-  netweaver_image_uri         = var.netweaver_image_uri
+  netweaver_image_uri         = local.netweaver_os_image_uri
   os_image                    = local.netweaver_os_image
   resource_group_name         = local.resource_group_name
   network_subnet_id           = local.subnet_id
@@ -209,7 +215,7 @@ module "hana_node" {
   network_subnet_netapp_id      = local.subnet_netapp_id
   storage_account               = azurerm_storage_account.mytfstorageacc.primary_blob_endpoint
   enable_accelerated_networking = var.hana_enable_accelerated_networking
-  sles4sap_uri                  = var.sles4sap_uri
+  sles4sap_uri                  = local.hana_os_image_uri
   hana_instance_number          = var.hana_instance_number
   hana_data_disks_configuration = var.hana_data_disks_configuration
   os_image                      = local.hana_os_image
@@ -244,7 +250,7 @@ module "monitoring" {
   resource_group_name = local.resource_group_name
   network_subnet_id   = local.subnet_id
   storage_account     = azurerm_storage_account.mytfstorageacc.primary_blob_endpoint
-  monitoring_uri      = var.monitoring_uri
+  monitoring_uri      = local.monitoring_os_image_uri
   os_image            = local.monitoring_os_image
   monitoring_srv_ip   = local.monitoring_ip
 }
@@ -261,7 +267,7 @@ module "iscsi_server" {
   resource_group_name = local.resource_group_name
   network_subnet_id   = local.subnet_id
   storage_account     = azurerm_storage_account.mytfstorageacc.primary_blob_endpoint
-  iscsi_srv_uri       = var.iscsi_srv_uri
+  iscsi_srv_uri       = local.iscsi_os_image_uri
   os_image            = local.iscsi_os_image
   host_ips            = local.iscsi_ips
   lun_count           = var.iscsi_lun_count

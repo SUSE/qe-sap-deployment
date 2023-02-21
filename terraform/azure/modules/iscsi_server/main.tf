@@ -59,10 +59,10 @@ resource "azurerm_image" "iscsi_srv" {
 }
 
 # iSCSI server VM
-
 module "os_image_reference" {
-  source   = "../../modules/os_image_reference"
-  os_image = var.os_image
+  source           = "../../modules/os_image_reference"
+  os_image         = var.os_image
+  os_image_srv_uri = var.iscsi_srv_uri != ""
 }
 
 resource "azurerm_virtual_machine" "iscsisrv" {
