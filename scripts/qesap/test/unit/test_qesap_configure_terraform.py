@@ -181,7 +181,7 @@ def test_configure_tfvars_overwrite_variables(config_yaml_sample_for_terraform, 
     """
     provider = 'pinocchio'
 
-    terraform_section = f"""
+    terraform_section = """
 terraform:
   variables:
     something : yamlrulez"""
@@ -200,4 +200,3 @@ terraform:
     with open(tfvar_path, 'r', encoding='utf-8') as file:
         data = file.readlines()
         assert expected_tfvars == data
-

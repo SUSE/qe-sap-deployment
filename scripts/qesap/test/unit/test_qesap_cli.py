@@ -138,6 +138,17 @@ def test_cli_terraform_destroy(base_args):
     cli(args)
 
 
+def test_cli_terraform_workspace(base_args):
+    '''
+    Test terraform with -w to create a Terraform named workspace
+    '''
+    args = base_args()
+    args.append('terraform')
+    args.append('-w')
+    args.append('PAPEROGA')
+    cli(args)
+
+
 def test_cli_ansible_noargs(check_manadatory_args):
     '''
     ansible subcommand at least needs:
