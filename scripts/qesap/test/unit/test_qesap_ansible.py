@@ -10,7 +10,8 @@ log = logging.getLogger(__name__)
 ANSIBLE_EXE = '/bin/ansible'
 ANSIBLEPB_EXE = '/paese/della/cuccagna/ansible-playbook'
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
+
+@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
 @mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_create(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
@@ -42,7 +43,7 @@ def test_ansible_create(run, _, base_args, tmpdir, create_inventory, create_play
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
+@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
 @mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_verbose(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
@@ -169,7 +170,7 @@ def test_ansible_missing_playbook(run, tmpdir, base_args, create_inventory, crea
     run.assert_not_called()
 
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
+@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
 @mock.patch("lib.process_manager.subprocess_run", side_effect=[(0, []), (1, [])])
 def test_ansible_stop(run, _, tmpdir, base_args, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
@@ -199,7 +200,7 @@ def test_ansible_stop(run, _, tmpdir, base_args, create_inventory, create_playbo
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
+@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
 @mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_destroy(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
@@ -233,7 +234,7 @@ def test_ansible_destroy(run, _, base_args, tmpdir, create_inventory, create_pla
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
+@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
 @mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_e_reg(run, _, base_args, tmpdir, create_inventory, create_playbooks, mock_call_ansibleplaybook):
     """
@@ -279,7 +280,7 @@ ansible:
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
+@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
 @mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_e_sapconf(run, _, base_args, tmpdir, create_inventory, create_playbooks, mock_call_ansibleplaybook):
     """
@@ -323,7 +324,7 @@ ansible:
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
+@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
 @mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_ssh(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
     """
@@ -375,7 +376,7 @@ def test_ansible_ssh(run, _, base_args, tmpdir, create_inventory, create_playboo
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
+@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
 @mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_env_config(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
     """
@@ -414,7 +415,7 @@ export ANSIBLE_PIPELINING=True
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect = [(ANSIBLEPB_EXE),(ANSIBLE_EXE)])
+@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
 @mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_profile(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
     """

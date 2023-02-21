@@ -17,21 +17,25 @@ terraform_cmds = [
 
 @mock.patch("lib.process_manager.subprocess_run")
 @pytest.mark.parametrize("terraform_cmd_args", terraform_cmds)
-def test_terraform_call_terraform(run, terraform_cmd_args, args_helper, config_yaml_sample):
+def test_terraform_call_terraform(subprocess_run, terraform_cmd_args, args_helper, config_yaml_sample):
     """
     Command terraform calls all these 3:
      - 'terraform init'
      - 'terraform plan'
      - 'terraform apply'
+
+    It is implemented as parametrized test,
+    so formally it is called 3 times, one for each expected terraform command.
+    Each test invocation verify that one specific command is called
     """
     provider = 'mangiafuoco'
     conf = config_yaml_sample(provider)
 
     args, terraform_dir, *_ = args_helper(provider, conf, '')
     args.append('terraform')
-    run.return_value = (0, [])
+    subprocess_run.return_value = (0, [])
     assert main(args) == 0
-    run.assert_called()
+    subprocess_run.assert_called()
 
     calls = []
     terraform_cmd = [
@@ -45,11 +49,11 @@ def test_terraform_call_terraform(run, terraform_cmd_args, args_helper, config_y
     terraform_cmd.append('-no-color')
     calls.append(mock.call(terraform_cmd))
 
-    run.assert_has_calls(calls)
+    subprocess_run.assert_has_calls(calls)
 
 
 @mock.patch("lib.process_manager.subprocess_run", side_effect=[(0, []), (1, []), (1, [])])
-def test_terraform_stop_at_failure(run, args_helper, config_yaml_sample):
+def test_terraform_stop_at_failure(subprocess_run, args_helper, config_yaml_sample):
     """
     Command stop at first subprocess(terraform) with not zero exit code.
     Simulate a failure at 'terraform plan'
@@ -72,14 +76,14 @@ def test_terraform_stop_at_failure(run, args_helper, config_yaml_sample):
 
     assert main(args) == 1
 
-    run.assert_called()
-    run.assert_has_calls(calls)
-    assert not any('apply' in name[0] for name, args in run.call_args_list), 'Unexpected terraform apply call'
+    subprocess_run.assert_called()
+    subprocess_run.assert_has_calls(calls)
+    assert not any('apply' in name[0] for name, args in subprocess_run.call_args_list), 'Unexpected terraform apply call'
 
 
 @mock.patch("lib.process_manager.subprocess_run")
 @pytest.mark.parametrize("terraform_cmd_args", terraform_cmds)
-def test_terraform_logs(run, terraform_cmd_args, args_helper, config_yaml_sample, tmpdir):
+def test_terraform_logs(subprocess_run, terraform_cmd_args, args_helper, config_yaml_sample, tmpdir):
     """
     Command terraform create one log file for each command:
      - terraform.{cmd}.log.txt
@@ -89,7 +93,7 @@ def test_terraform_logs(run, terraform_cmd_args, args_helper, config_yaml_sample
 
     args, *_ = args_helper(provider, conf, '')
     args.append('terraform')
-    run.return_value = (0, ['This is the terraform output', 'Two lines of that'])
+    subprocess_run.return_value = (0, ['This is the terraform output', 'Two lines of that'])
 
     assert main(args) == 0
 
@@ -102,7 +106,7 @@ def test_terraform_logs(run, terraform_cmd_args, args_helper, config_yaml_sample
 
 @mock.patch("lib.process_manager.subprocess_run")
 @pytest.mark.parametrize("terraform_cmd_args", terraform_cmds)
-def test_terraform_logs_content(run, terraform_cmd_args, args_helper, config_yaml_sample, tmpdir):
+def test_terraform_logs_content(subprocess_run, terraform_cmd_args, args_helper, config_yaml_sample, tmpdir):
     """
     Each terraform log file contains terraform stdout
     """
@@ -112,7 +116,7 @@ def test_terraform_logs_content(run, terraform_cmd_args, args_helper, config_yam
     args, *_ = args_helper(provider, conf, '')
     args.append('terraform')
     terraform_output = ['This is the terraform output', 'Two lines of that']
-    run.return_value = (0, terraform_output)
+    subprocess_run.return_value = (0, terraform_output)
 
     assert main(args) == 0
 
@@ -159,7 +163,7 @@ def test_integration_terraform(terraform_cmd_args, config_yaml_sample, tmpdir):
 
 
 @mock.patch("lib.process_manager.subprocess_run")
-def test_terraform_dryrun(run, args_helper, config_yaml_sample):
+def test_terraform_dryrun(subprocess_run, args_helper, config_yaml_sample):
     """
     Command terraform does not call terraform executable in dryrun mode
     """
@@ -169,15 +173,15 @@ def test_terraform_dryrun(run, args_helper, config_yaml_sample):
     args, *_ = args_helper(provider, conf, '')
     args.append('terraform')
     args.insert(0, '--dryrun')
-    run.return_value = (0, [])
+    subprocess_run.return_value = (0, [])
 
     assert main(args) == 0
 
-    run.assert_not_called()
+    subprocess_run.assert_not_called()
 
 
 @mock.patch("lib.process_manager.subprocess_run")
-def test_terraform_call_terraform_destroy(run, args_helper, config_yaml_sample):
+def test_terraform_call_terraform_destroy(subprocess_run, args_helper, config_yaml_sample):
     """
     Command terraform with -d calls 'terraform destroy'
     """
@@ -188,7 +192,7 @@ def test_terraform_call_terraform_destroy(run, args_helper, config_yaml_sample):
 
     args.extend(['terraform', '-d'])
 
-    run.return_value = (0, [])
+    subprocess_run.return_value = (0, [])
     calls = []
     calls.append(mock.call([
         'terraform',
@@ -198,5 +202,34 @@ def test_terraform_call_terraform_destroy(run, args_helper, config_yaml_sample):
         '-no-color']))
 
     assert main(args) == 0
-    run.assert_called()
-    run.assert_has_calls(calls)
+    subprocess_run.assert_called()
+    subprocess_run.assert_has_calls(calls)
+
+
+@mock.patch("lib.process_manager.subprocess_run")
+def test_terraform_call_terraform_workspace(subprocess_run, args_helper, config_yaml_sample):
+    """
+    Command terraform calls 'terraform workspace' if -w is used
+    """
+    provider = 'mangiafuoco'
+    conf = config_yaml_sample(provider)
+
+    args, terraform_dir, *_ = args_helper(provider, conf, '')
+    args.append('terraform')
+    args.append('-w')
+    args.append('lucignolo')
+    subprocess_run.return_value = (0, [])
+    assert main(args) == 0
+    subprocess_run.assert_called()
+
+    calls = []
+    terraform_cmd = [
+        'terraform',
+        f"-chdir={terraform_dir}"]
+    terraform_cmd.append('workspace')
+    terraform_cmd.append('new')
+    terraform_cmd.append('lucignolo')
+    terraform_cmd.append('-no-color')
+    calls.append(mock.call(terraform_cmd))
+
+    subprocess_run.assert_has_calls(calls)

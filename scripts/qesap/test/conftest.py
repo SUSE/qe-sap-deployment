@@ -117,6 +117,7 @@ ansible:
 
     return _callback
 
+
 @pytest.fixture
 def provider_dir(tmpdir):
     def _callback(provider):
