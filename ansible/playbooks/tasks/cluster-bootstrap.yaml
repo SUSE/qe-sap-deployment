@@ -309,6 +309,9 @@
   register: reg_vip_location
   changed_when: false
   when: is_primary
+  until: reg_vip_location.stderr == ''
+  retries: 10
+  delay: 6
 
 - name: Move cluster IP to primary HANA node
   # TODO Contains hardcoded SID and instance number that should be based on a variable
