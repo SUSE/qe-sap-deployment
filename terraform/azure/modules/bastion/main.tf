@@ -135,10 +135,6 @@ resource "azurerm_virtual_machine" "bastion" {
   os_profile_linux_config {
     disable_password_authentication = true
 
-    ssh_keys {
-      path     = "/home/${var.common_variables["authorized_user"]}/.ssh/authorized_keys"
-      key_data = var.common_variables["bastion_public_key"]
-    }
   }
 
   boot_diagnostics {
@@ -150,15 +146,3 @@ resource "azurerm_virtual_machine" "bastion" {
     workspace = var.common_variables["deployment_name"]
   }
 }
-
-/*
-module "bastion_on_destroy" {
-  source       = "../../../generic_modules/on_destroy"
-  node_count   = local.bastion_count
-  instance_ids = azurerm_virtual_machine.bastion.*.id
-  user         = var.common_variables["authorized_user"]
-  private_key  = var.common_variables["bastion_private_key"]
-  public_ips   = data.azurerm_public_ip.bastion.*.ip_address
-  dependencies = [data.azurerm_public_ip.bastion]
-}
-*/

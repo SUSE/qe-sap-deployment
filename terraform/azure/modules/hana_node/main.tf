@@ -452,17 +452,3 @@ module "hana_majority_maker" {
   fence_agent_app_id        = var.fence_agent_app_id
   fence_agent_client_secret = var.fence_agent_client_secret
 }
-
-/*
-module "hana_on_destroy" {
-  source              = "../../../generic_modules/on_destroy"
-  node_count          = var.hana_count
-  instance_ids        = azurerm_virtual_machine.hana.*.id
-  user                = var.common_variables["authorized_user"]
-  private_key         = var.common_variables["private_key"]
-  bastion_host        = var.bastion_host
-  bastion_private_key = var.common_variables["bastion_private_key"]
-  public_ips          = local.provisioning_addresses
-  dependencies        = [data.azurerm_public_ip.hana]
-}
-*/
