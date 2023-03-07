@@ -1,5 +1,6 @@
 from lib.process_manager import subprocess_run
 
+
 def test_no_command():
     '''
     Run subprocess_run providing no commands
@@ -61,6 +62,6 @@ def test_env():
     '''
     _, stdout_list = subprocess_run(['printenv'])
     assert 'BANANA_VALUE' not in stdout_list
-    exit_code, stdout_list = subprocess_run(['printenv'], env={'BANANA_VALUE' : '1234'})
+    exit_code, stdout_list = subprocess_run(['printenv'], env={'BANANA_VALUE': '1234'})
     assert exit_code == 0
     assert 'BANANA_VALUE=1234' in stdout_list

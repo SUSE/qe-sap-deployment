@@ -18,7 +18,7 @@ logging.basicConfig(format="%(levelname)-8s %(message)s")
 log = logging.getLogger('QESAP')
 
 
-VERSION = '0.2'
+VERSION = '0.3'
 
 DESCRIBE = '''qe-sap-deployment helper script'''
 
@@ -109,6 +109,11 @@ def cli(command_line=None):
                                   '--destroy',
                                   action='store_true',
                                   help='Call terraform destroy')
+    parser_terraform.add_argument('-w',
+                                  '--workspace',
+                                  dest='workspace',
+                                  default='default',
+                                  help="""Workspace to use in terraform commands. Defaults to 'default'""")
     parser_ansible = subparsers.add_parser('ansible', help="Run the Ansible part of the deployment")
     parser_ansible.add_argument('-d',
                                 '--destroy',
@@ -163,6 +168,7 @@ def main(command_line=None):  # pylint: disable=too-many-return-statements
             parsed_args.configfile,
             parsed_args.basedir,
             parsed_args.dryrun,
+            workspace=parsed_args.workspace,
             destroy=parsed_args.destroy
         )
         if res != 0:

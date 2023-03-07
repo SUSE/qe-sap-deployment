@@ -1,6 +1,7 @@
 from qesap import main
 import pytest
 
+
 @pytest.mark.skip(reason="Code not ready")
 def test_deploy(base_args, tmpdir):
     """

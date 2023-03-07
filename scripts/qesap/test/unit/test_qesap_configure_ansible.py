@@ -14,7 +14,6 @@ def test_configure_create_ansible_hanamedia(configure_helper, config_yaml_sample
     args, _, hana_media, _ = configure_helper(provider, conf, [])
 
     assert main(args) == 0
-
     assert os.path.isfile(hana_media)
 
 
@@ -68,26 +67,41 @@ def test_configure_ansible_hanamedia_content_apiver2_invalidurl(configure_helper
     """
     provider = 'pinocchio'
     wrong_hana_urls = [
-    ('MISSING ACCOUNT',"""
+        (
+            "MISSING ACCOUNT",
+            """
     - https://.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT
     - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT"""),
-    ('MISSING CONTAINER',"""
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT""",
+        ),
+        (
+            "MISSING CONTAINER",
+            """
     - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
     - https://SOMEONE.blob.core.windows.net//MY_IMDB_CLIENT
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT"""),
-    ('MISSING EXE',"""
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT""",
+        ),
+        (
+            "MISSING EXE",
+            """
     - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
     - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/"""),
-    ('DIFFERENT ACCOUNT',"""
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/""",
+        ),
+        (
+            "DIFFERENT ACCOUNT",
+            """
     - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
     - https://SOMEONEELSE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER       # This is the wrong one DIFFERENT ACCOUNT
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT"""),
-    ('DIFFERENT CONTAINER',"""
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT""",
+        ),
+        (
+            "DIFFERENT CONTAINER",
+            """
     - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
     - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER       # This is the wrong one DIFFERENT ACCOUNT
-    - https://SOMEONE.blob.core.windows.net/SOMETHINGELSE/MY_IMDB_CLIENT"""),
+    - https://SOMEONE.blob.core.windows.net/SOMETHINGELSE/MY_IMDB_CLIENT""",
+        ),
     ]
     for this_set in wrong_hana_urls:
         conf = f"""---
@@ -199,7 +213,6 @@ def test_configure_create_ansible_hanavars(configure_helper, config_yaml_sample)
     args, _, _, hana_vars = configure_helper(provider, conf, [])
 
     assert main(args) == 0
-
     assert os.path.isfile(hana_vars)
 
 
@@ -225,7 +238,6 @@ ansible:
     args, _, _, hana_vars = configure_helper(this_provider, conf, [])
 
     assert main(args) == 0
-
     assert not os.path.isfile(hana_vars)
 
 
@@ -271,6 +283,7 @@ ansible:
         assert data['moustique'] == 'komarac'
         assert len(data) == 10
 
+
 def test_configure_ansible_hanavar_values(configure_helper):
     """
     Test about value of mandatory fields
@@ -315,6 +328,7 @@ ansible:
     assert main(args) != 0, "Wrong 'sap_hana_install_instance_number'='AA' not detected."
     args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HDB', '000'), [])
     assert main(args) != 0, "Wrong 'sap_hana_install_instance_number'='000' not detected."
+
 
 def test_configure_ansible_hana(configure_helper):
     """
