@@ -7,6 +7,7 @@
 #module "os_image" {
 #  source   = "../../modules/os_image_reference"
 #  os_image = var.os_image
+#  os_image_srv_uri = var.image_uri != ""
 #}
 #
 #storage_image_reference {
@@ -17,11 +18,12 @@
 #}
 
 locals {
-  data      = split(":", var.os_image)
-  publisher = local.data[0]
-  offer     = local.data[1]
-  sku       = local.data[2]
-  version   = local.data[3]
+  local_os_name = var.os_image_srv_uri ? ":::" : var.os_image
+  data          = split(":", local.local_os_name)
+  publisher     = local.data[0]
+  offer         = local.data[1]
+  sku           = local.data[2]
+  version       = local.data[3]
 }
 
 output "publisher" {

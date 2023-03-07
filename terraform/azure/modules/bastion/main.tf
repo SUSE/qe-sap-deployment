@@ -98,6 +98,7 @@ resource "azurerm_public_ip" "bastion" {
 }
 
 module "os_image_reference" {
+  count    = 0
   source   = "../../modules/os_image_reference"
   os_image = var.os_image
 }
