@@ -85,18 +85,6 @@ variable "bastion_network_domain" {
   default     = ""
 }
 
-variable "bastion_enabled" {
-  description = "Create a VM to work as a bastion to avoid the usage of public ip addresses and manage the ssh connection to the other machines"
-  type        = bool
-  default     = false
-}
-
-variable "bastion_os_image" {
-  description = "sles4sap image used to create the bastion machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp3:gen2:latest"
-  type        = string
-  default     = ""
-}
-
 variable "bastion_public_key" {
   description = "Content of a SSH public key or path to an already existing SSH public key to the bastion. If it's not set the key provided in public_key will be used"
   type        = string
@@ -832,40 +820,14 @@ variable "pre_deployment" {
   default     = false
 }
 
-# The following variables provide an opportunity to override the automatic major os detection if it proves problematic
-
-variable "hana_os_major_version" {
-  description = "The major OS version of SLES HANA VMs.  If not set, this value will be computed.  Example: 15"
+variable "hana_remote_python" {
+  description = "Remote python interpreter that Ansible will use on HANA nodes"
   type        = string
-  default     = ""
+  default     = "/usr/bin/python3"
 }
 
-variable "iscsi_os_major_version" {
-  description = "The major OS version of iscsi HANA VMs.  If not set, this value will be computed.  Example: 15"
+variable "iscsi_remote_python" {
+  description = "Remote python interpreter that Ansible will use on iscsi nodes"
   type        = string
-  default     = ""
-}
-
-variable "drdb_os_major_version" {
-  description = "The major OS version of iscsi drdb VMs.  If not set, this value will be computed.  Example: 15"
-  type        = string
-  default     = ""
-}
-
-variable "netweaver_os_major_version" {
-  description = "The major OS version of netweaver drdb VMs.  If not set, this value will be computed.  Example: 15"
-  type        = string
-  default     = ""
-}
-
-variable "bastion_os_major_version" {
-  description = "The major OS version of SLES bastion VMs.  If not set, this value will be computed.  Example: 15"
-  type        = string
-  default     = ""
-}
-
-variable "monitoring_os_major_version" {
-  description = "The major OS version of SLES monitoring VMs.  If not set, this value will be computed.  Example: 15"
-  type        = string
-  default     = ""
+  default     = "/usr/bin/python3"
 }

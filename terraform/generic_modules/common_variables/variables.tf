@@ -77,12 +77,6 @@ variable "authorized_user" {
   type        = string
 }
 
-variable "bastion_enabled" {
-  description = "Create a VM to work as a bastion to avoid the usage of public ip addresses and manage the ssh connection to the other machines"
-  type        = bool
-  default     = false
-}
-
 variable "bastion_public_key" {
   description = "Path to a SSH public key used to connect to the bastion. If it's not set the key provided in public_key_location will be used"
   type        = string

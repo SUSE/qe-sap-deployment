@@ -30,7 +30,6 @@ output "configuration" {
     public_key                  = local.public_key
     private_key                 = local.private_key
     authorized_keys             = var.authorized_keys
-    bastion_enabled             = var.bastion_enabled
     bastion_public_key          = local.bastion_public_key
     bastion_private_key         = local.bastion_private_key
     authorized_user             = var.authorized_user

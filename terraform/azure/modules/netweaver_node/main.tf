@@ -3,12 +3,11 @@
 
 locals {
   vm_count               = var.xscs_server_count + var.app_server_count
-  bastion_enabled        = var.common_variables["bastion_enabled"]
   create_ha_infra        = var.xscs_server_count > 0 && var.common_variables["netweaver"]["ha_enabled"] ? 1 : 0
   app_start_index        = local.create_ha_infra == 1 ? 2 : 1
   shared_storage_anf     = var.common_variables["netweaver"]["shared_storage_type"] == "anf" ? 1 : 0
   additional_lun_number  = "0"
-  provisioning_addresses = local.bastion_enabled ? data.azurerm_network_interface.netweaver.*.private_ip_address : data.azurerm_public_ip.netweaver.*.ip_address
+  provisioning_addresses = data.azurerm_public_ip.netweaver.*.ip_address
   ascs_lb_rules_ports = local.create_ha_infra == 1 ? toset([
     "32${var.ascs_instance_number}",
     "36${var.ascs_instance_number}",
@@ -191,7 +190,7 @@ resource "azurerm_lb_rule" "ers-lb-rules" {
 # netweaver network configuration
 
 resource "azurerm_public_ip" "netweaver" {
-  count                   = local.bastion_enabled ? 0 : local.vm_count
+  count                   = local.vm_count
   name                    = "pip-netweaver${format("%02d", count.index + 1)}"
   location                = var.az_region
   resource_group_name     = var.resource_group_name
@@ -216,7 +215,7 @@ resource "azurerm_network_interface" "netweaver" {
     subnet_id                     = var.network_subnet_id
     private_ip_address_allocation = "static"
     private_ip_address            = element(var.host_ips, count.index)
-    public_ip_address_id          = local.bastion_enabled ? null : element(azurerm_public_ip.netweaver.*.id, count.index)
+    public_ip_address_id          = element(azurerm_public_ip.netweaver.*.id, count.index)
   }
 
   # deploy if ASCS is non-HA

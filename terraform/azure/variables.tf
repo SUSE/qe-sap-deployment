@@ -101,20 +101,7 @@ variable "bastion_network_domain" {
   default     = ""
 }
 
-variable "bastion_enabled" {
-  description = "Create a VM to work as a bastion to avoid the usage of public ip addresses and manage the ssh connection to the other machines"
-  type        = bool
-  default     = false
-}
-
-variable "bastion_os_major_version" {
-  description = "The major OS version of SLES for the bastion.  If not set, this value will be computed.  Example: 15"
-  type        = string
-  default     = ""
-}
-
 # Deployment variables
-
 variable "deployment_name" {
   description = "Suffix string added to some of the infrastructure resources names. If it is not provided, the terraform workspace string is used as suffix"
   type        = string
@@ -218,12 +205,6 @@ variable "hana_count" {
 
 variable "hana_os_image" {
   description = "sles4sap image used to create the HANA machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp3:gen2:latest"
-  type        = string
-  default     = ""
-}
-
-variable "hana_os_major_version" {
-  description = "The major OS version of SLES for the HANA VMs.  If not set, this value will be computed.  Example: 15"
   type        = string
   default     = ""
 }
@@ -486,12 +467,6 @@ variable "iscsi_os_image" {
   default     = ""
 }
 
-variable "iscsi_os_major_version" {
-  description = "The major OS version of SLES for the iscsi VMs.  If not set, this value will be computed.  Example: 15"
-  type        = string
-  default     = ""
-}
-
 variable "iscsi_srv_uri" {
   description = "Path to a custom azure image in a storage account used to create the iscsi machines"
   type        = string
@@ -569,12 +544,6 @@ variable "monitoring_vm_size" {
 
 variable "monitoring_os_image" {
   description = "sles4sap image used to create the Monitoring server machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp3:gen2:latest"
-  type        = string
-  default     = ""
-}
-
-variable "monitoring_os_major_version" {
-  description = "The major OS version of SLES for the monitoring VM.  If not set, this value will be computed.  Example: 15"
   type        = string
   default     = ""
 }
@@ -705,12 +674,6 @@ variable "netweaver_app_server_count" {
 
 variable "netweaver_os_image" {
   description = "sles4sap image used to create the Netweaver machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp3:gen2:latest"
-  type        = string
-  default     = ""
-}
-
-variable "netweaver_os_major_version" {
-  description = "The major OS version of SLES for the netweaver VMs.  If not set, this value will be computed.  Example: 15"
   type        = string
   default     = ""
 }

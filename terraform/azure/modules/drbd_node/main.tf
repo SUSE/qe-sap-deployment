@@ -3,8 +3,7 @@
 # disclaimer: only supports a single NW installation
 
 locals {
-  bastion_enabled        = var.common_variables["bastion_enabled"]
-  provisioning_addresses = local.bastion_enabled ? data.azurerm_network_interface.drbd.*.private_ip_address : data.azurerm_public_ip.drbd.*.ip_address
+  provisioning_addresses = data.azurerm_public_ip.drbd.*.ip_address
   hostname               = var.common_variables["deployment_name_in_hostname"] ? format("%s-%s", var.common_variables["deployment_name"], var.name) : var.name
 }
 
@@ -114,7 +113,7 @@ resource "azurerm_lb_rule" "drbd-lb-udp-2049" {
 # drbd network configuration
 
 resource "azurerm_public_ip" "drbd" {
-  count                   = local.bastion_enabled ? 0 : var.drbd_count
+  count                   = var.drbd_count
   name                    = "pip-drbd${format("%02d", count.index + 1)}"
   location                = var.az_region
   resource_group_name     = var.resource_group_name
@@ -137,7 +136,7 @@ resource "azurerm_network_interface" "drbd" {
     subnet_id                     = var.network_subnet_id
     private_ip_address_allocation = "static"
     private_ip_address            = element(var.host_ips, count.index)
-    public_ip_address_id          = local.bastion_enabled ? null : element(azurerm_public_ip.drbd.*.id, count.index)
+    public_ip_address_id          = element(azurerm_public_ip.drbd.*.id, count.index)
   }
 
   tags = {

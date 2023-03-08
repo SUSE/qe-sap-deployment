@@ -2,8 +2,7 @@
 # disclaimer: only supports a single NW installation
 
 locals {
-  bastion_enabled        = var.common_variables["bastion_enabled"]
-  provisioning_addresses = local.bastion_enabled ? google_compute_instance.drbd.*.network_interface.0.network_ip : google_compute_instance.drbd.*.network_interface.0.access_config.0.nat_ip
+  provisioning_addresses = google_compute_instance.drbd.*.network_interface.0.access_config.0.nat_ip
   hostname               = var.common_variables["deployment_name_in_hostname"] ? format("%s-%s", var.common_variables["deployment_name"], var.name) : var.name
 }
 
@@ -70,7 +69,7 @@ resource "google_compute_instance" "drbd" {
 
     # Set public IP address. Only if the bastion is not used
     dynamic "access_config" {
-      for_each = local.bastion_enabled ? [] : [1]
+      for_each = [1]
       content {
         nat_ip = ""
       }

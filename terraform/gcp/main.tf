@@ -66,18 +66,6 @@ locals {
   monitoring_os_image = var.monitoring_os_image != "" ? var.monitoring_os_image : var.os_image
   drbd_os_image       = var.drbd_os_image != "" ? var.drbd_os_image : var.os_image
   netweaver_os_image  = var.netweaver_os_image != "" ? var.netweaver_os_image : var.os_image
-  bastion_os_image    = var.bastion_os_image != "" ? var.bastion_os_image : var.os_image
-
-  # For SLES 12 we need to instruct ansible to use python2.7 and for SLES 15 it's python3.
-  # These locals calculate the major version of the os from the OS image but assumes the OS image format is consistent
-  # The regex is only used if the var.x_os_major is not set, so if the regex is failing, the user can manually set their major OS.
-  hana_major_version       = var.hana_os_major_version != "" ? var.hana_os_major_version : regex(".+sles-([0-9]+)-", local.hana_os_image)[0]
-  iscsi_major_version      = var.iscsi_os_major_version != "" ? var.iscsi_os_major_version : regex(".+sles-([0-9]+)-", local.iscsi_os_image)[0]
-  monitoring_major_version = var.monitoring_os_major_version != "" ? var.monitoring_os_major_version : regex(".+sles-([0-9]+)-", local.monitoring_os_image)[0]
-  drbd_major_version       = var.drdb_os_major_version != "" ? var.drdb_os_major_version : regex(".+sles-([0-9]+)-", local.drbd_os_image)[0]
-  netweaver_major_version  = var.netweaver_os_major_version != "" ? var.netweaver_os_major_version : regex(".+sles-([0-9]+)-", local.netweaver_os_image)[0]
-  bastion_major_version    = var.bastion_os_major_version != "" ? var.bastion_os_major_version : regex(".+sles-([0-9]+)-", local.bastion_os_image)[0]
-
 
   # Netweaver password checking
   # If Netweaver is not enabled, a dummy password is passed to pass the variable validation and not require
@@ -101,14 +89,9 @@ module "common_variables" {
   private_key                 = var.private_key
   authorized_keys             = var.authorized_keys
   authorized_user             = var.admin_user
-  bastion_enabled             = var.bastion_enabled
   bastion_public_key          = var.bastion_public_key
   bastion_private_key         = var.bastion_private_key
-  /*
-  provisioner                         = var.provisioner
-  provisioning_log_level              = var.provisioning_log_level
-  provisioning_output_colored         = var.provisioning_output_colored
-*/
+
   #background                          = var.background
   monitoring_enabled                  = var.monitoring_enabled
   monitoring_srv_ip                   = var.monitoring_enabled ? local.monitoring_srv_ip : ""

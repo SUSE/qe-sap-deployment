@@ -1,8 +1,7 @@
 # monitoring network configuration
 
 locals {
-  bastion_enabled        = var.common_variables["bastion_enabled"]
-  provisioning_addresses = local.bastion_enabled ? data.azurerm_network_interface.monitoring.*.private_ip_address : data.azurerm_public_ip.monitoring.*.ip_address
+  provisioning_addresses = data.azurerm_public_ip.monitoring.*.ip_address
   hostname               = var.common_variables["deployment_name_in_hostname"] ? format("%s-%s", var.common_variables["deployment_name"], var.name) : var.name
 }
 
@@ -17,7 +16,7 @@ resource "azurerm_network_interface" "monitoring" {
     subnet_id                     = var.network_subnet_id
     private_ip_address_allocation = "static"
     private_ip_address            = var.monitoring_srv_ip
-    public_ip_address_id          = local.bastion_enabled ? null : azurerm_public_ip.monitoring.0.id
+    public_ip_address_id          = azurerm_public_ip.monitoring.0.id
   }
 
   tags = {
@@ -27,7 +26,7 @@ resource "azurerm_network_interface" "monitoring" {
 
 resource "azurerm_public_ip" "monitoring" {
   name                    = "pip-monitoring"
-  count                   = local.bastion_enabled ? 0 : (var.monitoring_enabled ? 1 : 0)
+  count                   = var.monitoring_enabled ? 1 : 0
   location                = var.az_region
   resource_group_name     = var.resource_group_name
   allocation_method       = "Dynamic"
