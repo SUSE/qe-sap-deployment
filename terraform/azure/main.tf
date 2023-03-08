@@ -74,7 +74,6 @@ module "common_variables" {
   ha_sap_deployment_repo              = var.ha_sap_deployment_repo
   additional_packages                 = var.additional_packages
   public_key                          = var.public_key
-  private_key                         = var.private_key
   authorized_keys                     = var.authorized_keys
   authorized_user                     = var.admin_user
   bastion_enabled                     = var.bastion_enabled

@@ -113,17 +113,3 @@ resource "azurerm_virtual_machine" "majority_maker" {
     workspace = var.common_variables["deployment_name"]
   }
 }
-
-/*
-module "majority_maker_on_destroy" {
-  source              = "../../../generic_modules/on_destroy"
-  node_count          = var.node_count
-  instance_ids        = azurerm_virtual_machine.majority_maker.*.id
-  user                = var.common_variables["authorized_user"]
-  private_key         = var.common_variables["private_key"]
-  bastion_host        = var.bastion_host
-  bastion_private_key = var.common_variables["bastion_private_key"]
-  public_ips          = local.provisioning_address
-  dependencies        = [data.azurerm_public_ip.majority_maker]
-}
-*/

@@ -89,32 +89,6 @@ For detailed information and deployment options have a look at `terraform.tfvars
     terraform destroy
     ```
 
-### Bastion
-
-By default, the bastion machine is enabled in Azure (it can be disabled), which will have the unique public IP address of the deployed resource group. Connect using ssh and the selected admin user with:
-
-``` shell
-ssh {admin_user}@{bastion_ip} -i {private_key_location}
-```
-
-To log to hana and others instances, use:
-
-``` shell
-ssh -o ProxyCommand="ssh -W %h:%p {admin_user}@{bastion_ip} -i {private_key_location} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" {admin_user}@{private_hana_instance_ip} -i {private_key_location} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no
-```
-
-To disable the bastion use:
-
-``` shell
-bastion_enabled = false
-```
-
-Destroy the created infrastructure with:
-
-``` shell
-terraform destroy
-```
-
 ## High level description
 
 This Terraform configuration files in this directory can be used to create the infrastructure required to install a SAP HanaSR cluster on Suse Linux Enterprise Server for SAP Applications in **Azure**.

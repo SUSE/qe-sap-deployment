@@ -154,25 +154,7 @@ variable "additional_packages" {
   default     = []
 }
 
-variable "provisioner" {
-  description = "Used provisioner option. Available options: ansible. Let empty to not use any provisioner"
-  default     = "ansible"
-}
-
-variable "background" {
-  description = "Run the provisioner execution in background if set to true finishing terraform execution"
-  type        = bool
-  default     = false
-}
-
-variable "provisioning_output_colored" {
-  description = "Print colored output of the provisioning execution"
-  type        = bool
-  default     = true
-}
-
 # Hana related variables
-
 variable "hana_name" {
   description = "hostname, without the domain part"
   type        = string

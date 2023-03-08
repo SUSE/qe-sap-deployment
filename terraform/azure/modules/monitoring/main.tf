@@ -122,17 +122,3 @@ resource "azurerm_virtual_machine" "monitoring" {
     workspace = var.common_variables["deployment_name"]
   }
 }
-
-/*
-module "monitoring_on_destroy" {
-  source              = "../../../generic_modules/on_destroy"
-  node_count          = var.monitoring_enabled ? 1 : 0
-  instance_ids        = azurerm_virtual_machine.monitoring.*.id
-  user                = var.common_variables["authorized_user"]
-  private_key         = var.common_variables["private_key"]
-  bastion_host        = var.bastion_host
-  bastion_private_key = var.common_variables["bastion_private_key"]
-  public_ips          = local.provisioning_addresses
-  dependencies        = [data.azurerm_public_ip.monitoring]
-}
-*/
