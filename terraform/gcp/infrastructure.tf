@@ -20,7 +20,7 @@ locals {
   subnet_name          = var.subnet_name == "" ? google_compute_subnetwork.ha_subnet.0.name : var.subnet_name
   subnet_address_range = var.subnet_name == "" ? var.ip_cidr_range : (var.ip_cidr_range == "" ? data.google_compute_subnetwork.current-subnet.0.ip_cidr_range : var.ip_cidr_range)
 
-  create_firewall = !var.bastion_enabled && var.create_firewall_rules ? 1 : 0
+  create_firewall = var.create_firewall_rules ? 1 : 0
 }
 
 # Network resources: Network, Subnet
@@ -90,7 +90,7 @@ module "bastion" {
   name               = var.bastion_name
   network_domain     = var.bastion_network_domain == "" ? var.network_domain : var.bastion_network_domain
   region             = var.region
-  os_image           = local.bastion_os_image
+  os_image           = ""
   vm_size            = "custom-1-2048"
   compute_zones      = local.compute_zones
   network_link       = local.network_link
@@ -101,14 +101,14 @@ module "bastion" {
 # This is just a basic NAT, more advanced configuration is possible
 # Based on: https://cloud.google.com/solutions/sap/docs/sap-hana-ha-dm-deployment-sles#setting-up-a-nat-gateway
 resource "google_compute_router" "router" {
-  count   = var.bastion_enabled ? 1 : 0
+  count   = 0
   name    = "${local.deployment_name}-router"
   region  = var.region
   network = local.network_link
 }
 
 resource "google_compute_router_nat" "nat" {
-  count  = var.bastion_enabled ? 1 : 0
+  count  = 0
   name   = "${local.deployment_name}-nat"
   router = google_compute_router.router.*.name[0]
   region = var.region

@@ -1,8 +1,7 @@
 # iscsi server network configuration
 
 locals {
-  bastion_enabled        = var.common_variables["bastion_enabled"]
-  provisioning_addresses = local.bastion_enabled ? data.azurerm_network_interface.iscsisrv.*.private_ip_address : data.azurerm_public_ip.iscsisrv.*.ip_address
+  provisioning_addresses = data.azurerm_public_ip.iscsisrv.*.ip_address
   hostname               = var.common_variables["deployment_name_in_hostname"] ? format("%s-%s", var.common_variables["deployment_name"], var.name) : var.name
 }
 
@@ -17,7 +16,7 @@ resource "azurerm_network_interface" "iscsisrv" {
     subnet_id                     = var.network_subnet_id
     private_ip_address_allocation = "Static"
     private_ip_address            = element(var.host_ips, count.index)
-    public_ip_address_id          = local.bastion_enabled ? null : element(azurerm_public_ip.iscsisrv.*.id, count.index)
+    public_ip_address_id          = element(azurerm_public_ip.iscsisrv.*.id, count.index)
   }
 
   tags = {
@@ -26,7 +25,7 @@ resource "azurerm_network_interface" "iscsisrv" {
 }
 
 resource "azurerm_public_ip" "iscsisrv" {
-  count                   = local.bastion_enabled ? 0 : var.iscsi_count
+  count                   = var.iscsi_count
   name                    = "pip-iscsisrv${format("%02d", count.index + 1)}"
   location                = var.az_region
   resource_group_name     = var.resource_group_name

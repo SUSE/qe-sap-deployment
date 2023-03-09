@@ -5,7 +5,7 @@ all:
 %{ for index, value in hana-pip ~}
         ${hana-name[index]}:
           ansible_host: ${value}
-          %{ if hana-major-version == "12" }ansible_python_interpreter: /usr/bin/python2.7%{ else }ansible_python_interpreter: /usr/bin/python3 %{ endif }
+          ansible_python_interpreter: ${hana-remote-python}
 %{ endfor ~}
 %{ if iscsi-enabled }
     iscsi:
@@ -13,7 +13,7 @@ all:
 %{ for index, value in iscsi-pip ~}
         ${iscsi-name[index]}:
           ansible_host: ${value}
-          %{ if iscsi-major-version == "12" }ansible_python_interpreter: /usr/bin/python2.7%{ else }ansible_python_interpreter: /usr/bin/python3%{ endif }
+          ansible_python_interpreter: ${iscsi-remote-python}
 %{ endfor ~}
 %{ endif }
   hosts: null

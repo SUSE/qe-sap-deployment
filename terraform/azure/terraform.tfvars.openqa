@@ -10,7 +10,6 @@ deployment_name = "%DEPLOYMENTNAME%"
 os_image = "%OSVER%"
 public_key  = "%SSHKEY%"
 
-bastion_enabled = false
 hana_name = "vmhana"
 hana_vm_size = "Standard_E4s_v3"
 hana_count = "2"

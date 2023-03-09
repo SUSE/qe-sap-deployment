@@ -1,6 +1,5 @@
 locals {
-  bastion_enabled      = var.common_variables["bastion_enabled"]
-  provisioning_address = local.bastion_enabled ? data.azurerm_network_interface.majority_maker.*.private_ip_address : data.azurerm_public_ip.majority_maker.*.ip_address
+  provisioning_address = data.azurerm_public_ip.majority_maker.*.ip_address
 }
 
 
@@ -18,7 +17,7 @@ resource "azurerm_network_interface" "majority_maker" {
     subnet_id                     = var.network_subnet_id
     private_ip_address_allocation = "static"
     private_ip_address            = var.majority_maker_ip
-    public_ip_address_id          = local.bastion_enabled ? null : element(azurerm_public_ip.majority_maker.*.id, count.index)
+    public_ip_address_id          = element(azurerm_public_ip.majority_maker.*.id, count.index)
   }
 
   tags = {

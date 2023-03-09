@@ -94,12 +94,6 @@ To log to hana and others instances, use:
 ssh -o ProxyCommand="ssh -W %h:%p {admin_user}@{bastion_ip} -i {private_key_location} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" {admin_user}@{private_hana_instance_ip} -i {private_key_location} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no
 ```
 
-To enable the bastion use:
-
-```
-bastion_enabled = true
-```
-
 Destroy the created infrastructure with:
 
 ```
