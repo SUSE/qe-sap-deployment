@@ -9,7 +9,7 @@ This project is in a very early stage of development.
 Tools needed
 
 * Python 3.9
-* terraform v1.1.7
+* terraform v1.3.6
 * ansible 6.5.0 (ansible-core 2.13.5). Please refer to the **requirements.txt** file
 * cloud provider cli tools (`az`, `aws`, `gcloud`)
 

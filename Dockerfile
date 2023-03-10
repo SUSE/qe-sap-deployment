@@ -21,7 +21,7 @@ RUN curl https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud
     echo 'source ~/google-cloud-sdk/path.bash.inc' >> ~/.bashrc
 
 ## Terraform
-RUN curl https://releases.hashicorp.com/terraform/1.1.7/terraform_1.1.7_linux_amd64.zip -o terraform.zip && \
+RUN curl https://releases.hashicorp.com/terraform/1.3.6/terraform_1.3.6_linux_amd64.zip -o terraform.zip && \
     unzip terraform.zip -d /usr/local/bin && \
     terraform -install-autocomplete && \
     rm terraform.zip
