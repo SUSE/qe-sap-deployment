@@ -1,5 +1,5 @@
 resource "null_resource" "provision_background" {
-  count = var.background ? var.node_count : 0
+  count = 0
   triggers = {
     triggers = join(",", var.instance_ids)
   }
@@ -35,7 +35,7 @@ resource "null_resource" "provision_background" {
 }
 
 resource "null_resource" "provision" {
-  count = !var.background ? var.node_count : 0
+  count = var.node_count
   triggers = {
     triggers = join(",", var.instance_ids)
   }

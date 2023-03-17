@@ -76,7 +76,6 @@ module "common_variables" {
   public_key                          = var.public_key
   authorized_keys                     = var.authorized_keys
   authorized_user                     = var.admin_user
-  background                          = var.background
   monitoring_enabled                  = var.monitoring_enabled
   monitoring_srv_ip                   = var.monitoring_enabled ? local.monitoring_ip : ""
   offline_mode                        = var.offline_mode

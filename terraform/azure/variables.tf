@@ -178,12 +178,6 @@ variable "ha_sap_deployment_repo" {
   default     = "https://download.opensuse.org/repositories/network:ha-clustering:sap-deployments:v8"
 }
 
-variable "background" {
-  description = "Run the provisioner execution in background if set to true finishing terraform execution"
-  type        = bool
-  default     = false
-}
-
 # Hana related variables
 variable "hana_name" {
   description = "hostname, without the domain part"
@@ -286,7 +280,7 @@ variable "hana_majority_maker_ip" {
 }
 
 variable "hana_fstype" {
-  description = "Filesystem type used by the disk where hana is installed"
+  description = "Filesystem type used by the disk where HANA is installed"
   type        = string
   default     = "xfs"
 }

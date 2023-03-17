@@ -92,7 +92,6 @@ module "common_variables" {
   bastion_public_key          = var.bastion_public_key
   bastion_private_key         = var.bastion_private_key
 
-  #background                          = var.background
   monitoring_enabled                  = var.monitoring_enabled
   monitoring_srv_ip                   = var.monitoring_enabled ? local.monitoring_srv_ip : ""
   offline_mode                        = var.offline_mode
