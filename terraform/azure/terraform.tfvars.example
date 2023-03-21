@@ -81,9 +81,6 @@ public_key  = "/home/user/.ssh/id.rsa.key"
 # Enable pre deployment steps (disabled by default)
 #pre_deployment = true
 
-# Run provisioner execution in background
-#background = true
-
 # Test and QA purpose
 
 # Define if the deployment is used for testing purpose

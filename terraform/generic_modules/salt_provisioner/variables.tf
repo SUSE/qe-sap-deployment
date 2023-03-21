@@ -43,12 +43,6 @@ variable "public_ips" {
   type        = list(string)
 }
 
-variable "background" {
-  description = "Execute the provisioning in background"
-  type        = bool
-  default     = false
-}
-
 variable "reboot" {
   description = "Reboot the machines after the initial update of the packages"
   type        = bool

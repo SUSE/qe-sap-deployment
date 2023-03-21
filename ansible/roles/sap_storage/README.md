@@ -7,7 +7,7 @@ Ansible role for preparing the storage requirements of an SAP system prior to in
 - logical volumes
 - filesystems
 
-This can be used in 2 days
+This can be used in 2 ways
 
 - `generic` - using direct input of required directories, filesystems, physical volumes, volume groups, logical volumes, etc
 - `cloud type` - by providing a cloud type, the role will determine the physical volumes by reading the VM meta data

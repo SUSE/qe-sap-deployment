@@ -94,24 +94,6 @@ variable "provisioner" {
   default     = "salt"
 }
 
-variable "provisioning_log_level" {
-  description = "Provisioning process log level. For salt: https://docs.saltstack.com/en/latest/ref/configuration/logging/index.html"
-  type        = string
-  default     = "error"
-  validation {
-    condition = (
-      can(regex("^(quiet|critical|error|warning|info|profile|debug|trace|garbage|all)$", var.provisioning_log_level))
-    )
-    error_message = "Invalid salt log level. Options: quiet|critical|error|warning|info|profile|debug|trace|garbage|all ."
-  }
-}
-
-variable "background" {
-  description = "Run the provisioner execution in background if set to true finishing terraform execution"
-  type        = bool
-  default     = false
-}
-
 variable "monitoring_enabled" {
   description = "Enable centralized monitoring via Prometheus/Grafana/Loki"
   type        = bool
@@ -130,10 +112,4 @@ variable "offline_mode" {
   description = "Prevent installation of extra packages not coming with image"
   type        = bool
   default     = false
-}
-
-variable "provisioning_output_colored" {
-  description = "Print colored output of the provisioning execution"
-  type        = bool
-  default     = true
 }

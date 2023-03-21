@@ -74,20 +74,11 @@ iprange = "192.168.XXX.Y/24"
 # Otherwise use a specific SLE version:
 #ha_sap_deployment_repo = "https://download.opensuse.org/repositories/network:ha-clustering:sap-deployments:devel/SLE_15_SP3/"
 
-# Provisioning log level (error by default)
-#provisioning_log_level = "info"
-
-# Print colored output of the provisioning execution (true by default)
-#provisioning_output_colored = false
-
 # Enable pre deployment steps (disabled by default)
 #pre_deployment = true
 
 # To disable the provisioning process
 #provisioner = ""
-
-# Run provisioner execution in background
-#background = true
 
 # Testing and QA purpose
 
