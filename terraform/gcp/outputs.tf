@@ -100,20 +100,13 @@ resource "local_file" "ansible_inventory" {
     {
       hana-name           = module.hana_node.hana_name,
       hana-pip            = module.hana_node.hana_public_ip,
+      hana-vip            = module.hana_node.hana_vip,
       hana-remote-python  = var.hana_remote_python,
+      name_prefix         = local.deployment_name,
       iscsi-name          = module.iscsi_server.iscsisrv_name,
       iscsi-pip           = module.iscsi_server.iscsisrv_public_ip,
       iscsi-enabled       = local.iscsi_enabled,
       iscsi-remote-python = var.iscsi_remote_python
   })
   filename = "inventory.yaml"
-}
-
-# Cluster data for ansible
-resource "local_file" "cluster_data" {
-  content = templatefile("gcp_cluster_data.tfpl",
-    {
-      virtual_ip = module.hana_node.hana_vip
-  })
-  filename = "gcp_cluster_data.yaml"
 }
