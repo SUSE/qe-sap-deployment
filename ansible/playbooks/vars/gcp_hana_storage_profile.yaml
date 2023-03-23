@@ -5,7 +5,7 @@ sap_storage_dict:
     directory: '/hana/data'
     vg: 'hanadatavg'
     lv: 'hanadatalv'
-    pv: ["/dev/disk/by-id/google-hana-data"]
+    pv: ["/dev/disk/by-id/google-{{ prefix }}-hana-data"]
     numluns: '1'
     stripesize: ''
   # LVM striped partition
@@ -14,7 +14,7 @@ sap_storage_dict:
     directory: '/hana/log'
     vg: 'hanalogvg'
     lv: 'hanaloglv'
-    pv: ["/dev/disk/by-id/google-hana-log"]
+    pv: ["/dev/disk/by-id/google-{{ prefix }}-hana-log"]
     numluns: '1'
     stripesize: ''
   hanashared:
@@ -22,7 +22,7 @@ sap_storage_dict:
     directory: '/hana/shared'
     vg: 'hanasharedvg'
     lv: 'hanasharedlv'
-    pv: ["/dev/disk/by-id/google-hana-shared"]
+    pv: ["/dev/disk/by-id/google-{{ prefix }}-hana-shared"]
     numluns: '1'
     stripesize: ''
   usrsap:
@@ -30,7 +30,7 @@ sap_storage_dict:
     directory: '/usr/sap'
     vg: 'usrsapvg'
     lv: 'usrsaplv'
-    pv: ["/dev/disk/by-id/google-usr-sap"]
+    pv: ["/dev/disk/by-id/google-{{ prefix }}-usr-sap"]
     numluns: '1'
     stripesize: ''
   backup:
@@ -38,7 +38,7 @@ sap_storage_dict:
     directory: '/backup'
     vg: 'backupvg'
     lv: 'backuplv'
-    pv: ["/dev/disk/by-id/google-hana-backup"]
+    pv: ["/dev/disk/by-id/google-{{ prefix }}-hana-backup"]
     numluns: '1'
     stripesize: ''
   install:
@@ -46,6 +46,6 @@ sap_storage_dict:
     directory: '/hana/install'
     vg: 'installvg'
     lv: 'installlv'
-    pv: ["/dev/disk/by-id/google-hana-software"]
+    pv: ["/dev/disk/by-id/google-{{ prefix }}-hana-software"]
     numluns: '1'
     stripesize: ''

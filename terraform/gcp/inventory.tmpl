@@ -16,4 +16,7 @@ all:
           ansible_python_interpreter: ${iscsi-remote-python}
 %{ endfor ~}
 %{ endif }
+      vars:
+        gcp_cluster_ip: ${hana-vip}
+        prefix: ${name_prefix}
   hosts: null
