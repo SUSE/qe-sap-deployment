@@ -89,8 +89,6 @@ module "common_variables" {
   private_key                 = var.private_key
   authorized_keys             = var.authorized_keys
   authorized_user             = var.admin_user
-  bastion_public_key          = var.bastion_public_key
-  bastion_private_key         = var.bastion_private_key
 
   monitoring_enabled                  = var.monitoring_enabled
   monitoring_srv_ip                   = var.monitoring_enabled ? local.monitoring_srv_ip : ""
@@ -154,7 +152,6 @@ module "drbd_node" {
   common_variables     = module.common_variables.configuration
   name                 = var.drbd_name
   network_domain       = var.drbd_network_domain == "" ? var.network_domain : var.drbd_network_domain
-  bastion_host         = module.bastion.public_ip
   drbd_count           = var.drbd_enabled == true ? 2 : 0
   machine_type         = var.drbd_machine_type
   compute_zones        = local.compute_zones
@@ -175,7 +172,6 @@ module "netweaver_node" {
   common_variables          = module.common_variables.configuration
   name                      = var.netweaver_name
   network_domain            = var.netweaver_network_domain == "" ? var.network_domain : var.netweaver_network_domain
-  bastion_host              = module.bastion.public_ip
   xscs_server_count         = local.netweaver_xscs_server_count
   app_server_count          = var.netweaver_enabled ? var.netweaver_app_server_count : 0
   machine_type              = var.netweaver_machine_type
@@ -195,7 +191,6 @@ module "hana_node" {
   common_variables      = module.common_variables.configuration
   name                  = var.hana_name
   network_domain        = var.hana_network_domain == "" ? var.network_domain : var.hana_network_domain
-  bastion_host          = module.bastion.public_ip
   hana_count            = var.hana_count
   machine_type          = var.machine_type
   compute_zones         = local.compute_zones
@@ -216,7 +211,6 @@ module "monitoring" {
   common_variables    = module.common_variables.configuration
   name                = var.monitoring_name
   network_domain      = var.monitoring_network_domain == "" ? var.network_domain : var.monitoring_network_domain
-  bastion_host        = module.bastion.public_ip
   monitoring_enabled  = var.monitoring_enabled
   compute_zones       = local.compute_zones
   network_subnet_name = local.subnet_name
@@ -229,7 +223,6 @@ module "iscsi_server" {
   common_variables    = module.common_variables.configuration
   name                = var.iscsi_name
   network_domain      = var.iscsi_network_domain == "" ? var.network_domain : var.iscsi_network_domain
-  bastion_host        = module.bastion.public_ip
   iscsi_count         = local.iscsi_enabled == true ? var.iscsi_count : 0
   machine_type        = var.machine_type_iscsi_server
   compute_zones       = local.compute_zones

@@ -24,7 +24,7 @@ resource "google_compute_instance" "iscsisrv" {
     subnetwork = var.network_subnet_name
     network_ip = element(var.host_ips, count.index)
 
-    # Set public IP address. Only if the bastion is not used
+    # Set public IP address.
     dynamic "access_config" {
       for_each = [1]
       content {

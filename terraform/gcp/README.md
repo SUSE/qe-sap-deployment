@@ -1,7 +1,6 @@
 # Google Cloud Platform deployment with Terraform and Salt
 
 * [Quickstart](#quickstart)
-   * [Bastion](#bastion)
 * [Highlevel description](#highlevel-description)
 * [Customization](#customization)
    * [QA deployment](#qa-deployment)
@@ -80,26 +79,6 @@ For detailed information and deployment options have a look at `terraform.tfvars
     terraform destroy
     ```
 
-## Bastion
-
-By default, the bastion machine is enabled in GCP (it can be disabled), which will have the unique public IP address of the deployed resource group. Connect using ssh and the selected admin user with:
-
-```
-ssh {admin_user}@{bastion_ip} -i {private_key_location}
-```
-
-To log to hana and others instances, use:
-
-```
-ssh -o ProxyCommand="ssh -W %h:%p {admin_user}@{bastion_ip} -i {private_key_location} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" {admin_user}@{private_hana_instance_ip} -i {private_key_location} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no
-```
-
-Destroy the created infrastructure with:
-
-```
-terraform destroy
-```
-
 # Highlevel description
 
 This Terraform configuration deploys SAP HANA in a High-Availability Cluster on SUSE Linux Enterprise Server for SAP Applications in the **Google Cloud Platform**.
@@ -151,7 +130,6 @@ Example based on `10.0.0.0/24` VPC address range. The virtual addresses must be 
 | ----                             | --------                     | ---------                                          | --------                                                                                               |
 | iSCSI server                     | `iscsi_srv_ip`               | `10.0.0.4`                                         |                                                                                                        |
 | Monitoring                       | `monitoring_srv_ip`          | `10.0.0.5`                                         |                                                                                                        |
-| Bastion                          | -                            | `10.0.2.5`                                         |                                                                                                        |
 | HANA IPs                         | `hana_ips`                   | `10.0.0.10`, `10.0.0.11`                           |                                                                                                        |
 | HANA cluster vIP                 | `hana_cluster_vip`           | `10.0.1.12`                                        | Only used if HA is enabled in HANA                                                                     |
 | HANA cluster vIP secondary       | `hana_cluster_vip_secondary` | `10.0.1.13`                                        | Only used if the Active/Active setup is used                                                           |

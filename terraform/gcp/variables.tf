@@ -73,36 +73,6 @@ variable "admin_user" {
   }
 }
 
-variable "bastion_name" {
-  description = "hostname, without the domain part"
-  type        = string
-  default     = "vmbastion"
-}
-
-variable "bastion_network_domain" {
-  description = "hostname's network domain"
-  type        = string
-  default     = ""
-}
-
-variable "bastion_public_key" {
-  description = "Content of a SSH public key or path to an already existing SSH public key to the bastion. If it's not set the key provided in public_key will be used"
-  type        = string
-  default     = ""
-}
-
-variable "bastion_private_key" {
-  description = "Content of a SSH private key or path to an already existing SSH private key to the bastion. If it's not set the key provided in private_key will be used"
-  type        = string
-  default     = ""
-}
-
-variable "bastion_nat_min_ports_per_vm" {
-  description = "Minimum ports per VM instance for the NAT router. Decreasing this value can compromise the deployment and make it fail"
-  type        = number
-  default     = 1024
-}
-
 # Deployment variables
 
 variable "deployment_name" {
