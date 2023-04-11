@@ -208,15 +208,15 @@
 - name: Set cluster facts
   ansible.builtin.set_fact:
     sbd_stonith: "{{ (crm_conf_show.stdout | regex_search('(rsc_iscsi_sbd)', '\\1'))[0] | default('false') }}"
-    stonith_enabled: "{{ (crm_conf_show.stdout | regex_search('stonith-enabled=([a-z]*)', '\\1' ))[0] | default('false') }}"
-    stonith_action: "{{ (crm_conf_show.stdout | regex_search('stonith-action=([a-z]*)', '\\1' ))[0] | default('false') }}"
-    stonith_timeout: "{{ (crm_conf_show.stdout | regex_search('stonith-timeout=([a-z0-9]*)', '\\1' ))[0] | default('false') }}"
+    stonith_enabled: "{{ (crm_conf_show.stdout | regex_search('stonith-enabled=([a-z]*)', '\\1'))[0] | default('false') }}"
+    stonith_action: "{{ (crm_conf_show.stdout | regex_search('stonith-action=([a-z]*)', '\\1'))[0] | default('false') }}"
+    stonith_timeout: "{{ (crm_conf_show.stdout | regex_search('stonith-timeout=([a-z0-9]*)', '\\1'))[0] | default('false') }}"
     rsc_ip: "{{ crm_conf_show.stdout | regex_search('(rsc_ip_)') }}"
     rsc_healthcheck_primary: "{{ crm_conf_show.stdout | regex_search('(rsc_healthcheck_primary)') }}"
     grp_ip_hc: "{{ crm_conf_show.stdout | regex_search('(grp_ip_hc)') }}"
-    resource_stickiness: "{{ (crm_rsc_options_show.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1' ))[0] | default('false') }}"
-    migration_threshold: "{{ (crm_rsc_options_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1' ))[0] | default('false') }}"
-    op_default_timeout: "{{ (crm_op_options_show.stdout | regex_search('timeout=([0-9]*)', '\\1' ))[0] | default('false') }}"
+    resource_stickiness: "{{ (crm_rsc_options_show.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1'))[0] | default('false') }}"
+    migration_threshold: "{{ (crm_rsc_options_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] | default('false') }}"
+    op_default_timeout: "{{ (crm_op_options_show.stdout | regex_search('timeout=([0-9]*)', '\\1'))[0] | default('false') }}"
 
 - name: Enable SBD [sbd]
   ansible.builtin.command: crm configure primitive rsc_iscsi_sbd stonith:external/sbd

@@ -25,7 +25,7 @@
   vars:
     jmesquery: "[? identifier==`sle-module-public-cloud`].status"
 
-- name: debug
+- name: Debug
   ansible.builtin.debug:
     var: public_cloud_module
 

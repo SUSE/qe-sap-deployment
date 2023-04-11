@@ -1,5 +1,6 @@
 ---
-- hosts: iscsi, hana
+- name: Cluster SBD preparation
+  hosts: iscsi, hana
   remote_user: cloudadmin
   become: true
   become_user: root
@@ -10,8 +11,9 @@
     - name: Detection result
       ansible.builtin.debug:
         msg: "Cloud platform appears to be {{ cloud_platform_name }}"
-    - name: include sdb vars
+    - name: Include sdb vars
       ansible.builtin.include_vars: ./vars/sbd_parameters.yaml
+
   vars:
     iscsi_prefix: /dev/disk/by-id/scsi-
     is_primary: "{{ groups.hana[0] == inventory_hostname }}"
@@ -26,9 +28,8 @@
         - iscsid
       when: inventory_hostname in groups.hana
 
-# tasks sourced from https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/high-availability-guide-suse-pacemaker
+  # tasks sourced from https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/high-availability-guide-suse-pacemaker
   tasks:
-
   - name: Set facts for iscsi server
     ansible.builtin.set_fact:
       backstore_name: "{{ config_backstore_name | default('sbdhana') }}"
@@ -55,7 +56,7 @@
       client_list:
         - 'iqn.{{ year }}-{{ month }}.{{ client01_iqn_name_authority }}:{{ client01_meaningful_name }}'
         - 'iqn.{{ year }}-{{ month }}.{{ client02_iqn_name_authority }}:{{ client02_meaningful_name }}'
-    
+
   - name: Run iscsi server tasks
     ansible.builtin.include_tasks: ./tasks/iscsi-server-sbd-prep.yaml
     when: inventory_hostname in groups.iscsi
@@ -73,6 +74,3 @@
     when: inventory_hostname in groups.hana
     tags:
       - sbd
-
-
-        

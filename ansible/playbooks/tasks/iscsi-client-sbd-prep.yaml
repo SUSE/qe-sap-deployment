@@ -33,7 +33,7 @@
   loop: "{{ groups['iscsi'] }}"
   register: discovered_iscsi
 
-- name: iscsi login
+- name: Login for iscsi
   ansible.builtin.command:
     cmd: "iscsiadm -m node -T {{ srv_iqn }} --login --portal={{ item.stdout | split(':') | first }}"
     creates: "/dev/disk/by-path/ip-{{ item.stdout | split(':') | first }}:3260-iscsi-{{ srv_iqn }}-lun-0"

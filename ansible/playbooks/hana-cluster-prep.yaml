@@ -2,7 +2,7 @@
 - hosts: hana
   remote_user: cloudadmin
   become: true
-  become_user : root
+  become_user: root
 
   tasks:
   # tasks sourced from https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/high-availability-guide-suse-pacemaker
@@ -20,7 +20,3 @@
       - iscsi
       - sbd
     when: sbd
-    
-
-
-        
