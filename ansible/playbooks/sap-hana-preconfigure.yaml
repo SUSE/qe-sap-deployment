@@ -24,8 +24,8 @@
         name: "{{ item }}"
         state: present
       loop:
-        - 'iscsiuio=0.7.8.6-150500.43.1'
-        - 'open-iscsi=2.1.8-150500.43.1'
+        - 'iscsiuio'
+        - 'open-iscsi'
 
     - name: Update old SAPHanaSR on SLE 15-SP1
       community.general.zypper:
