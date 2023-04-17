@@ -15,16 +15,23 @@ def test_configure_no_tfvars_template(args_helper, config_yaml_sample):
     just create tfvars from the config.yaml content
     '''
     provider = 'pinocchio'
+
+    # create a dummy conf.yaml with some generic content
     conf = config_yaml_sample(provider)
 
     # Create some regexp from the injected conf.yaml
     # to be used later in the verification against the generated terraform.tfvars
     regexp_set = []
     conf_dict = yaml.safe_load(conf)
+
+    # for each string variable in the config.yaml terraform::variables section ...
     for key, value in conf_dict['terraform']['variables'].items():
-        # just focus on the strings variables
         if isinstance(value, str):
-            regexp_set.append(rf'{key}\s?=\s?"{value}"')
+            # ... create a regexp to match the expected translation
+            # in the result .tfvars file
+            # Each key/value pair has to be translated with an = in the middle
+            # and eventually some spaces
+            regexp_set.append(rf'{key}\s*=\s*"{value}"')
 
     args, tfvar_path, *_ = args_helper(provider, conf, None)
     args.append('configure')
@@ -32,18 +39,19 @@ def test_configure_no_tfvars_template(args_helper, config_yaml_sample):
 
     assert main(args) == 0
 
+    # now check the content of the generated .tfvars
     assert os.path.isfile(tfvar_file)
     with open(tfvar_file, 'r', encoding="utf-8") as file:
         tfvars_lines = file.readlines()
         for var_re in regexp_set:
-            one_match = False
+            one_match = 0
             for line in tfvars_lines:
                 if not one_match:
                     match = re.search(var_re, line)
                     if match:
                         log.debug("Line [%s] match with [%s]", line, var_re)
-                        one_match = True
-            assert one_match, 'Variable:' + var_re + ' missing in the generated terraform.tfvars'
+                        one_match += 1
+            assert one_match == 1, 'Variable:' + var_re + ' match ' + one_match + ' times in the generated terraform.tfvars'
 
 
 def test_configure_create_tfvars_file(configure_helper, config_yaml_sample):
@@ -133,6 +141,37 @@ def test_configure_tfvars_with_variables(config_yaml_sample_for_terraform, confi
     # EOL is expected to be added in terraform.tfvars
     # if missing at the end of the template
     expected_tfvars.append(tfvar_template[2] + '\n')
+    expected_tfvars.append('region = "eu1"\n')
+    expected_tfvars.append('deployment_name = "rocket"\n')
+    with open(tfvar_path, 'r', encoding='utf-8') as file:
+        data = file.readlines()
+        assert expected_tfvars == data
+
+
+def test_configure_tfvars_template_spaces(config_yaml_sample_for_terraform, configure_helper):
+    """
+    Test that python code support different kind of spaces in the .template
+    """
+    provider = 'pinocchio'
+    tfvar_template = [
+        "basic = bimbumbam\n",
+        "extra_space_before      = bimbumbam\n",
+        "extra_space_after =       bimbumbam\n",
+        "extra_space_both    =     bimbumbam"]
+    terraform_section = '''terraform:
+  variables:
+    region : eu1
+    deployment_name : "rocket"
+'''
+    conf = config_yaml_sample_for_terraform(terraform_section, provider)
+    args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
+
+    assert main(args) == 0
+
+    expected_tfvars = tfvar_template[0:3]
+    # EOL is expected to be added in terraform.tfvars
+    # if missing at the end of the template
+    expected_tfvars.append(tfvar_template[3] + '\n')
     expected_tfvars.append('region = "eu1"\n')
     expected_tfvars.append('deployment_name = "rocket"\n')
     with open(tfvar_path, 'r', encoding='utf-8') as file:
