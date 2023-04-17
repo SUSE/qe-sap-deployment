@@ -2,7 +2,7 @@
 - hosts: all
   remote_user: cloudadmin
   become: true
-  become_user : root
+  become_user: root
 
   tasks:
 
@@ -17,7 +17,7 @@
 
     # Is registercloudguest available?
     - name: Check for registercloudguest
-      ansible.builtin.command:  which registercloudguest
+      ansible.builtin.command: which registercloudguest
       register: rcg
       failed_when: false
       changed_when: false
@@ -41,7 +41,7 @@
         - repos.rc != 0
         - rcg.rc == 0
 
-    #If registercloudguest is not present fall back on SUSEConnect
+    # If registercloudguest is not present fall back on SUSEConnect
     - name: SUSEConnect registration
       ansible.builtin.command: SUSEConnect -r "{{ reg_code }}" -e "{{ email_address }}"
       register: result
@@ -52,7 +52,7 @@
         - repos.rc != 0
         - rcg.rc != 0
 
-    #There are additional repos to add.  These are handled differently for SLES 15 and SLES12
+    # There are additional repos to add.  These are handled differently for SLES 15 and SLES12
     - name: Add SLES 12 Advanced Systems Modules
       ansible.builtin.command: SUSEConnect -p sle-module-adv-systems-management/12/{{ ansible_facts['architecture'] }} -r "{{ reg_code }}"
       register: result

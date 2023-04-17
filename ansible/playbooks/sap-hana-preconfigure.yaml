@@ -1,3 +1,4 @@
+
 ---
 - hosts: hana
   remote_user: cloudadmin
@@ -17,6 +18,14 @@
         name: libssh2-1  # Caution, no version control here (yet)
         state: present
       when: scale_out | bool
+
+    - name: Ensure iscsi is installed
+      community.general.zypper:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - 'iscsiuio'
+        - 'open-iscsi'
 
     - name: Update old SAPHanaSR on SLE 15-SP1
       community.general.zypper:

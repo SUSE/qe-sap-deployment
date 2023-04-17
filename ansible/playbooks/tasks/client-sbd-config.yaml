@@ -24,7 +24,7 @@
 
 - name: Set iscsi facts
   ansible.builtin.set_fact:
-    sbd_list: "{{ sbd_list + [ iscsi_prefix + item | split(' ') | last ] }}"
+    sbd_list: "{{ sbd_list + [iscsi_prefix + item | split(' ') | last] }}"
   when: item | regex_search('LIO-ORG')
   loop: "{{ discovered_disks.stdout_lines }}"
   changed_when: false

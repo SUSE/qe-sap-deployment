@@ -101,7 +101,7 @@
 
 - name: Set crm facts
   ansible.builtin.set_fact:
-    refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1' ))[0] }}"
+    refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] }}"
   changed_when: false
 
 - name: Ensure maintenance mode is disabled

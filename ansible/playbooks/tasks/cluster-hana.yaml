@@ -77,7 +77,7 @@
     - order | length == 0
 
 
-# Get current maintainence state
+# Get current maintenance state
 - name: Refresh cluster status
   ansible.builtin.command: crm configure show
   register: refreshed_crm_conf_show
