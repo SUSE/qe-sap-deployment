@@ -5,7 +5,6 @@ import yaml
 
 from qesap import main
 
-
 log = logging.getLogger(__name__)
 
 
@@ -187,16 +186,16 @@ terraform:
     something : yamlrulez"""
 
     tfvar_template = [
-        "something = static\n",
-        "somethingelse = keep\n"]
+        'something = static\n',
+        'somethingelse = keep\n']
     conf = config_yaml_sample_for_terraform(terraform_section, provider)
     args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
 
     assert main(args) == 0
 
     expected_tfvars = [
-        "something = yamlrulez\n",
-        "somethingelse = keep\n"]
+        'something = "yamlrulez"\n',
+        'somethingelse = keep\n']
     with open(tfvar_path, 'r', encoding='utf-8') as file:
         data = file.readlines()
         assert expected_tfvars == data
