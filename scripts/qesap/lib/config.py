@@ -130,7 +130,7 @@ class CONF:
                 key_replace = False
                 # Look for key in the template file content
                 for index, line in enumerate(tfvar_content):
-                    if re.search(rf'{key}\s?=.*', line):
+                    if re.search(rf'{key}\s*=.*', line):
                         log.debug("Replace template %s with [%s = %s]", line, key, value)
                         tfvar_content[index] = f"{key} = {value}\n"
                         key_replace = True
