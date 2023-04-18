@@ -84,7 +84,7 @@ The Ansible playbooks needs some .yaml configuration files. Some of them are gen
 
 ###### Hana variables
 
-The Ansible project requires a configuration file `ansible/playbooks/vars/hana_vars.yaml`. It is generated from the `ansible::hana_vars` section of the config.yaml:
+The Ansible project requires a configuration file `ansible/playbooks/vars/hana_vars.yaml`. This file is generated from the `ansible::hana_vars` section of the config.yaml. All the content of the `hana_vars` config.yaml section is directly written in the hana_vars.yaml:
 
 ```yaml
 provider: azure
@@ -100,13 +100,13 @@ ansible:
     secondary_site: 'miky'
 ```
 
+Required fields in this section are documented in the qe-sap-deployment ansible documentation.
+
 ###### Hana media
 
-The Ansible project is provided with a playbook to get the Hana installers. This playbook is configured using exactly these fields from the conf.yaml.
+The Ansible project is provided with a playbook `sap-hana-download-media.yaml` to get the Hana installers. This playbook is configured using an Ansible variables file named `hana_media.yaml`. The `qesap.py` script can assit the user to generate it as part of `configure` step. Exactly these fields of the conf.yaml are needed to generate the `hana_media.yaml` file.
 
 ```yaml
-provider: azure
-apiver: 3
 ansible:
   az_storage_account_name: "something"
   az_container_name:  "somewhere"
@@ -117,13 +117,13 @@ ansible:
     - "SOMEWHERE.SAR"
 ```
 
+Refer to the qe-sap-deployment Ansible documentation or `ansible/playbooks/vars/hana_media.example.yaml` for more details about these settings.
+
 ###### Playbooks sequence
 
 The `qesap.py ... ansible` sub-command calls a sequence of playbooks execution. The sequence has to be defined in the `ansible::create` section of the config.yaml. The `ansible::destroy` sequence is used by `qesap.py ... ansible -d`
 
 ```yaml
-provider: azure
-apiver: 3
 ansible:
   create:
     - registration.yaml -e reg_code=******* -e email_address=your@email.some
