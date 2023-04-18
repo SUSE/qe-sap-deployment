@@ -76,8 +76,9 @@ def test_ansible_verbose(run, _, base_args, tmpdir, create_inventory, create_pla
     run.assert_has_calls(calls)
 
 
+@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
 @mock.patch("lib.process_manager.subprocess_run")
-def test_ansible_dryrun(run, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
+def test_ansible_dryrun(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
     """
     Command ansible does not call the Ansible executable in dryrun mode
     """

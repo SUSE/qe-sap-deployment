@@ -109,6 +109,16 @@ class CONF:
         Takes data structure collected from yaml config.
         Values are converted into tfvars format and checked against terraform.tfvars.template.
         Variables from yaml config are overwritten by values from template file.
+        Whatever .tfvars.template content is in the file, is copied in the final terraform.tfvars.
+        This function only eventually care about strings that
+        are in a valid terraform variable format like:
+
+        ```
+        aaa = bbb
+        ```
+
+        They are also copied in the final .tfvars. Eventually values for them is updated if
+        same variable is also specified in the conf.yaml
 
         Args:
             tfvars_template (str): path to the tfvars template file
@@ -132,7 +142,7 @@ class CONF:
                 for index, line in enumerate(tfvar_content):
                     if re.search(rf'{key}\s*=.*', line):
                         log.debug("Replace template %s with [%s = %s]", line, key, value)
-                        tfvar_content[index] = f"{key} = {value}\n"
+                        tfvar_content[index] = yaml_to_tfvars_entry(key, value) + '\n'
                         key_replace = True
                 # add the new key/value pair
                 if not key_replace:
