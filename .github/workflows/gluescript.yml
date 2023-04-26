@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-20.04]
-        python-version: ['3.6.15', '3.9.15', '3.10.10']
+        python-version: ['3.8.16', '3.9.15', '3.10.10']
 
     steps:
     - uses: actions/checkout@v3

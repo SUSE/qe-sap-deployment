@@ -102,6 +102,33 @@ def test_ansible_dryrun(run, _, base_args, tmpdir, create_inventory, create_play
     run.assert_not_called()
 
 
+@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
+@mock.patch("lib.process_manager.subprocess_run")
+def test_ansible_no_ansible(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
+    """
+    Command ansible with a deployment without
+    the ansible: section in the congif.yaml
+
+    If the user create a config.yaml without the ansible: section
+    the `qesap.py ... ansible` command invocation has to fail.
+    """
+    provider = 'grilloparlante'
+    config_content = f"""---
+apiver: 2
+provider: grilloparlante"""
+    config_file_name = str(tmpdir / 'config.yaml')
+    with open(config_file_name, 'w', encoding='utf-8') as file:
+        file.write(config_content)
+
+    args = base_args(None, config_file_name, True)
+    args.append('ansible')
+    run.return_value = (0, [])
+
+    assert main(args) == 1
+
+    run.assert_not_called()
+
+
 @mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_missing_inventory(run, tmpdir, base_args, ansible_config):
     """

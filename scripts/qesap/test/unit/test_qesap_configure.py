@@ -164,7 +164,7 @@ ansible:"""
 def test_configure_check_terraform_cloud_provider(base_args, tmpdir):
     """
     Test that 'configure' fails if the folder structure
-    at -b is not the expected one:
+    at -b is not the expected one within terraform:
      - <BASEDIR>/terraform/<CLOUD_PROVIDER> with CLOUD_PROVIDER from the config.yaml
     """
     provider = 'pinocchio'
@@ -184,3 +184,49 @@ ansible:
     args = base_args(base_dir=tmpdir, config_file=config_file_name)
     args.append('configure')
     assert main(args) == 1
+
+
+def test_configure_without_ansible(base_args, tmpdir):
+    config = """---
+apiver: 3
+provider: pinocchio
+terraform:
+  variables:
+    az_region: "westeurope"
+    hana_ips: ["10.0.0.2", "10.0.0.3"]
+    hana_data_disks_configuration:
+      disk_type: "hdd,hdd,hdd"
+      disks_size: "64,64,64"
+"""
+    config_file_name = str(tmpdir / 'config.yaml')
+    with open(config_file_name, 'w', encoding='utf-8') as file:
+        file.write(config)
+    os.makedirs(os.path.join(tmpdir, 'terraform'))
+    os.makedirs(os.path.join(tmpdir, 'terraform', 'pinocchio'))
+
+    args = base_args(base_dir=tmpdir, config_file=config_file_name)
+    args.append('configure')
+    assert main(args) == 0
+
+
+def test_configure_without_ansible_in_older_apiver(base_args, tmpdir):
+    config = """---
+apiver: 2
+provider: pinocchio
+terraform:
+  variables:
+    az_region: "westeurope"
+    hana_ips: ["10.0.0.2", "10.0.0.3"]
+    hana_data_disks_configuration:
+      disk_type: "hdd,hdd,hdd"
+      disks_size: "64,64,64"
+"""
+    config_file_name = str(tmpdir / 'config.yaml')
+    with open(config_file_name, 'w', encoding='utf-8') as file:
+        file.write(config)
+    os.makedirs(os.path.join(tmpdir, 'terraform'))
+    os.makedirs(os.path.join(tmpdir, 'terraform', 'pinocchio'))
+
+    args = base_args(base_dir=tmpdir, config_file=config_file_name)
+    args.append('configure')
+    assert main(args) == 0
