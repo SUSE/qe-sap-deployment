@@ -119,13 +119,14 @@ def cmd_configure(configure_data, base_project, dryrun):
     if not config.validate_ansible_config(None):
         return Status("Problems in the ansible part of the configuration")
 
-    hanamedia_content, err = create_hana_media(configure_data['ansible'], configure_data['apiver'])
-    if err is not None:
-        return Status(err)
-    log.debug("Hana media %s:\n%s", cfg_paths['hana_media_file'], hanamedia_content)
+    if config.has_ansible():
+        hanamedia_content, err = create_hana_media(configure_data['ansible'], configure_data['apiver'])
+        if err is not None:
+            return Status(err)
+        log.debug("Hana media %s:\n%s", cfg_paths['hana_media_file'], hanamedia_content)
 
-    if 'hana_vars' in configure_data['ansible'] and configure_data['apiver'] >= 2:
-        log.debug("Hana variables %s:\n%s", cfg_paths['hana_vars_file'], configure_data['ansible']['hana_vars'])
+        if 'hana_vars' in configure_data['ansible'] and configure_data['apiver'] >= 2:
+            log.debug("Hana variables %s:\n%s", cfg_paths['hana_vars_file'], configure_data['ansible']['hana_vars'])
 
     if dryrun:
         print(f"Create {cfg_paths['tfvars_file']} with content {tfvar_content}")
@@ -135,14 +136,15 @@ def cmd_configure(configure_data, base_project, dryrun):
         with open(cfg_paths['tfvars_file'], 'w', encoding='utf-8') as file:
             file.write(''.join(tfvar_content))
 
-        log.info("Write hana_media %s", cfg_paths['hana_media_file'])
-        with open(cfg_paths['hana_media_file'], 'w', encoding='utf-8') as file:
-            yaml.dump(hanamedia_content, file)
+        if config.has_ansible():
+            log.info("Write hana_media %s", cfg_paths['hana_media_file'])
+            with open(cfg_paths['hana_media_file'], 'w', encoding='utf-8') as file:
+                yaml.dump(hanamedia_content, file)
 
-        if 'hana_vars' in configure_data['ansible'] and configure_data['apiver'] >= 2:
-            log.info("Write hana_vars %s", cfg_paths['hana_vars_file'])
-            with open(cfg_paths['hana_vars_file'], 'w', encoding='utf-8') as file:
-                yaml.dump(configure_data['ansible']['hana_vars'], file)
+            if 'hana_vars' in configure_data['ansible'] and configure_data['apiver'] >= 2:
+                log.info("Write hana_vars %s", cfg_paths['hana_vars_file'])
+                with open(cfg_paths['hana_vars_file'], 'w', encoding='utf-8') as file:
+                    yaml.dump(configure_data['ansible']['hana_vars'], file)
     return Status('ok')
 
 
@@ -234,40 +236,47 @@ def cmd_terraform(configure_data, base_project, dryrun, workspace='default', des
     return Status('ok')
 
 
-def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, profile=False):
-    """ Main executor for the deploy sub-command
+def ansible_validate(config, base_project, sequence, provider):
+    """
+    Validate all elements needed to execute the Ansible sequence.
+    Part of that is about the Ansible part of conf.yaml
+    Part of that is about files generated at runtime from previous steps (like Terraform)
+    """
+    if not config.has_ansible():
+        return False, "Deployment configured without Ansible."
+    if not config.validate():
+        return False, "Invalid configuration file content."
+
+    if config.has_ansible_playbooks(sequence):
+        if not config.validate_ansible_config(sequence):
+            return False, 'Invalid internal structure of the Ansible part of config.yaml'
+        for playbook in config.get_playbooks(sequence):
+            playbook_filename = os.path.join(base_project, 'ansible', 'playbooks', playbook.split(' ')[0])
+            if not os.path.isfile(playbook_filename):
+                log.error("Missing playbook at %s", playbook_filename)
+                return False, f"Missing playbook: {playbook_filename}"
+    inventory = os.path.join(base_project, 'terraform', provider, 'inventory.yaml')
+    if not os.path.isfile(inventory):
+        log.error("Missing inventory at %s", inventory)
+        return False, "Missing inventory"
+    return True, ''
+
+
+def ansible_command_sequence(configure_data_ansible, base_project, sequence, verbose, inventory, profile):
+    """ Compose the sequence of Ansible commands
 
     Args:
-        configure_data (obj): configuration structure
+        configure_data_ansible (obj): ansible part of the configure_data
         base_project (str): base project path where to
                       look for the Ansible files
-        dryrun (bool): enable dryrun execution mode
+        sequence (str): 'create' or 'destroy'
         verbose (bool): enable more verbosity
-        destroy (bool): select the playbook list
+        inventory (str): inventory.yaml file path
         profile (bool): enable task profile
 
     Returns:
-        Status: execution result, 0 means OK. It is mind to be used as script exit code
+        list of list of strings, each command is rappresented as a list of its arguments
     """
-
-    # Validations
-    config = CONF(configure_data)
-    if not config.validate():
-        return Status(f"Invalid configuration file content in {configure_data}")
-
-    sequence = 'create'
-    if destroy:
-        sequence = 'destroy'
-
-    if not config.validate_ansible_config(sequence):
-        log.info('No Ansible playbooks to play in %s', configure_data)
-        return Status("ok")
-
-    inventory = os.path.join(base_project, 'terraform', configure_data['provider'], 'inventory.yaml')
-    if not os.path.isfile(inventory):
-        log.error("Missing inventory at %s", inventory)
-        return Status("Missing inventory")
-
     ansible_common = [shutil.which('ansible-playbook')]
     if verbose:
         ansible_common.append('-vvvv')
@@ -288,24 +297,58 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
     if profile:
         original_env['ANSIBLE_CALLBACK_WHITELIST'] = 'ansible.posix.profile_tasks'
 
-    for playbook in configure_data['ansible'][sequence]:
+    for playbook in configure_data_ansible[sequence]:
         ansible_cmd = ansible_common.copy()
         playbook_cmd = playbook.split(' ')
         log.debug("playbook:%s", playbook)
         playbook_filename = os.path.join(base_project, 'ansible', 'playbooks', playbook_cmd[0])
-        if not os.path.isfile(playbook_filename):
-            log.error("Missing playbook at %s", playbook_filename)
-            return Status("Missing playbook")
         ansible_cmd.append(playbook_filename)
         for ply_cmd in playbook_cmd[1:]:
             match = re.search(r'\${(.*)}', ply_cmd)
             if match:
-                value = str(configure_data['ansible']['variables'][match.group(1)])
+                value = str(configure_data_ansible['variables'][match.group(1)])
                 log.debug("Replace value %s in %s", value, ply_cmd)
                 ansible_cmd.append(re.sub(r'\${(.*)}', value, ply_cmd))
             else:
                 ansible_cmd.append(ply_cmd)
         ansible_cmd_seq.append({'cmd': ansible_cmd, 'env': original_env})
+    return ansible_cmd_seq
+
+
+def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, profile=False):
+    """ Main executor for the deploy sub-command
+
+    Args:
+        configure_data (obj): configuration structure
+        base_project (str): base project path where to
+                      look for the Ansible files
+        dryrun (bool): enable dryrun execution mode
+        verbose (bool): enable more verbosity
+        destroy (bool): select the playbook list
+        profile (bool): enable task profile
+
+    Returns:
+        Status: execution result, 0 means OK. It is mind to be used as script exit code
+    """
+    sequence = 'create'
+    if destroy:
+        sequence = 'destroy'
+
+    # Validations
+    config = CONF(configure_data)
+    if not config.has_ansible():
+        return Status(f"Deployment configured without Ansible in {configure_data}")
+
+    res, msg = ansible_validate(config, base_project, sequence, configure_data['provider'])
+    if not res:
+        return Status(msg)
+
+    if not config.has_ansible_playbooks(sequence):
+        log.info("No playbooks to play")
+        return Status("ok")
+
+    inventory = os.path.join(base_project, 'terraform', configure_data['provider'], 'inventory.yaml')
+    ansible_cmd_seq = ansible_command_sequence(configure_data['ansible'], base_project, sequence, verbose, inventory, profile)
 
     for command in ansible_cmd_seq:
         if dryrun:
