@@ -20,7 +20,6 @@
       line: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}    {{ hostvars[item]['ansible_hostname'] }}    {{ hostvars[item]['ansible_hostname'] }}"
       state: present
       backup: true
-    when: ansible_hostname != item
     with_items: "{{ groups['all'] }}"
 
   - name: Ensure that /root/.ssh exists on hana
@@ -31,6 +30,15 @@
       state: directory
       owner: root
       group: root
+      mode: '0700'
+    when: inventory_hostname in groups.hana
+
+  - name: Ensure that /home/cloudadmin/.ssh exists on hana
+    ansible.builtin.file:
+      path: "{{ ansible_env.HOME }}/.ssh"
+      state: directory
+      owner: "{{ansible_user}}"
+      group: users
       mode: '0700'
     when: inventory_hostname in groups.hana
 
@@ -47,6 +55,17 @@
     register: ssh_root_keys
     when: inventory_hostname in groups.hana
 
+  - name: Generate public/private keys for cloudadmin on hana hosts
+    community.crypto.openssh_keypair:
+      owner: "{{ansible_user}}"
+      group: users
+      mode: '0600'
+      path: "{{ ansible_env.HOME }}/.ssh/id_rsa"
+      type: rsa
+      size: 4096
+    register: ssh_user_keys
+    when: inventory_hostname in groups.hana
+
   - name: Apply root key to root Authorised Keys
     become: true
     become_user: root
@@ -59,17 +78,11 @@
       loop_var: idx
     when: inventory_hostname in groups.hana
 
-  - name: Slurp cloudadmin public key
-    ansible.builtin.slurp:
-      src: "{{ ansible_env.HOME }}/.ssh/id_rsa.pub"
-    register: userpubkeys
-    when: inventory_hostname in groups.hana
-
-  - name: "Apply cloudadmin pub key to other node cloudadmin Authorised Keys"
+  - name: Apply cloudadmin pub key to other node cloudadmin Authorised Keys
     ansible.posix.authorized_key:
       user: "{{ansible_user}}"
       state: present
-      key: "{{ (hostvars[item].userpubkeys.content | b64decode) }}"
+      key: "{{ hostvars[item].ssh_user_keys.public_key }}"
     when: inventory_hostname in groups.hana and hostvars[item]['ansible_hostname'] in groups.hana and ansible_hostname != item
     with_items: "{{ groups['all'] }}"
 
