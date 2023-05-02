@@ -9,6 +9,8 @@
   block:
 
     - name: "Probe for AWS"
+      become: true
+      become_user: root
       ansible.builtin.command: dmidecode -s system-manufacturer  # | grep -iq "Amazon EC2"
       changed_when: false
       failed_when: false
@@ -26,6 +28,8 @@
   block:
 
     - name: "Probe for GCP"
+      become: true
+      become_user: root
       ansible.builtin.command: dmidecode -s bios-version  # | grep -iq "google"
       changed_when: false
       failed_when: false
@@ -43,12 +47,16 @@
   block:
 
     - name: "Probe for Azure 1/2"
+      become: true
+      become_user: root
       ansible.builtin.command: dmidecode -s system-manufacturer  # | grep -iq "microsoft corporation"
       changed_when: false
       failed_when: false
       register: probe_azure_1
 
     - name: "Probe for Azure 2/2"
+      become: true
+      become_user: root
       ansible.builtin.command: dmidecode -s system-product-name  # | grep -iq "virtual machine"
       changed_when: false
       failed_when: false

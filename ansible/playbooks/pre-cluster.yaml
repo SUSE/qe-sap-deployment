@@ -2,8 +2,6 @@
 - hosts: all
   name: Cluster preparation
   remote_user: cloudadmin
-  become: true
-  become_user: root
   pre_tasks:
   - name: Detect cloud platform
     ansible.builtin.include_tasks:
@@ -14,16 +12,19 @@
 
   tasks:
   - name: Ensure all hosts are present in all hosts /etc/hosts files
+    become: true
+    become_user: root
     ansible.builtin.lineinfile:
       path: "/etc/hosts"
       regexp: ".*{{ hostvars[item]['ansible_hostname'] }}.*{{ hostvars[item]['ansible_hostname'] }}"
       line: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}    {{ hostvars[item]['ansible_hostname'] }}    {{ hostvars[item]['ansible_hostname'] }}"
       state: present
       backup: true
-    when: ansible_hostname != item or ansible_hostname == item
     with_items: "{{ groups['all'] }}"
 
   - name: Ensure that /root/.ssh exists on hana
+    become: true
+    become_user: root
     ansible.builtin.file:
       path: /root/.ssh
       state: directory
@@ -32,7 +33,18 @@
       mode: '0700'
     when: inventory_hostname in groups.hana
 
+  - name: Ensure that /home/cloudadmin/.ssh exists on hana
+    ansible.builtin.file:
+      path: "{{ ansible_env.HOME }}/.ssh"
+      state: directory
+      owner: "{{ansible_user}}"
+      group: users
+      mode: '0700'
+    when: inventory_hostname in groups.hana
+
   - name: Generate public/private keys for root on hana hosts
+    become: true
+    become_user: root
     community.crypto.openssh_keypair:
       group: root
       owner: root
@@ -40,27 +52,39 @@
       path: /root/.ssh/id_rsa
       type: rsa
       size: 4096
-    register: ssh_keys
+    register: ssh_root_keys
     when: inventory_hostname in groups.hana
 
-  - name: Add all hana root public keys to all hana nodes
-    ansible.builtin.lineinfile:
-      path: /root/.ssh/authorized_keys
-      line: "{{ hostvars[item].ssh_keys.public_key }}"
-      create: true
+  - name: Generate public/private keys for cloudadmin on hana hosts
+    community.crypto.openssh_keypair:
+      owner: "{{ansible_user}}"
+      group: users
       mode: '0600'
-    with_items: "{{ groups['hana'] }}"
+      path: "{{ ansible_env.HOME }}/.ssh/id_rsa"
+      type: rsa
+      size: 4096
+    register: ssh_user_keys
     when: inventory_hostname in groups.hana
 
-  - name: Apply to Authorised Keys
+  - name: Apply root key to root Authorised Keys
+    become: true
+    become_user: root
     ansible.posix.authorized_key:
       user: root
       state: present
-      key: "{{ hostvars[idx].ssh_keys.public_key }}"
+      key: "{{ hostvars[idx].ssh_root_keys.public_key }}"
     loop: "{{ groups['hana'] }}"
     loop_control:
       loop_var: idx
     when: inventory_hostname in groups.hana
+
+  - name: Apply cloudadmin pub key to other node cloudadmin Authorised Keys
+    ansible.posix.authorized_key:
+      user: "{{ansible_user}}"
+      state: present
+      key: "{{ hostvars[item].ssh_user_keys.public_key }}"
+    when: inventory_hostname in groups.hana and hostvars[item]['ansible_hostname'] in groups.hana and ansible_hostname != item
+    with_items: "{{ groups['all'] }}"
 
   - name: Slurp ssh daemon public key
     ansible.builtin.slurp:
@@ -69,6 +93,8 @@
     when: inventory_hostname in groups.hana
 
   - name: Populate /root/.ssh/known_hosts
+    become: true
+    become_user: root
     ansible.builtin.known_hosts:
       path: /root/.ssh/known_hosts
       name: "{{ hostvars[idx]['ansible_hostname'] }}"
@@ -80,6 +106,8 @@
     when: inventory_hostname in groups.hana
 
   - name: Ensure hostnames are preserved [aws]
+    become: true
+    become_user: root
     ansible.builtin.lineinfile:
       path: /etc/cloud/cloud.cfg
       regexp: '^preserve_hostname:'
