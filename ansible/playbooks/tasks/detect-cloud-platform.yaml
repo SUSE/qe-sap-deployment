@@ -17,12 +17,16 @@
       register: probe_aws
 
     - name: "Probe for AWS 2"
+      become: true
+      become_user: root
       ansible.builtin.command: dmidecode -s bios-version  # | grep -iq "Amazon"
       changed_when: false
       failed_when: false
       register: probe_aws_2
 
     - name: "Probe for AWS 1"
+      become: true
+      become_user: root
       ansible.builtin.command: dmidecode --string system-uuid  # | grep -iq " EC2"
       changed_when: false
       failed_when: false
