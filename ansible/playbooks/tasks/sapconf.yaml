@@ -36,7 +36,7 @@
 
 - name: Ensure sapconf is installed
   community.general.zypper:
-    name: sapconf=5.0.3
+    name: sapconf
     state: present
   register: result
   until: result is succeeded
