@@ -16,12 +16,29 @@
       failed_when: false
       register: probe_aws
 
+    - name: "Probe for AWS 1"
+      become: true
+      become_user: root
+      ansible.builtin.command: dmidecode --string system-uuid  # | grep -iq "EC2"
+      changed_when: false
+      failed_when: false
+      register: probe_aws_1
+
+    - name: "Probe for AWS 2"
+      become: true
+      become_user: root
+      ansible.builtin.command: dmidecode -s bios-version  # | grep -iq "Amazon"
+      changed_when: false
+      failed_when: false
+      register: probe_aws_2
+
+
     - name: Set AWS discovery fact
       ansible.builtin.set_fact:
         cloud_platform_is_aws: true
       when:
         - probe_aws.rc == 0
-        - probe_aws.stdout | lower == 'amazon ec2'
+        - probe_aws.stdout | lower == 'amazon ec2' or probe_aws_1.stdout is match("ec.*") or probe_aws_2.stdout is match(".*amazon") 
 
 # SEE: https://stackoverflow.com/questions/30911775/how-to-know-if-a-machine-is-an-google-compute-engine-instance
 - name: "Detect GCP"
