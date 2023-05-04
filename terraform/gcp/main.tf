@@ -202,6 +202,8 @@ module "hana_node" {
   iscsi_srv_ip          = module.iscsi_server.iscsisrv_ip
   hana_data_disk_type   = var.hana_data_disk_type
   hana_data_disk_size   = var.hana_data_disk_size
+  hana_log_disk_type    = var.hana_log_disk_type
+  hana_log_disk_size    = var.hana_log_disk_size
   hana_backup_disk_type = var.hana_backup_disk_type
   hana_backup_disk_size = var.hana_backup_disk_size
 }
