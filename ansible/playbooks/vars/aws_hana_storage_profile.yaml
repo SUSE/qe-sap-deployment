@@ -5,8 +5,9 @@ sap_storage_dict:
     directory: '/hana/data'
     vg: 'hanadatavg'
     lv: 'hanadatalv'
-    pv: ["/dev/nvme1n1", "/dev/nvme2n1"]
+    pv: ["/dev/xvdb","/dev/xvdc"]
     numluns: '1'
+      #stripesize: ''
     stripesize: '256'
   # LVM striped partition
   hanalog:
@@ -14,15 +15,16 @@ sap_storage_dict:
     directory: '/hana/log'
     vg: 'hanalogvg'
     lv: 'hanaloglv'
-    pv: ["/dev/nvme3n1", "/dev/nvme4n1"]
+    pv: ["/dev/xvdd","/dev/xvde"]
     numluns: '2'
     stripesize: '32'
+  #stripesize: '32i'
   hanashared:
     name: 'hanashared'
     directory: '/hana/shared'
     vg: 'hanasharedvg'
     lv: 'hanasharedlv'
-    pv: ["/dev/nvme5n1"]
+    pv: ["/dev/xvdf"]
     numluns: '1'
     stripesize: ''
   usrsap:
@@ -30,7 +32,7 @@ sap_storage_dict:
     directory: '/usr/sap'
     vg: 'usrsapvg'
     lv: 'usrsaplv'
-    pv: ["/dev/nvme6n1"]
+    pv: ["/dev/xvdg"]
     numluns: '1'
     stripesize: ''
   backup:
@@ -38,6 +40,18 @@ sap_storage_dict:
     directory: '/backup'
     vg: 'backupvg'
     lv: 'backuplv'
-    pv: ["/dev/nvme7n1"]
+    pv: ["/dev/xvdh"]
     numluns: '1'
     stripesize: ''
+      #install:
+
+      #name: 'install'
+      #directory: '/hana/install'
+      #vg: 'installvg'
+      #lv: 'installlv'
+      #pv: ["/dev/xvdg"]
+
+    #pv: ["/dev/disk/by-id/google-{{ prefix }}-hana-software"]
+    #numluns: '1'
+    #stripesize: ''
+
