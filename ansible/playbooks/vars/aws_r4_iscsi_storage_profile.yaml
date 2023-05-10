@@ -5,6 +5,7 @@ sap_storage_dict:
     directory: '/srv/sbd'
     vg: 'sbdvg'
     lv: 'sbdlv'
-    pv: ["/dev/sdb"]
+    pv: ["/dev/xvdb"]
     numluns: '1'
     stripesize: ''
+
