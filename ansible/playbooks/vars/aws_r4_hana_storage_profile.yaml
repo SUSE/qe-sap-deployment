@@ -1,0 +1,46 @@
+---
+sap_storage_dict:
+  hanadata:
+    name: 'hanadata'
+    directory: '/hana/data'
+    vg: 'hanadatavg'
+    lv: 'hanadatalv'
+    pv: ["/dev/xvdb","/dev/xvdc"]
+    numluns: '1'
+      #stripesize: ''
+    stripesize: '256'
+  # LVM striped partition
+  hanalog:
+    name: 'hanalog'
+    directory: '/hana/log'
+    vg: 'hanalogvg'
+    lv: 'hanaloglv'
+    pv: ["/dev/xvdd","/dev/xvde"]
+    numluns: '2'
+    stripesize: '32'
+  #stripesize: '32i'
+  hanashared:
+    name: 'hanashared'
+    directory: '/hana/shared'
+    vg: 'hanasharedvg'
+    lv: 'hanasharedlv'
+    pv: ["/dev/xvdf"]
+    numluns: '1'
+    stripesize: ''
+  usrsap:
+    name: 'usrsap'
+    directory: '/usr/sap'
+    vg: 'usrsapvg'
+    lv: 'usrsaplv'
+    pv: ["/dev/xvdg"]
+    numluns: '1'
+    stripesize: ''
+  backup:
+    name: 'backup'
+    directory: '/backup'
+    vg: 'backupvg'
+    lv: 'backuplv'
+    pv: ["/dev/xvdh"]
+    numluns: '1'
+    stripesize: ''
+

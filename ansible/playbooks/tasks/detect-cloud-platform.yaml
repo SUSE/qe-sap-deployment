@@ -4,6 +4,7 @@
     cloud_platform_is_aws: false
     cloud_platform_is_gcp: false
     cloud_platform_is_azure: false
+    aws_machine_type: false
 
 - name: "Detect AWS"
   block:
@@ -32,6 +33,10 @@
       failed_when: false
       register: probe_aws_2
 
+    - name: Set AWS machine type fact
+      ansible.builtin.set_fact:
+          aws_machine_type: true
+      when: probe_aws_2.stdout is match(".*amazon")
 
     - name: Set AWS discovery fact
       ansible.builtin.set_fact:

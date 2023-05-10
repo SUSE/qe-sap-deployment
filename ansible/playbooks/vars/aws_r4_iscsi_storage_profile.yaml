@@ -1,0 +1,11 @@
+---
+sap_storage_dict:
+  iscsi:
+    name: 'sbd'
+    directory: '/srv/sbd'
+    vg: 'sbdvg'
+    lv: 'sbdlv'
+    pv: ["/dev/xvdb"]
+    numluns: '1'
+    stripesize: ''
+
