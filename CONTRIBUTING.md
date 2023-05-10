@@ -45,7 +45,7 @@ The project is composed by files in many different code languages: Terraform, An
   etc.
   Also see [this](https://commit.style/) or [this](http://chris.beams.io/posts/git-commit/) as a helpful guide how to write good commit messages.
   And make code reviewers [fall in love with you](https://mtlynch.io/code-review-love/) :)
-  Keep in mind that the text in the Github pull request description is only
+  The text in the Github pull request description is only
   visible on Github, not in the git log which can be considered permanent
   information storage.
 * Add comments to the source code if the code is not self-explanatory:
@@ -65,3 +65,51 @@ The project is composed by files in many different code languages: Terraform, An
 Also see the [DoD/DoR][1] as a helpful (but not mandatory) guideline for new contributions.
 
 [1]: https://progress.opensuse.org/projects/openqatests/wiki/Wiki#Definition-of-DONEREADY
+
+## Running qesap script unit testing
+
+Help script `qesap.py` is provided with a suite of unit tests. The script itself is developed using BDD/TDD technique.
+Are you investigating on a bug or like to add a new functionalities? Please add a test at first.
+
+### Run them with tox
+
+[Tox][2] is configured to run both unit testing and Python static analysis tools
+
+```shell
+% cd scripts/qesap/
+
+% tox
+```
+
+[2]: https://tox.wiki/en/latest/
+
+### Run manually
+
+Unit tests are written using [Pytest][3]. In order to run them you need to create (once) a Python virtual environment with all needed tools:
+
+```shell
+% cd <THIS_REPO_FOLDER>/scripts/qesap/
+
+% python3.10 -m venv .venv
+
+% source .venv/bin/activate
+
+(.venv) % pip install -r requirements-dev.txt
+
+(.venv) % deactivate
+```
+
+Each time you like to run some test you can:
+
+```shell
+% cd <THIS_REPO_FOLDER>/scripts/qesap/
+
+% source .venv/bin/activate
+
+(.venv) % PYTHONPATH=$(pwd):$(pwd)/src pytest test/unit/
+
+# with more verbosity
+(.venv) % PYTHONPATH=$(pwd):$(pwd)/src pytest -vv -o log_cli=true -o log_cli_level=10 -v test/unit/
+```
+
+[3]: https://docs.pytest.org/

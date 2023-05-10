@@ -38,7 +38,6 @@
           aws_machine_type: true
       when: probe_aws_2.stdout is match(".*amazon")
 
-
     - name: Set AWS discovery fact
       ansible.builtin.set_fact:
         cloud_platform_is_aws: true

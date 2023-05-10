@@ -66,7 +66,7 @@ variable "hana_data_disk_type" {
 variable "hana_data_disk_size" {
   description = "Disk size of the data volume"
   type        = string
-  default     = "256"
+  default     = "350"
 }
 
 variable "hana_log_disk_type" {

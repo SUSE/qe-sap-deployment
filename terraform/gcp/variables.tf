@@ -197,7 +197,19 @@ variable "hana_data_disk_type" {
 variable "hana_data_disk_size" {
   description = "Disk size of the disks used to store hana database content"
   type        = string
-  default     = "896"
+  default     = "350"
+}
+
+variable "hana_log_disk_type" {
+  description = "Disk type of the disks used to store hana log"
+  type        = string
+  default     = "pd-ssd"
+}
+
+variable "hana_log_disk_size" {
+  description = "Disk size of the disks used to store hana log"
+  type        = string
+  default     = "128"
 }
 
 variable "hana_backup_disk_type" {

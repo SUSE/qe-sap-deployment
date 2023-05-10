@@ -46,7 +46,9 @@
         "usrsapvg",
         "venv",
         "yast",
-        "qesap"
+        "qesap",
+        "PYTHONPATH",
+        "pytest"
     ],
     "languageSettings": [
         {
