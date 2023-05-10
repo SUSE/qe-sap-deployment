@@ -13,17 +13,14 @@
 
   tasks:
 
-
   - name: "AWS image detection"
-    become: true
-    become_user: root
     ansible.builtin.command: dmidecode -s bios-version  # | grep -iq "Amazon"
     changed_when: false
     failed_when: false
     register: instance_check
+
+
   - name: "AWS image detection"
-    become: true
-    become_user: root
     ansible.builtin.command:  dmidecode -s system-manufacturer  # | grep -iq "Amazon EC2"
     changed_when: false
     failed_when: false
@@ -34,6 +31,7 @@
     ansible.builtin.include_vars: ./vars/aws_r4_hana_storage_profile.yaml
     ansible.builtin.include_vars: ./vars/aws_r4_iscsi_storage_profile.yaml 
     when: cloud_platform_is_aws and instance_check.stdout is match(".*amazon")
+
 
   - name: Load AWS disk configuration for Non R4 instances
     ansible.builtin.include_vars: ./vars/aws_hana_storage_profile.yaml
