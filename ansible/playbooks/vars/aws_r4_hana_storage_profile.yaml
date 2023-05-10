@@ -43,15 +43,4 @@ sap_storage_dict:
     pv: ["/dev/xvdh"]
     numluns: '1'
     stripesize: ''
-      #install:
-
-      #name: 'install'
-      #directory: '/hana/install'
-      #vg: 'installvg'
-      #lv: 'installlv'
-      #pv: ["/dev/xvdg"]
-
-    #pv: ["/dev/disk/by-id/google-{{ prefix }}-hana-software"]
-    #numluns: '1'
-    #stripesize: ''
 
