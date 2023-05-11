@@ -106,6 +106,12 @@ variable "deployment_name" {
   description = "Suffix string added to some of the infrastructure resources names. If it is not provided, the terraform workspace string is used as suffix"
   type        = string
   default     = ""
+  validation {
+    condition = (
+      var.deployment_name != "default"
+    )
+    error_message = "Invalid deployment_name (default) ."
+  }
 }
 
 variable "deployment_name_in_hostname" {
