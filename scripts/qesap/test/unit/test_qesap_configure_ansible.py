@@ -11,7 +11,7 @@ def test_configure_create_ansible_hanamedia(configure_helper, config_yaml_sample
     """
     provider = 'pinocchio'
     conf = config_yaml_sample(provider)
-    args, _, hana_media, _ = configure_helper(provider, conf, [])
+    args, _, hana_media, _ = configure_helper(provider, conf)
 
     assert main(args) == 0
     assert os.path.isfile(hana_media)
@@ -54,7 +54,7 @@ ansible:
     - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
     - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER
     - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT"""
-    args, _, hana_media, _ = configure_helper(provider, conf, [])
+    args, _, hana_media, _ = configure_helper(provider, conf)
     assert main(args) == 0
 
     res, msg = validate_hana_media(hana_media, account='SOMEONE', container='SOMETHING', token=None, sapcar='MY_SAPCAR_EXE', imdb_srv='MY_IMDB_SERVER', imdb_cln='MY_IMDB_CLIENT')
@@ -113,7 +113,7 @@ terraform:
 ansible:
   hana_urls:
 {this_set[1]}"""
-        args, _, hana_media, _ = configure_helper(provider, conf, [])
+        args, _, hana_media, _ = configure_helper(provider, conf)
         assert main(args) != 0, f"{this_set[0]} error not detected"
 
 
@@ -159,7 +159,7 @@ ansible:
     - MY_SAPCAR_EXE
     - MY_IMDB_SERVER
     - MY_IMDB_CLIENT"""
-    args, _, hana_media, _ = configure_helper(provider, conf, [])
+    args, _, hana_media, _ = configure_helper(provider, conf)
     assert main(args) == 0
 
     res, msg = validate_hana_media(hana_media, account='SOMEONE', container='SOMETHING', token=None, sapcar='MY_SAPCAR_EXE', imdb_srv='MY_IMDB_SERVER', imdb_cln='MY_IMDB_CLIENT')
@@ -196,7 +196,7 @@ ansible:
     - MY_SAPCAR_EXE
     - MY_IMDB_SERVER
     - MY_IMDB_CLIENT"""
-    args, _, hana_media, _ = configure_helper(provider, conf, [])
+    args, _, hana_media, _ = configure_helper(provider, conf)
     assert main(args) == 0
 
     res, msg = validate_hana_media(hana_media, account='SOMEONE', container='SOMETHING', token='SUPERSECRET', sapcar='MY_SAPCAR_EXE', imdb_srv='MY_IMDB_SERVER', imdb_cln='MY_IMDB_CLIENT')
@@ -210,7 +210,7 @@ def test_configure_create_ansible_hanavars(configure_helper, config_yaml_sample)
     """
     provider = 'pinocchio'
     conf = config_yaml_sample(provider)
-    args, _, _, hana_vars = configure_helper(provider, conf, [])
+    args, _, _, hana_vars = configure_helper(provider, conf)
 
     assert main(args) == 0
     assert os.path.isfile(hana_vars)
@@ -235,7 +235,7 @@ ansible:
     - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER
     - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT"""
 
-    args, _, _, hana_vars = configure_helper(this_provider, conf, [])
+    args, _, _, hana_vars = configure_helper(this_provider, conf)
 
     assert main(args) == 0
     assert not os.path.isfile(hana_vars)
@@ -270,7 +270,7 @@ ansible:
     Moskito: komar
     moustique: komarac
 """
-    args, _, _, hana_vars = configure_helper(provider, conf, [])
+    args, _, _, hana_vars = configure_helper(provider, conf)
     assert main(args) == 0
 
     with open(hana_vars, 'r', encoding='utf-8') as file:
@@ -316,17 +316,17 @@ ansible:
     primary_site: 'goofy'
     secondary_site: 'miky'
 """
-    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HDB', '00'), [])
+    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HDB', '00'))
     assert main(args) == 0
-    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, 'ccc', 'HDB', '00'), [])
+    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, 'ccc', 'HDB', '00'))
     assert main(args) != 0, "Wrong 'sap_hana_install_software_directory'='ccc' not detected."
-    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HD', '00'), [])
+    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HD', '00'))
     assert main(args) != 0, "Wrong 'sap_hana_install_sid'='HD' not detected."
-    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HDB', '0'), [])
+    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HDB', '0'))
     assert main(args) != 0, "Wrong 'sap_hana_install_instance_number'='0' not detected."
-    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HDB', 'AA'), [])
+    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HDB', 'AA'))
     assert main(args) != 0, "Wrong 'sap_hana_install_instance_number'='AA' not detected."
-    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HDB', '000'), [])
+    args, _, _, hana_vars = configure_helper(provider, conf.format(provider, '/aaa/bbb/ccc', 'HDB', '000'))
     assert main(args) != 0, "Wrong 'sap_hana_install_instance_number'='000' not detected."
 
 
@@ -349,5 +349,5 @@ ansible:
   hana_vars:
     zanzara: mosquito
 """
-    args, _, _, hana_vars = configure_helper(provider, conf, [])
+    args, _, _, hana_vars = configure_helper(provider, conf)
     assert main(args) != 0

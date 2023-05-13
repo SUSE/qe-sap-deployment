@@ -19,7 +19,7 @@ def create_tfvars(config, template):
 
     Args:
         config (obj): CONF instance
-        template (str): tfvars template
+        template (str): tfvars template, full path
 
     Returns:
         tfvar_content (dict): dictionary with tfvars content. None in case of error
@@ -112,7 +112,8 @@ def cmd_configure(configure_data, base_project, dryrun):
     if not cfg_paths:
         return Status(f"Invalid folder structure at {base_project}")
 
-    tfvar_content, err = create_tfvars(config, cfg_paths['tfvars_template'])
+    template = config.has_tfvar_template()
+    tfvar_content, err = create_tfvars(config, template if template else None)
     if err is not None:
         return Status(err)
 
