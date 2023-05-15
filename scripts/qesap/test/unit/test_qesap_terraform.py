@@ -31,7 +31,7 @@ def test_terraform_call_terraform(subprocess_run, terraform_cmd_args, args_helpe
     provider = 'mangiafuoco'
     conf = config_yaml_sample(provider)
 
-    args, terraform_dir, *_ = args_helper(provider, conf, '')
+    args, terraform_dir, *_ = args_helper(provider, conf)
     args.append('terraform')
     subprocess_run.return_value = (0, [])
     assert main(args) == 0
@@ -61,7 +61,7 @@ def test_terraform_stop_at_failure(subprocess_run, args_helper, config_yaml_samp
     provider = 'mangiafuoco'
     conf = config_yaml_sample(provider)
 
-    args, terraform_dir, *_ = args_helper(provider, conf, '')
+    args, terraform_dir, *_ = args_helper(provider, conf)
     args.append('terraform')
 
     calls = []
@@ -91,7 +91,7 @@ def test_terraform_logs(subprocess_run, terraform_cmd_args, args_helper, config_
     provider = 'mangiafuoco'
     conf = config_yaml_sample(provider)
 
-    args, *_ = args_helper(provider, conf, '')
+    args, *_ = args_helper(provider, conf)
     args.append('terraform')
     subprocess_run.return_value = (0, ['This is the terraform output', 'Two lines of that'])
 
@@ -113,7 +113,7 @@ def test_terraform_logs_content(subprocess_run, terraform_cmd_args, args_helper,
     provider = 'mangiafuoco'
     conf = config_yaml_sample(provider)
 
-    args, *_ = args_helper(provider, conf, '')
+    args, *_ = args_helper(provider, conf)
     args.append('terraform')
     terraform_output = ['This is the terraform output', 'Two lines of that']
     subprocess_run.return_value = (0, terraform_output)
@@ -170,7 +170,7 @@ def test_terraform_dryrun(subprocess_run, args_helper, config_yaml_sample):
     provider = 'mangiafuoco'
     conf = config_yaml_sample(provider)
 
-    args, *_ = args_helper(provider, conf, '')
+    args, *_ = args_helper(provider, conf)
     args.append('terraform')
     args.insert(0, '--dryrun')
     subprocess_run.return_value = (0, [])
@@ -188,7 +188,7 @@ def test_terraform_call_terraform_destroy(subprocess_run, args_helper, config_ya
     provider = 'mangiafuoco'
     conf = config_yaml_sample(provider)
 
-    args, terraform_dir, *_ = args_helper(provider, conf, '')
+    args, terraform_dir, *_ = args_helper(provider, conf)
 
     args.extend(['terraform', '-d'])
 
@@ -214,7 +214,7 @@ def test_terraform_call_terraform_workspace(subprocess_run, args_helper, config_
     provider = 'mangiafuoco'
     conf = config_yaml_sample(provider)
 
-    args, terraform_dir, *_ = args_helper(provider, conf, '')
+    args, terraform_dir, *_ = args_helper(provider, conf)
     args.append('terraform')
     args.append('-w')
     args.append('lucignolo')

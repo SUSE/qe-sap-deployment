@@ -65,8 +65,8 @@ class CONF:
 
     def yaml_to_tfvars(self):
         """
-        Takes data structure collected from yaml config,
-        converts into tfvars format
+        Takes data structure collected from the terraform part
+        of the yaml config, converts it to tfvars format
 
         Returns:
             str: terraform.tfvars content string. None for error.
@@ -102,6 +102,18 @@ class CONF:
             log.error("Missing 'variables' key in conf['terraform'] ")
             return False
         return True
+
+    def has_tfvar_template(self):
+        if 'terraform' not in self.conf or self.conf['terraform'] is None:
+            log.info("No 'terraform' in the config.yaml")
+            return False
+        if 'tfvars_template' not in self.conf['terraform']:
+            log.info("No 'tfvars_template' in the config.yaml")
+            return False
+        if not os.path.isfile(self.conf['terraform']['tfvars_template']):
+            log.error("File 'tfvars_template' %s does not exist.", self.conf['terraform']['tfvars_template'])
+            return False
+        return self.conf['terraform']['tfvars_template']
 
     def template_to_tfvars(self, tfvars_template):
         """
@@ -253,7 +265,6 @@ class CONF:
             'terraform': terraform_dir,
             'provider': None,
             'tfvars_file': None,
-            'tfvars_template': None
         }
         if self.has_ansible():
             result['hana_media_file'] = None
@@ -266,10 +277,6 @@ class CONF:
         if not os.path.isdir(result['provider']):
             log.error("Missing %s", result['provider'])
             return False
-        tfvar_template_path = os.path.join(result['provider'], 'terraform.tfvars.template')
-        # In case of template missing, it will be created from config.yaml
-        if os.path.isfile(tfvar_template_path):
-            result['tfvars_template'] = tfvar_template_path
 
         if self.has_ansible():
             ansible_pl_vars_dir = os.path.join(basedir, 'ansible', 'playbooks', 'vars')

@@ -10,7 +10,7 @@ def test_configure(configure_helper, config_yaml_sample):
     """
     provider = 'pinocchio'
     conf = config_yaml_sample(provider)
-    args, *_ = configure_helper(provider, conf, [])
+    args, *_ = configure_helper(provider, conf)
 
     assert main(args) == 0
 
@@ -25,7 +25,7 @@ provider: {provider}
 terraform:
 ansible:
     hana_urls: something"""
-    args, *_ = configure_helper(provider, conf, [])
+    args, *_ = configure_helper(provider, conf)
 
     assert main(args) == 1
 
@@ -35,7 +35,7 @@ provider: {provider}
 terraform:
 ansible:
     hana_urls: something"""
-    args, *_ = configure_helper(provider, conf, [])
+    args, *_ = configure_helper(provider, conf)
 
     assert main(args) == 1
 
@@ -45,12 +45,12 @@ provider: {provider}
 terraform:
 ansible:
     hana_urls: something"""
-    args, *_ = configure_helper(provider, conf, [])
+    args, *_ = configure_helper(provider, conf)
 
     assert main(args) == 1
 
 
-def test_configure_dryrun(config_yaml_sample, configure_helper):
+def test_configure_dryrun(config_yaml_sample, configure_helper, tmpdir):
     """
     Test that 'configure' in DryRun mode
     does NOT write a terraform.tfvars file in
@@ -59,11 +59,13 @@ def test_configure_dryrun(config_yaml_sample, configure_helper):
     <BASE_DIR>/ansible/playbooks/vars
     """
     provider = 'pinocchio'
-    conf = config_yaml_sample(provider)
-    tfvar_template = [
+    tfvar_template = {}
+    tfvar_template['file'] = tmpdir / 'terraform.template.tfvar'
+    tfvar_template['data'] = [
         "something = static\n",
         "hananame = hahaha\n",
         "ip_range = 10.0.4.0/24\n"]
+    conf = config_yaml_sample(provider=provider, template_file=tfvar_template['file'])
     args, tfvar_path, hana_media, hana_vars = configure_helper(provider, conf, tfvar_template)
     args.insert(0, '--dryrun')
 
@@ -137,11 +139,11 @@ def test_configure_fail_at_missing_params(configure_helper):
     """
 
     # test has to fail as config is empty
-    args, *_ = configure_helper('pinocchio', "", [])
+    args, *_ = configure_helper('pinocchio', "")
     assert main(args) == 1
 
     # test has to fail as config has 'terraform' but no anything else
-    args, *_ = configure_helper('pinocchio', "terraform:", [])
+    args, *_ = configure_helper('pinocchio', "terraform:")
     assert main(args) == 1
 
     conf = """---
@@ -149,7 +151,7 @@ apiver: 2
 provider:
 terraform:
 ansible:"""
-    args, *_ = configure_helper('pinocchio', conf, [])
+    args, *_ = configure_helper('pinocchio', conf)
     assert main(args) == 1
 
     conf = """---
@@ -157,7 +159,7 @@ apiver: 2
 provider: something
 terraform:
 ansible:"""
-    args, *_ = configure_helper('pinocchio', conf, [])
+    args, *_ = configure_helper('pinocchio', conf)
     assert main(args) == 1
 
 

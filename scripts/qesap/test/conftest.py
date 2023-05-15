@@ -55,6 +55,7 @@ def config_yaml_sample():
 apiver: {}
 provider: {}
 terraform:
+  {}
   variables:
     az_region: "westeurope"
     hana_ips: ["10.0.0.2", "10.0.0.3"]
@@ -78,8 +79,12 @@ ansible:
     secondary_site: 'miky'
 """
 
-    def _callback(provider='pinocchio', apiver=3):
-        return config.format(apiver, provider)
+    def _callback(provider='pinocchio', apiver=3, template_file=None):
+        tfvar_template_setting = ''
+        if template_file is not None:
+            tfvar_template_setting = f"tfvar_template: {template_file}"
+
+        return config.format(apiver, provider, tfvar_template_setting)
 
     return _callback
 
@@ -224,7 +229,7 @@ def base_args(tmpdir):
 
 @pytest.fixture
 def args_helper(tmpdir, base_args, provider_dir):
-    def _callback(provider, conf, tfvar_template):
+    def _callback(provider, conf, tfvar_template=None):
         provider_path = provider_dir(provider)
         tfvar_path = os.path.join(provider_path, 'terraform.tfvars')
 
@@ -237,9 +242,9 @@ def args_helper(tmpdir, base_args, provider_dir):
         config_file_name = str(tmpdir / 'config.yaml')
         with open(config_file_name, 'w', encoding='utf-8') as file:
             file.write(conf)
-        if tfvar_template is not None and len(tfvar_template) > 0:
-            with open(os.path.join(provider_path, 'terraform.tfvars.template'), 'w', encoding='utf-8') as file:
-                for line in tfvar_template:
+        if tfvar_template is not None:
+            with open(tfvar_template['file'], 'w', encoding='utf-8') as file:
+                for line in tfvar_template['data']:
                     file.write(line)
 
         args = base_args(base_dir=tmpdir, config_file=config_file_name)
@@ -250,8 +255,8 @@ def args_helper(tmpdir, base_args, provider_dir):
 
 @pytest.fixture
 def configure_helper(args_helper):
-    def _callback(provider, conf, tfvar):
-        args, _, tfvar_path, hana_media, hana_vars = args_helper(provider, conf, tfvar)
+    def _callback(provider, conf, tfvar_template=None):
+        args, _, tfvar_path, hana_media, hana_vars = args_helper(provider, conf, tfvar_template)
         args.append('configure')
         return args, tfvar_path, hana_media, hana_vars
 
