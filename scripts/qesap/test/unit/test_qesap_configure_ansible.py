@@ -166,6 +166,30 @@ ansible:
     assert res, msg
 
 
+def test_configure_ansible_hanamedia_content_apiver3_with_apiver2_uri_format(configure_helper, validate_hana_media):
+    """
+    Test that the script reports an error if the user
+    is using conf.yaml with new apiver:3
+    but providing hana_media as full url like for apiver2
+    """
+    provider = 'pinocchio'
+    conf = f"""---
+apiver: 3
+provider: {provider}
+terraform:
+    variables:
+        az_region: "westeurope"
+ansible:
+  az_storage_account_name: SOMEONE
+  az_container_name: SOMETHING
+  hana_media:
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER
+    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT"""
+    args, _, hana_media, _ = configure_helper(provider, conf, [])
+    assert main(args) == 1
+
+
 def test_configure_ansible_hanamedia_content_apiver3_token(configure_helper, validate_hana_media):
     """
     Test that an new apiver:3 config.yaml optional param
