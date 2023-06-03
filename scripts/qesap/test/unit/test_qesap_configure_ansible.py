@@ -186,7 +186,7 @@ ansible:
     - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
     - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER
     - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT"""
-    args, _, hana_media, _ = configure_helper(provider, conf, [])
+    args, _, hana_media, _ = configure_helper(provider, conf)
     assert main(args) == 1
 
 
