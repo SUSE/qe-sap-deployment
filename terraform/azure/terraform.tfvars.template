@@ -1,9 +1,0 @@
-#################################
-# qe-sap-deployments project configuration file
-# Find all the available variables and definitions in the variables.tf file
-#################################
-vnet_address_range   = "10.10.0.0/16"
-subnet_address_range = "10.10.1.0/24"
-hana_name = "vmhana"
-hana_vm_size = "Standard_E4s_v3"
-hana_count = "2"

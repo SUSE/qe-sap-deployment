@@ -7,6 +7,7 @@
   vars:
     scale_out: false
     use_sapconf: false
+    use_reboottimeout: 600
     saptune_solution: HANA
     platform: azure
     cluster_node: true
@@ -100,6 +101,10 @@
       ansible.builtin.include_tasks: ./tasks/saptune.yaml
       when: not use_sapconf | bool
 
+
+   # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/reboot_module.html#parameters
+   # reboot_timeout Maximum seconds to wait for machine to reboot and respond to a test command.  Default: 600
   handlers:
     - name: Reboot
       ansible.builtin.reboot:
+        reboot_timeout: "{{ use_reboottimeout | int }}"

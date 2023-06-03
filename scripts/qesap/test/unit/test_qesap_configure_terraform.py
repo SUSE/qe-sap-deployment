@@ -16,10 +16,12 @@ def test_configure_no_tfvars_template(args_helper, config_yaml_sample):
     provider = 'pinocchio'
 
     # create a dummy conf.yaml with some generic content
+    # but without the 'tfvars_template'
     conf = config_yaml_sample(provider)
 
     # Create some regexp from the injected conf.yaml
-    # to be used later in the verification against the generated terraform.tfvars
+    # to be used later in the verification
+    # against the generated terraform.tfvars
     regexp_set = []
     conf_dict = yaml.safe_load(conf)
 
@@ -32,7 +34,8 @@ def test_configure_no_tfvars_template(args_helper, config_yaml_sample):
             # and eventually some spaces
             regexp_set.append(rf'{key}\s*=\s*"{value}"')
 
-    args, tfvar_path, *_ = args_helper(provider, conf, None)
+    # prepare the `qesap.py configure` command line
+    args, tfvar_path, *_ = args_helper(provider, conf)
     args.append('configure')
     tfvar_file = os.path.join(tfvar_path, 'terraform.tfvars')
 
@@ -60,7 +63,7 @@ def test_configure_create_tfvars_file(configure_helper, config_yaml_sample):
     """
     provider = 'pinocchio'
     conf = config_yaml_sample(provider)
-    args, tfvar_file, *_ = configure_helper(provider, conf, [])
+    args, tfvar_file, *_ = configure_helper(provider, conf, None)
 
     assert main(args) == 0
 
@@ -81,19 +84,48 @@ def test_configure_tfvars_novariables_notemplate(config_yaml_sample_for_terrafor
     assert main(args) == 1
 
 
-def test_configure_tfvars_novariables(config_yaml_sample_for_terraform, configure_helper):
+def test_configure_not_existing_template(config_yaml_sample_for_terraform, configure_helper, tmpdir):
+    """
+    Test scenario: the config.yaml has a tfvars_template but the file does not exist;
+    at the same time the same conf.yaml has not terraform:variables section.
+    """
+    provider = 'pinocchio'
+    tfvar_template = {}
+    tfvar_template['file'] = tmpdir / 'terraform.template.tfvar'
+    tfvar_template['data'] = [
+        "something = static\n",
+        "hananame = hahaha\n",
+        "ip_range = 10.0.4.0/24\n"]
+
+    terraform_section = '''terraform:
+    tfvars_template: melampo
+'''
+    conf = config_yaml_sample_for_terraform(terraform_section, provider)
+    args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
+
+    assert main(args) == 1
+
+
+def test_configure_tfvars_novariables(config_yaml_sample_for_terraform, configure_helper, tmpdir):
     """
     Test that 'configure' generated terraform.tfvars file
     content is like terraform.tfvars.template
     if no variables are provided in the config.yaml
     """
     provider = 'pinocchio'
-    tfvar_template = [
+
+    # define template file
+    tfvar_template = {}
+    tfvar_template['file'] = tmpdir / 'terraform.template.tfvar'
+    tfvar_template['data'] = [
         "something = static\n",
         "hananame = hahaha\n",
         "ip_range = 10.0.4.0/24\n"]
 
-    terraform_section = '''terraform:
+    # define terraform section in the conf.yaml
+    # add parameter to point to the template file
+    terraform_section = f'''terraform:
+    tfvars_template: {tfvar_template['file']}
 '''
     conf = config_yaml_sample_for_terraform(terraform_section, provider)
     args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
@@ -102,19 +134,10 @@ def test_configure_tfvars_novariables(config_yaml_sample_for_terraform, configur
 
     with open(tfvar_path, 'r', encoding='utf-8') as file:
         data = file.readlines()
-        assert tfvar_template == data
-
-    conf = config_yaml_sample_for_terraform('', provider)
-    args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
-
-    assert main(args) == 0
-
-    with open(tfvar_path, 'r', encoding='utf-8') as file:
-        data = file.readlines()
-        assert tfvar_template == data
+        assert tfvar_template['data'] == data
 
 
-def test_configure_tfvars_with_variables(config_yaml_sample_for_terraform, configure_helper):
+def test_configure_tfvars_with_variables(config_yaml_sample_for_terraform, configure_helper, tmpdir):
     """
     Test that 'configure' generated terraform.tfvars file
     content is like terraform.tfvars.template
@@ -122,11 +145,14 @@ def test_configure_tfvars_with_variables(config_yaml_sample_for_terraform, confi
     the config.yaml
     """
     provider = 'pinocchio'
-    tfvar_template = [
+    tfvar_template = {}
+    tfvar_template['file'] = tmpdir / 'terraform.template.tfvar'
+    tfvar_template['data'] = [
         "something = static\n",
         "hananame = hahaha\n",
         "ip_range = 10.0.4.0/24"]
-    terraform_section = '''terraform:
+    terraform_section = f'''terraform:
+  tfvars_template: {tfvar_template['file']}
   variables:
     region : eu1
     deployment_name : "rocket"
@@ -136,10 +162,10 @@ def test_configure_tfvars_with_variables(config_yaml_sample_for_terraform, confi
 
     assert main(args) == 0
 
-    expected_tfvars = tfvar_template[0:2]
+    expected_tfvars = tfvar_template['data'][0:2]
     # EOL is expected to be added in terraform.tfvars
     # if missing at the end of the template
-    expected_tfvars.append(tfvar_template[2] + '\n')
+    expected_tfvars.append(tfvar_template['data'][2] + '\n')
     expected_tfvars.append('region = "eu1"\n')
     expected_tfvars.append('deployment_name = "rocket"\n')
     with open(tfvar_path, 'r', encoding='utf-8') as file:
@@ -147,17 +173,20 @@ def test_configure_tfvars_with_variables(config_yaml_sample_for_terraform, confi
         assert expected_tfvars == data
 
 
-def test_configure_tfvars_template_spaces(config_yaml_sample_for_terraform, configure_helper):
+def test_configure_tfvars_template_spaces(config_yaml_sample_for_terraform, configure_helper, tmpdir):
     """
     Test that python code support different kind of spaces in the .template
     """
     provider = 'pinocchio'
-    tfvar_template = [
+    tfvar_template = {}
+    tfvar_template['file'] = tmpdir / 'terraform.template.tfvar'
+    tfvar_template['data'] = [
         "basic = bimbumbam\n",
         "extra_space_before      = bimbumbam\n",
         "extra_space_after =       bimbumbam\n",
         "extra_space_both    =     bimbumbam"]
-    terraform_section = '''terraform:
+    terraform_section = f'''terraform:
+  tfvars_template: {tfvar_template['file']}
   variables:
     region : eu1
     deployment_name : "rocket"
@@ -167,10 +196,10 @@ def test_configure_tfvars_template_spaces(config_yaml_sample_for_terraform, conf
 
     assert main(args) == 0
 
-    expected_tfvars = tfvar_template[0:3]
+    expected_tfvars = tfvar_template['data'][0:3]
     # EOL is expected to be added in terraform.tfvars
     # if missing at the end of the template
-    expected_tfvars.append(tfvar_template[3] + '\n')
+    expected_tfvars.append(tfvar_template['data'][3] + '\n')
     expected_tfvars.append('region = "eu1"\n')
     expected_tfvars.append('deployment_name = "rocket"\n')
     with open(tfvar_path, 'r', encoding='utf-8') as file:
@@ -178,20 +207,23 @@ def test_configure_tfvars_template_spaces(config_yaml_sample_for_terraform, conf
         assert expected_tfvars == data
 
 
-def test_configure_tfvars_string_commas(config_yaml_sample_for_terraform, configure_helper):
+def test_configure_tfvars_string_commas(config_yaml_sample_for_terraform, configure_helper, tmpdir):
     """
     Terraform.tfvars need commas around all strings variables
     """
     provider = 'pinocchio'
-    terraform_section = """
+    tfvar_template = {}
+    tfvar_template['file'] = tmpdir / 'terraform.template.tfvar'
+    tfvar_template['data'] = ["something = static"]
+    terraform_section = f'''
 terraform:
+  tfvars_template: {tfvar_template['file']}
   variables:
     region : eu1
     deployment_name : "rocket"
     os_image: SUSE:sles-sap-15-sp3-byos:gen2:2022.05.05
     public_key: /root/secret/id_rsa.pub
-"""
-    tfvar_template = ["something = static"]
+'''
     conf = config_yaml_sample_for_terraform(terraform_section, provider)
     args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
 
@@ -200,7 +232,7 @@ terraform:
     # EOL is expected to be added in terraform.tfvars
     # if missing at the end of the template
     expected_tfvars = [
-        tfvar_template[0] + '\n',
+        tfvar_template['data'][0] + '\n',
         'region = "eu1"\n',
         'deployment_name = "rocket"\n',
         'os_image = "SUSE:sles-sap-15-sp3-byos:gen2:2022.05.05"\n',
@@ -211,7 +243,7 @@ terraform:
         assert expected_tfvars == data
 
 
-def test_configure_tfvars_overwrite_variables(config_yaml_sample_for_terraform, configure_helper):
+def test_configure_tfvars_overwrite_variables(config_yaml_sample_for_terraform, configure_helper, tmpdir):
     """
     Test 'configure' generated terraform.tfvars file:
     if same key pair is both in the terraform.tfvars.template
@@ -219,14 +251,17 @@ def test_configure_tfvars_overwrite_variables(config_yaml_sample_for_terraform, 
     """
     provider = 'pinocchio'
 
-    terraform_section = """
-terraform:
-  variables:
-    something : yamlrulez"""
-
-    tfvar_template = [
+    tfvar_template = {}
+    tfvar_template['file'] = tmpdir / 'terraform.template.tfvar'
+    tfvar_template['data'] = [
         'something = static\n',
         'somethingelse = keep\n']
+
+    terraform_section = f'''
+terraform:
+  tfvars_template: {tfvar_template['file']}
+  variables:
+    something : yamlrulez'''
     conf = config_yaml_sample_for_terraform(terraform_section, provider)
     args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
 
