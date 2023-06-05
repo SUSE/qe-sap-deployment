@@ -200,6 +200,11 @@ class CONF:
             if 'hana_media' not in ansible_conf:
                 log.error("Missing 'hana_media' in 'ansible' in the config")
                 return False
+            for media in ansible_conf['hana_media']:
+                match = re.search(r'^http[s]?://.*', media)
+                if match:
+                    log.error("Media %s provided as full url. File name expected.", media)
+                    return False
             if 'az_storage_account_name' not in ansible_conf:
                 log.error("Missing 'az_storage_account_name' in 'ansible' in the config")
                 return False
