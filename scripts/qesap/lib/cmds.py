@@ -202,24 +202,18 @@ def cmd_terraform(configure_data, base_project, dryrun, workspace='default', des
         return Status(f"Invalid folder structure at {base_project}")
 
     cmds = []
+    terraform_common_cmd = ['terraform', f"-chdir={cfg_paths['provider']}"]
     if destroy:
-        cmd_seq = ['destroy']
-    elif workspace != 'default':
-        cmd_seq = ['init', 'workspace', 'plan', 'apply']
+        if workspace != 'default':
+            cmds.append(terraform_common_cmd + ['workspace', 'select', 'default', '-no-color'])
+            cmds.append(terraform_common_cmd + ['workspace', 'delete', workspace, '-no-color'])
+        cmds.append(terraform_common_cmd + ['destroy', '-auto-approve', '-no-color'])
     else:
-        cmd_seq = ['init', 'plan', 'apply']
-    for seq in cmd_seq:
-        this_cmd = ['terraform', f"-chdir={cfg_paths['provider']}", seq]
-        if seq == 'plan':
-            this_cmd.append('-out=plan.zip')
-        elif seq == 'apply':
-            this_cmd.extend(['-auto-approve', 'plan.zip'])
-        elif seq == 'destroy':
-            this_cmd.append('-auto-approve')
-        elif seq == 'workspace':
-            this_cmd.extend(['new', workspace])
-        this_cmd.append('-no-color')
-        cmds.append(this_cmd)
+        cmds.append(terraform_common_cmd + ['init', '-no-color'])
+        if workspace != 'default':
+            cmds.append(terraform_common_cmd + ['workspace', 'new', workspace, '-no-color'])
+        cmds.append(terraform_common_cmd + ['plan', '-out=plan.zip', '-no-color'])
+        cmds.append(terraform_common_cmd + ['apply', '-auto-approve', 'plan.zip', '-no-color'])
     for command in cmds:
         if dryrun:
             print(' '.join(command))

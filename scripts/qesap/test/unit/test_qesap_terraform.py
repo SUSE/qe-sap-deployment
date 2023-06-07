@@ -215,21 +215,39 @@ def test_terraform_call_terraform_workspace(subprocess_run, args_helper, config_
     conf = config_yaml_sample(provider)
 
     args, terraform_dir, *_ = args_helper(provider, conf)
-    args.append('terraform')
-    args.append('-w')
-    args.append('lucignolo')
+    args.extend(['terraform', '-w','lucignolo'])
     subprocess_run.return_value = (0, [])
     assert main(args) == 0
     subprocess_run.assert_called()
 
     calls = []
-    terraform_cmd = [
-        'terraform',
-        f"-chdir={terraform_dir}"]
-    terraform_cmd.append('workspace')
-    terraform_cmd.append('new')
-    terraform_cmd.append('lucignolo')
-    terraform_cmd.append('-no-color')
-    calls.append(mock.call(terraform_cmd))
+    expected_terraform_cmd = ['terraform', f"-chdir={terraform_dir}"]
+    expected_terraform_cmd.extend(['workspace', 'new', 'lucignolo', '-no-color'])
+    calls.append(mock.call(expected_terraform_cmd))
+
+    subprocess_run.assert_has_calls(calls)
+
+
+@mock.patch("lib.process_manager.subprocess_run")
+def test_terraform_call_terraform_workspace_destroy(subprocess_run, args_helper, config_yaml_sample):
+    """
+    Command terraform calls 'terraform workspace' if -w is used
+    """
+    provider = 'mangiafuoco'
+    conf = config_yaml_sample(provider)
+
+    args, terraform_dir, *_ = args_helper(provider, conf)
+    args.extend(['terraform', '-w','lucignolo', '-d'])
+    subprocess_run.return_value = (0, [])
+    assert main(args) == 0
+    subprocess_run.assert_called()
+
+    calls = []
+    expected_terraform_cmd = ['terraform', f"-chdir={terraform_dir}"]
+    expected_terraform_cmd.extend(['workspace', 'select', 'default', '-no-color'])
+    calls.append(mock.call(expected_terraform_cmd))
+    expected_terraform_cmd = ['terraform', f"-chdir={terraform_dir}"]
+    expected_terraform_cmd.extend(['workspace', 'delete', 'lucignolo', '-no-color'])
+    calls.append(mock.call(expected_terraform_cmd))
 
     subprocess_run.assert_has_calls(calls)
