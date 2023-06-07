@@ -139,7 +139,6 @@ module "drbd_node" {
   network_domain        = var.drbd_network_domain == "" ? var.network_domain : var.drbd_network_domain
   drbd_count            = var.drbd_enabled == true ? 2 : 0
   instance_type         = var.drbd_instancetype
-  aws_region            = var.aws_region
   availability_zones    = data.aws_availability_zones.available.names
   os_image              = local.drbd_os_image
   os_owner              = local.drbd_os_owner
@@ -165,7 +164,6 @@ module "iscsi_server" {
   name               = var.iscsi_name
   network_domain     = var.iscsi_network_domain == "" ? var.network_domain : var.iscsi_network_domain
   iscsi_count        = local.iscsi_enabled == true ? var.iscsi_count : 0
-  aws_region         = var.aws_region
   availability_zones = data.aws_availability_zones.available.names
   subnet_ids         = aws_subnet.infra-subnet.*.id
   os_image           = local.iscsi_os_image
@@ -186,7 +184,6 @@ module "netweaver_node" {
   xscs_server_count     = local.netweaver_xscs_server_count
   app_server_count      = var.netweaver_enabled ? var.netweaver_app_server_count : 0
   instance_type         = var.netweaver_instancetype
-  aws_region            = var.aws_region
   availability_zones    = data.aws_availability_zones.available.names
   os_image              = local.netweaver_os_image
   os_owner              = local.netweaver_os_owner
@@ -212,7 +209,6 @@ module "hana_node" {
   network_domain        = var.hana_network_domain == "" ? var.network_domain : var.hana_network_domain
   hana_count            = var.hana_count
   instance_type         = var.hana_instancetype
-  aws_region            = var.aws_region
   availability_zones    = data.aws_availability_zones.available.names
   os_image              = local.hana_os_image
   os_owner              = local.hana_os_owner
@@ -240,7 +236,6 @@ module "monitoring" {
   key_name           = aws_key_pair.key-pair.key_name
   security_group_id  = local.security_group_id
   monitoring_srv_ip  = local.monitoring_ip
-  aws_region         = var.aws_region
   availability_zones = data.aws_availability_zones.available.names
   os_image           = local.monitoring_os_image
   os_owner           = local.monitoring_os_owner

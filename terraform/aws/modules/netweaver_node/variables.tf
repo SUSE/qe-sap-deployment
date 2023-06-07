@@ -27,10 +27,6 @@ variable "network_domain" {
   type        = string
 }
 
-variable "aws_region" {
-  type = string
-}
-
 variable "availability_zones" {
   type        = list(string)
   description = "Used availability zones"

@@ -24,10 +24,6 @@ variable "instance_type" {
   default     = "t2.large"
 }
 
-variable "aws_region" {
-  type = string
-}
-
 variable "availability_zones" {
   type        = list(string)
   description = "Used availability zones"

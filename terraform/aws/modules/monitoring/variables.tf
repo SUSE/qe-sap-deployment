@@ -40,10 +40,6 @@ variable "monitoring_srv_ip" {
   default     = ""
 }
 
-variable "aws_region" {
-  type = string
-}
-
 variable "availability_zones" {
   type        = list(string)
   description = "Used availability zones"
