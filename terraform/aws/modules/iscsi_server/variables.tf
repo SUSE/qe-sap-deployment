@@ -2,11 +2,6 @@ variable "common_variables" {
   description = "Output of the common_variables module"
 }
 
-variable "aws_region" {
-  type        = string
-  description = "AWS region where the deployment machines will be created"
-}
-
 variable "availability_zones" {
   type        = list(string)
   description = "Used availability zones"
