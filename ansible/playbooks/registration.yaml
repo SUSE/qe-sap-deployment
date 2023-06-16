@@ -10,10 +10,16 @@
 
     #Do we have repos?  If not, we need to register
     - name: Check for registration
-      ansible.builtin.command: zypper lr
+      ansible.builtin.command: SUSEConnect -s
       register: repos
       failed_when: false
       changed_when: false
+
+    #Check if there are instances of `Not Registered` in it
+    - name: Check for 'Not Registered'
+      set_fact:
+        not_registered_found: "{{ 'Not Registered' in repos.stdout }}"
+      ignore_errors: true
 
     # Is registercloudguest available?
     - name: Check for registercloudguest
@@ -22,13 +28,13 @@
       failed_when: false
       changed_when: false
       when:
-        - repos.rc != 0
+        - not_registered_found
 
     # Execute Section
     - name: registercloudguest pre-run cleaning
       ansible.builtin.command: registercloudguest --clean
       when:
-        - repos.rc != 0
+        - not_registered_found
         - rcg.rc == 0
 
     - name: registercloudguest registration
@@ -38,7 +44,7 @@
       retries: 10
       delay: 60
       when:
-        - repos.rc != 0
+        - not_registered_found
         - rcg.rc == 0
 
     # If registercloudguest is not present fall back on SUSEConnect
@@ -49,7 +55,7 @@
       retries: 10
       delay: 60
       when:
-        - repos.rc != 0
+        - not_registered_found
         - rcg.rc != 0
 
     # There are additional repos to add.  These are handled differently for SLES 15 and SLES12
@@ -61,7 +67,7 @@
       delay: 60
       when:
         - ansible_facts['distribution_major_version'] == "12"
-        - repos.rc != 0
+        - not_registered_found
         - rcg.rc != 0
 
     - name: Add SLES 12 public cloud module
@@ -72,7 +78,7 @@
       delay: 60
       when:
         - ansible_facts['distribution_major_version'] == "12"
-        - repos.rc != 0
+        - not_registered_found
         - rcg.rc != 0
 
     - name: Add SLES 15 public cloud module
@@ -83,7 +89,7 @@
       delay: 60
       when:
         - ansible_facts['distribution_major_version'] == "15"
-        - repos.rc != 0
+        - not_registered_found
         - rcg.rc != 0
 
     - name: Check if repos are added after registration
@@ -91,4 +97,4 @@
       register: repos_after
       failed_when: repos_after.rc != 0
       when:
-        - repos.rc != 0
+        - not_registered_found
