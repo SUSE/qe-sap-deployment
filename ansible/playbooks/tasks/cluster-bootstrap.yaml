@@ -331,7 +331,7 @@
   when:
     - is_primary
     - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
-  until: reg_vip_location2.stdout | trim | split(' ') | last == primary_hostname
+  until: reg_vip_location2.stdout_lines[0] | trim | split(' ') | last == primary_hostname
   retries: 10
   delay: 6
 
