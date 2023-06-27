@@ -100,6 +100,7 @@ resource "local_file" "ansible_inventory" {
     {
       hana-name           = module.hana_node.hana_name,
       hana-pip            = module.hana_node.hana_public_ip,
+      cluster_ip          = local.cluster_ip,
       hana-remote-python  = var.hana_remote_python,
       iscsi-name          = module.iscsi_server.iscsisrv_name,
       iscsi-pip           = module.iscsi_server.iscsisrv_public_ip,

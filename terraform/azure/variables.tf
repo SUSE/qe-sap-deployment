@@ -273,6 +273,18 @@ variable "hana_ips" {
   }
 }
 
+variable "cluster_ip" {
+  description = "Cluster alias ip. If it's not set the address will be auto generated from the provided vnet address range"
+  type        = string
+  default     = ""
+  validation {
+    condition = (
+      var.cluster_ip == "" || can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", var.cluster_ip))
+    )
+    error_message = "Invalid IP address format."
+  }
+}
+
 variable "hana_majority_maker_ip" {
   description = "ip address to set to the HANA Majority Maker node. If it's not set the addresses will be auto generated from the provided vnet address range"
   type        = string
