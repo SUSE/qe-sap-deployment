@@ -63,17 +63,9 @@ aws_region = "eu-central-1"
 # These keys are provided using the next two variables in 2 different ways
 # Path to already existing keys
 public_key  = "/home/myuser/.ssh/id_rsa.pub"
-private_key = "/home/myuser/.ssh/id_rsa"
 
 # Or provide the content of SSH keys
 #public_key  = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCt06V...."
-#private_key = <<EOF
-#-----BEGIN OPENSSH PRIVATE KEY-----
-#b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn
-#...
-#P9eYliTYFxhv/0E7AAAAEnhhcmJ1bHVAbGludXgtYWZqOQ==
-#-----END OPENSSH PRIVATE KEY-----
-#EOF
 
 # Authorize additional keys optionally (in this case, the private key is not required)
 # Path to local files or keys content

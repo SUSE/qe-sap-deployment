@@ -13,8 +13,9 @@ variable "network_domain" {
 }
 
 variable "hana_count" {
-  type    = string
-  default = "2"
+  description = "Number of hana nodes"
+  type        = number
+  default     = 2
 }
 
 variable "instance_type" {
