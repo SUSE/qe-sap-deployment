@@ -70,11 +70,6 @@ variable "public_key" {
   type        = string
 }
 
-variable "private_key" {
-  description = "Content of a SSH private key or path to an already existing SSH private key. The key is only used to provision the machines. It is not uploaded to the machines in any case"
-  type        = string
-}
-
 variable "authorized_keys" {
   description = "List of additional authorized SSH public keys content or path to already existing SSH public keys to access the created machines with the used admin user (cloudadmin in this case)"
   type        = list(string)

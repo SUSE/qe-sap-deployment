@@ -1,7 +1,6 @@
 # AWS Public Cloud deployment with Terraform and Salt
 
 * [Quickstart](#quickstart)
-  * [Bastion](#bastion)
 * [High level description](#high-level-description)
 * [Customization](#customization)
   * [QA deployment](#qa-deployment)
@@ -147,10 +146,6 @@ For detailed information and deployment options have a look at `terraform.tfvars
     ``` shell
     terraform destroy
     ```
-
-### Bastion
-
-A bastion host is not implemented for AWS.
 
 ## High level description
 
