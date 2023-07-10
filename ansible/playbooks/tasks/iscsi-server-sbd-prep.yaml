@@ -72,7 +72,7 @@
     sap_storage_sap_type: 'sap_hana'
     sap_storage_action: 'prepare'
   include_role:
-    name: ../roles/sap_storage
+    name: ../roles/qe_sap_storage
 
 - name: Configure HANA SBD target
   ansible.builtin.command:

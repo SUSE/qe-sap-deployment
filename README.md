@@ -246,3 +246,14 @@ podman run -it \
     python3 /src/scripts/qesap/qesap.py --verbose -c config.yaml -b /src terraform
     python3 /src/scripts/qesap/qesap.py --verbose -c config.yaml -b /src ansible
 ```
+
+### Using roles from a different repo
+
+To use roles located in a different repository manually, just copy the desired role directory in `ansible/roles`, and call it from a playbook within the `roles:` section. An example of how to fetch and use a role can be found in `ansible/playbooks/registration_role`.
+
+If the user does not wish to copy the role in the `roles` folder of this repository, it is possible by adding the directory inside which the desired role is located in the environmental variable `$ANSIBLE_ROLES_PATH` before running the deployment.
+
+```shell
+export ANSIBLE_ROLES_PATH=<the-dir-where-the-role-is-located>
+. . . (run deployment as you would normally do)
+```
