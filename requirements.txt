@@ -1,6 +1,5 @@
-PyYAML==5.3
 ansible==6.5.0
 ansible-compat==2.2.1
 ansible-core==2.13.5
-awscli==1.19.48
+awscli==1.29.4
 jmespath==0.10.0
