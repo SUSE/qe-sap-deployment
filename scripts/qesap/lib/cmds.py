@@ -291,6 +291,8 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     original_env['ANSIBLE_PIPELINING'] = 'True'
     if profile:
         original_env['ANSIBLE_CALLBACK_WHITELIST'] = 'ansible.posix.profile_tasks'
+    if 'roles_path' in configure_data_ansible:
+        original_env['ANSIBLE_ROLES_PATH'] = configure_data_ansible['roles_path']
 
     for playbook in configure_data_ansible[sequence]:
         ansible_cmd = ansible_common.copy()

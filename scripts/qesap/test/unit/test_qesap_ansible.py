@@ -432,10 +432,10 @@ export ANSIBLE_PIPELINING=True
 
     playbook_files_list = create_playbooks(playbooks['create'])
     calls = []
-    original_env = dict(os.environ)
-    original_env['ANSIBLE_PIPELINING'] = 'True'
+    expected_env = dict(os.environ)
+    expected_env['ANSIBLE_PIPELINING'] = 'True'
     for playbook in playbook_files_list:
-        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-i', inventory, playbook], env=original_env))
+        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-i', inventory, playbook], env=expected_env))
 
     assert main(args) == 0
 
@@ -467,11 +467,52 @@ def test_ansible_profile(run, _, base_args, tmpdir, create_inventory, create_pla
 
     playbook_files_list = create_playbooks(playbooks['create'])
     calls = []
-    original_env = dict(os.environ)
-    original_env['ANSIBLE_PIPELINING'] = 'True'
-    original_env['ANSIBLE_CALLBACK_WHITELIST'] = 'ansible.posix.profile_tasks'
+    expected_env = dict(os.environ)
+    expected_env['ANSIBLE_PIPELINING'] = 'True'
+    expected_env['ANSIBLE_CALLBACK_WHITELIST'] = 'ansible.posix.profile_tasks'
     for playbook in playbook_files_list:
-        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-i', inventory, playbook], env=original_env))
+        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-i', inventory, playbook], env=expected_env))
+
+    assert main(args) == 0
+
+    run.assert_called()
+    run.assert_has_calls(calls)
+
+
+@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
+@mock.patch("lib.process_manager.subprocess_run")
+def test_ansible_env_roles_path(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
+    """
+    Test that ANSIBLE_ROLES_PATH is added to the env used to run Ansible.
+    It has only to be done if the `roles_path` is present in the Ansible section
+    of the config.yaml.
+    """
+    provider = 'grilloparlante'
+    config_content = f"""---
+apiver: 2
+provider: {provider}
+ansible:
+    hana_urls: somesome
+    roles_path: somewhere
+    create:
+      - get_cherry_wood.yaml"""
+    config_file_name = str(tmpdir / 'config.yaml')
+    with open(config_file_name, 'w', encoding='utf-8') as file:
+        file.write(config_content)
+
+    args = base_args(None, config_file_name, False)
+    args.append('ansible')
+    run.return_value = (0, [])
+
+    inventory = create_inventory(provider)
+
+    playbook_files_list = create_playbooks(['get_cherry_wood'])
+    calls = []
+    expected_env = dict(os.environ)
+    expected_env['ANSIBLE_PIPELINING'] = 'True'
+    expected_env['ANSIBLE_ROLES_PATH'] = 'somewhere'
+    for playbook in playbook_files_list:
+        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-i', inventory, playbook], env=expected_env))
 
     assert main(args) == 0
 
