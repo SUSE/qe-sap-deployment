@@ -139,7 +139,6 @@ module "drbd_node" {
   common_variables    = module.common_variables.configuration
   name                = var.drbd_name
   network_domain      = var.drbd_network_domain == "" ? var.network_domain : var.drbd_network_domain
-  bastion_host        = ""
   az_region           = var.az_region
   drbd_count          = var.drbd_enabled == true ? 2 : 0
   vm_size             = var.drbd_vm_size
@@ -164,7 +163,6 @@ module "netweaver_node" {
   common_variables            = module.common_variables.configuration
   name                        = var.netweaver_name
   network_domain              = var.netweaver_network_domain == "" ? var.network_domain : var.netweaver_network_domain
-  bastion_host                = ""
   az_region                   = var.az_region
   xscs_server_count           = local.netweaver_xscs_server_count
   app_server_count            = var.netweaver_enabled ? var.netweaver_app_server_count : 0
@@ -203,7 +201,6 @@ module "hana_node" {
   common_variables              = module.common_variables.configuration
   name                          = var.hana_name
   network_domain                = var.hana_network_domain == "" ? var.network_domain : var.hana_network_domain
-  bastion_host                  = ""
   az_region                     = var.az_region
   hana_count                    = var.hana_count
   vm_size                       = var.hana_vm_size
@@ -241,7 +238,6 @@ module "monitoring" {
   common_variables    = module.common_variables.configuration
   name                = var.monitoring_name
   network_domain      = var.monitoring_network_domain == "" ? var.network_domain : var.monitoring_network_domain
-  bastion_host        = ""
   monitoring_enabled  = var.monitoring_enabled
   az_region           = var.az_region
   vm_size             = var.monitoring_vm_size
@@ -258,7 +254,6 @@ module "iscsi_server" {
   common_variables    = module.common_variables.configuration
   name                = var.iscsi_name
   network_domain      = var.iscsi_network_domain == "" ? var.network_domain : var.iscsi_network_domain
-  bastion_host        = ""
   iscsi_count         = local.iscsi_enabled ? var.iscsi_count : 0
   az_region           = var.az_region
   vm_size             = var.iscsi_vm_size

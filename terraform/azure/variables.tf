@@ -89,18 +89,6 @@ variable "authorized_keys" {
   default     = []
 }
 
-variable "bastion_name" {
-  description = "hostname, without the domain part"
-  type        = string
-  default     = "vmbastion"
-}
-
-variable "bastion_network_domain" {
-  description = "hostname's network domain"
-  type        = string
-  default     = ""
-}
-
 # Deployment variables
 variable "deployment_name" {
   description = "Suffix string added to some of the infrastructure resources names. If it is not provided, the terraform workspace string is used as suffix"
