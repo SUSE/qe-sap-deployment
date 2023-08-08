@@ -432,7 +432,6 @@ module "hana_majority_maker" {
   node_count                    = local.create_scale_out
   name                          = var.name
   common_variables              = var.common_variables
-  bastion_host                  = var.bastion_host
   az_region                     = var.az_region
   vm_size                       = var.majority_maker_vm_size
   hana_count                    = var.hana_count

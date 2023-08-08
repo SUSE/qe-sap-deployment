@@ -1,7 +1,6 @@
 # Azure Public Cloud deployment with Terraform and Ansible
 
 * [Quickstart](#quickstart)
-  * [Bastion](#bastion)
 * [High level description](#high-level-description)
 * [Customization](#customization)
   * [QA deployment](#qa-deployment)
