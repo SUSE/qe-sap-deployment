@@ -10,6 +10,7 @@
 * [Advanced Customization](#advanced-customization)
   * [Terraform Parallelism](#terraform-parallelism)
   * [Remote State](#remote-state)
+  * [AWS catalog images"](#aws-catalog-images)
   * [How to upload a custom image](#how-to-upload-a-custom-image)
 * [Troubleshooting](#troubleshooting)
 
@@ -235,6 +236,14 @@ The default value of `10` is not sufficient because not all HANA cluster nodes w
 ### Remote State
 
 **Important**: If you want to use remote terraform states, first follow the [procedure to create a remote terraform state](create_remote_state).
+
+### AWS catalog images
+
+The expected format of AWS catalog images, it could be the image name (for example, 'suse-sles-sap-15-sp4-byos' for BYOS image, 'suse-sles-sap-15-sp4-v20230630' for PAYG image) or image ID (for example, 'ami-0885658077f2f8415').
+For example: Set os_image = 'suse-sles-sap-15-sp4-byos' or os_image = 'ami-0885658077f2f8415'.
+
+You can query the images via [pint images🔗](https://pint.suse.com/?resource=images) or aws-cli command.
+You can refer to [suse public cloud image life cycle🔗](https://www.suse.com/c/suse-public-cloud-image-life-cycle/) for the images states (active/inactive/deprecated).
 
 ### How to upload a custom image
 
