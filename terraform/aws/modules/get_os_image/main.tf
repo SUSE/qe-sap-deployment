@@ -1,7 +1,8 @@
 # Data used to get the correct AMI image
 data "aws_ami" "image" {
-  most_recent = true
-  owners      = [var.os_owner]
+  most_recent        = true
+  owners             = [var.os_owner]
+  include_deprecated = true
 
   filter {
     name   = "name"
@@ -21,5 +22,10 @@ data "aws_ami" "image" {
   filter {
     name   = "virtualization-type"
     values = ["hvm"]
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
   }
 }
