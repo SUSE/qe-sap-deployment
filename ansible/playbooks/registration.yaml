@@ -43,6 +43,7 @@
       until: result is succeeded
       retries: 10
       delay: 60
+      failed_when: result.rc != 0 or result.stderr != ""
       when:
         - not_registered_found
         - rcg.rc == 0
