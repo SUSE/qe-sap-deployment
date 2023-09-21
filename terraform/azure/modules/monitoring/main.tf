@@ -64,57 +64,59 @@ module "os_image_reference" {
   os_image_srv_uri = var.monitoring_uri != ""
 }
 
-resource "azurerm_virtual_machine" "monitoring" {
-  name                             = var.name
-  count                            = var.monitoring_enabled == true ? 1 : 0
-  location                         = var.az_region
-  resource_group_name              = var.resource_group_name
-  network_interface_ids            = [azurerm_network_interface.monitoring.0.id]
-  vm_size                          = var.vm_size
-  delete_os_disk_on_termination    = true
-  delete_data_disks_on_termination = true
+resource "azurerm_managed_disk" "monitoring_data" {
+  count                = var.monitoring_enabled == true ? 1 : 0
+  name                 = "disk-monitoring-Data01"
+  location             = var.az_region
+  resource_group_name  = var.resource_group_name
+  storage_account_type = "Standard_LRS"
+  create_option        = "Empty"
+  disk_size_gb         = 10
+}
 
-  storage_os_disk {
-    name              = "disk-monitoring-Os"
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-    managed_disk_type = "Premium_LRS"
+resource "azurerm_virtual_machine_data_disk_attachment" "monitoring_data" {
+  count              = var.monitoring_enabled == true ? 1 : 0
+  managed_disk_id    = azurerm_managed_disk.monitoring_data[count.index].id
+  virtual_machine_id = azurerm_linux_virtual_machine.monitoring[count.index].id
+  lun                = 0
+  caching            = "ReadWrite"
+}
+
+resource "azurerm_linux_virtual_machine" "monitoring" {
+  name                  = var.name
+  count                 = var.monitoring_enabled == true ? 1 : 0
+  location              = var.az_region
+  network_interface_ids = [azurerm_network_interface.monitoring[0].id]
+  resource_group_name   = var.resource_group_name
+  size                  = var.vm_size
+  # os_profile replaced with top level arguments in azurerm_linux_virtual_machine
+  admin_username                  = var.common_variables["authorized_user"]
+  disable_password_authentication = true
+  admin_ssh_key {
+    username   = var.common_variables["authorized_user"]
+    public_key = var.common_variables["public_key"]
   }
 
-  storage_image_reference {
-    id        = var.monitoring_uri != "" ? azurerm_image.monitoring.0.id : ""
-    publisher = var.monitoring_uri != "" ? "" : module.os_image_reference.publisher
-    offer     = var.monitoring_uri != "" ? "" : module.os_image_reference.offer
-    sku       = var.monitoring_uri != "" ? "" : module.os_image_reference.sku
-    version   = var.monitoring_uri != "" ? "" : module.os_image_reference.version
+  os_disk {
+    name                 = "disk-monitoring-Os"
+    caching              = "ReadWrite"
+    storage_account_type = "Premium_LRS"
   }
 
-  storage_data_disk {
-    name              = "disk-monitoring-Data01"
-    caching           = "ReadWrite"
-    create_option     = "Empty"
-    disk_size_gb      = "10"
-    lun               = "0"
-    managed_disk_type = "Standard_LRS"
-  }
-
-  os_profile {
-    computer_name  = local.hostname
-    admin_username = var.common_variables["authorized_user"]
-  }
-
-  os_profile_linux_config {
-    disable_password_authentication = true
-
-    ssh_keys {
-      path     = "/home/${var.common_variables["authorized_user"]}/.ssh/authorized_keys"
-      key_data = var.common_variables["public_key"]
+  dynamic "source_image_reference" {
+    for_each = var.monitoring_uri != "" ? [] : [1]
+    content {
+      publisher = module.os_image_reference.publisher
+      offer     = module.os_image_reference.offer
+      sku       = module.os_image_reference.sku
+      version   = module.os_image_reference.version
     }
   }
 
+  source_image_id = var.monitoring_uri != "" ? azurerm_image.monitoring.0.id : null
+
   boot_diagnostics {
-    enabled     = "true"
-    storage_uri = var.storage_account
+    storage_account_uri = var.storage_account
   }
 
   tags = {

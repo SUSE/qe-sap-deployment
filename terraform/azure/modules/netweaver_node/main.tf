@@ -330,7 +330,7 @@ resource "azurerm_managed_disk" "app_server_disk" {
 resource "azurerm_virtual_machine_data_disk_attachment" "app_server_disk" {
   count              = var.app_server_count
   managed_disk_id    = azurerm_managed_disk.app_server_disk[count.index].id
-  virtual_machine_id = azurerm_virtual_machine.netweaver[count.index + var.xscs_server_count].id
+  virtual_machine_id = azurerm_linux_virtual_machine.netweaver[count.index + var.xscs_server_count].id
   lun                = local.additional_lun_number
   caching            = var.data_disk_caching
 }
@@ -343,49 +343,44 @@ module "os_image_reference" {
   os_image_srv_uri = var.netweaver_image_uri != ""
 }
 
-resource "azurerm_virtual_machine" "netweaver" {
-  count                            = local.vm_count
-  name                             = "${var.name}${format("%02d", count.index + 1)}"
-  location                         = var.az_region
-  resource_group_name              = var.resource_group_name
-  network_interface_ids            = [element(azurerm_network_interface.netweaver.*.id, count.index)]
-  availability_set_id              = count.index < var.xscs_server_count ? (local.create_ha_infra > 0 ? azurerm_availability_set.netweaver-xscs-availability-set[0].id : null) : azurerm_availability_set.netweaver-app-availability-set[0].id
-  vm_size                          = count.index < var.xscs_server_count ? var.xscs_vm_size : var.app_vm_size
-  delete_os_disk_on_termination    = true
-  delete_data_disks_on_termination = true
+resource "azurerm_linux_virtual_machine" "netweaver" {
+  count                 = local.vm_count
+  name                  = "${var.name}${format("%02d", count.index + 1)}"
+  location              = var.az_region
+  resource_group_name   = var.resource_group_name
+  network_interface_ids = [element(azurerm_network_interface.netweaver.*.id, count.index)]
+  availability_set_id   = count.index < var.xscs_server_count ? (local.create_ha_infra > 0 ? azurerm_availability_set.netweaver-xscs-availability-set[0].id : null) : azurerm_availability_set.netweaver-app-availability-set[0].id
+  size                  = count.index < var.xscs_server_count ? var.xscs_vm_size : var.app_vm_size
 
-  storage_os_disk {
-    name              = "disk-netweaver${format("%02d", count.index + 1)}-Os"
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-    managed_disk_type = "Premium_LRS"
+  os_disk {
+    name                 = "disk-netweaver${format("%02d", count.index + 1)}-Os"
+    caching              = "ReadWrite"
+    storage_account_type = "Premium_LRS"
+    disk_size_gb         = 30 # Adjust as needed
   }
 
-  storage_image_reference {
-    id        = var.netweaver_image_uri != "" ? join(",", azurerm_image.netweaver-image.*.id) : ""
-    publisher = var.netweaver_image_uri != "" ? "" : module.os_image_reference.publisher
-    offer     = var.netweaver_image_uri != "" ? "" : module.os_image_reference.offer
-    sku       = var.netweaver_image_uri != "" ? "" : module.os_image_reference.sku
-    version   = var.netweaver_image_uri != "" ? "" : module.os_image_reference.version
-  }
-
-  os_profile {
-    computer_name  = "${local.hostname}${format("%02d", count.index + 1)}"
-    admin_username = var.common_variables["authorized_user"]
-  }
-
-  os_profile_linux_config {
-    disable_password_authentication = true
-
-    ssh_keys {
-      path     = "/home/${var.common_variables["authorized_user"]}/.ssh/authorized_keys"
-      key_data = var.common_variables["public_key"]
+  dynamic "source_image_reference" {
+    for_each = var.netweaver_image_uri != "" ? [] : [1]
+    content {
+      publisher = module.os_image_reference.publisher
+      offer     = module.os_image_reference.offer
+      sku       = module.os_image_reference.sku
+      version   = module.os_image_reference.version
     }
   }
 
+  source_image_id = var.netweaver_image_uri != "" ? join(",", azurerm_image.netweaver-image.*.id) : null
+
+  admin_username                  = var.common_variables["authorized_user"]
+  disable_password_authentication = true
+
+  admin_ssh_key {
+    username   = var.common_variables["authorized_user"]
+    public_key = var.common_variables["public_key"]
+  }
+
   boot_diagnostics {
-    enabled     = "true"
-    storage_uri = var.storage_account
+    storage_account_uri = var.storage_account
   }
 
   tags = {

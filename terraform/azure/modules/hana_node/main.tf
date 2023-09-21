@@ -364,62 +364,60 @@ locals {
   disks_writeaccelerator = [for writeaccelerator in split(",", var.hana_data_disks_configuration["writeaccelerator"]) : tobool(trimspace(writeaccelerator))]
 }
 
-resource "azurerm_virtual_machine" "hana" {
-  count                            = var.hana_count
-  name                             = "${var.name}${format("%02d", count.index + 1)}"
-  location                         = var.az_region
-  resource_group_name              = var.resource_group_name
-  network_interface_ids            = [element(azurerm_network_interface.hana.*.id, count.index)]
-  availability_set_id              = var.common_variables["hana"]["ha_enabled"] ? azurerm_availability_set.hana-availability-set[0].id : null
-  vm_size                          = var.vm_size
-  delete_os_disk_on_termination    = true
-  delete_data_disks_on_termination = true
+resource "azurerm_managed_disk" "hana_data_disk" {
+  count                = var.hana_count * local.disks_number
+  name                 = "disk-${var.name}${format("%02d", floor(count.index / local.disks_number) + 1)}-Data${format("%02d", count.index % local.disks_number + 1)}"
+  location             = var.az_region
+  resource_group_name  = var.resource_group_name
+  storage_account_type = element(local.disks_type, count.index % local.disks_number)
+  create_option        = "Empty"
+  disk_size_gb         = element(local.disks_size, count.index % local.disks_number)
+}
 
-  storage_os_disk {
-    name              = "disk-${var.name}${format("%02d", count.index + 1)}-Os"
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-    managed_disk_type = "Premium_LRS"
+resource "azurerm_virtual_machine_data_disk_attachment" "hana_data_disk_attachment" {
+  count              = var.hana_count * local.disks_number
+  managed_disk_id    = azurerm_managed_disk.hana_data_disk[count.index].id
+  virtual_machine_id = azurerm_linux_virtual_machine.hana[floor(count.index / local.disks_number)].id
+  lun                = count.index % local.disks_number
+  caching            = element(local.disks_caching, count.index % local.disks_number)
+}
+
+resource "azurerm_linux_virtual_machine" "hana" {
+  count                 = var.hana_count
+  name                  = "${var.name}${format("%02d", count.index + 1)}"
+  location              = var.az_region
+  resource_group_name   = var.resource_group_name
+  network_interface_ids = [element(azurerm_network_interface.hana.*.id, count.index)]
+  availability_set_id   = var.common_variables["hana"]["ha_enabled"] ? azurerm_availability_set.hana-availability-set[0].id : null
+  size                  = var.vm_size
+
+  admin_username = var.common_variables["authorized_user"]
+  admin_ssh_key {
+    username   = var.common_variables["authorized_user"]
+    public_key = var.common_variables["public_key"]
   }
+  disable_password_authentication = true
 
-  storage_image_reference {
-    id        = var.sles4sap_uri != "" ? join(",", azurerm_image.sles4sap.*.id) : ""
-    publisher = var.sles4sap_uri != "" ? "" : module.os_image_reference.publisher
-    offer     = var.sles4sap_uri != "" ? "" : module.os_image_reference.offer
-    sku       = var.sles4sap_uri != "" ? "" : module.os_image_reference.sku
-    version   = var.sles4sap_uri != "" ? "" : module.os_image_reference.version
-  }
-
-  dynamic "storage_data_disk" {
-    for_each = [for v in range(local.disks_number) : { index = v }]
+  dynamic "source_image_reference" {
+    for_each = var.sles4sap_uri != "" ? [] : [1]
     content {
-      name                      = "disk-${var.name}${format("%02d", count.index + 1)}-Data${format("%02d", storage_data_disk.value.index + 1)}"
-      managed_disk_type         = element(local.disks_type, storage_data_disk.value.index)
-      create_option             = "Empty"
-      lun                       = storage_data_disk.value.index
-      disk_size_gb              = element(local.disks_size, storage_data_disk.value.index)
-      caching                   = element(local.disks_caching, storage_data_disk.value.index)
-      write_accelerator_enabled = element(local.disks_writeaccelerator, storage_data_disk.value.index)
+      publisher = module.os_image_reference.publisher
+      offer     = module.os_image_reference.offer
+      sku       = module.os_image_reference.sku
+      version   = module.os_image_reference.version
     }
   }
 
-  os_profile {
-    computer_name  = "${local.hostname}${format("%02d", count.index + 1)}"
-    admin_username = var.common_variables["authorized_user"]
-  }
+  source_image_id = var.sles4sap_uri != "" ? join(",", azurerm_image.sles4sap.*.id) : null
 
-  os_profile_linux_config {
-    disable_password_authentication = true
-
-    ssh_keys {
-      path     = "/home/${var.common_variables["authorized_user"]}/.ssh/authorized_keys"
-      key_data = var.common_variables["public_key"]
-    }
+  os_disk {
+    name                 = "disk-${var.name}${format("%02d", count.index + 1)}-Os"
+    caching              = "ReadWrite"
+    storage_account_type = "Premium_LRS"
   }
 
   boot_diagnostics {
-    enabled     = "true"
-    storage_uri = var.storage_account
+    storage_account_uri = var.storage_account
   }
 
   tags = {
