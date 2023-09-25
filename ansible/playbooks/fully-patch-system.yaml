@@ -1,0 +1,20 @@
+---
+- hosts: all
+  remote_user: cloudadmin
+  become: true
+  become_user: root
+  vars:
+    use_reboottimeout: 600
+
+  tasks:
+    # Fully patch system
+    - name: Apply all available patches
+      community.general.zypper:
+        name: '*'
+        state: latest
+        type: patch
+
+  handlers:
+    - name: Reboot
+      ansible.builtin.reboot:
+        reboot_timeout: "{{ use_reboottimeout | int }}"
