@@ -335,13 +335,15 @@ an SBD based cluster will be created.
 To use Azure native fencing you must:
 
 * Be using the azure provider in terraform
-* Set the variable `use_sbd` to 'no'
-* Provide the following variables:
-  * subscription_id:
-  * resource_group:
-  * tenant_id:
-  * application_id:
-  * app_password:
+* **Provide the following variables:**
+  * identity_management - 'msi' or 'spn'
+  * spn_application_id - SPN fencing app id
+  * spn_application_password - Password used for SPN based fencing
+* **Variables below are provided by terraform output:**
+  * use_sbd - has to be set to 'no'
+  * subscription_id
+  * resource_group
+  * tenant_id
 
 The five additional variables all relate to the SAP fencing application
 that needs to be created. At this point, the creation of the fencing

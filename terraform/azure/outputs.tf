@@ -107,16 +107,9 @@ resource "local_file" "ansible_inventory" {
       iscsi_enabled       = local.iscsi_enabled,
       iscsi_remote_python = var.iscsi_remote_python
       use_sbd             = local.use_sbd
-  })
-  filename = "inventory.yaml"
-}
-
-resource "local_file" "fence_data" {
-  content = templatefile("fence_data.tmpl",
-    {
       resource_group_name = local.resource_group_name
       subscription_id     = data.azurerm_subscription.current.subscription_id
       tenant_id           = data.azurerm_subscription.current.tenant_id
   })
-  filename = "fence_data.json"
+  filename = "inventory.yaml"
 }

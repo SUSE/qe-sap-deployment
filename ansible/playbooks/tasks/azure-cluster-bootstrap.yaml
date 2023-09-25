@@ -216,12 +216,19 @@
     - is_primary
     - crm_maintenance_mode is false or crm_maintenance_mode == 'unknown'
 
-- name: Configure azure fencing
-  ansible.builtin.command: "crm configure primitive rsc_stonith_azure stonith:fence_azure_arm params subscriptionId=\"{{ subscription_id }}\" resourceGroup=\"{{ resource_group }}\" tenantId=\"{{ tenant_id }}\" login=\"{{ application_id }}\" passwd=\"{{ app_password }}\" pcmk_monitor_retries=4 pcmk_action_limit=3 power_timeout=240 pcmk_reboot_timeout=900 op monitor interval=3600 timeout=120"
+- name: Configure azure fencing [MSI (Managed identity)]
+  ansible.builtin.command: "crm configure primitive rsc_stonith_azure stonith:fence_azure_arm params msi=true subscriptionId=\"{{ subscription_id }}\" resourceGroup=\"{{ resource_group_name }}\" tenantId=\"{{ tenant_id }}\" pcmk_monitor_retries=4 pcmk_action_limit=3 power_timeout=240 pcmk_reboot_timeout=900 pcmk_delay_max=15 op monitor interval=3600 timeout=120"
   when:
     - is_primary
     - rsc_st_azure | length == 0
-    - not use_sbd | bool
+    - not use_sbd | bool and azure_identity_management == 'msi'
+
+- name: Configure azure fencing [SPN (Service principal)]
+  ansible.builtin.command: "crm configure primitive rsc_stonith_azure stonith:fence_azure_arm params subscriptionId=\"{{ subscription_id }}\" resourceGroup=\"{{ resource_group_name }}\" tenantId=\"{{ tenant_id }}\" login=\"{{ spn_application_id }}\" passwd=\"{{ spn_application_password }}\" pcmk_monitor_retries=4 pcmk_action_limit=3 power_timeout=240 pcmk_reboot_timeout=900 op monitor interval=3600 timeout=120"
+  when:
+    - is_primary
+    - rsc_st_azure | length == 0
+    - not use_sbd | bool and azure_identity_management == 'spn'
 
 - name: Add Azure scheduled events to cluster
   ansible.builtin.command: crm configure primitive rsc_azure-events ocf:heartbeat:azure-events op monitor interval=10s
