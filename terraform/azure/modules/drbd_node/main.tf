@@ -171,58 +171,60 @@ module "os_image_reference" {
   os_image_srv_uri = var.drbd_image_uri != ""
 }
 
-resource "azurerm_virtual_machine" "drbd" {
-  count                            = var.drbd_count
-  name                             = "${var.name}${format("%02d", count.index + 1)}"
-  location                         = var.az_region
-  resource_group_name              = var.resource_group_name
-  network_interface_ids            = [element(azurerm_network_interface.drbd.*.id, count.index)]
-  availability_set_id              = azurerm_availability_set.drbd-availability-set[0].id
-  vm_size                          = var.vm_size
-  delete_os_disk_on_termination    = true
-  delete_data_disks_on_termination = true
+resource "azurerm_managed_disk" "drbd_data_disk" {
+  count                = var.drbd_count
+  name                 = "disk-${var.name}${format("%02d", count.index + 1)}-Data01"
+  location             = var.az_region
+  resource_group_name  = var.resource_group_name
+  storage_account_type = "Standard_LRS"
+  create_option        = "Empty"
+  disk_size_gb         = 10
+}
 
-  storage_os_disk {
-    name              = "disk-${var.name}${format("%02d", count.index + 1)}-Os"
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-    managed_disk_type = "Premium_LRS"
+resource "azurerm_virtual_machine_data_disk_attachment" "drbd_data_disk_attachment" {
+  count              = var.drbd_count
+  managed_disk_id    = element(azurerm_managed_disk.drbd_data_disk.*.id, count.index)
+  virtual_machine_id = element(azurerm_linux_virtual_machine.drbd.*.id, count.index)
+  lun                = 0
+  caching            = "ReadWrite"
+}
+
+resource "azurerm_linux_virtual_machine" "drbd" {
+  count                 = var.drbd_count
+  name                  = "${var.name}${format("%02d", count.index + 1)}"
+  location              = var.az_region
+  resource_group_name   = var.resource_group_name
+  network_interface_ids = [element(azurerm_network_interface.drbd.*.id, count.index)]
+  availability_set_id   = azurerm_availability_set.drbd-availability-set[0].id
+  size                  = var.vm_size
+
+  admin_username = var.common_variables["authorized_user"]
+  admin_ssh_key {
+    username   = var.common_variables["authorized_user"]
+    public_key = var.common_variables["public_key"]
+  }
+  disable_password_authentication = true
+
+  os_disk {
+    name                 = "disk-${var.name}${format("%02d", count.index + 1)}-Os"
+    caching              = "ReadWrite"
+    storage_account_type = "Premium_LRS" # This replaces managed_disk_type
   }
 
-  storage_image_reference {
-    id        = var.drbd_image_uri != "" ? join(",", azurerm_image.drbd-image.*.id) : ""
-    publisher = var.drbd_image_uri != "" ? "" : module.os_image_reference.publisher
-    offer     = var.drbd_image_uri != "" ? "" : module.os_image_reference.offer
-    sku       = var.drbd_image_uri != "" ? "" : module.os_image_reference.sku
-    version   = var.drbd_image_uri != "" ? "" : module.os_image_reference.version
-  }
-
-  storage_data_disk {
-    name              = "disk-${var.name}${format("%02d", count.index + 1)}-Data01"
-    caching           = "ReadWrite"
-    create_option     = "Empty"
-    disk_size_gb      = "10"
-    lun               = "0"
-    managed_disk_type = "Standard_LRS"
-  }
-
-  os_profile {
-    computer_name  = "${local.hostname}${format("%02d", count.index + 1)}"
-    admin_username = var.common_variables["authorized_user"]
-  }
-
-  os_profile_linux_config {
-    disable_password_authentication = true
-
-    ssh_keys {
-      path     = "/home/${var.common_variables["authorized_user"]}/.ssh/authorized_keys"
-      key_data = var.common_variables["public_key"]
+  dynamic "source_image_reference" {
+    for_each = var.drbd_image_uri != "" ? [] : [1]
+    content {
+      publisher = module.os_image_reference.publisher
+      offer     = module.os_image_reference.offer
+      sku       = module.os_image_reference.sku
+      version   = module.os_image_reference.version
     }
   }
 
+  source_image_id = var.drbd_image_uri != "" ? join(",", azurerm_image.drbd-image.*.id) : null
+
   boot_diagnostics {
-    enabled     = "true"
-    storage_uri = var.storage_account
+    storage_account_uri = var.storage_account
   }
 
   tags = {

@@ -64,48 +64,43 @@ module "os_image_reference" {
   os_image_srv_uri = var.sles4sap_uri != ""
 }
 
-resource "azurerm_virtual_machine" "majority_maker" {
+resource "azurerm_linux_virtual_machine" "majority_maker" {
   count                 = var.node_count
   name                  = "vm${var.name}mm"
   location              = var.az_region
-  resource_group_name   = var.resource_group_name
   network_interface_ids = [element(azurerm_network_interface.majority_maker.*.id, count.index)]
+  resource_group_name   = var.resource_group_name
   # availability_set_id              = var.common_variables["hana"]["ha_enabled"] ? azurerm_availability_set.hana-availability-set[0].id : null
-  vm_size                       = var.vm_size
-  delete_os_disk_on_termination = true
+  size = var.vm_size
 
-  storage_os_disk {
-    name              = "disk-${var.name}majority_maker-Os"
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-    managed_disk_type = "Premium_LRS"
+  # os_profile replaced with top level arguments in azurerm_linux_virtual_machine
+  admin_username                  = var.common_variables["authorized_user"]
+  disable_password_authentication = true
+  admin_ssh_key {
+    username   = var.common_variables["authorized_user"]
+    public_key = var.common_variables["public_key"]
   }
 
-  storage_image_reference {
-    id        = var.sles4sap_uri != "" ? join(",", azurerm_image.sles4sap.*.id) : ""
-    publisher = var.sles4sap_uri != "" ? "" : module.os_image_reference.publisher
-    offer     = var.sles4sap_uri != "" ? "" : module.os_image_reference.offer
-    sku       = var.sles4sap_uri != "" ? "" : module.os_image_reference.sku
-    version   = var.sles4sap_uri != "" ? "" : module.os_image_reference.version
+  os_disk {
+    name                 = "disk-${var.name}majority_maker-Os"
+    caching              = "ReadWrite"
+    storage_account_type = "Premium_LRS"
   }
 
-  os_profile {
-    computer_name  = "vm${var.name}mm"
-    admin_username = var.common_variables["authorized_user"]
-  }
-
-  os_profile_linux_config {
-    disable_password_authentication = true
-
-    ssh_keys {
-      path     = "/home/${var.common_variables["authorized_user"]}/.ssh/authorized_keys"
-      key_data = var.common_variables["public_key"]
+  dynamic "source_image_reference" {
+    for_each = var.sles4sap_uri != "" ? [] : [1]
+    content {
+      publisher = module.os_image_reference.publisher
+      offer     = module.os_image_reference.offer
+      sku       = module.os_image_reference.sku
+      version   = module.os_image_reference.version
     }
   }
 
+  source_image_id = var.sles4sap_uri != "" ? join(",", azurerm_image.sles4sap.*.id) : null
+
   boot_diagnostics {
-    enabled     = "true"
-    storage_uri = var.storage_account
+    storage_account_uri = var.storage_account
   }
 
   tags = {
