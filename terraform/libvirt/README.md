@@ -1,4 +1,4 @@
-# Libvirt deployment with Terraform and Salt
+# Libvirt deployment with Terraform and Ansible
 
 * [Terraform cluster deployment with Libvirt](#terraform-cluster-deployment-with-libvirt)
 * [Requirements](#requirements)
@@ -107,13 +107,13 @@ For detailed information and deployment options have a look at `terraform.tfvars
     Alternatively, you can set the `pre_deployment` variable to automatically create the cluster ssh keys.
 
     ```
-    mkdir -p ../salt/sshkeys
-    ssh-keygen -f ../salt/sshkeys/cluster.id_rsa -q -P ""
+    mkdir -p ../sshkeys
+    ssh-keygen -f ../sshkeys/cluster.id_rsa -q -P ""
     ```
 
     The key files need to have same name as defined in [terraform.tfvars](./terraform.tfvars.example).
 
-3) **[Adapt saltstack pillars manually](../pillar_examples/)** or set the `pre_deployment` variable to automatically copy the example pillar files.
+3) adapt config.yaml 
 
 4) **Configure Terraform Access to Libvirt**
 
@@ -167,19 +167,11 @@ The infrastructure deployed includes:
 
 By default, this configuration will create 3 instances in Libvirt: one for support services (mainly iSCSI) and 2 cluster nodes, but this can be changed to deploy more cluster nodes as needed.
 
-Once the infrastructure is created by Terraform, the servers are provisioned with Salt.
+Once the infrastructure is created by Terraform, the servers are provisioned with Ansible
 
 # Customization
 
 In order to deploy the environment, different configurations are available through the terraform variables. These variables can be configured using a `terraform.tfvars` file. An example is available in [terraform.tfvars.example](./terraform.tvars.example). To find all the available variables check the [variables.tf](./variables.tf) file.
-
-## QA deployment
-
-The project has been created in order to provide the option to run the deployment in a `Test` or `QA` mode. This mode only enables the packages coming properly from SLE channels, so no other packages will be used. Set `offline_mode = true` in `terraform.tfvars` to enable it.
-
-## Pillar files configuration
-
-Besides the `terraform.tfvars` file usage to configure the deployment, a more advanced configuration is available through pillar files customization. Find more information [here](../pillar_examples/README.md).
 
 ## Use already existing network resources
 
@@ -224,22 +216,13 @@ In case you have some issue, take a look at this [troubleshooting guide](../doc/
 
 ### Terraform fails shortly after deploy
 
-The images use cloud-init which can take a little time to return, so it is not unusual to see an error shortly after 'terraform deploy'.  You may see an error like this:
+The images use cloud-init which can take a little time to return, so it is not unusual to see an error shortly after 'terraform deploy', if this error occurs, simple re-run `terraform apply` after ~30 seconds.
 
-  ```bash
-  Error: Invalid index
-     on modules/hana_node/salt_provisioner.tf line 66, in module "hana_provision":
-    66:   public_ips   = libvirt_domain.hana_domain.*.network_interface.0.addresses.0
-   The given key does not identify an element in this collection value: the collection has no elements.
-  ```
-  
-  If this error occurs, simple re-run `terraform apply` after ~30 seconds.
-  
-  To get rid of the deployment, destroy the created infrastructure with:
-  
-  ```bash
+To get rid of the deployment, destroy the created infrastructure with:
+
+```bash
   terraform destroy
-  ```
+```
 
 ### Resources have not been destroyed
 
@@ -276,6 +259,6 @@ with elevated privileges: `sudo ls -Faihl /var/lib/libvirt/images/`
 
 ### Packages failures
 
-If some package installation fails during the salt provisioning, the
+If some package installation fails during the Ansible provisioning, the
 most possible thing is that some repository is missing.
 Add the new repository with the needed package and try again.

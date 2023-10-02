@@ -1,6 +1,5 @@
 #################################
 # qe-sap-deployments project configuration file
-# base on ha-sap-terraform-deployments project
 # Find all the available variables and definitions in the variables.tf file
 #################################
 

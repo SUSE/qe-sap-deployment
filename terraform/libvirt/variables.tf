@@ -103,25 +103,10 @@ variable "reg_additional_modules" {
   default     = {}
 }
 
-# Repository url used to install development versions of HA/SAP deployment packages
-# The latest RPM packages can be found at:
-# https://download.opensuse.org/repositories/network:ha-clustering:sap-deployments:devel/{YOUR SLE VERSION}
-# Contains the salt formulas rpm packages.
-variable "ha_sap_deployment_repo" {
-  description = "Repository url used to install development versions of HA/SAP deployment packages. If the SLE version is not present in the URL, it will be automatically detected"
-  type        = string
-  default     = "https://download.opensuse.org/repositories/network:ha-clustering:sap-deployments:v8"
-}
-
 variable "additional_packages" {
   description = "extra packages which should be installed"
   type        = list(any)
   default     = []
-}
-
-variable "provisioner" {
-  description = "Used provisioner option. Available options: salt. Let empty to not use any provisioner"
-  default     = "salt"
 }
 
 #
@@ -724,16 +709,8 @@ variable "drbd_nfs_mounting_point" {
 
 # Testing and QA
 
-# Disable extra package installation (sap, ha pattern etc).
-# Disables first registration to install salt-minion, it is considered that images are delivered with salt-minion
-variable "offline_mode" {
-  description = "Disable installation of extra packages usage not coming with image"
-  type        = bool
-  default     = false
-}
-
 # Execute HANA Hardware Configuration Check Tool to bench filesystems.
-# The test takes several hours. See results in /root/hwcct_out and in global log file /var/log/salt-result.log.
+# The test takes several hours. See results in /root/hwcct_out
 variable "hwcct" {
   description = "Execute HANA Hardware Configuration Check Tool to bench filesystems"
   type        = bool

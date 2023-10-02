@@ -9,9 +9,6 @@ locals {
     )
   )
 
-  bastion_private_key = var.bastion_private_key != "" ? (fileexists(var.bastion_private_key) ? file(var.bastion_private_key) : var.bastion_private_key) : local.private_key
-  bastion_public_key  = var.bastion_public_key != "" ? (fileexists(var.bastion_public_key) ? file(var.bastion_public_key) : var.bastion_public_key) : local.public_key
-
   requirements_file = "${path.module}/../../requirements.yml"
   requirements      = fileexists(local.requirements_file) ? yamlencode({ pkg_requirements : yamldecode(trimspace(file(local.requirements_file))) }) : yamlencode({ pkg_requirements : null })
 }
@@ -25,18 +22,13 @@ output "configuration" {
     reg_code                    = var.reg_code
     reg_email                   = var.reg_email
     reg_additional_modules      = var.reg_additional_modules
-    ha_sap_deployment_repo      = var.ha_sap_deployment_repo
     additional_packages         = var.additional_packages
     public_key                  = local.public_key
     private_key                 = local.private_key
     authorized_keys             = var.authorized_keys
-    bastion_public_key          = local.bastion_public_key
-    bastion_private_key         = local.bastion_private_key
     authorized_user             = var.authorized_user
-    provisioner                 = var.provisioner
     monitoring_enabled          = var.monitoring_enabled
     monitoring_srv_ip           = var.monitoring_srv_ip
-    offline_mode                = var.offline_mode
     hana = {
       sid                            = var.hana_sid
       instance_number                = var.hana_instance_number

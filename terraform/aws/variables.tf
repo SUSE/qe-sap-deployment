@@ -775,13 +775,6 @@ variable "netweaver_shared_storage_type" {
 
 # Testing and QA variables
 
-# Disable extra package installation (sap, ha pattern etc).
-variable "offline_mode" {
-  description = "Disable installation of extra packages usage not coming with the image"
-  type        = bool
-  default     = true
-}
-
 # Execute HANA Hardware Configuration Check Tool to bench filesystems.
 # The test takes several hours. See results in /root/hwcct_out and in global log file /var/log/salt-result.log.
 variable "hwcct" {
