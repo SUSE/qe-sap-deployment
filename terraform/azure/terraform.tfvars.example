@@ -1,5 +1,5 @@
 #################################
-# ha-sap-terraform-deployments project configuration file
+# qe-sa-deployment project configuration file
 # Find all the available variables and definitions in the variables.tf file
 #################################
 
@@ -63,31 +63,10 @@ public_key  = "/home/user/.ssh/id.rsa.key"
 # Other deployment options
 ##########################
 
-# Repository url used to install HA/SAP deployment packages
-# It contains the salt formulas rpm packages and other dependencies.
-#
-## Specific Release - for latest release look at https://github.com/SUSE/ha-sap-terraform-deployments/releases
-# To auto detect the SLE version
-#ha_sap_deployment_repo = "https://download.opensuse.org/repositories/network:ha-clustering:sap-deployments:v8/"
-# Otherwise use a specific SLE version:
-#ha_sap_deployment_repo = "https://download.opensuse.org/repositories/network:ha-clustering:sap-deployments:v8/SLE_15_SP3/"
-#
-## Development Release (use if on `develop` branch)
-# To auto detect the SLE version
-#ha_sap_deployment_repo = "https://download.opensuse.org/repositories/network:ha-clustering:sap-deployments:devel/"
-# Otherwise use a specific SLE version:
-#ha_sap_deployment_repo = "https://download.opensuse.org/repositories/network:ha-clustering:sap-deployments:devel/SLE_15_SP3/"
-
 # Enable pre deployment steps (disabled by default)
 #pre_deployment = true
 
 # Test and QA purpose
-
-# Define if the deployment is used for testing purpose
-# Disable all extra packages that do not come from the image
-# Except salt-minion (for the moment) and salt formulas
-# true or false (default)
-#offline_mode = false
 
 # Execute HANA Hardware Configuration Check Tool to bench filesystems
 # true or false (default)
