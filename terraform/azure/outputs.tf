@@ -106,6 +106,7 @@ resource "local_file" "ansible_inventory" {
       iscsi-pip           = module.iscsi_server.iscsisrv_public_ip,
       iscsi-enabled       = local.iscsi_enabled,
       iscsi-remote-python = var.iscsi_remote_python
+      use_sbd             = local.use_sbd
   })
   filename = "inventory.yaml"
 }
