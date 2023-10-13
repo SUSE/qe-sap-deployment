@@ -4,18 +4,18 @@ all:
   children:
     hana:
       hosts:
-%{ for index, value in hana-pip ~}
-        ${hana_hostname}${format("%02d", index + 1)}:
+%{ for index, value in hana_pip ~}
+        ${hana_name}${format("%02d", index + 1)}:
           ansible_host: ${value}
-          ansible_python_interpreter: ${hana-remote-python}
+          ansible_python_interpreter: ${hana_remote_python}
 %{ endfor ~}
-%{ if iscsi-enabled }
+%{ if iscsi_enabled }
     iscsi:
       hosts:
-%{ for index, value in iscsi-pip ~}
-        ${iscsi_hostname}${format("%02d", index + 1)}:
+%{ for index, value in iscsi_pip ~}
+        ${iscsi_name}${format("%02d", index + 1)}:
           ansible_host: ${value}
-          ansible_python_interpreter: ${iscsi-remote-python}
+          ansible_python_interpreter: ${iscsi_remote_python}
 %{ endfor ~}
 %{ endif }
   hosts: null

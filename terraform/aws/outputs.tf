@@ -98,13 +98,13 @@ output "netweaver_public_name" {
 resource "local_file" "ansible_inventory" {
   content = templatefile("inventory.tmpl",
     {
-      hana_hostname       = var.hana_name,
-      hana-pip            = module.hana_node.hana_public_ip,
-      hana-remote-python  = var.hana_remote_python,
-      iscsi_hostname      = var.iscsi_name,
-      iscsi-pip           = module.iscsi_server.iscsisrv_public_ip,
-      iscsi-enabled       = local.iscsi_enabled,
-      iscsi-remote-python = var.iscsi_remote_python
+      hana_name           = var.hana_name,
+      hana_pip            = module.hana_node.hana_public_ip,
+      hana_remote_python  = var.hana_remote_python,
+      iscsi_name          = var.iscsi_name,
+      iscsi_pip           = module.iscsi_server.iscsisrv_public_ip,
+      iscsi_enabled       = local.iscsi_enabled,
+      iscsi_remote_python = var.iscsi_remote_python,
       use_sbd             = local.use_sbd
   })
   filename = "inventory.yaml"
