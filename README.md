@@ -158,6 +158,9 @@ ansible:
     - deregister.yaml
 ```
 
+* In case of Azure deployment using native fencing, there are additional parameters to be added for `sap-hana-cluster.yaml` playbook.
+* For details please check ./docs/playbooks/README.md
+
 #### Deploy
 
 Terraform and Ansible deployment steps can be executed like:

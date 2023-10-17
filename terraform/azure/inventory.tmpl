@@ -1,7 +1,10 @@
 all:
   vars:
-    cluster_ip: ${cluster_ip}
     use_sbd: ${use_sbd}
+    resource_group_name: ${resource_group_name}
+    subscription_id: ${subscription_id}
+    tenant_id: ${tenant_id}
+    cluster_ip: ${cluster_ip}
   children:
     hana:
       hosts:
