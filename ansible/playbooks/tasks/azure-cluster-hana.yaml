@@ -30,6 +30,10 @@
   ansible.builtin.command: "crm configure primitive rsc_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} ocf:suse:SAPHanaTopology operations $id=\"rsc_sap2_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations\" op monitor interval=\"10\" timeout=\"600\" op start interval=\"0\" timeout=\"600\" op stop interval=\"0\" timeout=\"300\" params SID=\"{{ sap_hana_install_sid }}\" InstanceNumber=\"{{ sap_hana_install_instance_number }}\""
   when: hana_topology_resource | length == 0
 
+- name: Variable use_sbd
+  ansible.builtin.debug:
+    msg: "Cloud platform appears to be use_sbd:{{ use_sbd }} use_sbd bool:{{ use_sbd | bool }} use_sbd string:{{ use_sbd | string | lower  == 'false' }}"
+
 - name: Set stonith-timeout [sdb]
   ansible.builtin.command: crm configure property stonith-timeout=144
   when:

@@ -6,8 +6,11 @@
 
   tasks:
   # tasks sourced from https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/high-availability-guide-suse-pacemaker
+  - name: Variable use_sbd
+    ansible.builtin.debug:
+      msg: "Cloud platform appears to be use_sbd:{{ use_sbd }} use_sbd bool:{{ use_sbd | bool }} use_sbd string:{{ use_sbd | string | lower  == 'false' }}"
 
-  - name: Set fact
+   - name: Set fact
     ansible.builtin.set_fact:
       sbd: "{{ use_sbd | default('true') }}"
 

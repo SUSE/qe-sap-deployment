@@ -218,11 +218,15 @@
     migration_threshold: "{{ (crm_rsc_options_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] | default('false') }}"
     op_default_timeout: "{{ (crm_op_options_show.stdout | regex_search('timeout=([0-9]*)', '\\1'))[0] | default('false') }}"
 
+- name: Variable use_sbd
+  ansible.builtin.debug:
+    msg: "Cloud platform appears to be use_sbd:{{ use_sbd }} use_sbd bool:{{ use_sbd | bool }} use_sbd string:{{ use_sbd | string | lower  == 'false' }}"
+
 - name: Enable SBD [sbd]
   ansible.builtin.command: crm configure primitive rsc_iscsi_sbd stonith:external/sbd
   when:
     - sbd_stonith | string | lower  == 'false'
-    - use_sbd
+    - use_sbd | bool
     - is_primary
 
 - name: Set stonith-timeout [sdb]
