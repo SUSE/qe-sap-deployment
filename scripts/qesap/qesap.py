@@ -141,6 +141,14 @@ def main(command_line=None):  # pylint: disable=too-many-return-statements
         log.debug("No command")
         return 0
 
+    sim_message = os.getenv('QESAP_SIM_MSG')
+    if sim_message:
+        log.error("This is a -- %s -- simulation.", sim_message)
+    sim_rc = os.getenv('QESAP_SIM_RC')
+    if sim_rc:
+        res = Status(int(sim_rc))
+        return res
+
     if parsed_args.command == "configure":
         log.info("Configuring...")
         res = cmd_configure(
