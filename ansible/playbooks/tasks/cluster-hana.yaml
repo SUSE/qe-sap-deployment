@@ -41,7 +41,7 @@
 
 - name: Create HANA resource
   # TODO this task has hardcoded SID and instance number values which should be variables!
-  ansible.builtin.command: "crm configure primitive rsc_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} ocf:suse:SAPHana operations $id=\"rsc_sap_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations\" op start interval=\"0\" timeout=\"3600\" op stop interval=\"0\" timeout=\"3600\" op promote interval=\"0\" timeout=\"3600\" op demote interval=\"0\" timeout=\"3600\" op monitor interval=\"60\" role=\"Master\" timeout=\"700\" op monitor interval=\"61\" role=\"Slave\" timeout=\"700\" params SID=\"{{ sap_hana_install_sid }}\" InstanceNumber=\"{{ sap_hana_install_instance_number }}\" PREFER_SITE_TAKEOVER=\"true\" DUPLICATE_PRIMARY_TIMEOUT=\"7200\" AUTOMATED_REGISTER=\"true\""
+  ansible.builtin.command: "crm configure primitive rsc_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} ocf:suse:SAPHana operations $id=\"rsc_sap_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations\" op start interval=\"0\" timeout=\"3600\" op stop interval=\"0\" timeout=\"3600\" op promote interval=\"0\" timeout=\"3600\" op demote interval=\"0\" timeout=\"3600\" op monitor interval=\"60\" role=\"Master\" timeout=\"700\" op monitor interval=\"61\" role=\"Slave\" timeout=\"700\" params SID=\"{{ sap_hana_install_sid }}\" InstanceNumber=\"{{ sap_hana_install_instance_number }}\" PREFER_SITE_TAKEOVER=\"true\" DUPLICATE_PRIMARY_TIMEOUT=\"7200\" AUTOMATED_REGISTER=\"false\""
   when:
     - is_primary
     - hana_resource | length == 0
