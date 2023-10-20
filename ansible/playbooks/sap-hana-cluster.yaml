@@ -15,7 +15,7 @@
     # corosync variables
     crypto_hash: sha1
     crypto_cipher: aes256
-      
+
   handlers:
   - name: Restart systemd daemon
     ansible.builtin.systemd:
@@ -27,19 +27,18 @@
       state: started
 
   pre_tasks:
-    - name: Detect cloud platform
-      ansible.builtin.include_tasks:
-        ./tasks/detect-cloud-platform.yaml
-    - name: Detection result
-      ansible.builtin.debug:
-        msg: "Cloud platform appears to be {{ cloud_platform_name }}"
+  - name: Detect cloud platform
+    ansible.builtin.include_tasks:
+      ./tasks/detect-cloud-platform.yaml
 
-    - name: Load SAP HANA variables
-      ansible.builtin.include_vars: ./vars/hana_vars.yaml
-        
+  - name: Detection result
+    ansible.builtin.debug:
+      msg: "Cloud platform appears to be {{ cloud_platform_name }}"
+
+  - name: Load SAP HANA variables
+    ansible.builtin.include_vars: ./vars/hana_vars.yaml
 
   tasks:
-
   - name: Include AWS variables
     ansible.builtin.include_vars: ../../terraform/aws/aws_cluster_data.yaml
     when: cloud_platform_is_aws
