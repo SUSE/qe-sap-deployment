@@ -13,8 +13,9 @@
         name: '*'
         state: latest
         type: patch
+      notify: Reboot after patch
 
   handlers:
-    - name: Reboot
+    - name: Reboot after patch
       ansible.builtin.reboot:
         reboot_timeout: "{{ use_reboottimeout | int }}"
