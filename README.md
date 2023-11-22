@@ -10,7 +10,7 @@ Tools needed
 
 * Python 3.9
 * terraform v1.3.6
-* ansible 6.5.0 (ansible-core 2.13.5). Please refer to the **requirements.txt** file
+* ansible-core 2.13.5 : please refer to the **requirements.txt** file
 * cloud provider cli tools (`az`, `aws`, `gcloud`)
 
 The Python requirements could be managed with a virtual environment
@@ -19,6 +19,12 @@ The Python requirements could be managed with a virtual environment
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+```
+
+Ansible dependency are managed separately. After the installation of the Ansible core the following command has to be executed:
+
+```shell
+ansible-galaxy install -r requirements.yml
 ```
 
 Prepare a ssh key pair
