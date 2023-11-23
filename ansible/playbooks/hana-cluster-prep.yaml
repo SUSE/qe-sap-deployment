@@ -4,19 +4,18 @@
   become: true
   become_user: root
 
-  tasks:
   # tasks sourced from https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/high-availability-guide-suse-pacemaker
+  tasks:
+    - name: Set fact
+      ansible.builtin.set_fact:
+        sbd: "{{ use_sbd | default('true') }}"
 
-  - name: Set fact
-    ansible.builtin.set_fact:
-      sbd: "{{ use_sbd | default('true') }}"
-
-  - name: Ensure required services are enabled for SBD systems
-    ansible.builtin.systemd:
-      name: "{{ item }}"
-      enabled: yes
-    with_items:
-      - iscsid
-      - iscsi
-      - sbd
-    when: sbd
+    - name: Ensure required services are enabled for SBD systems
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: true
+      with_items:
+        - iscsid
+        - iscsi
+        - sbd
+      when: sbd

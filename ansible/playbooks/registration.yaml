@@ -6,16 +6,15 @@
 
   tasks:
 
-    #Pre flight checks
-
-    #Do we have repos?  If not, we need to register
+    # Pre flight checks
+    # Do we have repos?  If not, we need to register
     - name: Check for registration
       ansible.builtin.command: SUSEConnect -s
       register: repos
       failed_when: false
       changed_when: false
 
-    #Check if there are instances of `Not Registered` in it
+    # Check if there are instances of `Not Registered` in it
     - name: Check for 'Not Registered'
       set_fact:
         not_registered_found: "{{ 'Not Registered' in repos.stdout }}"

@@ -15,16 +15,16 @@
     # corosync variables
     crypto_hash: sha1
     crypto_cipher: aes256
-      
-  handlers:
-  - name: Restart systemd daemon
-    ansible.builtin.systemd:
-      daemon_reload: yes
 
-  - name: Start pacemaker
-    ansible.builtin.systemd:
-      name: pacemaker
-      state: started
+  handlers:
+    - name: Restart systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Start pacemaker
+      ansible.builtin.systemd:
+        name: pacemaker
+        state: started
 
   pre_tasks:
     - name: Detect cloud platform
@@ -36,44 +36,43 @@
 
     - name: Load SAP HANA variables
       ansible.builtin.include_vars: ./vars/hana_vars.yaml
-        
+
 
   tasks:
+    - name: Include AWS variables
+      ansible.builtin.include_vars: ../../terraform/aws/aws_cluster_data.yaml
+      when: cloud_platform_is_aws
 
-  - name: Include AWS variables
-    ansible.builtin.include_vars: ../../terraform/aws/aws_cluster_data.yaml
-    when: cloud_platform_is_aws
+    - name: Base Cluster Configuration [azure]
+      ansible.builtin.include_tasks: ./tasks/azure-cluster-bootstrap.yaml
+      when: cloud_platform_is_azure
+      tags: bootstrap
 
-  - name: Base Cluster Configuration [azure]
-    ansible.builtin.include_tasks: ./tasks/azure-cluster-bootstrap.yaml
-    when: cloud_platform_is_azure
-    tags: bootstrap
+    - name: Base Cluster Configuration [aws]
+      ansible.builtin.include_tasks: ./tasks/cluster-bootstrap.yaml
+      when: cloud_platform_is_aws
+      tags: bootstrap
 
-  - name: Base Cluster Configuration [aws]
-    ansible.builtin.include_tasks: ./tasks/cluster-bootstrap.yaml
-    when: cloud_platform_is_aws
-    tags: bootstrap
+    - name: Base Cluster Configuration [gcp]
+      ansible.builtin.include_tasks: ./tasks/cluster-bootstrap.yaml
+      when: cloud_platform_is_gcp
+      tags: bootstrap
 
-  - name: Base Cluster Configuration [gcp]
-    ansible.builtin.include_tasks: ./tasks/cluster-bootstrap.yaml
-    when: cloud_platform_is_gcp
-    tags: bootstrap
+    - name: Add HANA to cluster [azure]
+      ansible.builtin.include_tasks: ./tasks/azure-cluster-hana.yaml
+      when:
+        - cloud_platform_is_azure
+        - is_primary
+      tags: hana_cluster
 
-  - name: Add HANA to cluster [azure]
-    ansible.builtin.include_tasks: ./tasks/azure-cluster-hana.yaml
-    when:
-      - cloud_platform_is_azure
-      - is_primary
-    tags: hana_cluster
+    - name: Add HANA to cluster [aws]
+      ansible.builtin.include_tasks: ./tasks/cluster-hana.yaml
+      when:
+        - cloud_platform_is_aws
+        - is_primary
 
-  - name: Add HANA to cluster [aws]
-    ansible.builtin.include_tasks: ./tasks/cluster-hana.yaml
-    when:
-      - cloud_platform_is_aws
-      - is_primary
-
-  - name: Add HANA to cluster [gcp]
-    ansible.builtin.include_tasks: ./tasks/cluster-hana.yaml
-    when:
-      - cloud_platform_is_gcp
-      - is_primary
+    - name: Add HANA to cluster [gcp]
+      ansible.builtin.include_tasks: ./tasks/cluster-hana.yaml
+      when:
+        - cloud_platform_is_gcp
+        - is_primary

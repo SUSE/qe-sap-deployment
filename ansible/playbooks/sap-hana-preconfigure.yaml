@@ -1,4 +1,3 @@
-
 ---
 - hosts: hana
   remote_user: cloudadmin
@@ -84,8 +83,8 @@
       when: not use_sapconf | bool
 
 
-   # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/reboot_module.html#parameters
-   # reboot_timeout Maximum seconds to wait for machine to reboot and respond to a test command.  Default: 600
+  # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/reboot_module.html#parameters
+  # reboot_timeout Maximum seconds to wait for machine to reboot and respond to a test command.  Default: 600
   handlers:
     - name: Reboot
       ansible.builtin.reboot:

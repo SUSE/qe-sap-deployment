@@ -11,32 +11,32 @@
     install_file: "{{ install_path }}/{{ sap_hana_install_sid }}_install"
 
   tasks:
-  - name: Check for previous installation of HANA SID
-    ansible.builtin.file:
-      path: "{{ install_file }}"
-      state: file
-    check_mode: true
-    register: sid_file_check
-    changed_when: false
-    failed_when: false
+    - name: Check for previous installation of HANA SID
+      ansible.builtin.file:
+        path: "{{ install_file }}"
+        state: file
+      check_mode: true
+      register: sid_file_check
+      changed_when: false
+      failed_when: false
 
-  - name: Set install facts
-    ansible.builtin.set_fact:
-      hana_installed: "{{ sid_file_check.state }}"
+    - name: Set install facts
+      ansible.builtin.set_fact:
+        hana_installed: "{{ sid_file_check.state }}"
 
-  - name: Execute hana install role
-    ansible.builtin.include_role:
-      name: ../roles/sap_hana_install
-    when: hana_installed == 'absent'
+    - name: Execute hana install role
+      ansible.builtin.include_role:
+        name: ../roles/sap_hana_install
+      when: hana_installed == 'absent'
 
-  - name: Write status file
-    ansible.builtin.file:
-      path: "{{ item.path }}"
-      state: "{{ item.state }}"
-      owner: root
-      group: root
-      mode: '0700'
-    with_items:
-      - {'path': "{{ install_path }}", 'state': 'directory'}
-      - {'path': "{{ install_file }}", 'state': 'touch'}
-    when: hana_installed == 'absent'
+    - name: Write status file
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        owner: root
+        group: root
+        mode: '0700'
+      with_items:
+        - {'path': "{{ install_path }}", 'state': 'directory'}
+        - {'path': "{{ install_file }}", 'state': 'touch'}
+      when: hana_installed == 'absent'

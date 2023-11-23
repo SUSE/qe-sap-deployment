@@ -12,30 +12,26 @@
         msg: "Cloud platform appears to be {{ cloud_platform_name }}"
 
   tasks:
+    - name: Load AWS disk configuration for R4 instances
+      ansible.builtin.include_vars: ./vars/aws_r4_hana_storage_profile.yaml
+      when: cloud_platform_is_aws and aws_machine_type
 
+    - name: Load AWS disk configuration for Non R4 instances
+      ansible.builtin.include_vars: ./vars/aws_hana_storage_profile.yaml
+      when: cloud_platform_is_aws and not aws_machine_type
 
-  - name: Load AWS disk configuration for R4 instances
-    ansible.builtin.include_vars: ./vars/aws_r4_hana_storage_profile.yaml
-    when: cloud_platform_is_aws and aws_machine_type
+    - name: Load Azure disk configuration
+      ansible.builtin.include_vars: ./vars/azure_hana_storage_profile.yaml
+      when: cloud_platform_is_azure
 
+    - name: Load GCP disk configuration
+      ansible.builtin.include_vars: ./vars/gcp_hana_storage_profile.yaml
+      when: cloud_platform_is_gcp
 
-  - name: Load AWS disk configuration for Non R4 instances
-    ansible.builtin.include_vars: ./vars/aws_hana_storage_profile.yaml
-    when: cloud_platform_is_aws and not aws_machine_type 
-
-
-  - name: Load Azure disk configuration
-    ansible.builtin.include_vars: ./vars/azure_hana_storage_profile.yaml
-    when: cloud_platform_is_azure
-
-  - name: Load GCP disk configuration
-    ansible.builtin.include_vars: ./vars/gcp_hana_storage_profile.yaml
-    when: cloud_platform_is_gcp
-
-  - name: HANA storage preparation
-    vars:
-      sap_storage_cloud_type: 'generic'
-      sap_storage_sap_type: 'sap_hana'
-      sap_storage_action: 'prepare'
-    include_role:
-      name: ../roles/qe_sap_storage
+    - name: HANA storage preparation
+      vars:
+        sap_storage_cloud_type: 'generic'
+        sap_storage_sap_type: 'sap_hana'
+        sap_storage_action: 'prepare'
+      include_role:
+        name: ../roles/qe_sap_storage
