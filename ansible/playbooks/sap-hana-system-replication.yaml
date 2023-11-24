@@ -5,13 +5,13 @@
   become_user: root
 
   pre_tasks:
-  - name: Check host count
-    ansible.builtin.fail:
-      msg: "There are {{ ansible_play_hosts | length }} hosts in this play but this playbook supports two nodes hosts"
-    when: ansible_play_hosts | length != 2
+    - name: Check host count
+      ansible.builtin.fail:
+        msg: "There are {{ ansible_play_hosts | length }} hosts in this play but this playbook supports two nodes hosts"
+      when: ansible_play_hosts | length != 2
 
-  - name: Load HANA vars
-    include_vars: ./vars/hana_vars.yaml
+    - name: Load HANA vars
+      include_vars: ./vars/hana_vars.yaml
 
   vars:
     install_path: /var/lib/qedep
@@ -21,48 +21,48 @@
     secondary_hostname: "{{ ansible_play_hosts[1] }}"
 
   tasks:
-  - name: Set SAP HANA System replication host facts
-    ansible.builtin.set_fact:
-      sap_hana_cluster_nodes: "{{ sap_hana_cluster_nodes | default([]) + [{'node_name': item.node_name, 'node_ip': item.node_ip, 'node_role': item.node_role, 'hana_site': item.hana_site}] }}"
-    loop:
-      - {'node_name': "{{ primary_hostname }}", 'node_ip': "{{ hostvars[primary_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}", 'node_role': 'primary', 'hana_site': "{{ primary_site }}"}
-      - {'node_name': "{{ secondary_hostname }}", 'node_ip': "{{ hostvars[secondary_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}", 'node_role': 'secondary', 'hana_site': "{{ secondary_site }}"}
+    - name: Set SAP HANA System replication host facts
+      ansible.builtin.set_fact:
+        sap_hana_cluster_nodes: "{{ sap_hana_cluster_nodes | default([]) + [{'node_name': item.node_name, 'node_ip': item.node_ip, 'node_role': item.node_role, 'hana_site': item.hana_site}] }}"
+      loop:
+        - {'node_name': "{{ primary_hostname }}", 'node_ip': "{{ hostvars[primary_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}", 'node_role': 'primary', 'hana_site': "{{ primary_site }}"}
+        - {'node_name': "{{ secondary_hostname }}", 'node_ip': "{{ hostvars[secondary_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}", 'node_role': 'secondary', 'hana_site': "{{ secondary_site }}"}
 
-  - name: Set System Replication facts based on install vars
-    ansible.builtin.set_fact:
-      sap_hana_sid: "{{ sap_hana_install_sid }}"
-      sap_hana_instance_number: "{{ sap_hana_install_instance_number }}"
+    - name: Set System Replication facts based on install vars
+      ansible.builtin.set_fact:
+        sap_hana_sid: "{{ sap_hana_install_sid }}"
+        sap_hana_instance_number: "{{ sap_hana_install_instance_number }}"
 
-  - name: Check for previous HSR configuration
-    ansible.builtin.file:
-      path: "{{ hsr_cnf_file }}"
-      state: file
-    check_mode: true
-    register: hsr_file_check
-    changed_when: false
-    failed_when: false
+    - name: Check for previous HSR configuration
+      ansible.builtin.file:
+        path: "{{ hsr_cnf_file }}"
+        state: file
+      check_mode: true
+      register: hsr_file_check
+      changed_when: false
+      failed_when: false
 
-  - name: Set install facts
-    ansible.builtin.set_fact:
-      hsr_configured: "{{ hsr_file_check.state }}"
+    - name: Set install facts
+      ansible.builtin.set_fact:
+        hsr_configured: "{{ hsr_file_check.state }}"
 
-  - name: Print sap_hana_cluster_nodes variable
-    ansible.builtin.debug:
-      var: sap_hana_cluster_nodes
+    - name: Print sap_hana_cluster_nodes variable
+      ansible.builtin.debug:
+        var: sap_hana_cluster_nodes
 
-  - name: Execute hana system replication role
-    ansible.builtin.include_role:
-      role: ../roles/sap_ha_install_hana_hsr
-    when: hsr_configured == 'absent'
+    - name: Execute hana system replication role
+      ansible.builtin.include_role:
+        role: ../roles/sap_ha_install_hana_hsr
+      when: hsr_configured == 'absent'
 
-  - name: Write status file
-    ansible.builtin.file:
-      path: "{{ item.path }}"
-      state: "{{ item.state }}"
-      owner: root
-      group: root
-      mode: '0700'
-    with_items:
-      - {'path': "{{ install_path }}", 'state': 'directory'}
-      - {'path': "{{ hsr_cnf_file }}", 'state': 'touch'}
-    when: hsr_configured == 'absent'
+    - name: Write status file
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        owner: root
+        group: root
+        mode: '0700'
+      with_items:
+        - {'path': "{{ install_path }}", 'state': 'directory'}
+        - {'path': "{{ hsr_cnf_file }}", 'state': 'touch'}
+      when: hsr_configured == 'absent'

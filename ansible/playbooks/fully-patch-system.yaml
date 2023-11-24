@@ -1,5 +1,6 @@
 ---
-- hosts: all
+- name: Fully patch playbookhosts
+  hosts: all
   remote_user: cloudadmin
   become: true
   become_user: root

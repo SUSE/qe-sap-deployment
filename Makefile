@@ -23,10 +23,11 @@ static-flake8:
 	@find scripts -type f -not -path "scripts/qesap/.tox/*" -not -path "scripts/qesap/.venv/*" -name \*.py -exec flake8 --ignore=E501 {} +
 
 static-ansible-yaml:
-	@find ansible -type f -iname "*.yaml" -or -iname "*.yaml" -exec yamllint {} +
+	@tools/ansible_yaml_lint
 
+static-ansible-syntax: export ANSIBLE_ROLES_PATH=tools/dummy_roles
 static-ansible-syntax:
-	@find ansible/playbooks -type f -iname "*.yaml" -maxdepth 1  -exec ansible-playbook -l all -vvvv -i terraform/azure/inventory.yaml --syntax-check  {} +
+	@find ansible/playbooks/ -type f -iname "*.yaml" -maxdepth 1  -exec ansible-playbook -l all -i tools/inventory.yaml --syntax-check  {} +
 
 static-ansible-lint:
 	@ansible-lint ansible/

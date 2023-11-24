@@ -8,4 +8,3 @@ sap_storage_dict:
     pv: ["/dev/xvdb"]
     numluns: '1'
     stripesize: ''
-

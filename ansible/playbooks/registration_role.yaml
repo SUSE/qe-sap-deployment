@@ -4,9 +4,8 @@
   remote_user: cloudadmin
   become: true
   become_user: root
-  
+
   vars:
     reg_code: "{{ reg_code }}"
   roles:
     - sles_register
-  

@@ -17,7 +17,7 @@
     - name: Deregister with registercloudguest
       ansible.builtin.command: registercloudguest --clean
       when: rcg.rc == 0
-  
+
     - name: Deregister with SUSEConnect
       ansible.builtin.command: SUSEConnect --de-register
       when: rcg.rc != 0

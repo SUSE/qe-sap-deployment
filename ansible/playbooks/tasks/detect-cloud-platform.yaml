@@ -28,7 +28,7 @@
 
     - name: Set AWS machine type fact
       ansible.builtin.set_fact:
-          aws_machine_type: true
+        aws_machine_type: true
       when: probe_aws_1.stdout is match(".*amazon")
 
     - name: Set AWS discovery fact
@@ -36,7 +36,7 @@
         cloud_platform_is_aws: true
       when:
         - probe_aws.rc == 0
-        - probe_aws.stdout | lower == 'amazon ec2'  or probe_aws_1.stdout is match(".*amazon") 
+        - probe_aws.stdout | lower == 'amazon ec2'  or probe_aws_1.stdout is match(".*amazon")
 
 # SEE: https://stackoverflow.com/questions/30911775/how-to-know-if-a-machine-is-an-google-compute-engine-instance
 - name: "Detect GCP"
