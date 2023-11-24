@@ -1,0 +1,24 @@
+all:
+  vars:
+    use_sbd: true
+    resource_group_name: rg-name
+    subscription_id: AAAAA-BBBBB-CCCCC-DDDDD
+    tenant_id: EEEEE-FFFFF-GGGGG-HHHHH
+    cluster_ip: 1.2.3.4
+  children:
+    hana:
+      hosts:
+        vmhana01:
+          ansible_host: 1.2.3.4
+          ansible_python_interpreter: /usr/bin/python3
+        vmhana02:
+          ansible_host: 5.6.7.8
+          ansible_python_interpreter: /usr/bin/python3
+
+    iscsi:
+      hosts:
+        vmiscsi01:
+          ansible_host: 9.9.9.9
+          ansible_python_interpreter: /usr/bin/python3
+
+  hosts: null
