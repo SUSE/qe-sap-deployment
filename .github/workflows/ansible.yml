@@ -12,7 +12,12 @@ jobs:
       - name: Install all requirements
         run: |
           python3 -m pip install --upgrade -r requirements.txt
+          ansible-galaxy install -r requirements.yml
 
       - name: Run ansible-yaml-lint
         run: |
            make static-ansible-yaml
+
+      - name: Run ansible-playbooks syntax-check
+        run: |
+           make static-ansible-syntax

@@ -27,7 +27,7 @@ static-ansible-yaml:
 
 static-ansible-syntax: export ANSIBLE_ROLES_PATH=tools/dummy_roles
 static-ansible-syntax:
-	@find ansible/playbooks/ -type f -iname "*.yaml" -maxdepth 1  -exec ansible-playbook -l all -i tools/inventory.yaml --syntax-check  {} +
+	@python3 tools/ansible_playbook_syntax_check.py
 
 static-ansible-lint:
 	@ansible-lint ansible/

@@ -3,7 +3,7 @@ venv/
 **/.venv/
 **/__pycache__/
 secret/
-inventory.yaml
+terraform/**/inventory.yaml
 terraform/**/.terraform
 terraform/**/terraform.tfstate*
 terraform/**/terraform.tfvars
