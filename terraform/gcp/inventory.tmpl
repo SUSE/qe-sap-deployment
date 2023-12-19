@@ -1,6 +1,8 @@
 all:
   vars:
     use_sbd: ${use_sbd}
+    gcp_cluster_ip: ${hana-vip}
+    prefix: ${name_prefix}
   children:
     hana:
       hosts:
@@ -18,7 +20,4 @@ all:
           ansible_python_interpreter: ${iscsi_remote_python}
 %{ endfor ~}
 %{ endif }
-      vars:
-        gcp_cluster_ip: ${hana-vip}
-        prefix: ${name_prefix}
   hosts: null
