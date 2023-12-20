@@ -11,8 +11,6 @@
   vars:
     is_primary: "{{ ansible_play_hosts[0] == inventory_hostname }}"
     hooks_dir: myHooks
-    sap_hana_install_sid: HDB
-    sap_hana_install_instance_number: 00
     hana_status: unknown
 
   handlers:
@@ -28,6 +26,19 @@
       when: not is_primary
 
   tasks:
+
+    - name: Assert that required variables are defined
+      ansible.builtin.assert:
+        that: "{{ item }} is defined"
+        fail_msg: >-
+          The required variable '{{ item }}' is not defined. This variable must be
+          defined when using this role.
+        success_msg: >-
+          The variable '{{ item }}' is defined.
+      loop:
+        - 'sap_hana_install_sid'
+        - 'sap_hana_install_instance_number'
+
     - name: Ensure hooks directory exists
       ansible.builtin.file:
         path: "/hana/shared/{{ hooks_dir }}"
@@ -53,7 +64,7 @@
       block:
         - name: Ensure ha_dr_provider_SAPHanaSR section exists in global.ini
           community.general.ini_file:
-            path: /usr/sap/HDB/SYS/global/hdb/custom/config/global.ini
+            path: /usr/sap/{{ sap_hana_install_sid }}/SYS/global/hdb/custom/config/global.ini
             section: "{{ item.section }}"
             option: "{{ item.key }}"
             value: "{{ item.value }}"
