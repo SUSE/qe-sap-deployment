@@ -231,7 +231,7 @@
     - not use_sbd | bool and azure_identity_management == 'spn'
 
 - name: Add Azure scheduled events to cluster
-  ansible.builtin.command: crm configure primitive rsc_azure-events ocf:heartbeat:azure-events op monitor interval=10s
+  ansible.builtin.command: crm configure primitive rsc_azure-events ocf:heartbeat:azure-events op monitor interval=10s allow-unhealthy-nodes=true
   when:
     - is_primary
     - rsc_azure_events | length == 0
