@@ -19,7 +19,6 @@
     state: present
   loop:
     - targetcli-fb
-    - dbus-1-python
   when: ansible_distribution_version == '15.3'
   register: result
   until: result is succeeded
