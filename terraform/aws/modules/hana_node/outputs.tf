@@ -19,3 +19,7 @@ output "hana_public_name" {
   value = data.aws_instance.hana.*.public_dns
 }
 
+output "stonith_tag" {
+  value = local.hana_stonith_tag
+}
+

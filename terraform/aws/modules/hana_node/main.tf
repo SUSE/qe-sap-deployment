@@ -3,6 +3,7 @@ locals {
   create_scale_out = var.hana_count > 1 && var.common_variables["hana"]["scale_out_enabled"] ? 1 : 0
   create_ha_infra  = var.hana_count > 1 && var.common_variables["hana"]["ha_enabled"] ? 1 : 0
   hostname         = var.common_variables["deployment_name_in_hostname"] ? format("%s-%s", var.common_variables["deployment_name"], var.name) : var.name
+  hana_stonith_tag = "${var.common_variables["deployment_name"]}-cluster"
 }
 
 # Network resources: subnets, routes, etc
@@ -84,8 +85,8 @@ resource "aws_instance" "hana" {
   #}
 
   tags = {
-    Name                                                 = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
-    Workspace                                            = var.common_variables["deployment_name"]
-    "${var.common_variables["deployment_name"]}-cluster" = "${var.name}${format("%02d", count.index + 1)}"
+    Name                        = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
+    Workspace                   = var.common_variables["deployment_name"]
+    "${local.hana_stonith_tag}" = "${var.name}${format("%02d", count.index + 1)}"
   }
 }
