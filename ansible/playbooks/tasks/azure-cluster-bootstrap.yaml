@@ -205,8 +205,8 @@
 - name: Set crm maintenance facts
   ansible.builtin.set_fact:
     crm_maintenance_mode: "{{ (crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
-    rsc_azure_events: "{{ crm_conf_show.stdout | regex_search('primitive rsc_azure-events') }}"
-    cln_azure_events: "{{ crm_conf_show.stdout | regex_search('clone cln_azure-events') }}"
+    rsc_azure_events: "{{ crm_conf_show.stdout | regex_search('primitive rsc_azure-events-az') }}"
+    cln_azure_events: "{{ crm_conf_show.stdout | regex_search('clone cln_azure-events-az') }}"
     rsc_st_azure: "{{ crm_conf_show.stdout | regex_search('rsc_st_azure') }}"
   when: is_primary
 
@@ -231,13 +231,13 @@
     - not use_sbd | bool and azure_identity_management == 'spn'
 
 - name: Add Azure scheduled events to cluster
-  ansible.builtin.command: crm configure primitive rsc_azure-events ocf:heartbeat:azure-events op monitor interval=10s allow-unhealthy-nodes=true
+  ansible.builtin.command: crm configure primitive rsc_azure-events-az ocf:heartbeat:azure-events-az meta allow-unhealthy-nodes=true op monitor interval=10s
   when:
     - is_primary
     - rsc_azure_events | length == 0
 
 - name: Clone Azure scheduled events
-  ansible.builtin.command: crm configure clone cln_azure-events rsc_azure-events
+  ansible.builtin.command: crm configure clone cln_azure-events-az rsc_azure-events-az
   when:
     - is_primary
     - cln_azure_events| length == 0
@@ -251,8 +251,8 @@
 - name: Reset crm maintenance facts
   ansible.builtin.set_fact:
     crm_maintenance_mode: "{{ (crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
-    rsc_azure_events: "{{ crm_conf_show.stdout | regex_search('primitive rsc_azure-events') }}"
-    cln_azure_events: "{{ crm_conf_show.stdout | regex_search('clone cln_azure-events') }}"
+    rsc_azure_events: "{{ crm_conf_show.stdout | regex_search('primitive rsc_azure-events-az') }}"
+    cln_azure_events: "{{ crm_conf_show.stdout | regex_search('clone cln_azure-events-az') }}"
   when: is_primary
 
 - name: Ensure maintenance mode is deactivated
