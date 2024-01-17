@@ -105,17 +105,11 @@ resource "local_file" "ansible_inventory" {
       iscsi_pip           = module.iscsi_server.iscsisrv_public_ip,
       iscsi_enabled       = local.iscsi_enabled,
       iscsi_remote_python = var.iscsi_remote_python,
-      use_sbd             = local.use_sbd
+      use_sbd             = local.use_sbd,
+      routetable_id       = aws_route_table.route-table.id,
+      virtual_ip          = local.hana_cluster_vip,
+      stonith_tag         = module.hana_node.stonith_tag
   })
   filename = "inventory.yaml"
 }
 
-# Additional cluster information
-resource "local_file" "cluster_data" {
-  content = templatefile("aws_cluster_data.tftpl",
-    {
-      routetable_id = aws_route_table.route-table.id,
-      virtual_ip    = local.hana_cluster_vip
-  })
-  filename = "aws_cluster_data.yaml"
-}

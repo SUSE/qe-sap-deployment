@@ -39,10 +39,6 @@
 
 
   tasks:
-    - name: Include AWS variables
-      ansible.builtin.include_vars: ../../terraform/aws/aws_cluster_data.yaml
-      when: cloud_platform_is_aws
-
     - name: Base Cluster Configuration [azure]
       ansible.builtin.include_tasks: ./tasks/azure-cluster-bootstrap.yaml
       when: cloud_platform_is_azure
