@@ -4,6 +4,9 @@
   become: true
   become_user: root
 
+  vars:
+    use_suseconnect: false  # Set to false unless specified
+
   tasks:
 
     # Pre flight checks
@@ -35,6 +38,7 @@
       when:
         - not_registered_found
         - rcg.rc == 0
+        - not use_suseconnect | bool
 
     - name: registercloudguest registration
       ansible.builtin.command: registercloudguest --force-new -r "{{ reg_code }}" -e "{{ email_address }}"
@@ -46,6 +50,7 @@
       when:
         - not_registered_found
         - rcg.rc == 0
+        - not use_suseconnect | bool
 
     # If registercloudguest is not present fall back on SUSEConnect
     - name: SUSEConnect registration
@@ -56,7 +61,7 @@
       delay: 60
       when:
         - not_registered_found
-        - rcg.rc != 0
+        - "(rcg.rc != 0) or (use_suseconnect | bool)"
 
     # There are additional repos to add.  These are handled differently for SLES 15 and SLES12
     - name: Add SLES 12 Advanced Systems Modules
@@ -68,7 +73,7 @@
       when:
         - ansible_facts['distribution_major_version'] == "12"
         - not_registered_found
-        - rcg.rc != 0
+        - "(rcg.rc != 0) or (use_suseconnect | bool)"
 
     - name: Add SLES 12 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/12/{{ ansible_facts['architecture'] }}
@@ -79,7 +84,7 @@
       when:
         - ansible_facts['distribution_major_version'] == "12"
         - not_registered_found
-        - rcg.rc != 0
+        - "(rcg.rc != 0) or (use_suseconnect | bool)"
 
     - name: Add SLES 15 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/{{ ansible_facts['distribution_version'] }}/{{ ansible_facts['architecture'] }}
@@ -90,7 +95,7 @@
       when:
         - ansible_facts['distribution_major_version'] == "15"
         - not_registered_found
-        - rcg.rc != 0
+        - "(rcg.rc != 0) or (use_suseconnect | bool)"
 
     - name: Check if repos are added after registration
       ansible.builtin.command: zypper lr
