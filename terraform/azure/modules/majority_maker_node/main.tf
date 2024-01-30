@@ -42,7 +42,7 @@ resource "azurerm_public_ip" "majority_maker" {
 
 resource "azurerm_image" "sles4sap" {
   count               = var.sles4sap_uri != "" ? 1 : 0
-  name                = "BVSles4SapImg"
+  name                = "MmSrvImg"
   location            = var.az_region
   resource_group_name = var.resource_group_name
 
