@@ -1,9 +1,10 @@
 all:
   vars:
     use_sbd: ${use_sbd}
-    aws_route_table: ${routetable_id}
+    aws_route_table_id: ${routetable_id}
     aws_cluster_ip: ${virtual_ip}
     aws_stonith_tag: ${stonith_tag}
+    aws_region: ${region}
   children:
     hana:
       hosts:

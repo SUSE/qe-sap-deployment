@@ -1,0 +1,32 @@
+---
+- name: Use the cluster role
+  hosts: hana # ensure only two hosts!
+  remote_user: cloudadmin
+  become: true
+  # become_user: root
+  any_errors_fatal: true # any_errors_fatal strongly recommended!
+
+  pre_tasks:
+    - name: Load SAP HANA variables
+      ansible.builtin.include_vars: ./vars/hana_vars.yaml
+
+    - name: Ensure ClusterTools2 is installed
+      community.general.zypper:
+        name: ClusterTools2
+        state: present
+
+  vars:
+    platform: 'aws'
+    stonith: 'native'
+    primary: "{{ ansible_play_hosts[0] }}"
+    virtual_ip: "{{ aws_cluster_ip }}" # the Virtual IP address that the cluster will use.
+    hacluster_password: 'Example_poor_passwo0rd!'
+    aws_access_key_id: '{{ lookup("env", "AWS_ACCESS_KEY_ID") }}' # access key id of the account to be used to perform stonith actions
+    aws_secret_access_key: '{{ lookup("env", "AWS_SECRET_ACCESS_KEY") }}' # secret access key of the account to be used to perform stonith actions
+
+    hana_sid: "{{ sap_hana_install_sid }}"
+    hana_instance_number: "{{ sap_hana_install_instance_number }}"
+    #dual_corosync_rings: true
+    #enable_hawk: true
+  roles:
+    - role: cluster
