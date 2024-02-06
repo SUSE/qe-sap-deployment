@@ -1,48 +1,38 @@
 ---
-- name: Remove unneeded packages from iscsi server
+- name: Remove conflicting packages from iscsi server for 12-SP5
   community.general.zypper:
     name: "{{ item }}"
     state: absent
   with_items:
-    - lio-utils
-    - python-rtslib
-    - python-configshell
-    - targetcli
+    - lio-utils           # Only exists in 12SP5
+    - python-rtslib       # Only exists in 12SP5
+    - python-configshell  # Only exists in 12SP5
+    - targetcli           # Only exists in 12SP5
+  when: ansible_distribution_major_version == '12'
   register: result
   until: result is succeeded
   retries: 3
   delay: 60
+  # SLE12 ships both targetcli and targetcli-fb. They both provide the targetcli
+  # binary but they are not compatible. Neither are packages like
+  # python-configshell and python-configshell-fb. This is not a problem in SLE15
+  # as we only ship fb there.
 
-- name: Install iscsi server packages SLES 15.3
+- name: Install targetcli-fb for SLE12
   community.general.zypper:
-    name: "{{ item }}"
-    state: present
-  loop:
-    - targetcli-fb
-  when: ansible_distribution_version == '15.3'
-  register: result
-  until: result is succeeded
-  retries: 3
-  delay: 60
-
-- name: Install iscsi server packages SLES 15.4
-  community.general.zypper:
-    name: yast2-iscsi-lio-server
-    state: present
-  when: ansible_distribution_version == '15.4'
-  register: result
-  until: result is succeeded
-  retries: 3
-  delay: 60
-
-- name: Install iscsi server packages SLES 12
-  community.general.zypper:
-    name: "{{ item }}"
+    name: targetcli-fb
     state: present
   when: ansible_distribution_major_version == '12'
-  loop:
-    - yast2-iscsi-lio-server
-    - targetcli-fb
+  register: result
+  until: result is succeeded
+  retries: 3
+  delay: 60
+
+- name: Install targetcli-fb for SLE15
+  community.general.zypper:
+    name: python3-targetcli-fb
+    state: present
+  when: ansible_distribution_major_version == '15'
   register: result
   until: result is succeeded
   retries: 3
