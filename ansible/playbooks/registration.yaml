@@ -4,6 +4,9 @@
   become: true
   become_user: root
 
+  vars:
+    use_suseconnect: false  # Set to false unless specified
+
   tasks:
 
     # Pre flight checks
@@ -29,12 +32,35 @@
       when:
         - not_registered_found
 
+    - name: Set registration mode NoRegNeeded
+      ansible.builtin.set_fact:
+        reg_mode: "NoRegNeeded"
+      when: '"Not Registered" not in repos.stdout'
+
+    - name: Set registration mode SUSEConnect
+      ansible.builtin.set_fact:
+        reg_mode: "SUSEConnect"
+      when:
+        - '"Not Registered" in repos.stdout'
+        - ( use_suseconnect | bool ) or (rcg.rc != 0)
+
+    - name: Set registration mode registercloudguest
+      ansible.builtin.set_fact:
+        reg_mode: "RegisterCloudGuest"
+      when:
+        - '"Not Registered" in repos.stdout'
+        - not use_suseconnect | bool
+        - rcg.rc == 0
+
+    - name: Print registration mode
+      ansible.builtin.debug:
+        msg: "Registration mode is {{ reg_mode }}"
+
     # Execute Section
     - name: registercloudguest pre-run cleaning
       ansible.builtin.command: registercloudguest --clean
       when:
-        - not_registered_found
-        - rcg.rc == 0
+        - reg_mode == "RegisterCloudGuest"
 
     - name: registercloudguest registration
       ansible.builtin.command: registercloudguest --force-new -r "{{ reg_code }}" -e "{{ email_address }}"
@@ -44,10 +70,8 @@
       delay: 60
       failed_when: result.rc != 0 or result.stderr != ""
       when:
-        - not_registered_found
-        - rcg.rc == 0
+        - reg_mode == "RegisterCloudGuest"
 
-    # If registercloudguest is not present fall back on SUSEConnect
     - name: SUSEConnect registration
       ansible.builtin.command: SUSEConnect -r "{{ reg_code }}" -e "{{ email_address }}"
       register: result
@@ -55,8 +79,7 @@
       retries: 10
       delay: 60
       when:
-        - not_registered_found
-        - rcg.rc != 0
+        - reg_mode == "SUSEConnect"
 
     # There are additional repos to add.  These are handled differently for SLES 15 and SLES12
     - name: Add SLES 12 Advanced Systems Modules
@@ -67,8 +90,7 @@
       delay: 60
       when:
         - ansible_facts['distribution_major_version'] == "12"
-        - not_registered_found
-        - rcg.rc != 0
+        - reg_mode == "SUSEConnect"
 
     - name: Add SLES 12 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/12/{{ ansible_facts['architecture'] }}
@@ -78,8 +100,7 @@
       delay: 60
       when:
         - ansible_facts['distribution_major_version'] == "12"
-        - not_registered_found
-        - rcg.rc != 0
+        - reg_mode == "SUSEConnect"
 
     - name: Add SLES 15 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/{{ ansible_facts['distribution_version'] }}/{{ ansible_facts['architecture'] }}
@@ -89,12 +110,9 @@
       delay: 60
       when:
         - ansible_facts['distribution_major_version'] == "15"
-        - not_registered_found
-        - rcg.rc != 0
+        - reg_mode == "SUSEConnect"
 
     - name: Check if repos are added after registration
       ansible.builtin.command: zypper lr
       register: repos_after
       failed_when: repos_after.rc != 0
-      when:
-        - not_registered_found
