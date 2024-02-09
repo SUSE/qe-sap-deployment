@@ -2,6 +2,8 @@ name: Glue Script
 
 on:
   push:
+    branches:
+      - "main"
     paths:
       - scripts/qesap/**
       - .github/workflows/gluescript.yml
