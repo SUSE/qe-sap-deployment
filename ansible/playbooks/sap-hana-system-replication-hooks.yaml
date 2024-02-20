@@ -10,7 +10,7 @@
 
   vars:
     is_primary: "{{ ansible_play_hosts[0] == inventory_hostname }}"
-    hooks_dir: myHooks
+    hooks_dir: "/usr/share/SAPHanaSR/"
     hana_status: unknown
 
   handlers:
@@ -41,20 +41,11 @@
 
     - name: Ensure hooks directory exists
       ansible.builtin.file:
-        path: "/hana/shared/{{ hooks_dir }}"
+        path: "{{ hooks_dir }}"
         owner: "{{ sap_hana_install_sid | lower }}adm"
         group: sapsys
         state: directory
         mode: '0775'
-
-    - name: Copy system replication hook file
-      ansible.builtin.copy:
-        src: /usr/share/SAPHanaSR/SAPHanaSR.py
-        remote_src: true
-        dest: "/hana/shared/{{ hooks_dir }}/SAPHanaSR.py"
-        owner: "{{ sap_hana_install_sid | lower }}adm"
-        group: sapsys
-        mode: '660'
 
     - name: Ensure System Replication hooks are installed and configured
       notify:
@@ -72,7 +63,7 @@
             backup: true
           loop:
             - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'provider', 'value': 'SAPHanaSR'}
-            - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'path', 'value': '/hana/shared/{{ hooks_dir }}'}
+            - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'path', 'value': '{{ hooks_dir }}'}
             - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'execution_order', 'value': '1'}
             - {'section': 'trace', 'key': 'ha_dr_saphanasr', 'value': 'info'}
 
