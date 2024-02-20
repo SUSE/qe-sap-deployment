@@ -10,23 +10,24 @@
 
   vars:
     is_primary: "{{ ansible_play_hosts[0] == inventory_hostname }}"
-    hooks_dir: "/usr/share/SAPHanaSR/"
-    hana_status: unknown
+    # All hook scripts should be used directly from the SAPHanaSR package.
+    # If the scripts are moved or copied, regular SUSE package updates will not work.
+    # https://documentation.suse.com/sbp/sap-15/html/SLES4SAP-hana-sr-guide-PerfOpt-15/index.html#cha.s4s.hana-hook
+    __hooks_dir: "/usr/share/SAPHanaSR/"
 
   handlers:
     - name: Stop HANA
       ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StopWait 600 10"  # Stopwait will timeout after 600 seconds.
 
     - name: Start HANA Primary
-      ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StartWait 600 10"  # Stopwait will timeout after 600 seconds.
+      ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StartWait 600 10"  # StartWait will timeout after 600 seconds.
       when: is_primary
 
     - name: Start HANA Secondary
-      ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StartWait 600 10"  # Stopwait will timeout after 600 seconds.
+      ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StartWait 600 10"  # StartWait will timeout after 600 seconds.
       when: not is_primary
 
   tasks:
-
     - name: Assert that required variables are defined
       ansible.builtin.assert:
         that: "{{ item }} is defined"
@@ -41,7 +42,7 @@
 
     - name: Ensure hooks directory exists
       ansible.builtin.file:
-        path: "{{ hooks_dir }}"
+        path: "{{ __hooks_dir }}"
         owner: "{{ sap_hana_install_sid | lower }}adm"
         group: sapsys
         state: directory
@@ -53,6 +54,7 @@
         - Start HANA Primary
         - Start HANA Secondary
       block:
+        # https://documentation.suse.com/sbp/sap-15/html/SLES4SAP-hana-sr-guide-PerfOpt-15/index.html#id-implementing-saphanasr-hook-for-srconnectionchanged
         - name: Ensure ha_dr_provider_SAPHanaSR section exists in global.ini
           community.general.ini_file:
             path: /usr/sap/{{ sap_hana_install_sid }}/SYS/global/hdb/custom/config/global.ini
@@ -63,7 +65,7 @@
             backup: true
           loop:
             - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'provider', 'value': 'SAPHanaSR'}
-            - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'path', 'value': '{{ hooks_dir }}'}
+            - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'path', 'value': '{{ __hooks_dir }}'}
             - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'execution_order', 'value': '1'}
             - {'section': 'trace', 'key': 'ha_dr_saphanasr', 'value': 'info'}
 
