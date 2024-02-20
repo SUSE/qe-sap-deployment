@@ -1,5 +1,3 @@
-.DS_Store
-venv/
 **/.venv/
 **/__pycache__/
 secret/
@@ -7,7 +5,6 @@ terraform/**/inventory.yaml
 terraform/**/.terraform
 terraform/**/terraform.tfstate*
 terraform/**/terraform.tfvars
-terraform/**/.terraform.lock.hcl
 terraform/**/.terraform.tfstate.lock.info
 terraform/**/inventory.yaml
 terraform/**/plan.zip
@@ -15,17 +12,11 @@ terraform/**/gcp_cluster_data.yaml
 terraform/azure/fence_data.json
 ansible/playbooks/tmp
 ansible/playbooks/roles/sap_storage
-ansible/playbooks/go.sh
-ansible/playbooks/destroy.sh
 ansible/playbooks/vars/hana_media.yaml
 ansible/playbooks/vars/azure_hana_media.yaml
 ansible/playbooks/vars/hana_vars.yaml
-oldbuild.sh
-olddestroy.sh
 terraform.apply.log
 terraform.init.log
 terraform.plan.log
 settings.json
 variables.sh
-justansibuilt.sh
-altbuild.sh
