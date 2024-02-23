@@ -51,11 +51,11 @@
   when: hana_topology_clone | length == 0
 
 - name: Create HANA resource
-  ansible.builtin.command: "crm configure primitive rsc_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} ocf:suse:SAPHana operations $id=\"rsc_sap_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations\" op start interval=\"0\" timeout=\"3600\" op stop interval=\"0\" timeout=\"3600\" op promote interval=\"0\" timeout=\"3600\" op monitor interval=\"60\" role=\"Master\" timeout=\"700\" op monitor interval=\"61\" role=\"Slave\" timeout=\"700\" params SID=\"{{ sap_hana_install_sid }}\" InstanceNumber=\"{{ sap_hana_install_instance_number }}\" PREFER_SITE_TAKEOVER=\"true\" DUPLICATE_PRIMARY_TIMEOUT=\"7200\" AUTOMATED_REGISTER=\"false\""
+  ansible.builtin.command: "crm configure primitive {{ rsc_SAPHana }} ocf:suse:SAPHana operations $id=\"rsc_sap_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations\" op start interval=\"0\" timeout=\"3600\" op stop interval=\"0\" timeout=\"3600\" op promote interval=\"0\" timeout=\"3600\" op monitor interval=\"60\" role=\"Master\" timeout=\"700\" op monitor interval=\"61\" role=\"Slave\" timeout=\"700\" params SID=\"{{ sap_hana_install_sid }}\" InstanceNumber=\"{{ sap_hana_install_instance_number }}\" PREFER_SITE_TAKEOVER=\"true\" DUPLICATE_PRIMARY_TIMEOUT=\"7200\" AUTOMATED_REGISTER=\"false\""
   when: hana_resource | length == 0
 
 - name: Create HANA resource clone
-  ansible.builtin.command: "crm configure ms msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} rsc_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} meta notify=\"true\" clone-max=\"2\" clone-node-max=\"1\" target-role=\"Started\" interleave=\"true\""
+  ansible.builtin.command: "crm configure ms msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} {{ rsc_SAPHana }} meta notify=\"true\" clone-max=\"2\" clone-node-max=\"1\" target-role=\"Started\" interleave=\"true\""
   when: hana_resource_clone | length == 0
 
 - name: Validate cluster IP
@@ -72,11 +72,11 @@
   when: ip_resource | length == 0
 
 - name: Create socat resource
-  ansible.builtin.command: "crm configure primitive rsc_socat_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} azure-lb params port=625{{ sap_hana_install_instance_number }} op monitor timeout=20 interval=10 op_params depth=0 meta resource-stickiness=0"
+  ansible.builtin.command: "crm configure primitive {{ rsc_socat }} azure-lb params port=625{{ sap_hana_install_instance_number }} op monitor timeout=20 interval=10 op_params depth=0 meta resource-stickiness=0"
   when: ip_nc | length == 0
 
 - name: Configure IP group
-  ansible.builtin.command: "crm configure group g_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} rsc_ip_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} rsc_socat_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}"
+  ansible.builtin.command: "crm configure group g_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} rsc_ip_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} {{ rsc_socat }}"
   when: ip_grp | length == 0
 
 - name: Configure hana/IP colocation
@@ -95,7 +95,7 @@
 # There really should be a way of checking if this needs to be run!
 # Plus the linter doesn't like it!
 - name: Cleanup
-  ansible.builtin.command: crm resource cleanup rsc_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+  ansible.builtin.command: crm resource cleanup {{ rsc_SAPHana }}
 
 - name: Wait for cluster to settle
   ansible.builtin.pause:
