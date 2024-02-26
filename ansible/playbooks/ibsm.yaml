@@ -1,0 +1,41 @@
+---
+- hosts: all
+  remote_user: cloudadmin
+  become: true
+  become_user: root
+
+  tasks:
+
+    - name: Assert that required variables are defined
+      ansible.builtin.assert:
+        that: "{{ item }} is defined"
+        fail_msg: >-
+          The required variable '{{ item }}' is not defined. This variable must be
+          defined when using this playbook.
+        success_msg: >-
+          The variable '{{ item }}' is defined.
+      loop:
+        - 'ibsm_ip'
+        - 'download_hostname'
+        - 'repos'
+
+    - name: Add mirror to hosts
+      ansible.builtin.lineinfile:
+        path: "/etc/hosts"
+        line: "{{ ibsm_ip }}  {{ download_hostname }}"
+        state: present
+
+    - name: Zypper add repo
+      community.general.zypper_repository:
+        repo: "{{ item }}"
+        name: "TEST_{{ repo_id }}"
+        disable_gpg_check: true
+        autorefresh: true
+      loop: "{{ repos.split(',') }}"
+      loop_control:
+        index_var: repo_id
+
+    - name: Refresh all repos
+      community.general.zypper_repository:
+        repo: '*'
+        runrefresh: true
