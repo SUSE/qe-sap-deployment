@@ -22,10 +22,6 @@
     migration_threshold: "{{ (crm_conf_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] }}"
   changed_when: false
 
-- name: Ensure maintenance mode is active
-  ansible.builtin.command: crm configure property maintenance-mode=true
-  when: crm_maintenance_mode is false
-
 - name: Create HANA topology resource
   ansible.builtin.command: "crm configure primitive rsc_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} ocf:suse:SAPHanaTopology operations $id=\"rsc_sap2_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations\" op monitor interval=\"10\" timeout=\"600\" op start interval=\"0\" timeout=\"600\" op stop interval=\"0\" timeout=\"300\" params SID=\"{{ sap_hana_install_sid }}\" InstanceNumber=\"{{ sap_hana_install_instance_number }}\""
   when: hana_topology_resource | length == 0
@@ -55,7 +51,7 @@
   when: hana_resource | length == 0
 
 - name: Create HANA resource clone
-  ansible.builtin.command: "crm configure ms msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} {{ rsc_SAPHana }} meta notify=\"true\" clone-max=\"2\" clone-node-max=\"1\" target-role=\"Started\" interleave=\"true\""
+  ansible.builtin.command: "crm configure ms msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} {{ rsc_SAPHana }} meta notify=\"true\" clone-max=\"2\" clone-node-max=\"1\" target-role=\"Started\" interleave=\"true\" maintenance=\"true\""
   when: hana_resource_clone | length == 0
 
 - name: Validate cluster IP
@@ -88,8 +84,7 @@
   when: order | length == 0
 
 - name: Wait for cluster to settle
-  ansible.builtin.pause:
-    seconds: 30
+  ansible.builtin.command: "cs_wait_for_idle -s 5"
 
 # Assume that hana resource needs a cleanup
 # There really should be a way of checking if this needs to be run!
@@ -98,23 +93,7 @@
   ansible.builtin.command: crm resource cleanup {{ rsc_SAPHana }}
 
 - name: Wait for cluster to settle
-  ansible.builtin.pause:
-    seconds: 30
-
-# Get current maintenance state
-- name: Refresh cluster status
-  ansible.builtin.command: crm configure show
-  register: refreshed_crm_conf_show
-  changed_when: false
-
-- name: Set crm facts
-  ansible.builtin.set_fact:
-    refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] }}"
-  changed_when: false
-
-- name: Ensure maintenance mode is disabled
-  ansible.builtin.command: crm configure property maintenance-mode=false
-  when: refreshed_crm_maintenance_mode is true
+  ansible.builtin.command: "cs_wait_for_idle -s 5"
 
 - name: Ensure resource-stickiness is configured
   ansible.builtin.command: crm configure rsc_defaults resource-stickiness=1000

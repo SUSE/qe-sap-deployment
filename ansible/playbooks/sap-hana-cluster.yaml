@@ -59,7 +59,7 @@
       tags: bootstrap
 
     - name: Add HANA to cluster [azure]
-      ansible.builtin.include_tasks: ./tasks/azure-hana-cluster.yaml
+      ansible.builtin.include_tasks: ./tasks/azure-cluster-hana.yaml
       when:
         - cloud_platform_is_azure
         - is_primary
