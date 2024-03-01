@@ -142,7 +142,8 @@
   meta: flush_handlers
 
 - name: Get DefaultTasksMax value
-  ansible.builtin.command: systemctl --no-pager show  # noqa command-instead-of-module
+  ansible.builtin.command:  # noqa command-instead-of-module
+    cmd: systemctl --no-pager show
   register: systemd_result
   changed_when: false
 
@@ -185,22 +186,25 @@
 # check crm status and fail if not return code != 0
 - name: Check the cluster is up
   ansible.builtin.command:
-    cmd: "crm status"
+    cmd: crm status
   changed_when: false
 
 - name: Get general cluster configuration
-  ansible.builtin.command: crm configure show
+  ansible.builtin.command:
+    cmd: crm configure show
   register: crm_conf_show
   changed_when: false
 
 - name: Get rsc-options cluster configuration
-  ansible.builtin.command: crm configure show rsc-options
+  ansible.builtin.command:
+    cmd: crm configure show rsc-options
   register: crm_rsc_options_show
   changed_when: false
   failed_when: false
 
 - name: Get op_defaults cluster configuration
-  ansible.builtin.command: crm configure show op-options
+  ansible.builtin.command:
+    cmd: crm configure show op-options
   register: crm_op_options_show
   changed_when: false
   failed_when: false
@@ -219,14 +223,16 @@
     op_default_timeout: "{{ (crm_op_options_show.stdout | regex_search('timeout=([0-9]*)', '\\1'))[0] | default('false') }}"
 
 - name: Enable SBD [sbd]
-  ansible.builtin.command: crm configure primitive rsc_iscsi_sbd stonith:external/sbd
+  ansible.builtin.command:
+    cmd: crm configure primitive rsc_iscsi_sbd stonith:external/sbd
   when:
     - sbd_stonith | string | lower  == 'false'
     - use_sbd
     - is_primary
 
 - name: Set stonith-timeout [sdb]
-  ansible.builtin.command: crm configure property stonith-timeout=144
+  ansible.builtin.command:
+    cmd: crm configure property stonith-timeout=144
   when:
     - stonith_timeout != '144'
     - use_sbd | bool
@@ -234,7 +240,11 @@
     - cloud_platform_is_aws
 
 - name: Set stonith timeout [native - aws]
-  ansible.builtin.command: crm configure property \$id="cib-bootstrap-options" stonith-timeout=600s
+  ansible.builtin.command:
+    cmd: >-
+      crm configure property
+      $id="cib-bootstrap-options"
+      stonith-timeout=600s
   when:
     - stonith_timeout != '600s'
     - is_primary
@@ -242,7 +252,11 @@
     - cloud_platform_is_aws
 
 - name: Set stonith timeout [native - gcp]
-  ansible.builtin.command: crm configure property \$id="cib-bootstrap-options" stonith-timeout=600s
+  ansible.builtin.command:
+    cmd: >-
+      crm configure property
+      $id="cib-bootstrap-options"
+      stonith-timeout=600s
   when:
     - stonith_timeout != '300s'
     - is_primary
@@ -250,20 +264,32 @@
     - cloud_platform_is_gcp
 
 - name: Enable stonith
-  ansible.builtin.command: crm configure property \$id="cib-bootstrap-options" stonith-enabled=true
+  ansible.builtin.command:
+    cmd: >-
+      crm configure property
+      $id="cib-bootstrap-options"
+      stonith-enabled=true
   when:
     - stonith_enabled | string | lower != 'true'
     - is_primary
 
 - name: Disable stonith action [aws]
-  ansible.builtin.command: crm configure property \$id="cib-bootstrap-options" stonith-action=off
+  ansible.builtin.command:
+    cmd: >-
+      crm configure property
+      $id="cib-bootstrap-options"
+      stonith-action=off
   when:
     - stonith_action != 'off'
     - is_primary
     - cloud_platform_is_aws
 
 - name: Set rsc_defaults resource stickiness [aws/gcp]
-  ansible.builtin.command: crm configure rsc_defaults \$id="rsc-options" resource-stickiness=1000
+  ansible.builtin.command:
+    cmd: >-
+      crm configure rsc_defaults
+      $id="rsc-options"
+      resource-stickiness=1000
   when:
     - resource_stickiness != '1000'
     - is_primary
@@ -274,29 +300,54 @@
   delay: 10
 
 - name: Set rsc_defaults migration threshold [aws/gcp]
-  ansible.builtin.command: crm configure rsc_defaults \$id="rsc-options" migration-threshold=5000
+  ansible.builtin.command:
+    cmd: >-
+      crm configure rsc_defaults
+      $id="rsc-options"
+      migration-threshold=5000
   when:
     - migration_threshold != '5000'
     - is_primary
     - cloud_platform_is_aws or cloud_platform_is_gcp
 
 - name: Set op_defaults timeout [aws/gcp]
-  ansible.builtin.command: crm configure rsc_defaults \$id="op-options" timeout=600
+  ansible.builtin.command:
+    cmd: >-
+      crm configure rsc_defaults
+      $id="op-options"
+      timeout=600
   when:
     - op_default_timeout != '600'
     - is_primary
 
 - name: Configure cluster IP [aws]
-  # TODO Contains hardcoded SID and instance number that should be based on a variable
-  ansible.builtin.command: "crm configure primitive rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} ocf:suse:aws-vpc-move-ip params ip={{ aws_cluster_ip }} routing_table={{ aws_route_table }} interface=eth0 profile=default op start interval=0 timeout=180 op stop interval=0 timeout=180 op monitor interval=60 timeout=60"
+  ansible.builtin.command:
+    cmd: >-
+      crm configure primitive
+      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      ocf:suse:aws-vpc-move-ip params
+      ip={{ aws_cluster_ip }}
+      routing_table={{ aws_route_table }}
+      interface=eth0
+      profile=default
+      op start interval=0 timeout=180
+      op stop interval=0 timeout=180
+      op monitor interval=60 timeout=60
   when:
     - rsc_ip | length == 0
     - is_primary
     - cloud_platform_is_aws
 
 - name: Configure cluster IP [gcp]
-  # TODO Contains hardcoded SID and instance number that should be based on a variable
-  ansible.builtin.command: "crm configure primitive rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} IPaddr2 params ip={{ gcp_cluster_ip }} cidr_netmask=32 nic=eth0 op monitor interval=3600s timeout=60s"
+  ansible.builtin.command:
+    cmd: >-
+      crm configure primitive
+      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      IPaddr2
+      params ip={{ gcp_cluster_ip }}
+      cidr_netmask=32
+      nic=eth0
+      op monitor interval=3600s timeout=60s
   when:
     - rsc_ip | length == 0
     - is_primary
@@ -304,8 +355,10 @@
 
 # TODO - ensure VIP is located on the primary before continuing
 - name: Locate cluster IP
-  # TODO Contains hardcoded SID and instance number that should be based on a variable
-  ansible.builtin.command: "crm resource locate rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}"
+  ansible.builtin.command:
+    cmd: >-
+      crm resource locate
+      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
   register: reg_vip_location
   changed_when: false
   when: is_primary
@@ -314,8 +367,11 @@
   delay: 6
 
 - name: Move cluster IP to primary HANA node
-  # TODO Contains hardcoded SID and instance number that should be based on a variable
-  ansible.builtin.command: "crm resource move rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} {{ primary_hostname }}"
+  ansible.builtin.command:
+    cmd: >-
+      crm resource move
+      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      {{ primary_hostname }}
   register: reg_move_cmd
   when:
     - is_primary
@@ -325,8 +381,10 @@
   delay: 6
 
 - name: Wait for move IP move to complete
-  # TODO Contains hardcoded SID and instance number that should be based on a variable
-  ansible.builtin.command: "crm resource locate rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}"
+  ansible.builtin.command:
+    cmd: >-
+      crm resource locate
+      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
   register: reg_vip_location2
   when:
     - is_primary
@@ -336,24 +394,43 @@
   delay: 6
 
 - name: Clear the move constraint
-  # TODO Contains hardcoded SID and instance number that should be based on a variable
-  ansible.builtin.command: crm resource clear rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+  ansible.builtin.command:
+    cmd: >-
+      crm resource clear
+      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
   when:
     - is_primary
     - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
 
 - name: Configure primary health check [gcp]
-  # TODO Contains hardcoded instance number that should be based on a variable
-  ansible.builtin.command: "crm configure primitive rsc_healthcheck_primary anything params binfile=\"/usr/bin/socat\" cmdline_options=\"-U TCP-LISTEN:625{{ sap_hana_install_instance_number }},backlog=10,fork,reuseaddr /dev/null\" op monitor timeout=20s interval=10s op_params depth=0"
+  ansible.builtin.command:
+    cmd: >-
+      crm configure primitive
+      rsc_healthcheck_primary
+      anything
+      params
+      binfile="/usr/bin/socat"
+      cmdline_options="-U TCP-LISTEN:625{{ sap_hana_install_instance_number }},backlog=10,fork,reuseaddr /dev/null"
+      op monitor timeout=20s interval=10s op_params depth=0
   when:
     - is_primary
     - cloud_platform_is_gcp
     - rsc_healthcheck_primary | length == 0
 
 - name: Configure cluster IP and health check probe [gcp]
-  # TODO Contains hardcoded instance number that should be based on a variable
-  ansible.builtin.command: crm configure group grp_ip_hc rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} rsc_healthcheck_primary
+  ansible.builtin.command:
+    cmd: >-
+      crm configure group
+      grp_ip_hc
+      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      rsc_healthcheck_primary
   when:
     - is_primary
     - grp_ip_hc | length == 0
     - cloud_platform_is_gcp
+
+# For debug purpose only
+- name: Get cluster status at the end
+  ansible.builtin.command:
+    cmd: crm configure show
+  changed_when: false
