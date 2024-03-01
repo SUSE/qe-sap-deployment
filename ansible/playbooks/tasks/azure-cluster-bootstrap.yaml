@@ -15,7 +15,8 @@
   delay: 60
 
 - name: Get the status of all extensions
-  ansible.builtin.command: SUSEConnect -s
+  ansible.builtin.command:
+    cmd: SUSEConnect -s
   register: sc_status
   changed_when: false
 
@@ -30,13 +31,15 @@
     var: public_cloud_module
 
 - name: Activate public cloud module [SLES 12]
-  ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/12/x86_64  # Only works on x86_64 for now!
+  ansible.builtin.command:
+    cmd: SUSEConnect -p sle-module-public-cloud/12/x86_64  # Only works on x86_64 for now!
   when:
     - ansible_distribution_major_version == '12'
     - public_cloud_module != 'Registered'
 
 - name: Activate public cloud module [SLES 15]
-  ansible.builtin.command: "SUSEConnect -p sle-module-public-cloud/{{ ansible_distribution_version }}/x86_64"  # Only works on x86_64 for now!
+  ansible.builtin.command:
+    cmd: "SUSEConnect -p sle-module-public-cloud/{{ ansible_distribution_version }}/x86_64"  # Only works on x86_64 for now!
   when:
     - ansible_distribution_major_version == '15'
     - public_cloud_module != 'Registered'
@@ -59,7 +62,8 @@
 # The code needs to decide if it is necessary to set DefaultTasksMax to 4096.
 # The value may be set to a larger or smaller integer or infinity
 - name: Get DefaultTasksMax value  # noqa command-instead-of-module
-  ansible.builtin.command: systemctl --no-pager show
+  ansible.builtin.command:
+    cmd: systemctl --no-pager show
   register: systemd_result
   changed_when: false
 
@@ -119,7 +123,14 @@
 
 - name: Create the cluster on primary [sbd]
   ansible.builtin.command:
-    cmd: "crm cluster init -y -n qe-cluster -s {{ sbd_paths }} -w softdog -i eth0 -u"
+    cmd: >-
+      crm cluster init
+      -y
+      -n qe-cluster
+      -s {{ sbd_paths }}
+      -w softdog
+      -i eth0
+      -u
     creates: /etc/corosync/corosync.conf
   when:
     - is_primary
@@ -127,7 +138,12 @@
 
 - name: Create the cluster on primary [azure fencing]
   ansible.builtin.command:
-    cmd: "crm cluster init -y -n qe-cluster -i eth0 -u"
+    cmd: >-
+      crm cluster init
+      -y
+      -n qe-cluster
+      -i eth0
+      -u
     creates: /etc/corosync/corosync.conf
   when:
     - is_primary
@@ -142,8 +158,12 @@
 
 - name: Join the cluster
   ansible.builtin.command:
-    cmd: "crm cluster join -y -c vmhana01 -i eth0"
     creates: /etc/corosync/corosync.conf
+    cmd: >-
+      crm cluster join
+      -y
+      -c vmhana01
+      -i eth0
   when: not is_primary
 
 - name: Check the cluster on secondary
@@ -182,8 +202,10 @@
 
 - name: Set stonith state facts
   ansible.builtin.set_fact:
-    # The crm output comprises of spaces and tabs.  The below regexp removes all the spaces to make
-    # it a little easier to split.  Test version of crm is crmsh-4.3.1+20220321.bd33abac-150200.5.77.1.noarch
+    # The crm output comprises of spaces and tabs.
+    # The below regexp removes all the spaces to make
+    # it a little easier to split.
+    # Test version of crm is crmsh-4.3.1+20220321.bd33abac-150200.5.77.1.noarch
     sbd_tracer: "{{ sbd_file_check.state }}"
   when:
     - is_primary
@@ -197,7 +219,8 @@
     - use_sbd | bool
 
 - name: Get cluster status
-  ansible.builtin.command: crm configure show
+  ansible.builtin.command:
+    cmd: crm configure show
   register: crm_conf_show
   changed_when: false
   when: is_primary
@@ -211,39 +234,80 @@
   when: is_primary
 
 - name: Ensure maintenance mode is active
-  ansible.builtin.command: crm configure property maintenance-mode=true
+  ansible.builtin.command:
+    cmd: crm configure property maintenance-mode=true
   when:
     - is_primary
     - crm_maintenance_mode is false or crm_maintenance_mode == 'unknown'
 
 - name: Configure azure fencing [MSI (Managed identity)]
-  ansible.builtin.command: "crm configure primitive rsc_stonith_azure stonith:fence_azure_arm params msi=true subscriptionId=\"{{ subscription_id }}\" resourceGroup=\"{{ resource_group_name }}\" tenantId=\"{{ tenant_id }}\" pcmk_monitor_retries=4 pcmk_action_limit=3 power_timeout=240 pcmk_reboot_timeout=900 pcmk_delay_max=15 op monitor interval=3600 timeout=120"
+  ansible.builtin.command:
+    cmd: >-
+      crm configure primitive
+      rsc_stonith_azure
+      stonith:fence_azure_arm
+      params
+      msi=true
+      subscriptionId="{{ subscription_id }}"
+      resourceGroup="{{ resource_group_name }}"
+      tenantId="{{ tenant_id }}"
+      pcmk_monitor_retries=4 pcmk_action_limit=3
+      power_timeout=240
+      pcmk_reboot_timeout=900
+      pcmk_delay_max=15
+      op monitor interval=3600 timeout=120
   when:
     - is_primary
     - rsc_st_azure | length == 0
     - not use_sbd | bool and azure_identity_management == 'msi'
 
 - name: Configure azure fencing [SPN (Service principal)]
-  ansible.builtin.command: "crm configure primitive rsc_stonith_azure stonith:fence_azure_arm params subscriptionId=\"{{ subscription_id }}\" resourceGroup=\"{{ resource_group_name }}\" tenantId=\"{{ tenant_id }}\" login=\"{{ spn_application_id }}\" passwd=\"{{ spn_application_password }}\" pcmk_monitor_retries=4 pcmk_action_limit=3 power_timeout=240 pcmk_reboot_timeout=900 op monitor interval=3600 timeout=120"
+  ansible.builtin.command:
+    cmd: >-
+      crm configure primitive
+      rsc_stonith_azure
+      stonith:fence_azure_arm
+      params
+      subscriptionId="{{ subscription_id }}"
+      resourceGroup="{{ resource_group_name }}"
+      tenantId="{{ tenant_id }}"
+      login="{{ spn_application_id }}"
+      passwd="{{ spn_application_password }}"
+      pcmk_monitor_retries=4
+      pcmk_action_limit=3
+      power_timeout=240
+      pcmk_reboot_timeout=900
+      op monitor interval=3600 timeout=120
   when:
     - is_primary
     - rsc_st_azure | length == 0
     - not use_sbd | bool and azure_identity_management == 'spn'
 
 - name: Add Azure scheduled events to cluster
-  ansible.builtin.command: crm configure primitive rsc_azure-events-az ocf:heartbeat:azure-events-az meta allow-unhealthy-nodes=true op monitor interval=10s
+  ansible.builtin.command:
+    cmd: >-
+      crm configure primitive
+      rsc_azure-events-az
+      ocf:heartbeat:azure-events-az
+      meta allow-unhealthy-nodes=true
+      op monitor interval=10s
   when:
     - is_primary
     - rsc_azure_events | length == 0
 
 - name: Clone Azure scheduled events
-  ansible.builtin.command: crm configure clone cln_azure-events-az rsc_azure-events-az
+  ansible.builtin.command:
+    cmd: >-
+      crm configure clone
+      cln_azure-events-az
+      rsc_azure-events-az
   when:
     - is_primary
     - cln_azure_events| length == 0
 
 - name: Refresh cluster status
-  ansible.builtin.command: crm configure show
+  ansible.builtin.command:
+    cmd: crm configure show
   register: crm_conf_show
   changed_when: false
   when: is_primary
@@ -256,7 +320,8 @@
   when: is_primary
 
 - name: Ensure maintenance mode is deactivated
-  ansible.builtin.command: crm configure property maintenance-mode=false
+  ansible.builtin.command:
+    cmd: crm configure property maintenance-mode=false
   when:
     - is_primary
     - crm_maintenance_mode is true or crm_maintenance_mode == 'unknown'

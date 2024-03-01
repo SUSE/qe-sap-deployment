@@ -29,7 +29,14 @@
 
 - name: Create new SBD stonith device
   ansible.builtin.command:
-    cmd: 'sudo crm configure primitive stonith-sbd stonith:external/sbd params pcmk_delay_max="15" op monitor interval="600" timeout="15"'
+    cmd: >-
+      sudo
+      crm configure primitive
+      stonith-sbd
+      stonith:external/sbd
+      params
+      pcmk_delay_max="15"
+      op monitor interval="600" timeout="15"
   register: create_stonith
 
   # When the stonith device is changed the file /var/lib/sbd is changed

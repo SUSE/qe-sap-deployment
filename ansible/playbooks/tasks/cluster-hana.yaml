@@ -1,6 +1,7 @@
 ---
 - name: Get cluster status
-  ansible.builtin.command: crm configure show
+  ansible.builtin.command:
+    cmd: crm configure show
   register: crm_conf_hana_show
   changed_when: false
   when: is_primary
@@ -22,56 +23,116 @@
   changed_when: false
 
 - name: Ensure maintainence mode is active
-  ansible.builtin.command: crm configure property maintenance-mode=true
+  ansible.builtin.command:
+    cmd: crm configure property maintenance-mode=true
   when: crm_maintainence_mode is false or crm_maintainence_mode == 'unknown'
 
 - name: Create HANA topology resource
-  # TODO this task has hardcoded SID and instance number values which should be variables!
-  ansible.builtin.command: "crm configure primitive rsc_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} ocf:suse:SAPHanaTopology operations $id=\"rsc_sap2_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations\" op monitor interval=\"10\" timeout=\"600\" op start interval=\"0\" timeout=\"600\" op stop interval=\"0\" timeout=\"300\" params SID=\"{{ sap_hana_install_sid }}\" InstanceNumber=\"{{ sap_hana_install_instance_number }}\""
+  ansible.builtin.command:
+    cmd: >-
+      crm configure primitive
+      rsc_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      ocf:suse:SAPHanaTopology
+      operations
+      $id="rsc_sap2_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations"
+      op monitor interval="10" timeout="600"
+      op start interval="0" timeout="600"
+      op stop interval="0" timeout="300"
+      params
+      SID="{{ sap_hana_install_sid }}"
+      InstanceNumber="{{ sap_hana_install_instance_number }}""
   when:
     - is_primary
     - hana_topology_resource | length == 0
 
 - name: Create HANA topology clone
-  # TODO this task has hardcoded SID and instance number values which should be variables!
-  ansible.builtin.command: "crm configure clone cln_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} rsc_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} meta clone-node-max=\"1\" target-role=\"Started\" interleave=\"true\""
+  ansible.builtin.command:
+    cmd: >-
+      crm configure clone
+      cln_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      rsc_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      meta
+      clone-node-max="1"
+      target-role="Started"
+      interleave="true"
   when:
     - is_primary
     - hana_topology_clone | length == 0
 
 - name: Create HANA resource
-  # TODO this task has hardcoded SID and instance number values which should be variables!
-  ansible.builtin.command: "crm configure primitive {{ rsc_SAPHana }} ocf:suse:SAPHana operations $id=\"rsc_sap_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations\" op start interval=\"0\" timeout=\"3600\" op stop interval=\"0\" timeout=\"3600\" op promote interval=\"0\" timeout=\"3600\" op demote interval=\"0\" timeout=\"3600\" op monitor interval=\"60\" role=\"Master\" timeout=\"700\" op monitor interval=\"61\" role=\"Slave\" timeout=\"700\" params SID=\"{{ sap_hana_install_sid }}\" InstanceNumber=\"{{ sap_hana_install_instance_number }}\" PREFER_SITE_TAKEOVER=\"true\" DUPLICATE_PRIMARY_TIMEOUT=\"7200\" AUTOMATED_REGISTER=\"false\""
+  ansible.builtin.command:
+    cmd: >-
+      crm configure primitive
+      {{ rsc_SAPHana }}
+      ocf:suse:SAPHana
+      operations
+      $id="rsc_sap_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations"
+      op start interval="0" timeout="3600"
+      op stop interval="0" timeout="3600"
+      op promote interval="0" timeout="3600"
+      op demote interval="0" timeout="3600"
+      op monitor interval="60" role="Master" timeout="700"
+      op monitor interval="61" role="Slave" timeout="700"
+      params
+      SID="{{ sap_hana_install_sid }}"
+      InstanceNumber="{{ sap_hana_install_instance_number }}"
+      PREFER_SITE_TAKEOVER="true"
+      DUPLICATE_PRIMARY_TIMEOUT="7200"
+      AUTOMATED_REGISTER="false"
   when:
     - is_primary
     - hana_resource | length == 0
 
 - name: Create HANA resource clone
-  # TODO this task has hardcoded SID and instance number values which should be variables!
-  ansible.builtin.command: "crm configure ms msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} {{ rsc_SAPHana }} meta notify=\"true\" clone-max=\"2\" clone-node-max=\"1\" target-role=\"Started\" interleave=\"true\""
+  ansible.builtin.command:
+    cmd: >-
+      crm configure ms
+      msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      {{ rsc_SAPHana }}
+      meta
+      notify="true"
+      clone-max="2"
+      clone-node-max="1"
+      target-role="Started"
+      interleave="true"
   when:
     - is_primary
     - hana_resource_clone | length == 0
 
 - name: Configure colocation [aws]
-  # TODO this task has hardcoded SID and instance number values which should be variables!
-  ansible.builtin.command: "crm configure colocation col_saphana_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} 2000: rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Started msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Master"
+  ansible.builtin.command:
+    cmd: >-
+      crm configure colocation
+      col_saphana_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      2000:
+      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Started
+      msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Master
   when:
     - is_primary
     - ip_colo | length == 0
     - cloud_platform_is_aws
 
 - name: Configure colocation [gcp]
-  # TODO this task has hardcoded SID and instance number values which should be variables!
-  ansible.builtin.command: "crm configure colocation col_saphana_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} 4000: rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Started msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Master"
+  ansible.builtin.command:
+    cmd: >-
+      crm configure colocation
+      col_saphana_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      4000:
+      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Started
+      msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Master
   when:
     - is_primary
     - ip_colo | length == 0
     - cloud_platform_is_gcp
 
 - name: Configure order
-  # TODO this task has hardcoded SID and instance number values which should be variables!
-  ansible.builtin.command: "crm configure order ord_SAPHana 2000: cln_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }} msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}"
+  ansible.builtin.command:
+    cmd: >-
+      crm configure order
+      ord_SAPHana
+      2000:
+      cln_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
   when:
     - is_primary
     - order | length == 0
@@ -79,7 +140,8 @@
 
 # Get current maintenance state
 - name: Refresh cluster status
-  ansible.builtin.command: crm configure show
+  ansible.builtin.command:
+    cmd: crm configure show
   register: refreshed_crm_conf_show
   changed_when: false
 
@@ -89,19 +151,27 @@
   changed_when: false
 
 - name: Ensure maintainence mode is disabled
-  ansible.builtin.command: crm configure property maintenance-mode=false
+  ansible.builtin.command:
+    cmd: crm configure property maintenance-mode=false
   when:
     - is_primary
     - refreshed_crm_maintainence_mode is true or refreshed_crm_maintainence_mode == 'unknown'
 
 - name: Get cluster state
-  ansible.builtin.command: crm status
+  ansible.builtin.command:
+    cmd: crm status
   register: reg_crm_status
   when: is_primary
 
 - name: Cleanup if needed
-  # TODO this task has hardcoded SID and instance number values which should be variables!
-  ansible.builtin.command: "crm resource cleanup {{ rsc_SAPHana }}"
+  ansible.builtin.command:
+    cmd: "crm resource cleanup {{ rsc_SAPHana }}"
   when:
     - reg_crm_status.stdout | regex_search('Failed Resource Actions') | trim | length != 0
     - is_primary
+
+# For debug purpose only
+- name: Get cluster status at the end
+  ansible.builtin.command:
+    cmd: crm configure show
+  changed_when: false

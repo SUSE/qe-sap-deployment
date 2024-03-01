@@ -14,17 +14,30 @@
     # If the scripts are moved or copied, regular SUSE package updates will not work.
     # https://documentation.suse.com/sbp/sap-15/html/SLES4SAP-hana-sr-guide-PerfOpt-15/index.html#cha.s4s.hana-hook
     __hooks_dir: "/usr/share/SAPHanaSR/"
+    __sapcontrol: "/usr/sap/hostctrl/exe/sapcontrol"
 
   handlers:
     - name: Stop HANA
-      ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StopWait 600 10"  # Stopwait will timeout after 600 seconds.
+      ansible.builtin.command:  # Stopwait will timeout after 600 seconds.
+        cmd: >-
+          {{ __sapcontrol }}
+          -nr {{ sap_hana_install_instance_number }}
+          -function StopWait 600 10
 
     - name: Start HANA Primary
-      ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StartWait 600 10"  # StartWait will timeout after 600 seconds.
+      ansible.builtin.command:  # StartWait will timeout after 600 seconds.
+        cmd: >-
+          {{ __sapcontrol }}
+          -nr {{ sap_hana_install_instance_number }}
+          -function StartWait 600 10
       when: is_primary
 
     - name: Start HANA Secondary
-      ansible.builtin.command: "/usr/sap/hostctrl/exe/sapcontrol -nr {{ sap_hana_install_instance_number }} -function StartWait 600 10"  # StartWait will timeout after 600 seconds.
+      ansible.builtin.command:  # StartWait will timeout after 600 seconds.
+        cmd: >-
+          {{ __sapcontrol }}
+          -nr {{ sap_hana_install_instance_number }}
+          -function StartWait 600 10
       when: not is_primary
 
   tasks:
