@@ -40,7 +40,7 @@
       op stop interval="0" timeout="300"
       params
       SID="{{ sap_hana_install_sid }}"
-      InstanceNumber="{{ sap_hana_install_instance_number }}""
+      InstanceNumber="{{ sap_hana_install_instance_number }}"
   when:
     - is_primary
     - hana_topology_resource | length == 0
