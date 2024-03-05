@@ -63,20 +63,13 @@ region = "europe-west1"
 # The project requires a pair of SSH keys (public and private) to provision the machines
 # The private key is only used to create the SSH connection, it is not uploaded to the machines
 # Besides the provisioning, the SSH connection for this keys will be authorized in the created machines
-# These keys are provided using the next two variables in 2 different ways
+# The public keys is provided using the next variable in 2 different ways
 # Path to already existing keys
 public_key  = "/home/myuser/.ssh/id_rsa.pub"
-private_key = "/home/myuser/.ssh/id_rsa"
 
 # Or provide the content of SSH keys
 #public_key  = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCt06V...."
-#private_key = <<EOF
-#-----BEGIN OPENSSH PRIVATE KEY-----
-#b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn
-#...
-#P9eYliTYFxhv/0E7AAAAEnhhcmJ1bHVAbGludXgtYWZqOQ==
-#-----END OPENSSH PRIVATE KEY-----
-#EOF
+
 
 # Authorize additional keys optionally (in this case, the private key is not required)
 # Path to local files or keys content
