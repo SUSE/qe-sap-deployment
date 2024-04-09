@@ -12,6 +12,15 @@
   changed_when: false
   failed_when: false
 
+# assert that the previous task produced a meaningful result
+# specifically, ensure that the result has an 'stdout' attribute
+- name: "Assert stdout is defined for System Replication Status"
+  assert:
+    that:
+      - __sap_ha_install_hana_hsr_srstate.stdout is defined
+    fail_msg: "'stdout' is not defined in '__sap_ha_install_hana_hsr_srstate'. Check the previous task execution."
+    success_msg: "'stdout' is defined in '__sap_ha_install_hana_hsr_srstate'."
+
 # looping through cluster definition to run on defined primary
 # and apply the respective 'site' value
 - name: "SAP HSR - Enable HANA System Replication on primary node"
