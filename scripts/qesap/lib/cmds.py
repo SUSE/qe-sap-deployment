@@ -352,10 +352,11 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
             print(' '.join(command['cmd']))
         else:
             ret, out = lib.process_manager.subprocess_run(**command)
-            for out_line in out:
-                log.debug(">    %s", out_line)
             log.debug("Ansible process return ret:%d", ret)
-            if ret != 0:
+            if ret == 0:
+                for out_line in out:
+                    log.debug(">    %s", out_line)
+            else:
                 log.error("command:%s returned non zero %d", command, ret)
                 return Status(ret)
     return Status("ok")

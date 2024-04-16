@@ -101,6 +101,11 @@ class CONF:
         if 'variables' not in self.conf['terraform']:
             log.error("Missing 'variables' key in conf['terraform'] ")
             return False
+
+        if not isinstance(self.conf['terraform']['variables'], dict):
+            log.error("'variables' in conf['terraform'] is empty")
+            return False
+
         return True
 
     def has_tfvar_template(self):
