@@ -76,3 +76,25 @@
       when:
         - cloud_platform_is_gcp
         - is_primary
+
+    - name: Refresh MS
+      ansible.builtin.command:
+        cmd: >-
+          crm resource
+          refresh
+          msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      when: is_primary
+
+    - name: Wait for cluster to settle
+      ansible.builtin.command:
+        cmd: cs_wait_for_idle -s 5
+      when: is_primary
+
+    - name: MS Resource Maintenance off
+      ansible.builtin.command:
+        cmd: >-
+          crm resource
+          maintenance
+          msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+          off
+      when: is_primary
