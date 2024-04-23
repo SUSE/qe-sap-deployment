@@ -204,7 +204,7 @@
 
 - name: Get op_defaults cluster configuration
   ansible.builtin.command:
-    cmd: crm configure show op-options
+    cmd: crm configure show op_defaults
   register: crm_op_options_show
   changed_when: false
   failed_when: false
@@ -310,12 +310,9 @@
     - is_primary
     - cloud_platform_is_aws or cloud_platform_is_gcp
 
-- name: Set op_defaults timeout [aws/gcp]
+- name: Set op_defaults timeout
   ansible.builtin.command:
-    cmd: >-
-      crm configure rsc_defaults
-      $id="op-options"
-      timeout=600
+    cmd: crm configure op_defaults timeout=600
   when:
     - op_default_timeout != '600'
     - is_primary
