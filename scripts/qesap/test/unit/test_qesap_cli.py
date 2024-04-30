@@ -89,7 +89,7 @@ def test_cli_configure(base_args, tmpdir):
     args.append('configure')
     cli_args = cli(args)
     assert cli_args.basedir == str(tmpdir)
-    assert cli_args.configfile == data
+    assert cli_args.configdata == data
 
 
 def test_cli_deploy(base_args):

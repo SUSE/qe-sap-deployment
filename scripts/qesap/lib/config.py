@@ -63,6 +63,14 @@ class CONF:
     def __init__(self, configure_data):
         self.conf = configure_data
 
+    def get_terraform_bin(self):
+        if 'bin' in self.conf['terraform']:
+            return self.conf['terraform']['bin']
+        # The user does not specify any custom binary in its config.yaml
+        # just return a generic binary name and let the OS to find it
+        # in its way (PATH env var)
+        return 'terraform'
+
     def yaml_to_tfvars(self):
         """
         Takes data structure collected from the terraform part

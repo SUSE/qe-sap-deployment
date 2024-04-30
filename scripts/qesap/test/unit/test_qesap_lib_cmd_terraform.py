@@ -1,10 +1,11 @@
+from unittest import mock
 import os
 import re
 import logging
 import yaml
 
 from lib.config import CONF
-from lib.cmds import create_tfvars
+from lib.cmds import create_tfvars, cmd_terraform
 
 log = logging.getLogger(__name__)
 
@@ -14,7 +15,7 @@ def test_create_tfvars_string():
     Try .tfvars generation for string terraform variables format in config.yaml
     '''
 
-    # This test overlap a little but with test_tfvars_yaml
+    # This test overlap a little bit with test_tfvars_yaml
     conf_yaml = '''---
 terraform:
   variables:
@@ -147,3 +148,44 @@ terraform:
     log.error(tfvar_content)
     assert err is None, "Unexpected err from create_tfvars:" + str(err)
     assert 'sandwiches = ["club", "cheese"]\n' in tfvar_content
+
+
+@mock.patch("lib.process_manager.subprocess_run")
+def test_cmd_terraform(subprocess_run, tmpdir):
+    '''
+    This test coverage overlap with tests from
+    scripts/qesap/test/unit/test_qesap_terraform.py
+
+    this one is calling lower API than the other
+    '''
+
+    # Set env and input
+    conf_yaml = '''---
+apiver: 3
+provider: "lolo"
+terraform:
+  variables:
+    sandwiches:
+      - club
+      - cheese
+'''
+    data = yaml.load(conf_yaml, Loader=yaml.FullLoader)
+    provider_folder = tmpdir / 'terraform' / 'lolo'
+    os.makedirs(provider_folder)
+    subprocess_run.return_value = (0, ['This is the terraform output', 'Two lines of that'])
+
+    # Set expectation
+    calls = []
+    terraform_cmd = [
+        'terraform',
+        f"-chdir={provider_folder}"]
+    # Just test one of them
+    terraform_cmd.append('init')
+    terraform_cmd.append('-no-color')
+    calls.append(mock.call(terraform_cmd))
+
+    ret = cmd_terraform(data, tmpdir, False)
+
+    assert ret == 0
+
+    subprocess_run.assert_has_calls(calls)

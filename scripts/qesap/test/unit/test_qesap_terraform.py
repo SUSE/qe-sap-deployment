@@ -129,6 +129,47 @@ def test_terraform_logs_content(subprocess_run, terraform_cmd_args, args_helper,
     assert terraform_output == log_lines
 
 
+@mock.patch("lib.process_manager.subprocess_run")
+@pytest.mark.parametrize("terraform_cmd_args", terraform_cmds)
+def test_terraform_call_custom_bin(subprocess_run, terraform_cmd_args, args_helper):
+    """
+    Check that terraform commandslike:
+     - 'terraform init'
+     - 'terraform plan'
+     - 'terraform apply'
+
+    are composed with the custom binary file specified in the conf.yaml
+    """
+    provider = 'mangiafuoco'
+    conf = """---
+apiver: 3
+provider: mangiafuoco
+terraform:
+  bin: one_special_terraform_exe
+  variables:
+    az_region: "westeurope"
+    """
+    args, terraform_dir, *_ = args_helper(provider, conf)
+    args.append('terraform')
+    subprocess_run.return_value = (0, [])
+    assert main(args) == 0
+    subprocess_run.assert_called()
+
+    calls = []
+    terraform_cmd = [
+        'one_special_terraform_exe',
+        f"-chdir={terraform_dir}"]
+    if isinstance(terraform_cmd_args, str):
+        terraform_cmd.append(terraform_cmd_args)
+    else:
+        for arg in terraform_cmd_args:
+            terraform_cmd.append(arg)
+    terraform_cmd.append('-no-color')
+    calls.append(mock.call(terraform_cmd))
+
+    subprocess_run.assert_has_calls(calls)
+
+
 @pytest.mark.skip(reason="Run a true deployment")
 @pytest.mark.parametrize("terraform_cmd_args", [('init')])
 def test_integration_terraform(terraform_cmd_args, config_yaml_sample, tmpdir):
@@ -156,7 +197,6 @@ def test_integration_terraform(terraform_cmd_args, config_yaml_sample, tmpdir):
     else:
         cmd = terraform_cmd_args[0]
 
-    log.debug("===> cmd:%s", cmd)
     with open(f"terraform.{cmd}.log.txt", 'r', encoding='utf-8') as log_file:
         log_lines = log_file.readlines()
     assert 'Initializing modules...\n' in log_lines

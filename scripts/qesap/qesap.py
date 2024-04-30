@@ -23,8 +23,8 @@ VERSION = '0.4'
 DESCRIBE = '''qe-sap-deployment helper script'''
 
 
-def is_yaml(path):
-    """ argparser validator for YAML files
+def load_yaml(path):
+    """ argparser validator for YAML files and convert the file to a python data structure
 
     Args:
         path (str)): path of the file to validate
@@ -38,13 +38,13 @@ def is_yaml(path):
     """
     if not os.path.isfile(path):
         # raise SystemExit
-        raise argparse.ArgumentTypeError("is_yaml:" + path + " is not a file")
+        raise argparse.ArgumentTypeError("load_yaml:" + path + " is not a file")
 
     with open(path, 'r', encoding='utf-8') as file:
         try:
             data = yaml.load(file, Loader=yaml.FullLoader)
         except (ScannerError, ParserError) as exc:
-            raise argparse.ArgumentTypeError("is_yaml:" + path + " is not a valid YAML file") from exc
+            raise argparse.ArgumentTypeError("load_yaml:" + path + " is not a valid YAML file") from exc
     return data
 
 
@@ -77,8 +77,8 @@ def cli(command_line=None):
     parser.add_argument('--dryrun', action='store_true', help="Dry run execution mode")
 
     parser.add_argument(
-        '-c', '--config-file', dest='configfile',
-        type=is_yaml,
+        '-c', '--config-file', dest='configdata',
+        type=load_yaml,
         required=True,
         help="""Input global configuration .yaml file""")
 
@@ -152,28 +152,28 @@ def main(command_line=None):  # pylint: disable=too-many-return-statements
     if parsed_args.command == "configure":
         log.info("Configuring...")
         res = cmd_configure(
-            parsed_args.configfile,
+            parsed_args.configdata,
             parsed_args.basedir,
             parsed_args.dryrun
         )
     elif parsed_args.command == "deploy":
         log.info("Deploying...")
         res = cmd_deploy(
-            parsed_args.configfile,
+            parsed_args.configdata,
             parsed_args.basedir,
             parsed_args.dryrun
         )
     elif parsed_args.command == "destroy":
         log.info("Destroying...")
         res = cmd_destroy(
-            parsed_args.configfile,
+            parsed_args.configdata,
             parsed_args.basedir,
             parsed_args.dryrun
         )
     elif parsed_args.command == "terraform":
         log.info("Running Terraform...")
         res = cmd_terraform(
-            parsed_args.configfile,
+            parsed_args.configdata,
             parsed_args.basedir,
             parsed_args.dryrun,
             workspace=parsed_args.workspace,
@@ -185,7 +185,7 @@ def main(command_line=None):  # pylint: disable=too-many-return-statements
     elif parsed_args.command == "ansible":
         log.info("Running Ansible...")
         res = cmd_ansible(
-            parsed_args.configfile,
+            parsed_args.configdata,
             parsed_args.basedir,
             parsed_args.dryrun,
             parsed_args.verbose,
