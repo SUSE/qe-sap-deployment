@@ -202,7 +202,7 @@ def cmd_terraform(configure_data, base_project, dryrun, workspace='default', des
         return Status(f"Invalid folder structure at {base_project}")
 
     cmds = []
-    terraform_common_cmd = ['terraform', f"-chdir={cfg_paths['provider']}"]
+    terraform_common_cmd = [config.get_terraform_bin(), f"-chdir={cfg_paths['provider']}"]
     if destroy:
         if workspace != 'default':
             cmds.append(terraform_common_cmd + ['workspace', 'select', 'default', '-no-color'])

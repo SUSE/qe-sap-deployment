@@ -51,7 +51,6 @@ def test_configure_no_tfvars_template(args_helper, config_yaml_sample):
                 if not one_match:
                     match = re.search(var_re, line)
                     if match:
-                        log.debug("Line [%s] match with [%s]", line, var_re)
                         one_match += 1
             assert one_match == 1, 'Variable:' + var_re + ' match ' + one_match + ' times in the generated terraform.tfvars'
 
