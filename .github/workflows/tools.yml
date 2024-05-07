@@ -4,11 +4,6 @@ on:
   push:
     branches:
       - "main"
-    paths:
-      - Dockerfile
-      - requirements.txt
-      - requirements.yml
-      - .github/workflows/tools.yml
   pull_request:
     paths:
       - Dockerfile

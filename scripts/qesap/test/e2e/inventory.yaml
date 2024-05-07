@@ -1,0 +1,7 @@
+all:
+  children:
+    hana:
+      hosts:
+        vmhana01:
+          ansible_host: localhost
+  hosts: null

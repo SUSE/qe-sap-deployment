@@ -21,14 +21,12 @@ def yaml_to_tfvars_entry(key, value):
         entry = '", "'.join(value)
         entry = f'{key} = ["{entry}"]'
     elif isinstance(value, dict):
-        param_value = ''
+        param_value = ""
         for dict_key, dict_value in value.items():
             param_value = f'{param_value}\t{dict_key} = "{dict_value}"\n'
-        entry = f'{key} = {{\n' \
-                f'{param_value}' \
-                f'}}'
+        entry = f"{key} = {{\n" f"{param_value}" f"}}"
     else:
-        log.error('Unrecognized value type in yaml file: %s = %s', key, value)
+        log.error("Unrecognized value type in yaml file: %s = %s", key, value)
         return None
     return entry
 

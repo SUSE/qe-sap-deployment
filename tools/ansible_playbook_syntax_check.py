@@ -10,6 +10,7 @@ def syntax_check_playbook(path):
     if proc.returncode == 0:
         return output, []
 
+    print(f"path: {path} rc: {proc.returncode}")
     errors = []
     match = re.search(r".*ERROR!(.*)\n+The error.*in '(.*)'.*line (\d+)", output, re.MULTILINE)
     if match:
@@ -28,6 +29,7 @@ if __name__ == '__main__':
         playbook = os.path.join(playbooks_folder, path)
         # check if current path is a file
         if not os.path.isfile(playbook):
+            print(f"{playbook} is not a file")
             continue
         output, errors = syntax_check_playbook(playbook)
         if len(errors) > 0:
@@ -36,10 +38,10 @@ if __name__ == '__main__':
                     print('::error file={},line={},endLine={},title=ERROR::{}'.format(
                         error['file'], error['line'], error['line'], error['message']
                     ))
-            else:
-                print(output)
+            print(f"syntax_check_playbook error output: [[{output}]]")
             has_error = True
 
     if has_error:
+        print("Script exit with error")
         sys.exit(1)
 

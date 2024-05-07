@@ -46,4 +46,3 @@ def test_tfvars_yaml_dict(config_data_sample):
     c = CONF(config_data_sample(hana_disk_configuration))
     actual_result = c.yaml_to_tfvars()
     assert re.search(expected_result, actual_result)
-

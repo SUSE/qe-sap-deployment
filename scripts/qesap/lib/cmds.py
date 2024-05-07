@@ -60,19 +60,19 @@ def create_hana_media(config_ansible, apiver):
             this_match = re.search(hana_url_re, this_media)
             if not this_match:
                 log.error("[%s] does not match regexp to extract ACCOUNT, CONTAINER or EXE", this_media)
-                return None, f"Problems in apiver:{apiver} data conversion"
+                return None, f"Problems in apiver: {apiver} data conversion"
             this_account = this_match.group('ACCOUNT')
             this_container = this_match.group('CONTAINER')
             if prev_account is None:
                 prev_account = this_account
             elif prev_account != this_account:
                 log.error("ACCOUNT [%s] does not match ACCOUNT [%s] used in previous url", this_account, prev_account)
-                return None, f"Problems in apiver:{apiver} data conversion"
+                return None, f"Problems in apiver: {apiver} data conversion"
             if prev_container is None:
                 prev_container = this_match.group('CONTAINER')
             elif prev_container != this_container:
                 log.error("CONTAINER [%s] does not match CONTAINER [%s] used in previous url", this_container, prev_container)
-                return None, f"Problems in apiver:{apiver} data conversion"
+                return None, f"Problems in apiver: {apiver} data conversion"
             match.append(this_match)
 
         hanamedia_content['az_storage_account_name'] = match[0].group('ACCOUNT')
@@ -231,7 +231,7 @@ def cmd_terraform(configure_data, base_project, dryrun, workspace='default', des
     return Status('ok')
 
 
-def ansible_validate(config, base_project, sequence, provider):
+def ansible_validate(config, base_project, sequence, provider):  # pylint: disable=R0911
     """
     Validate all elements needed to execute the Ansible sequence.
     Part of that is about the Ansible part of conf.yaml
@@ -245,6 +245,12 @@ def ansible_validate(config, base_project, sequence, provider):
     if config.has_ansible_playbooks(sequence):
         if not config.validate_ansible_config(sequence):
             return False, 'Invalid internal structure of the Ansible part of config.yaml'
+        # if the config.yaml has playbooks, the ansible and ansible-playbooks executables
+        # has to be available too
+        for ansible_bin in ['ansible', 'ansible-playbook']:
+            if not shutil.which(ansible_bin):
+                log.error("Missing binary %s", ansible_bin)
+                return False, f"Missing binary {ansible_bin}"
         for playbook in config.get_playbooks(sequence):
             playbook_filename = os.path.join(base_project, 'ansible', 'playbooks', playbook.split(' ')[0])
             if not os.path.isfile(playbook_filename):
@@ -345,7 +351,13 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
         return Status("ok")
 
     inventory = os.path.join(base_project, 'terraform', configure_data['provider'], 'inventory.yaml')
-    ansible_cmd_seq = ansible_command_sequence(configure_data['ansible'], base_project, sequence, verbose, inventory, profile)
+    ansible_cmd_seq = ansible_command_sequence(
+        configure_data['ansible'],
+        base_project,
+        sequence,
+        verbose,
+        inventory,
+        profile)
 
     for command in ansible_cmd_seq:
         if dryrun:

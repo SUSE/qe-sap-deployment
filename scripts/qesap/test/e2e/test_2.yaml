@@ -1,0 +1,6 @@
+---
+apiver: 1
+provider: fragola
+terraform:
+  variables:
+    fruit: lampone

@@ -193,7 +193,7 @@ def main(command_line=None):  # pylint: disable=too-many-return-statements
             profile=parsed_args.profile
         )
     else:
-        res = Status(f"Unknown command:{parsed_args.command}")
+        res = Status(f"Unknown command: {parsed_args.command}")
 
     if res != 0:
         log.error(res.msg)

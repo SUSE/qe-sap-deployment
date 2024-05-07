@@ -3,8 +3,14 @@ name: 'Markdown'
 on:
   push:
     branches:
-    - "main"
+      - "main"
   pull_request:
+    paths:
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'terraform/aws/README.md'
+      - 'terraform/azure/README.md']
+      - 'terraform/gcp/README.md']
 
 permissions:
   contents: read
@@ -16,7 +22,7 @@ jobs:
     environment: production
     strategy:
       matrix:
-        docfile: ['README.md', 'CONTRIBUTING.md', 'terraform/aws/README.md', 'terraform/azure/README.md']
+        docfile: ['README.md', 'CONTRIBUTING.md', 'terraform/aws/README.md', 'terraform/gcp/README.md', 'terraform/azure/README.md']
 
     steps:
     # Checkout the repository to the GitHub Actions runner
