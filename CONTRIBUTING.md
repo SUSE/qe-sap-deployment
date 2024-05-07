@@ -66,6 +66,26 @@ Also see the [DoD/DoR][1] as a helpful (but not mandatory) guideline for new con
 
 [1]: https://progress.opensuse.org/projects/openqatests/wiki/Wiki#Definition-of-DONEREADY
 
+## Running Terraform linting
+
+Bare minimal set of check to run are coded in the main project Makefile. They have any external dependency out of terraform.
+
+```shell
+% cd <THIS_REPO_FOLDER>/
+% make static-terrafomr
+```
+
+There's an optional and more experimental target named `static-terraform-kics`. But expect many existing warnings. It require at least `podman`
+
+## Running Ansible linting
+
+There are some Ansible checks in the main project Makefile. They depends on some Python packages listed in `ansible/requirements-dev.txt`
+
+```shell
+% cd <THIS_REPO_FOLDER>/
+% make static-ansible
+```
+
 ## Running qesap script unit testing
 
 Help script `qesap.py` is provided with a suite of unit tests. The script itself is developed using BDD/TDD technique.
@@ -76,7 +96,7 @@ Are you investigating on a bug or like to add a new functionalities? Please add 
 [Tox][2] is configured to run both unit testing and Python static analysis tools
 
 ```shell
-% cd scripts/qesap/
+% cd <THIS_REPO_FOLDER>/scripts/qesap/
 
 % tox
 ```
@@ -90,7 +110,7 @@ Unit tests are written using [Pytest][3]. In order to run them you need to creat
 ```shell
 % cd <THIS_REPO_FOLDER>/scripts/qesap/
 
-% python3.10 -m venv .venv
+% python3 -m venv .venv
 
 % source .venv/bin/activate
 
@@ -110,6 +130,19 @@ Each time you like to run some test you can:
 
 # with more verbosity
 (.venv) % PYTHONPATH=$(pwd):$(pwd)/src pytest -vv -o log_cli=true -o log_cli_level=10 -v test/unit/
+```
+
+If you need to integrate it in VSCode
+
+```json
+{
+    "python.testing.pytestArgs": [
+        "test/unit/"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.testing.cwd": "scripts/qesap"
+}
 ```
 
 [3]: https://docs.pytest.org/

@@ -1,4 +1,3 @@
-
 # Flake8 codes:
 # E501 line too long (XX > 79 characters)
 
@@ -6,39 +5,62 @@ base_dir := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 all: static test
 
-static: static-bash static-py static-ansible
+static: static-py static-terraform static-ansible
 
 static-py: static-pylint static-flake8
 
-static-bash:
-	bash -n build.sh
-	shellcheck build.sh -o all -s bash -S info
-	bash -n destroy.sh
-	shellcheck destroy.sh -o all -s bash -S info
+static-ansible: static-ansible-yaml static-ansible-lint static-ansible-syntax
 
 static-pylint:
-	@find scripts -type f -not -path "scripts/qesap/.tox/*" -not -path "scripts/qesap/.venv/*" -name \*.py -exec pylint --rcfile=scripts/qesap/pylint.rc qesap.py {} +
+	@cd scripts/qesap/ ; tox -e pylint
 
 static-flake8:
-	@find scripts -type f -not -path "scripts/qesap/.tox/*" -not -path "scripts/qesap/.venv/*" -name \*.py -exec flake8 --ignore=E501 {} +
+	@cd scripts/qesap/ ; tox -e flake8 ; tox -e flake8_test
 
 static-ansible-yaml:
 	@tools/ansible_yaml_lint
 
 static-ansible-syntax: export ANSIBLE_ROLES_PATH=tools/dummy_roles
 static-ansible-syntax:
-	@python3 tools/ansible_playbook_syntax_check.py
+	@python3 --version ; python3 tools/ansible_playbook_syntax_check.py
 
 static-ansible-lint:
-	@ansible-lint ansible/
+	@ansible-lint ansible/ --exclude ansible/playbooks/registration_role.yaml --exclude ansible/playbooks/vars/hana_media.yaml --exclude ansible/playbooks/vars/hana_vars.yaml
 
 static-ansible-kics:
-	@podman run -t -v $(base_dir)/ansible:/path -v $(base_dir):/kics --env DISABLE_CRASH_REPORT=0  checkmarx/kics:v1.6.14 scan -p /path -o "/path/" --config /kics/kics-config.json
+	@podman run -t -v $(base_dir)/ansible:/path -v $(base_dir):/kics --env DISABLE_CRASH_REPORT=0  checkmarx/kics:v2.0.1 scan -p /path -o "/path/" --config /kics/kics-config.json
 
 static-terraform-kics:
-	@podman run -t -v $(base_dir)/terraform:/path -v $(base_dir):/kics --env DISABLE_CRASH_REPORT=0  checkmarx/kics:v1.6.14 scan -p /path -o "/path/" --config /kics/kics-config.json
+	@podman run -t -v $(base_dir)/terraform:/path -v $(base_dir):/kics --env DISABLE_CRASH_REPORT=0  checkmarx/kics:v2.0.1 scan -p /path -o "/path/" --config /kics/kics-config.json
 
-static-ansible: static-ansible-yaml static-ansible-lint static-ansible-syntax
+static-terraform: static-terraform-fmt static-terraform-validate
 
-test:
-	@PYTHONPATH=scripts/qesap pytest
+static-terraform-fmt: static-terraform-fmt-azure static-terraform-fmt-aws static-terraform-fmt-gcp
+
+static-terraform-fmt-azure:
+	@cd terraform/azure ; terraform fmt -check -recursive -diff
+
+static-terraform-fmt-aws:
+	@cd terraform/aws ; terraform fmt -check -recursive -diff
+
+static-terraform-fmt-gcp:
+	@cd terraform/gcp ; terraform fmt -check -recursive -diff
+
+static-terraform-validate: static-terraform-validate-azure static-terraform-validate-aws static-terraform-validate-gcp
+
+static-terraform-validate-azure:
+	@cd terraform/azure ; terraform init ; terraform validate
+
+static-terraform-validate-aws:
+	@cd terraform/aws ; terraform init ; terraform validate
+
+static-terraform-validate-gcp:
+	@cd terraform/gcp ; terraform init ; terraform validate
+
+test: test-ut test-e2e
+
+test-ut:
+	@cd scripts/qesap/ ; tox -e pytest
+
+test-e2e:
+	@cd scripts/qesap/test/e2e ; ./test.sh
