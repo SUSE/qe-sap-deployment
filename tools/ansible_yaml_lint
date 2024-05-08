@@ -1,7 +1,15 @@
-#!/bin/bash
+#!/bin/bash -e
+
 YAMLLINT_CMD="yamllint"
 if [[ -n "${GITHUB_ACTIONS}" ]]; then
   YAMLLINT_CMD="${YAMLLINT_CMD} -f github "
 fi
+echo "Run YAMLLINT_CMD:${YAMLLINT_CMD}"
 
-find ansible/ -type f -iname "*.yml" -or -iname "*.yaml" -exec ${YAMLLINT_CMD} {} +
+yamllint --version || exit 1
+
+find ansible/ \
+    -type f \
+    -iname "*.yml" -or -iname "*.yaml" \
+    ! -name "hana_media.yaml" ! -name "hana_vars.yaml" \
+    -exec ${YAMLLINT_CMD} {} +

@@ -1,6 +1,14 @@
 name: Ansible
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    paths:
+      - ansible/**
+      - requirements.txt
+      - .github/workflows/ansible.yml
 
 jobs:
   build:
@@ -17,8 +25,10 @@ jobs:
 
       - name: Run ansible-yaml-lint
         run: |
-           make static-ansible-yaml
+           make -n static-ansible-yaml
+           make SHELL='sh -x' static-ansible-yaml
 
       - name: Run ansible-playbooks syntax-check
         run: |
-           make static-ansible-syntax
+           make -n static-ansible-syntax
+           make SHELL='sh -x' static-ansible-syntax
