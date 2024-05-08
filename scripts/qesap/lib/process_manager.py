@@ -2,6 +2,7 @@
 All tools needed to manage external executable and processes
 '''
 
+import sys
 import subprocess
 import logging
 
@@ -31,6 +32,11 @@ def subprocess_run(cmd, env=None):
         return (proc.returncode, [])
     stdout = [line.decode("utf-8") for line in proc.stdout.splitlines()]
 
+    print(f"OUTPUT START FOR COMMAND: {cmd}")
+    sys.stdout.flush()
     for line in stdout:
-        log.debug('OUTPUT: %s', line)
+        print(line)
+        sys.stdout.flush()
+    print(f"OUTPUT END FOR COMMAND: {cmd}")
+    sys.stdout.flush()
     return (0, stdout)

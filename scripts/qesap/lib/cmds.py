@@ -289,8 +289,12 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     ansible_cmd_seq.append({'cmd': ssh_share})
     original_env = dict(os.environ)
     original_env['ANSIBLE_PIPELINING'] = 'True'
-    if profile:
-        original_env['ANSIBLE_CALLBACK_WHITELIST'] = 'ansible.posix.profile_tasks'
+    original_env['ANSIBLE_CALLBACKS_ENABLED'] = 'json'
+    original_env['ANSIBLE_LOAD_CALLBACK_PLUGINS'] = '1'
+    original_env['ANSIBLE_STDOUT_CALLBACK'] = 'json'
+    #original_env['ANSIBLE_CONFIG'] = os.path.join(base_project, 'ansible.cfg')
+    #if profile:
+        #original_env['ANSIBLE_CALLBACK_WHITELIST'] = 'json'
     if 'roles_path' in configure_data_ansible:
         original_env['ANSIBLE_ROLES_PATH'] = configure_data_ansible['roles_path']
 
@@ -345,7 +349,7 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
         return Status("ok")
 
     inventory = os.path.join(base_project, 'terraform', configure_data['provider'], 'inventory.yaml')
-    ansible_cmd_seq = ansible_command_sequence(configure_data['ansible'], base_project, sequence, verbose, inventory, profile)
+    ansible_cmd_seq = ansible_command_sequence(configure_data['ansible'], base_project, sequence, False, inventory, profile)
 
     for command in ansible_cmd_seq:
         if dryrun:
@@ -353,10 +357,7 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
         else:
             ret, out = lib.process_manager.subprocess_run(**command)
             log.debug("Ansible process return ret:%d", ret)
-            if ret == 0:
-                for out_line in out:
-                    log.debug(">    %s", out_line)
-            else:
+            if ret != 0:
                 log.error("command:%s returned non zero %d", command, ret)
                 return Status(ret)
     return Status("ok")
