@@ -275,6 +275,8 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     ansible_common = [shutil.which('ansible-playbook')]
     if verbose:
         ansible_common.append('-vvvv')
+    else:
+        ansible_common.append('-vv')
 
     ansible_common.append('-i')
     ansible_common.append(inventory)

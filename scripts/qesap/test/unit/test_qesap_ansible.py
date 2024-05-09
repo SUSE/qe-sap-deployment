@@ -34,7 +34,7 @@ def test_ansible_create(run, _, base_args, tmpdir, create_inventory, create_play
     playbook_files_list = create_playbooks(playbooks['create'])
     calls = []
     for playbook in playbook_files_list:
-        cmd = [ANSIBLEPB_EXE, '-i', inventory, playbook]
+        cmd = [ANSIBLEPB_EXE,'-vv','-i', inventory, playbook]
         calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) == 0
@@ -219,7 +219,7 @@ def test_ansible_stop(run, _, tmpdir, base_args, create_inventory, create_playbo
 
     playbook_list = create_playbooks(playbooks['create'])
     calls = []
-    cmd = [ANSIBLEPB_EXE, '-i', inventory, playbook_list[0]]
+    cmd = [ANSIBLEPB_EXE, '-vv', '-i', inventory, playbook_list[0]]
     calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) != 0
@@ -253,7 +253,7 @@ def test_ansible_destroy(run, _, base_args, tmpdir, create_inventory, create_pla
     playbook_list = create_playbooks(playbooks['destroy'])
     calls = []
     for playbook in playbook_list:
-        cmd = [ANSIBLEPB_EXE, '-i', inventory, playbook]
+        cmd = [ANSIBLEPB_EXE, '-vv', '-i', inventory, playbook]
         calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) == 0
@@ -295,6 +295,7 @@ ansible:
     calls = []
     cmd = [
         ANSIBLEPB_EXE,
+        '-vv',
         '-i', inventory,
         playbook_list[0],
         '-e', 'reg_code=1234-5678-90XX',
@@ -340,6 +341,7 @@ ansible:
     calls = []
     cmd = [
         ANSIBLEPB_EXE,
+        '-vv',
         '-i', inventory,
         playbook_list[0],
         '-e', '"use_sapconf=True"'
@@ -392,10 +394,10 @@ def test_ansible_ssh(run, _, base_args, tmpdir, create_inventory, create_playboo
 
     playbook_list = create_playbooks(playbooks['create'])
     calls = []
-    ssh_share = [ANSIBLE_EXE, '-i', inventory, 'all', '-a', 'true', '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"']
+    ssh_share = [ANSIBLE_EXE, '-vv', '-i', inventory, 'all', '-a', 'true', '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"']
     calls.append(mock.call(cmd=ssh_share))
     for playbook in playbook_list:
-        cmd = [ANSIBLEPB_EXE, '-i', inventory, playbook]
+        cmd = [ANSIBLEPB_EXE, '-vv', '-i', inventory, playbook]
         calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) == 0
@@ -435,7 +437,7 @@ export ANSIBLE_PIPELINING=True
     expected_env = dict(os.environ)
     expected_env['ANSIBLE_PIPELINING'] = 'True'
     for playbook in playbook_files_list:
-        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-i', inventory, playbook], env=expected_env))
+        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-vv', '-i', inventory, playbook], env=expected_env))
 
     assert main(args) == 0
 
@@ -471,7 +473,7 @@ def test_ansible_profile(run, _, base_args, tmpdir, create_inventory, create_pla
     expected_env['ANSIBLE_PIPELINING'] = 'True'
     expected_env['ANSIBLE_CALLBACK_WHITELIST'] = 'ansible.posix.profile_tasks'
     for playbook in playbook_files_list:
-        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-i', inventory, playbook], env=expected_env))
+        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-vv', '-i', inventory, playbook], env=expected_env))
 
     assert main(args) == 0
 
@@ -512,7 +514,7 @@ ansible:
     expected_env['ANSIBLE_PIPELINING'] = 'True'
     expected_env['ANSIBLE_ROLES_PATH'] = 'somewhere'
     for playbook in playbook_files_list:
-        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-i', inventory, playbook], env=expected_env))
+        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-vv', '-i', inventory, playbook], env=expected_env))
 
     assert main(args) == 0
 
