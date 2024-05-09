@@ -3,10 +3,11 @@ name: 'Terraform'
 on:
   push:
     branches:
-    - "main"
+      - "main"
   pull_request:
-    - .github/workflows/terraform.yml
-    - terraform/**
+    paths:
+      - .github/workflows/terraform.yml
+      - terraform/**
 
 permissions:
   contents: read

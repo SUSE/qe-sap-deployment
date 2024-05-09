@@ -1,0 +1,13 @@
+---
+apiver: 3
+provider: fragola
+terraform:
+  variables:
+    fruit: lampone
+ansible:
+  hana_media:
+    - mora
+    - corniolo
+  hana_urls: mirtillo
+  az_storage_account_name: ribes
+  az_container_name: uvaspina
