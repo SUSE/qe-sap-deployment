@@ -40,5 +40,10 @@ static-terraform-kics:
 
 static-ansible: static-ansible-yaml static-ansible-lint static-ansible-syntax
 
-test:
-	@PYTHONPATH=scripts/qesap pytest
+test: test-ut test-e2e
+
+test-ut:
+	@cd scripts/qesap/ ; tox -e pytest
+
+test-e2e:
+	@cd scripts/qesap/test/e2e ; ./test.sh
