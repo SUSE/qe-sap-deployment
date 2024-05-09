@@ -6,8 +6,8 @@ on:
       - "main"
   pull_request:
     paths:
-      - .github/workflows/terraform.yml
       - terraform/**
+      - .github/workflows/terraform.yml
 
 permissions:
   contents: read

@@ -272,7 +272,18 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     Returns:
         list of list of strings, each command is rappresented as a list of its arguments
     """
-    ansible_common = [shutil.which('ansible-playbook')]
+
+    # if the config.yaml has playbooks, the ansible and ansible-playbooks executables
+    # has to be available too
+    ansible_bin_paths = {}
+    for ansible_bin in ['ansible', 'ansible-playbook']:
+        binpath = shutil.which(ansible_bin)
+        if not binpath:
+            log.error("Missing binary %s", ansible_bin)
+            return False, f"Missing binary {ansible_bin}"
+        ansible_bin_paths[ansible_bin] = binpath
+
+    ansible_common = [ansible_bin_paths['ansible-playbook']]
     if verbose:
         ansible_common.append('-vvvv')
     else:
@@ -284,7 +295,7 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     ansible_cmd = []
     ansible_cmd_seq = []
     ssh_share = ansible_common.copy()
-    ssh_share[0] = shutil.which('ansible')
+    ssh_share[0] = ansible_bin_paths['ansible']
     ssh_share.extend([
         'all', '-a', 'true',
         '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'])
@@ -311,7 +322,7 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
             else:
                 ansible_cmd.append(ply_cmd)
         ansible_cmd_seq.append({'cmd': ansible_cmd, 'env': original_env})
-    return ansible_cmd_seq
+    return True, ansible_cmd_seq
 
 
 def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, profile=False):
@@ -347,7 +358,9 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
         return Status("ok")
 
     inventory = os.path.join(base_project, 'terraform', configure_data['provider'], 'inventory.yaml')
-    ansible_cmd_seq = ansible_command_sequence(configure_data['ansible'], base_project, sequence, verbose, inventory, profile)
+    ret, ansible_cmd_seq = ansible_command_sequence(configure_data['ansible'], base_project, sequence, verbose, inventory, profile)
+    if not ret:
+        return Status(ansible_cmd_seq)
 
     for command in ansible_cmd_seq:
         if dryrun:

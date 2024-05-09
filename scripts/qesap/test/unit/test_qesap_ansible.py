@@ -7,34 +7,49 @@ from qesap import main
 
 log = logging.getLogger(__name__)
 
-ANSIBLE_EXE = '/bin/ansible'
-ANSIBLEPB_EXE = '/paese/della/cuccagna/ansible-playbook'
+FAKE_BIN_PATH = "/paese/della/cuccagna/"
+ANSIBLE_EXE = FAKE_BIN_PATH + "ansible"
+ANSIBLEPB_EXE = FAKE_BIN_PATH + "ansible-playbook"
 
 
-@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
+def fake_ansible_path(x):
+    return FAKE_BIN_PATH + x
+
+
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
-def test_ansible_create(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
+def test_ansible_create(
+    run,
+    _,
+    base_args,
+    tmpdir,
+    create_inventory,
+    create_playbooks,
+    ansible_config,
+    mock_call_ansibleplaybook,
+    ansible_playbook_cmd,
+):
     """
     Test that the ansible subcommand plays playbooks
     listed in the ansible::create part of the config.yml
     """
-    provider = 'grilloparlante'
-    playbooks = {'create': ['get_cherry_wood', 'made_pinocchio_head']}
+    provider = "grilloparlante"
+    playbooks = {"create": ["get_cherry_wood", "made_pinocchio_head"]}
     config_content = ansible_config(provider, playbooks)
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
-    args.append('ansible')
+    args.append("ansible")
     run.return_value = (0, [])
 
     inventory = create_inventory(provider)
 
-    playbook_files_list = create_playbooks(playbooks['create'])
+    playbook_files_list = create_playbooks(playbooks["create"])
     calls = []
     for playbook in playbook_files_list:
-        cmd = [ANSIBLEPB_EXE,'-vv','-i', inventory, playbook]
+        cmd = ansible_playbook_cmd(ANSIBLEPB_EXE, inventory, playbook)
         calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) == 0
@@ -43,31 +58,40 @@ def test_ansible_create(run, _, base_args, tmpdir, create_inventory, create_play
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
-def test_ansible_verbose(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
+def test_ansible_verbose(
+    run,
+    _,
+    base_args,
+    tmpdir,
+    create_inventory,
+    create_playbooks,
+    ansible_config,
+    mock_call_ansibleplaybook,
+):
     """
     run with -vvvv if qesap ansible --verbose
     (probably not supported in qesap deploy/destroy)
     """
-    provider = 'grilloparlante'
-    playbooks = {'create': ['get_cherry_wood']}
+    provider = "grilloparlante"
+    playbooks = {"create": ["get_cherry_wood"]}
 
     config_content = ansible_config(provider, playbooks)
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, True)
-    args.append('ansible')
+    args.append("ansible")
     run.return_value = (0, [])
 
     inventory = create_inventory(provider)
 
-    playbook_list = create_playbooks(playbooks['create'])
+    playbook_list = create_playbooks(playbooks["create"])
     calls = []
     for playbook in playbook_list:
-        cmd = [ANSIBLEPB_EXE, '-vvvv', '-i', inventory, playbook]
+        cmd = [ANSIBLEPB_EXE, "-vvvv", "-i", inventory, playbook]
         calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) == 0
@@ -76,35 +100,39 @@ def test_ansible_verbose(run, _, base_args, tmpdir, create_inventory, create_pla
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
-def test_ansible_dryrun(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
+def test_ansible_dryrun(
+    run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config
+):
     """
     Command ansible does not call the Ansible executable in dryrun mode
     """
-    provider = 'grilloparlante'
-    playbooks = {'create': ['get_cherry_wood', 'made_pinocchio_head']}
+    provider = "grilloparlante"
+    playbooks = {"create": ["get_cherry_wood", "made_pinocchio_head"]}
 
     config_content = ansible_config(provider, playbooks)
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, True)
-    args.append('ansible')
-    args.insert(0, '--dryrun')
+    args.append("ansible")
+    args.insert(0, "--dryrun")
     run.return_value = (0, [])
     create_inventory(provider)
-    create_playbooks(playbooks['create'])
+    create_playbooks(playbooks["create"])
 
     assert main(args) == 0
 
     run.assert_not_called()
 
 
-@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
-def test_ansible_no_ansible(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
+def test_ansible_no_ansible(
+    run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config
+):
     """
     Command ansible with a deployment without
     the ansible: section in the congif.yaml
@@ -112,16 +140,16 @@ def test_ansible_no_ansible(run, _, base_args, tmpdir, create_inventory, create_
     If the user create a config.yaml without the ansible: section
     the `qesap.py ... ansible` command invocation has to fail.
     """
-    provider = 'grilloparlante'
+    provider = "grilloparlante"
     config_content = f"""---
 apiver: 2
 provider: grilloparlante"""
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, True)
-    args.append('ansible')
+    args.append("ansible")
     run.return_value = (0, [])
 
     assert main(args) == 1
@@ -134,13 +162,13 @@ def test_ansible_missing_inventory(run, tmpdir, base_args, ansible_config):
     """
     Stop and return non zero if inventory is missing
     """
-    config_content = ansible_config('grilloparlante', {'create': ['get_cherry_wood']})
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_content = ansible_config("grilloparlante", {"create": ["get_cherry_wood"]})
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
-    args.append('ansible')
+    args.append("ansible")
 
     assert main(args) != 0
 
@@ -152,15 +180,15 @@ def test_ansible_no_playbooks(run, tmpdir, base_args, create_inventory, ansible_
     """
     If no playbooks are listed, Ansible is not called
     """
-    provider = 'grilloparlante'
+    provider = "grilloparlante"
 
     config_content = ansible_config(provider, {})
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
-    args.append('ansible')
+    args.append("ansible")
     run.return_value = (0, [])
 
     create_inventory(provider)
@@ -171,55 +199,106 @@ def test_ansible_no_playbooks(run, tmpdir, base_args, create_inventory, ansible_
 
 
 @mock.patch("lib.process_manager.subprocess_run")
-def test_ansible_missing_playbook(run, tmpdir, base_args, create_inventory, create_playbooks, ansible_config):
+def test_ansible_missing_playbook(
+    run, tmpdir, base_args, create_inventory, create_playbooks, ansible_config
+):
     """
     ansible subcommand has not to run any commands if
     any of the playbooks YAML file referred in the config.yaml
     does not exist
     """
-    provider = 'grilloparlante'
-    playbooks = {'create': ['get_cherry_wood', 'made_pinocchio_head']}
+    provider = "grilloparlante"
+    playbooks = {"create": ["get_cherry_wood", "made_pinocchio_head"]}
     config_content = ansible_config(provider, playbooks)
 
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
-    args.append('ansible')
+    args.append("ansible")
     run.return_value = (0, [])
 
     create_inventory(provider)
     # create one out of two
-    create_playbooks(playbooks['create'][0:1])
+    create_playbooks(playbooks["create"][0:1])
 
     assert main(args) != 0
 
     run.assert_not_called()
 
 
-@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
+@mock.patch("shutil.which", side_effect=lambda x: None)
+@mock.patch("lib.process_manager.subprocess_run")
+def test_ansible_no_bin(
+    run,
+    _,
+    tmpdir,
+    base_args,
+    create_inventory,
+    create_playbooks,
+    ansible_config,
+    mock_call_ansibleplaybook,
+    ansible_playbook_cmd,
+):
+    """
+    Simulate script executed in an environment
+    where neither Ansible or ansible-playbook are installed
+    """
+    provider = "grilloparlante"
+    playbooks = {"create": ["get_cherry_wood", "made_pinocchio_head"]}
+    config_content = ansible_config(provider, playbooks)
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
+        file.write(config_content)
+
+    args = base_args(None, config_file_name, False)
+    args.append("ansible")
+
+    inventory = create_inventory(provider)
+
+    playbook_list = create_playbooks(playbooks["create"])
+    calls = []
+    cmd = ansible_playbook_cmd(ANSIBLEPB_EXE, inventory, playbook_list[0])
+    calls.append(mock_call_ansibleplaybook(cmd))
+
+    assert main(args) != 0
+
+    run.assert_not_called()
+
+
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run", side_effect=[(0, []), (1, [])])
-def test_ansible_stop(run, _, tmpdir, base_args, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
+def test_ansible_stop(
+    run,
+    _,
+    tmpdir,
+    base_args,
+    create_inventory,
+    create_playbooks,
+    ansible_config,
+    mock_call_ansibleplaybook,
+    ansible_playbook_cmd,
+):
     """
     Stop the sequence of playbook at first one
     that is failing and return non zero
     """
-    provider = 'grilloparlante'
-    playbooks = {'create': ['get_cherry_wood', 'made_pinocchio_head']}
+    provider = "grilloparlante"
+    playbooks = {"create": ["get_cherry_wood", "made_pinocchio_head"]}
     config_content = ansible_config(provider, playbooks)
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
-    args.append('ansible')
+    args.append("ansible")
 
     inventory = create_inventory(provider)
 
-    playbook_list = create_playbooks(playbooks['create'])
+    playbook_list = create_playbooks(playbooks["create"])
     calls = []
-    cmd = [ANSIBLEPB_EXE, '-vv', '-i', inventory, playbook_list[0]]
+    cmd = ansible_playbook_cmd(ANSIBLEPB_EXE, inventory, playbook_list[0])
     calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) != 0
@@ -228,32 +307,45 @@ def test_ansible_stop(run, _, tmpdir, base_args, create_inventory, create_playbo
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
-def test_ansible_destroy(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
+def test_ansible_destroy(
+    run,
+    _,
+    base_args,
+    tmpdir,
+    create_inventory,
+    create_playbooks,
+    ansible_config,
+    mock_call_ansibleplaybook,
+    ansible_playbook_cmd,
+):
     """
     Test that ansible subcommand, called with -d,
     call the destroy list of playbooks
     """
-    provider = 'grilloparlante'
-    playbooks = {'create': ['get_cherry_wood', 'made_pinocchio_head'], 'destroy': ['plant_a_tree']}
+    provider = "grilloparlante"
+    playbooks = {
+        "create": ["get_cherry_wood", "made_pinocchio_head"],
+        "destroy": ["plant_a_tree"],
+    }
     config_content = ansible_config(provider, playbooks)
 
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
-    args.append('ansible')
-    args.append('-d')
+    args.append("ansible")
+    args.append("-d")
     run.return_value = (0, [])
 
     inventory = create_inventory(provider)
 
-    playbook_list = create_playbooks(playbooks['destroy'])
+    playbook_list = create_playbooks(playbooks["destroy"])
     calls = []
     for playbook in playbook_list:
-        cmd = [ANSIBLEPB_EXE, '-vv', '-i', inventory, playbook]
+        cmd = ansible_playbook_cmd(ANSIBLEPB_EXE, inventory, playbook)
         calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) == 0
@@ -262,14 +354,23 @@ def test_ansible_destroy(run, _, base_args, tmpdir, create_inventory, create_pla
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
-def test_ansible_e_reg(run, _, base_args, tmpdir, create_inventory, create_playbooks, mock_call_ansibleplaybook):
+def test_ansible_e_reg(
+    run,
+    _,
+    base_args,
+    tmpdir,
+    create_inventory,
+    create_playbooks,
+    mock_call_ansibleplaybook,
+    ansible_playbook_cmd,
+):
     """
     Replace email and code before to run
     ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/registration.yaml -e "reg_code=${REG_CODE}" -e "email_address=${EMAIL}"
     """
-    provider = 'grilloparlante'
+    provider = "grilloparlante"
     config_content = """---
 apiver: 2
 provider: grilloparlante
@@ -281,25 +382,24 @@ ansible:
         reg_code: 1234-5678-90XX
         email: mastro.geppetto@collodi.it
     """
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
-    args.append('ansible')
+    args.append("ansible")
     run.return_value = (0, [])
 
     inventory = create_inventory(provider)
 
-    playbook_list = create_playbooks(['registration'])
+    playbook_list = create_playbooks(["registration"])
     calls = []
-    cmd = [
-        ANSIBLEPB_EXE,
-        '-vv',
-        '-i', inventory,
-        playbook_list[0],
-        '-e', 'reg_code=1234-5678-90XX',
-        '-e', 'email_address=mastro.geppetto@collodi.it'
+    cmd = ansible_playbook_cmd(ANSIBLEPB_EXE, inventory, playbook_list[0])
+    cmd += [
+        "-e",
+        "reg_code=1234-5678-90XX",
+        "-e",
+        "email_address=mastro.geppetto@collodi.it",
     ]
     calls.append(mock_call_ansibleplaybook(cmd))
 
@@ -309,14 +409,23 @@ ansible:
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
-def test_ansible_e_sapconf(run, _, base_args, tmpdir, create_inventory, create_playbooks, mock_call_ansibleplaybook):
+def test_ansible_e_sapconf(
+    run,
+    _,
+    base_args,
+    tmpdir,
+    create_inventory,
+    create_playbooks,
+    mock_call_ansibleplaybook,
+    ansible_playbook_cmd,
+):
     """
     Replace sapconf flag before to run
     ansible-playbook ${AnsFlgs} ${AnsPlybkPath}/sap-hana-preconfigure.yaml -e "use_sapconf=${SAPCONF}"
     """
-    provider = 'grilloparlante'
+    provider = "grilloparlante"
     config_content = """---
 apiver: 2
 provider: grilloparlante
@@ -327,25 +436,20 @@ ansible:
     variables:
         sapconf: True
     """
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
-    args.append('ansible')
+    args.append("ansible")
     run.return_value = (0, [])
 
     inventory = create_inventory(provider)
 
-    playbook_list = create_playbooks(['sap-hana-preconfigure'])
+    playbook_list = create_playbooks(["sap-hana-preconfigure"])
     calls = []
-    cmd = [
-        ANSIBLEPB_EXE,
-        '-vv',
-        '-i', inventory,
-        playbook_list[0],
-        '-e', '"use_sapconf=True"'
-    ]
+    cmd = ansible_playbook_cmd(ANSIBLEPB_EXE, inventory, playbook_list[0])
+    cmd += ["-e", '"use_sapconf=True"']
     calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) == 0
@@ -354,9 +458,19 @@ ansible:
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
-def test_ansible_ssh(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config, mock_call_ansibleplaybook):
+def test_ansible_ssh(
+    run,
+    _,
+    base_args,
+    tmpdir,
+    create_inventory,
+    create_playbooks,
+    ansible_config,
+    mock_call_ansibleplaybook,
+    ansible_playbook_cmd,
+):
     """
     This first Ansible command has to be called before all the others
 
@@ -379,25 +493,34 @@ def test_ansible_ssh(run, _, base_args, tmpdir, create_inventory, create_playboo
     # Accept new ssh keys for ansible-controlled hosts
     ansible ${AnsFlgs} all -a true --ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"
     """
-    provider = 'grilloparlante'
-    playbooks = {'create': ['get_cherry_wood', 'made_pinocchio_head']}
+    provider = "grilloparlante"
+    playbooks = {"create": ["get_cherry_wood", "made_pinocchio_head"]}
     config_content = ansible_config(provider, playbooks)
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
-    args.append('ansible')
+    args.append("ansible")
     run.return_value = (0, [])
 
     inventory = create_inventory(provider)
 
-    playbook_list = create_playbooks(playbooks['create'])
+    playbook_list = create_playbooks(playbooks["create"])
     calls = []
-    ssh_share = [ANSIBLE_EXE, '-vv', '-i', inventory, 'all', '-a', 'true', '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"']
+    ssh_share = [
+        ANSIBLE_EXE,
+        "-vv",
+        "-i",
+        inventory,
+        "all",
+        "-a",
+        "true",
+        '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"',
+    ]
     calls.append(mock.call(cmd=ssh_share))
     for playbook in playbook_list:
-        cmd = [ANSIBLEPB_EXE, '-vv', '-i', inventory, playbook]
+        cmd = ansible_playbook_cmd(ANSIBLEPB_EXE, inventory, playbook)
         calls.append(mock_call_ansibleplaybook(cmd))
 
     assert main(args) == 0
@@ -406,38 +529,52 @@ def test_ansible_ssh(run, _, base_args, tmpdir, create_inventory, create_playboo
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
-def test_ansible_env_config(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
+def test_ansible_env_config(
+    run,
+    _,
+    base_args,
+    tmpdir,
+    create_inventory,
+    create_playbooks,
+    ansible_config,
+    ansible_playbook_cmd,
+):
     """
-    Test that ANSIBLE_PIPELINING is added to the env used to run Ansible. In the build.sh it was:
+        Test that ANSIBLE_PIPELINING is added to the env used to run Ansible. In the build.sh it was:
 
-if [ ${quite} -eq 1 ]
-then
-  export ANSIBLE_NOCOLOR=True
-  export ANSIBLE_LOG_PATH="$(pwd)/ansible.build.${LogEx}"
-fi
-export ANSIBLE_PIPELINING=True
+    if [ ${quite} -eq 1 ]
+    then
+      export ANSIBLE_NOCOLOR=True
+      export ANSIBLE_LOG_PATH="$(pwd)/ansible.build.${LogEx}"
+    fi
+    export ANSIBLE_PIPELINING=True
     """
-    provider = 'grilloparlante'
-    playbooks = {'create': ['get_cherry_wood', 'made_pinocchio_head']}
+    provider = "grilloparlante"
+    playbooks = {"create": ["get_cherry_wood", "made_pinocchio_head"]}
     config_content = ansible_config(provider, playbooks)
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
-    args.append('ansible')
+    args.append("ansible")
     run.return_value = (0, [])
 
     inventory = create_inventory(provider)
 
-    playbook_files_list = create_playbooks(playbooks['create'])
+    playbook_files_list = create_playbooks(playbooks["create"])
     calls = []
     expected_env = dict(os.environ)
-    expected_env['ANSIBLE_PIPELINING'] = 'True'
+    expected_env["ANSIBLE_PIPELINING"] = "True"
     for playbook in playbook_files_list:
-        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-vv', '-i', inventory, playbook], env=expected_env))
+        calls.append(
+            mock.call(
+                cmd=ansible_playbook_cmd(ANSIBLEPB_EXE, inventory, playbook),
+                env=expected_env,
+            )
+        )
 
     assert main(args) == 0
 
@@ -445,35 +582,49 @@ export ANSIBLE_PIPELINING=True
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
-def test_ansible_profile(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
+def test_ansible_profile(
+    run,
+    _,
+    base_args,
+    tmpdir,
+    create_inventory,
+    create_playbooks,
+    ansible_config,
+    ansible_playbook_cmd,
+):
     """
     Test that --profile result in Ansible called with an additional env variable
 
         ANSIBLE_CALLBACK_WHITELIST=ansible.posix.profile_tasks
     """
-    provider = 'grilloparlante'
-    playbooks = {'create': ['get_cherry_wood', 'made_pinocchio_head']}
+    provider = "grilloparlante"
+    playbooks = {"create": ["get_cherry_wood", "made_pinocchio_head"]}
     config_content = ansible_config(provider, playbooks)
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
-    args.append('ansible')
-    args.append('--profile')
+    args.append("ansible")
+    args.append("--profile")
     run.return_value = (0, [])
 
     inventory = create_inventory(provider)
 
-    playbook_files_list = create_playbooks(playbooks['create'])
+    playbook_files_list = create_playbooks(playbooks["create"])
     calls = []
     expected_env = dict(os.environ)
-    expected_env['ANSIBLE_PIPELINING'] = 'True'
-    expected_env['ANSIBLE_CALLBACK_WHITELIST'] = 'ansible.posix.profile_tasks'
+    expected_env["ANSIBLE_PIPELINING"] = "True"
+    expected_env["ANSIBLE_CALLBACK_WHITELIST"] = "ansible.posix.profile_tasks"
     for playbook in playbook_files_list:
-        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-vv', '-i', inventory, playbook], env=expected_env))
+        calls.append(
+            mock.call(
+                cmd=ansible_playbook_cmd(ANSIBLEPB_EXE, inventory, playbook),
+                env=expected_env,
+            )
+        )
 
     assert main(args) == 0
 
@@ -481,15 +632,24 @@ def test_ansible_profile(run, _, base_args, tmpdir, create_inventory, create_pla
     run.assert_has_calls(calls)
 
 
-@mock.patch('shutil.which', side_effect=[(ANSIBLEPB_EXE), (ANSIBLE_EXE)])
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
-def test_ansible_env_roles_path(run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config):
+def test_ansible_env_roles_path(
+    run,
+    _,
+    base_args,
+    tmpdir,
+    create_inventory,
+    create_playbooks,
+    ansible_config,
+    ansible_playbook_cmd,
+):
     """
     Test that ANSIBLE_ROLES_PATH is added to the env used to run Ansible.
     It has only to be done if the `roles_path` is present in the Ansible section
     of the config.yaml.
     """
-    provider = 'grilloparlante'
+    provider = "grilloparlante"
     config_content = f"""---
 apiver: 2
 provider: {provider}
@@ -498,23 +658,28 @@ ansible:
     roles_path: somewhere
     create:
       - get_cherry_wood.yaml"""
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
     args = base_args(None, config_file_name, False)
-    args.append('ansible')
+    args.append("ansible")
     run.return_value = (0, [])
 
     inventory = create_inventory(provider)
 
-    playbook_files_list = create_playbooks(['get_cherry_wood'])
+    playbook_files_list = create_playbooks(["get_cherry_wood"])
     calls = []
     expected_env = dict(os.environ)
-    expected_env['ANSIBLE_PIPELINING'] = 'True'
-    expected_env['ANSIBLE_ROLES_PATH'] = 'somewhere'
+    expected_env["ANSIBLE_PIPELINING"] = "True"
+    expected_env["ANSIBLE_ROLES_PATH"] = "somewhere"
     for playbook in playbook_files_list:
-        calls.append(mock.call(cmd=[ANSIBLEPB_EXE, '-vv', '-i', inventory, playbook], env=expected_env))
+        calls.append(
+            mock.call(
+                cmd=ansible_playbook_cmd(ANSIBLEPB_EXE, inventory, playbook),
+                env=expected_env,
+            )
+        )
 
     assert main(args) == 0
 
