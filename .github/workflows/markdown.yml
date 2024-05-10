@@ -6,11 +6,12 @@ on:
       - "main"
   pull_request:
     paths:
-      - 'README.md'
-      - 'CONTRIBUTING.md'
-      - 'terraform/aws/README.md'
-      - 'terraform/azure/README.md']
-      - 'terraform/gcp/README.md']
+      - README.md
+      - CONTRIBUTING.md
+      - terraform/aws/README.md
+      - terraform/azure/README.md
+      - terraform/gcp/README.md
+      - .github/workflows/markdown.yml
 
 permissions:
   contents: read
@@ -26,9 +27,8 @@ jobs:
 
     steps:
     # Checkout the repository to the GitHub Actions runner
-    - name: Checkout
-      uses: actions/checkout@v3
-      
+    - uses: actions/checkout@v3
+
     - name: markdownlint-cli
       uses: nosborn/github-action-markdown-cli@v3.1.0
       with:

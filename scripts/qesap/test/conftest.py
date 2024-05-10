@@ -180,6 +180,14 @@ ansible:
 
 
 @pytest.fixture
+def ansible_playbook_cmd():
+    def _callback(exe, inventory, playbook):
+        return [exe, '-vv', '-i', inventory, playbook]
+
+    return _callback
+
+
+@pytest.fixture
 def create_inventory(provider_dir):
     """
     Create an empty inventory file
