@@ -23,12 +23,7 @@ jobs:
           python3 -m pip install --upgrade -r requirements.txt
           ansible-galaxy install -r requirements.yml
 
-      - name: Run ansible-yaml-lint
+      - name: Run ansible static tests
         run: |
-           make -n static-ansible-yaml
-           make SHELL='sh -x' static-ansible-yaml
-
-      - name: Run ansible-playbooks syntax-check
-        run: |
-           make -n static-ansible-syntax
-           make SHELL='sh -x' static-ansible-syntax
+           make -n static-ansible
+           make SHELL='sh -x' static-ansible

@@ -1,6 +1,5 @@
 from unittest import mock
 import os
-import re
 import logging
 import yaml
 
