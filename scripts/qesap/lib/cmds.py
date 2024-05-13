@@ -60,19 +60,19 @@ def create_hana_media(config_ansible, apiver):
             this_match = re.search(hana_url_re, this_media)
             if not this_match:
                 log.error("[%s] does not match regexp to extract ACCOUNT, CONTAINER or EXE", this_media)
-                return None, f"Problems in apiver:{apiver} data conversion"
+                return None, f"Problems in apiver: {apiver} data conversion"
             this_account = this_match.group('ACCOUNT')
             this_container = this_match.group('CONTAINER')
             if prev_account is None:
                 prev_account = this_account
             elif prev_account != this_account:
                 log.error("ACCOUNT [%s] does not match ACCOUNT [%s] used in previous url", this_account, prev_account)
-                return None, f"Problems in apiver:{apiver} data conversion"
+                return None, f"Problems in apiver: {apiver} data conversion"
             if prev_container is None:
                 prev_container = this_match.group('CONTAINER')
             elif prev_container != this_container:
                 log.error("CONTAINER [%s] does not match CONTAINER [%s] used in previous url", this_container, prev_container)
-                return None, f"Problems in apiver:{apiver} data conversion"
+                return None, f"Problems in apiver: {apiver} data conversion"
             match.append(this_match)
 
         hanamedia_content['az_storage_account_name'] = match[0].group('ACCOUNT')

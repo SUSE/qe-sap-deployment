@@ -140,8 +140,7 @@ def test_ansible_no_ansible(
     If the user create a config.yaml without the ansible: section
     the `qesap.py ... ansible` command invocation has to fail.
     """
-    provider = "grilloparlante"
-    config_content = f"""---
+    config_content = """---
 apiver: 2
 provider: grilloparlante"""
     config_file_name = str(tmpdir / "config.yaml")
@@ -542,14 +541,7 @@ def test_ansible_env_config(
     ansible_playbook_cmd,
 ):
     """
-        Test that ANSIBLE_PIPELINING is added to the env used to run Ansible. In the build.sh it was:
-
-    if [ ${quite} -eq 1 ]
-    then
-      export ANSIBLE_NOCOLOR=True
-      export ANSIBLE_LOG_PATH="$(pwd)/ansible.build.${LogEx}"
-    fi
-    export ANSIBLE_PIPELINING=True
+    Test that ANSIBLE_PIPELINING is added to the env used to run Ansible.
     """
     provider = "grilloparlante"
     playbooks = {"create": ["get_cherry_wood", "made_pinocchio_head"]}
