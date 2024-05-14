@@ -18,7 +18,7 @@ logging.basicConfig(format="%(levelname)-8s %(message)s")
 log = logging.getLogger('QESAP')
 
 
-VERSION = '0.4'
+VERSION = '0.5'
 
 DESCRIBE = '''qe-sap-deployment helper script'''
 
@@ -124,6 +124,9 @@ def cli(command_line=None):
                                 action='store_true',
                                 help='Run Ansible with ansible.posix.profile_tasks')
 
+    parser_ansible.add_argument('--junit',
+                                help='Enable Ansible junit report and store it in provided folder')
+
     parsed_args = parser.parse_args(command_line)
     return parsed_args
 
@@ -190,7 +193,8 @@ def main(command_line=None):  # pylint: disable=too-many-return-statements
             parsed_args.dryrun,
             parsed_args.verbose,
             destroy=parsed_args.destroy,
-            profile=parsed_args.profile
+            profile=parsed_args.profile,
+            junit=parsed_args.junit
         )
     else:
         res = Status(f"Unknown command: {parsed_args.command}")
