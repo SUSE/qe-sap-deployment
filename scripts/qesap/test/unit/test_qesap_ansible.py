@@ -574,6 +574,7 @@ def test_ansible_env_config(
     run.assert_has_calls(calls)
 
 
+@mock.patch.dict(os.environ, {"MELAMPO": "cane"}, clear=True)
 @mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_profile(
@@ -607,9 +608,63 @@ def test_ansible_profile(
 
     playbook_files_list = create_playbooks(playbooks["create"])
     calls = []
-    expected_env = dict(os.environ)
+    expected_env = {"MELAMPO": "cane"}
     expected_env["ANSIBLE_PIPELINING"] = "True"
     expected_env["ANSIBLE_CALLBACK_WHITELIST"] = "ansible.posix.profile_tasks"
+    for playbook in playbook_files_list:
+        calls.append(
+            mock.call(
+                cmd=ansible_playbook_cmd(ANSIBLEPB_EXE, inventory, playbook),
+                env=expected_env,
+            )
+        )
+
+    assert main(args) == 0
+
+    run.assert_called()
+    run.assert_has_calls(calls)
+
+
+@mock.patch.dict(os.environ, {"MELAMPO": "cane"}, clear=True)
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
+@mock.patch("lib.process_manager.subprocess_run")
+def test_ansible_junit(
+    run,
+    s,
+    base_args,
+    tmpdir,
+    create_inventory,
+    create_playbooks,
+    ansible_config,
+    ansible_playbook_cmd,
+):
+    """
+    Test that --junit result in Ansible called with two additional env variables
+
+        ANSIBLE_CALLBACKS_ENABLED=junit
+        JUNIT_OUTPUT_DIR="/something/somewhere"
+    """
+    provider = "grilloparlante"
+    playbooks = {"create": ["get_cherry_wood", "made_pinocchio_head"]}
+    config_content = ansible_config(provider, playbooks)
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
+        file.write(config_content)
+
+    args = base_args(None, config_file_name, False)
+    args.append("ansible")
+    args.append("--junit")
+    args.append("/something/somewhere")
+    run.return_value = (0, [])
+
+    inventory = create_inventory(provider)
+
+    playbook_files_list = create_playbooks(playbooks["create"])
+    calls = []
+    expected_env = {"MELAMPO": "cane"}
+    expected_env["ANSIBLE_PIPELINING"] = "True"
+    expected_env["ANSIBLE_CALLBACKS_ENABLED"] = "junit"
+    expected_env["JUNIT_OUTPUT_DIR"] = "/something/somewhere"
     for playbook in playbook_files_list:
         calls.append(
             mock.call(

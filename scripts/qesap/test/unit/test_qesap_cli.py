@@ -187,3 +187,14 @@ def test_cli_ansible_profile(base_args):
     args.append('ansible')
     args.append('--profile')
     cli(args)
+
+
+def test_cli_ansible_junit(base_args):
+    '''
+    Test ansible with --junit mode
+    '''
+    args = base_args()
+    args.append('ansible')
+    args.append('--junit')
+    args.append('/somefolder/')
+    cli(args)

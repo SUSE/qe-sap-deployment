@@ -257,7 +257,7 @@ def ansible_validate(config, base_project, sequence, provider):
     return True, ''
 
 
-def ansible_command_sequence(configure_data_ansible, base_project, sequence, verbose, inventory, profile):
+def ansible_command_sequence(configure_data_ansible, base_project, sequence, verbose, inventory, profile, junit):
     """ Compose the sequence of Ansible commands
 
     Args:
@@ -268,6 +268,7 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
         verbose (bool): enable more verbosity
         inventory (str): inventory.yaml file path
         profile (bool): enable task profile
+        junit (str): enable junit report and provide folder where to store report
 
     Returns:
         list of list of strings, each command is rappresented as a list of its arguments
@@ -304,6 +305,9 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     original_env['ANSIBLE_PIPELINING'] = 'True'
     if profile:
         original_env['ANSIBLE_CALLBACK_WHITELIST'] = 'ansible.posix.profile_tasks'
+    if junit:
+        original_env['ANSIBLE_CALLBACKS_ENABLED'] = 'junit'
+        original_env['JUNIT_OUTPUT_DIR'] = junit
     if 'roles_path' in configure_data_ansible:
         original_env['ANSIBLE_ROLES_PATH'] = configure_data_ansible['roles_path']
 
@@ -325,7 +329,7 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     return True, ansible_cmd_seq
 
 
-def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, profile=False):
+def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, profile=False, junit=False):
     """ Main executor for the deploy sub-command
 
     Args:
@@ -336,6 +340,7 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
         verbose (bool): enable more verbosity
         destroy (bool): select the playbook list
         profile (bool): enable task profile
+        profile (str): enable junit report and provide folder where to store it
 
     Returns:
         Status: execution result, 0 means OK. It is mind to be used as script exit code
@@ -358,7 +363,7 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
         return Status("ok")
 
     inventory = os.path.join(base_project, 'terraform', configure_data['provider'], 'inventory.yaml')
-    ret, ansible_cmd_seq = ansible_command_sequence(configure_data['ansible'], base_project, sequence, verbose, inventory, profile)
+    ret, ansible_cmd_seq = ansible_command_sequence(configure_data['ansible'], base_project, sequence, verbose, inventory, profile, junit)
     if not ret:
         return Status(ansible_cmd_seq)
 
