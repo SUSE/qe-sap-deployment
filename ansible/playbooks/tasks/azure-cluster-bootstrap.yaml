@@ -44,16 +44,47 @@
     - ansible_distribution_major_version == '15'
     - public_cloud_module != 'Registered'
 
-# TODO: Version Control
-- name: Ensure Azure Python SDK and Azure Identity python modules are installed
+# For SLES 12 a we need to force a downgrade of python-azure-core see https://www.suse.com/support/kb/doc/?id=000020716
+- name: Ensure Azure Python SDK and Azure Identity python modules are installed [12sp5]
   community.general.zypper:
-    name: "{{ item.package }}"
+    name: "{{ item }}"
     state: present
   loop:
-    # For SLES 12 a we need to force a downgrade of python-azure-core see https://www.suse.com/support/kb/doc/?id=000020716
-    - {'sles': '12', 'package': ['python-azure-mgmt-compute', 'python-azure-identity', 'python-azure-core==1.9.0-2.3.4']}
-    - {'sles': '15', 'package': ['python3-azure-mgmt-compute', 'python3-azure-identity']}
-  when: item.sles == ansible_distribution_major_version
+    - 'python-azure-mgmt-compute'
+    - 'python-azure-identity'
+    - 'python-azure-core==1.9.0-2.3.4'
+  when:
+    - ansible_distribution_version is version('12.5', '==')
+  register: result
+  until: result is succeeded
+  retries: 3
+  delay: 60
+
+- name: Ensure Azure Python SDK and Azure Identity python modules are installed [15 sp<4]
+  community.general.zypper:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - 'python3-azure-mgmt-compute'
+    - 'python3-azure-identity'
+  when:
+    - ansible_distribution_version is version('15.4', '<')
+    - ansible_distribution_version is version('12.5', '!=')
+  register: result
+  until: result is succeeded
+  retries: 3
+  delay: 60
+
+# https://www.suse.com/c/incompatible-changes-ahead-for-public-cloud-sdks/
+- name: Ensure Azure Python SDK and Azure Identity python modules are installed [15 sp>=4]
+  community.general.zypper:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - 'python311-azure-mgmt-compute'
+    - 'python311-azure-identity'
+  when:
+    - ansible_distribution_version is version('15.4', '>=')
   register: result
   until: result is succeeded
   retries: 3
