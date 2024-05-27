@@ -230,6 +230,21 @@
     - use_sbd
     - is_primary
 
+- name: Configure AWS EC2 STONITH
+  ansible.builtin.command: >
+    crm configure primitive rsc_aws_stonith stonith:external/ec2
+    op start interval=0 timeout=180
+    op stop interval=0 timeout=180
+    op monitor interval=120 timeout=60
+    meta target-role=Started
+    params tag={{ aws_stonith_tag}} pcmk_delay_max=15
+  when:
+    - is_primary
+    - cloud_platform_is_aws
+    - not (use_sbd | bool)
+  register: stonith_config_result
+  failed_when: "'ERROR' in stonith_config_result.stderr"
+
 - name: Set stonith-timeout [sdb]
   ansible.builtin.command:
     cmd: crm configure property stonith-timeout=144
@@ -316,21 +331,6 @@
   when:
     - op_default_timeout != '600'
     - is_primary
-
-- name: Configure AWS EC2 STONITH
-  ansible.builtin.command: >
-    crm configure primitive rsc_aws_stonith stonith:external/ec2
-    op start interval=0 timeout=180
-    op stop interval=0 timeout=180
-    op monitor interval=120 timeout=60
-    meta target-role=Started
-    params tag={{ aws_stonith_tag}} pcmk_delay_max=15
-  when:
-    - is_primary
-    - cloud_platform_is_aws
-    - not (use_sbd | bool)
-  register: stonith_config_result
-  failed_when: "'ERROR' in stonith_config_result.stderr"
 
 - name: Configure cluster IP [aws]
   ansible.builtin.command:
