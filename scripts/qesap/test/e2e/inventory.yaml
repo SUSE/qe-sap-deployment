@@ -4,4 +4,5 @@ all:
       hosts:
         vmhana01:
           ansible_host: localhost
+          ansible_connection: local
   hosts: null

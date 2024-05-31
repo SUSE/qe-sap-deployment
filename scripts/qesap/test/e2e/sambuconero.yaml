@@ -1,0 +1,7 @@
+---
+- name: Sambuco
+  hosts: all
+  tasks:
+    - name: Say hello
+      ansible.builtin.debug:
+        msg: "Hello worlds"

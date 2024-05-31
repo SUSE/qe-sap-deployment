@@ -1,9 +1,9 @@
 #!/bin/bash -e
 
 test_step () {
-  echo "##############################"
+  echo "#######################################################################"
   echo "# $1"
-  echo "##############################"
+  echo "#######################################################################"
 }
 
 test_die () {
@@ -21,43 +21,197 @@ rm -rf "${QESAPROOT}"
 mkdir ${QESAPROOT}
 
 PATH="$(dirname $0)/../..":$PATH
+test_step "First minimal run of qesap.py"
 qesap.py --version || test_die "qesap.py not in PATH"
 
+
+echo "#######################################################################"
+echo "###                                                                 ###"
+echo "###                      C O N F I G U R E                          ###"
+echo "###                                                                 ###"
+echo "#######################################################################"
 test_step "Configure has to fail with empty yaml"
-qesap.py --verbose -b ${QESAPROOT} -c test_1.yaml configure && test_die "Should exit with non zero rc but was not"
+set +e
+qesap.py --verbose -b ${QESAPROOT} -c test_1.yaml configure
+rc=$?;echo "1"; [[ $rc -ne 0 ]] || test_die "Should exit with zero rc but is rc:$rc"
+set -e
 
 test_step "Minimal configure only with Terraform"
+# `qesap.py configure` generate a terraform.tfvars file
+# in the provider folder indicated in the conf.yaml
+# and with content from the conf.yaml terraform section
 TEST_PROVIDER="${QESAPROOT}/terraform/fragola"
 mkdir -p "${TEST_PROVIDER}"
-qesap.py --verbose -b ${QESAPROOT} -c test_2.yaml configure || test_die "Should exit with zero rc but was not. rc:$?"
+qesap.py --verbose -b ${QESAPROOT} -c test_2.yaml configure || test_die "Should exit with zero rc but is rc:$?"
 TEST_TERRAFORM_TFVARS="${TEST_PROVIDER}/terraform.tfvars"
 test_file "${TEST_TERRAFORM_TFVARS}"
 grep -q lampone "${TEST_TERRAFORM_TFVARS}" || test_die "${TEST_TERRAFORM_TFVARS} generated from test_2.yaml should contain the world lampone"
 
-test_step "[test_3.yaml] Minimal configure only with Terraform"
+test_step "[test_3.yaml] configure with also Ansible"
+# `qesap.py configure` generate some ansible .yaml files
 TEST_ANSIBLE_VARS="${QESAPROOT}/ansible/playbooks/vars"
 mkdir -p "${TEST_ANSIBLE_VARS}"
-qesap.py --verbose -b ${QESAPROOT} -c test_3.yaml configure || test_die "Should exit with zero rc but was not. rc:$?"
+qesap.py --verbose -b ${QESAPROOT} -c test_3.yaml configure || test_die "Should exit with zero rc but is rc:$?"
 TEST_ANSIBLE_MEDIA="${TEST_ANSIBLE_VARS}/hana_media.yaml"
 test_file "${TEST_ANSIBLE_MEDIA}"
 grep -q corniolo "${TEST_ANSIBLE_MEDIA}" || test_die "${TEST_ANSIBLE_MEDIA} generated from test_3.yaml should contain the corniolo"
 
+test_step "[test_5.yaml] Change a setting in place"
+# This test try to reproduce the situation in which
+# a user run `qesap.py conf.yaml` a first time
+# then tune and change something in the config.yaml
+# and run the `qesap.py conf.yaml` a second time
+# to have the changes applied in the generated .tfvars or ansible files
+qesap.py --verbose -b ${QESAPROOT} -c test_3.yaml configure || test_die "Should exit with zero rc but is rc:$?"
+grep -q lampone "${TEST_TERRAFORM_TFVARS}" || test_die "${TEST_TERRAFORM_TFVARS} generated from test_3.yaml should contain the world lampone"
+
+# test_5 has everything the same as test_3 except for a terraform variable,
+# verify that running the configure command in place result in the .tfvars file to change
+qesap.py --verbose -b ${QESAPROOT} -c test_5.yaml configure || test_die "Should exit with zero rc but is rc:$?"
+test_file "${TEST_TERRAFORM_TFVARS}"
+set +e
+grep -q lampone "${TEST_TERRAFORM_TFVARS}"
+rc=$?; [[ $rc -ne 0 ]] || test_die "${TEST_TERRAFORM_TFVARS} generated from test_5.yaml should no more contain the world lampone"
+set -e
+grep -q jam "${TEST_TERRAFORM_TFVARS}" || test_die "${TEST_TERRAFORM_TFVARS} generated from test_5.yaml should contain the world jam"
+
+test_step "[test_1.yaml] test verbosity for configure FAIL"
+# can run without verbosity and if ok print anything
+set +e
+qesap.py -b ${QESAPROOT} -c test_1.yaml configure |& tee "${QESAPROOT}/test_1_configure.txt"
+qesap.py --verbose -b ${QESAPROOT} -c test_1.yaml configure |& tee "${QESAPROOT}/test_1_configure_verbose.txt"
+
+grep -qE "^DEBUG" "${QESAPROOT}/test_1_configure_verbose.txt"
+rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some DEBUG"
+
+grep -qE "^INFO" "${QESAPROOT}/test_1_configure_verbose.txt"
+rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some INFO"
+
+grep -qE "^ERROR" "${QESAPROOT}/test_1_configure_verbose.txt"
+rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some ERROR"
+
+grep -qE "^DEBUG" "${QESAPROOT}/test_1_configure.txt"
+rc=$?; [[ $rc -ne 0 ]] || test_die "rc:$rc in verbose mode there should be any DEBUG"
+
+grep -qE "^INFO" "${QESAPROOT}/test_1_configure.txt"
+rc=$?; [[ $rc -ne 0 ]] || test_die "rc:$rc in verbose mode there should be any INFO"
+
+grep -qE "^ERROR" "${QESAPROOT}/test_1_configure.txt"
+rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some ERROR"
+
+set -e
+rm "${QESAPROOT}/test_1_configure.txt"
+rm "${QESAPROOT}/test_1_configure_verbose.txt"
+
+test_step "[test_5.yaml] test verbosity for configure PASS"
+# can run without verbosity and if ok print anything
+qesap.py -b ${QESAPROOT} -c test_5.yaml configure |& tee "${QESAPROOT}/test_5_configure.txt"
+qesap.py --verbose -b ${QESAPROOT} -c test_5.yaml configure |& tee "${QESAPROOT}/test_5_configure_verbose.txt"
+
+grep -qE "^DEBUG" "${QESAPROOT}/test_5_configure_verbose.txt"
+rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some DEBUG"
+
+grep -qE "^INFO" "${QESAPROOT}/test_5_configure_verbose.txt"
+rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some INFO"
+
+lines=$(cat "${QESAPROOT}/test_5_configure.txt" | wc -l)
+[[ $lines -eq 0 ]] || test_die "${QESAPROOT}/test_5_configure.txt should be empty but has $lines lines"
+
+rm "${QESAPROOT}/test_5_configure.txt"
+rm "${QESAPROOT}/test_5_configure_verbose.txt"
+
+echo "#######################################################################"
+echo "###                                                                 ###"
+echo "###                      T E R R A F O R M                          ###"
+echo "###                                                                 ###"
+echo "#######################################################################"
+test_step "[test_3.yaml] Terraform FAILURE for invalid code in main.tf"
+# Create an invalid main.tf.
+# The non zero exit code from terraform has to be correctly propagated
+# through the qesap.py
+echo "SOMETHING INVALID" > "${TEST_PROVIDER}/main.tf"
+set +e
+qesap.py --verbose -b ${QESAPROOT} -c test_3.yaml terraform
+rc=$?; [[ $rc -ne 0 ]] || test_die "Should exit with non zero rc but is rc:$rc"
+set -e
+rm "${TEST_PROVIDER}/main.tf"
+
 test_step "[test_3.yaml] Run Terraform"
+# correct execution of terraform
+# test is checking for 0 exit code
+# and for the generation of the terraform.tfstate
+# terraform.tfstate is directly created by the terraform executable
 touch "${TEST_PROVIDER}/main.tf"
 qesap.py --verbose -b ${QESAPROOT} -c test_3.yaml terraform || test_die "test_3.yaml fail on terraform"
 TEST_TERRAFORM_TFSTATE="${TEST_PROVIDER}/terraform.tfstate"
 test_file "${TEST_TERRAFORM_TFSTATE}"
 
-test_step "[test_3.yaml] Run Ansible"
+test_step "[test_5.yaml] test verbosity for terraform PASS"
+# run `qesap.py terraform` both with and without `--verbose`
+# - The stdout in --verbose has to have some strings starting with both DEBUG and INFO
+# - in case of pass and without --verbose, `qesap.py terraform` has not to emit any line
+# - `qesap.py terraform` redirect all the terraform stdout and stderr for each of the
+#    executed terraform command (init, plan and apply) to a dedicated log file
+rm terraform.*.log.txt
+set +e
+qesap.py -b ${QESAPROOT} -c test_5.yaml terraform |& tee "${QESAPROOT}/test_5_terraform.txt"
+qesap.py --verbose -b ${QESAPROOT} -c test_5.yaml configure |& tee "${QESAPROOT}/test_5_terraform_verbose.txt"
+grep -qE "^DEBUG" "${QESAPROOT}/test_5_terraform_verbose.txt"
+rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some DEBUG"
+
+grep -qE "^INFO" "${QESAPROOT}/test_5_terraform_verbose.txt"
+rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some INFO"
+set -e
+
+lines=$(cat "${QESAPROOT}/test_5_terraform.txt" | wc -l)
+[[ $lines -eq 0 ]] || test_die "${QESAPROOT}/test_5_terraform.txt should be empty but has $lines lines"
+
+find . -type f -name "terraform.*.log.txt" | grep . || test_die "No generated terraform .log.txt"
+terraform_logs_number=$(find . -type f -name "terraform.*.log.txt" | wc -l)
+[[ $terraform_logs_number -eq 3 ]] || test_die "terraform .log.txt are not 3 files but has ${terraform_logs_number}"
+rm terraform.*.log.txt
+rm "${QESAPROOT}/test_5_terraform.txt"
+rm "${QESAPROOT}/test_5_terraform_verbose.txt"
+
+echo "#######################################################################"
+echo "###                                                                 ###"
+echo "###                         A N S I B L E                           ###"
+echo "###                                                                 ###"
+echo "#######################################################################"
+test_step "[test_3.yaml] Run Ansible with no playbooks"
 # Keep in mind that test_3.yaml has no playbooks at all
 touch "${TEST_PROVIDER}/inventory.yaml"
 qesap.py --verbose -b ${QESAPROOT} -c test_3.yaml ansible || test_die "test_3.yaml fail on ansible"
 
-test_step "[test_4.yaml] Run Ansible create"
-touch "${QESAPROOT}/ansible/playbooks/sambuconero.yaml"
+test_step "[test_4.yaml] Run Ansible dryrun"
+cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/sambuconero.yaml"
 cp inventory.yaml "${TEST_PROVIDER}/inventory.yaml"
 qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml configure || test_die "test_4.yaml fail on configure"
+# At the moment e2e does not ahve a way to really run ansible
 qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml --dryrun ansible || test_die "test_4.yaml fail on ansible"
-qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml --dryrun ansible | tee "${QESAPROOT}/ansible.log"
+qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml --dryrun ansible |& tee "${QESAPROOT}/ansible.log"
 grep -E "ansible.*-i.*fragola/inventory.yaml.*all.*ssh-extra-args" "${QESAPROOT}/ansible.log" || test_die "test_4.yaml dryrun fails in ansible command"
-grep -E "ansible-playbook.*-i.*fragola/inventory.yaml.*ansible/playbooks/sambuconero.yaml" "${QESAPROOT}/ansible.log" || test_die "test_4.yaml drayrun fails in ansible-playbook command"
+grep -E "ansible-playbook.*-i.*fragola/inventory.yaml.*ansible/playbooks/sambuconero.yaml" "${QESAPROOT}/ansible.log" || test_die "test_4.yaml dryrun fails in ansible-playbook command"
+rm "${QESAPROOT}/ansible.log"
+
+test_step "[test_4.yaml] Run Ansible PASS"
+qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml ansible || test_die "test_4.yaml fail on ansible"
+
+test_step "[test_4.yaml] Ansible PASS verbosity"
+rm "${QESAPROOT}/test_4_ansible_pass_verbose.txt" || echo "No ${QESAPROOT}/test_4_ansible_pass_verbose.txt"
+rm "${QESAPROOT}/test_4_ansible_pass.txt" || echo "No ${QESAPROOT}/test_4_ansible_pass.txt"
+set +e
+qesap.py -b ${QESAPROOT} -c test_4.yaml ansible |& tee "${QESAPROOT}/test_4_ansible_pass.txt"
+qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml ansible |& tee "${QESAPROOT}/test_4_ansible_pass_verbose.txt"
+
+grep -qE "^DEBUG" "${QESAPROOT}/test_4_ansible_pass_verbose.txt"
+rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some DEBUG"
+
+grep -qE "^INFO" "${QESAPROOT}/test_4_ansible_pass_verbose.txt"
+rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some INFO"
+
+occurrence=$(grep -E "TASK \[Say hello\]" "${QESAPROOT}/test_4_ansible_pass_verbose.txt" | wc -l)
+[[ $occurrence -eq 1 ]] || echo "Some Ansible stdout lines are repeated ${occurrence} in place of exactly 1"
+set -e
+rm "${QESAPROOT}/test_4_ansible_pass.txt"
+rm "${QESAPROOT}/test_4_ansible_pass_verbose.txt"
