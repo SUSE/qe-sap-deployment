@@ -33,7 +33,7 @@ echo "#######################################################################"
 test_step "Configure has to fail with empty yaml"
 set +e
 qesap.py --verbose -b ${QESAPROOT} -c test_1.yaml configure
-rc=$?;echo "1"; [[ $rc -ne 0 ]] || test_die "Should exit with zero rc but is rc:$rc"
+rc=$?; [[ $rc -ne 0 ]] || test_die "Should exit with zero rc but is rc:$rc"
 set -e
 
 test_step "Minimal configure only with Terraform"
@@ -155,7 +155,7 @@ test_step "[test_5.yaml] test verbosity for terraform PASS"
 rm terraform.*.log.txt
 set +e
 qesap.py -b ${QESAPROOT} -c test_5.yaml terraform |& tee "${QESAPROOT}/test_5_terraform.txt"
-qesap.py --verbose -b ${QESAPROOT} -c test_5.yaml configure |& tee "${QESAPROOT}/test_5_terraform_verbose.txt"
+qesap.py --verbose -b ${QESAPROOT} -c test_5.yaml terraform |& tee "${QESAPROOT}/test_5_terraform_verbose.txt"
 grep -qE "^DEBUG" "${QESAPROOT}/test_5_terraform_verbose.txt"
 rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some DEBUG"
 
@@ -178,6 +178,13 @@ echo "###                                                                 ###"
 echo "###                         A N S I B L E                           ###"
 echo "###                                                                 ###"
 echo "#######################################################################"
+test_step "[test_4.yaml] Run Ansible without inventory"
+rm "${TEST_PROVIDER}/inventory.yaml" || echo "No old inventory to remove"
+set +e
+qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml ansible
+rc=$?; [[ $rc -ne 0 ]] || test_die "qesap.py ansible has to fail without inventory.yaml but rc:$rc"
+set -e
+
 test_step "[test_3.yaml] Run Ansible with no playbooks"
 # Keep in mind that test_3.yaml has no playbooks at all
 touch "${TEST_PROVIDER}/inventory.yaml"
@@ -211,7 +218,7 @@ grep -qE "^INFO" "${QESAPROOT}/test_4_ansible_pass_verbose.txt"
 rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some INFO"
 
 occurrence=$(grep -E "TASK \[Say hello\]" "${QESAPROOT}/test_4_ansible_pass_verbose.txt" | wc -l)
-[[ $occurrence -eq 1 ]] || echo "Some Ansible stdout lines are repeated ${occurrence} in place of exactly 1"
+[[ $occurrence -eq 1 ]] || test_die "Some Ansible stdout lines are repeated ${occurrence} times in place of exactly 1"
 set -e
 rm "${QESAPROOT}/test_4_ansible_pass.txt"
 rm "${QESAPROOT}/test_4_ansible_pass_verbose.txt"
