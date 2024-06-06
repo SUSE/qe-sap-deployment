@@ -371,9 +371,19 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
         if dryrun:
             print(' '.join(command['cmd']))
         else:
-            ret, _ = lib.process_manager.subprocess_run(**command)
+            ret, out = lib.process_manager.subprocess_run(**command)
             log.debug("Ansible process return ret:%d", ret)
+            export_ansible_output(command, out)
             if ret != 0:
                 log.error("command:%s returned non zero %d", command, ret)
-                return Status(ret)
+                return Status(f"Error at {command}")
     return Status("ok")
+
+
+def export_ansible_output(command, out):
+    playbook_path = command['cmd'][4]
+    playbook_name = os.path.splitext(os.path.basename(playbook_path))[0]
+    log_filename = f"ansible.{playbook_name}.log.txt"
+    log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
+    with open(log_filename, 'w', encoding='utf-8') as log_file:
+        log_file.write('\n'.join(out))
