@@ -1,9 +1,10 @@
-flake8==6.0.0
-flake8-bugbear==23.5.9
+flake8==6.0.*
+flake8-bugbear==23.5.*
 hypothesis==6.*
-pylint==3.1.0
-pyparsing==3.0.9
-pytest==8.2.0
+pylint==3.1.*
+pytest==8.2.*
 pytest-subprocess
-yamllint==1.35.1
+pytest-find-dependencies
+detect-test-pollution
+yamllint==1.35.*
 ansible-lint

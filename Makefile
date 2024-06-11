@@ -16,7 +16,9 @@ static-ansible: static-ansible-yaml static-ansible-syntax
 
 test: test-ut test-e2e
 
-beyond: all static-flake8-test static-ansible-kics static-terraform-kics static-ansible-lint
+test-all: test-ut test-ut-fuzzy test-ut-verbose test-ut-dep  test-e2e
+
+beyond: all static-flake8-test static-ansible-kics static-terraform-kics static-ansible-lint test-ut-fuzzy test-ut-verbose test-ut-dep
 
 static-pylint:
 	@cd scripts/qesap/ ; tox -e pylint
@@ -57,7 +59,16 @@ static-ansible-lint:
 	@ansible-lint ansible/ --exclude ansible/playbooks/registration_role.yaml --exclude ansible/playbooks/vars/hana_media.yaml --exclude ansible/playbooks/vars/hana_vars.yaml
 
 test-ut:
-	@cd scripts/qesap/ ; tox -e pytest
+	@cd scripts/qesap/ ; tox -e py311
+
+test-ut-fuzzy:
+	@cd scripts/qesap/ ; tox -e pytest_hypo
+
+test-ut-verbose:
+	@cd scripts/qesap/ ; tox -e pytest_verbose
+
+test-ut-dep:
+	@cd scripts/qesap/ ; tox -e pytest_finddep
 
 test-e2e:
 	@cd scripts/qesap/test/e2e ; ./test.sh
