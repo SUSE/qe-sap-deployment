@@ -227,6 +227,11 @@ test_step "[test_3.yaml] Run Ansible with no playbooks"
 touch "${TEST_PROVIDER}/inventory.yaml"
 qesap.py --verbose -b ${QESAPROOT} -c test_3.yaml ansible || test_die "test_3.yaml fail on ansible"
 
+test_step "[test_3.yaml] Run Ansible with NO playbooks"
+qesap.py -b ${QESAPROOT} -c test_3.yaml ansible || test_die "test_3.yaml fail on ansible"
+ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
+[[ $ansible_logs_number -eq 0 ]] || test_die "ansible .log.txt are not 0 files but has ${ansible_logs_number}"
+
 test_step "[test_4.yaml] Run Ansible dryrun"
 THIS_LOG="${QESAPROOT}/ansible.log"
 rm "${THIS_LOG}" || echo "No ${THIS_LOG} to delete"
@@ -268,3 +273,14 @@ occurrence=$(grep -E "TASK \[Say hello\]" "${THIS_LOG}" | wc -l)
 [[ $occurrence -eq 1 ]] || test_die "Some Ansible stdout lines are repeated ${occurrence} times in place of exactly 1"
 set -e
 rm "${THIS_LOG}"
+
+test_step "[test_6.yaml] Check redirection to file of Ansible logs"
+rm ansible.*.log.txt || echo "Nothing to delete"
+cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/timbio.yaml"
+cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/buga.yaml"
+cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/purace.yaml"
+qesap.py -b ${QESAPROOT} -c test_6.yaml ansible || test_die "test_6.yaml fail on ansible"
+ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
+# 3 playbooks plus a log file for the initial ansible (not ansible-playbook) call 
+[[ $ansible_logs_number -eq 4 ]] || test_die "ansible .log.txt are not 4 files but has ${ansible_logs_number}"
+rm ansible.*.log.txt
