@@ -38,11 +38,19 @@ jobs:
       run: tox -e flake8
       env:
         PLATFORM: ${{ matrix.platform }}
-    - name: Test with tox
+    - name: UT tox
       working-directory: scripts/qesap/
       run: tox
       env:
         PLATFORM: ${{ matrix.platform }}
+    - name: Test UT variants
+      working-directory: scripts/qesap/
+      run: |
+        tox -e pytest_verbose
+        tox -e pytest_hypo
+        tox -e pytest_finddep
+      env:
+        PLATFORM: '3.11.9'
     - name: Test e2e
       run: |
         python -m pip install -r requirements.txt
