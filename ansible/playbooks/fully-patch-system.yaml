@@ -8,6 +8,12 @@
     use_reboottimeout: 600
 
   tasks:
+    # Workaround for bsc#1224249
+    - name: Install python3-argcomplete
+      community.general.zypper:
+        name: 'python3-argcomplete'
+        state: latest
+
     # Fully patch system
     - name: Apply all available patches
       community.general.zypper:
