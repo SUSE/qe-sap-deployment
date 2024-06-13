@@ -38,6 +38,12 @@ jobs:
       run: tox -e flake8
       env:
         PLATFORM: ${{ matrix.platform }}
+    - name: flake8 test code with tox
+      working-directory: scripts/qesap/
+      run: |
+        tox -e flake8_test
+      env:
+        PLATFORM: ${{ matrix.platform }}
     - name: UT tox
       working-directory: scripts/qesap/
       run: tox
