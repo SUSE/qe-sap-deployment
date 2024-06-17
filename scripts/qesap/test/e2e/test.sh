@@ -149,10 +149,10 @@ set -e
 rm "${TEST_PROVIDER}/main.tf"
 
 test_step "[test_3.yaml] Run Terraform"
-# correct execution of terraform
-# test is checking for 0 exit code
+# correct execution of terraform: test is checking for 0 exit code
 # and for the generation of the terraform.tfstate
 # terraform.tfstate is directly created by the terraform executable
+# Test is using an empty main.tf placed in the right provider folder
 touch "${TEST_PROVIDER}/main.tf"
 qesap.py --verbose -b ${QESAPROOT} -c test_3.yaml terraform || test_die "test_3.yaml fail on terraform"
 TEST_TERRAFORM_TFSTATE="${TEST_PROVIDER}/terraform.tfstate"
@@ -184,6 +184,10 @@ rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some 
 
 grep -qE "^INFO" "${THIS_LOG}"
 rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some INFO"
+
+# check for duplicated lines
+lines=$(grep -c "Apply complete!" "${THIS_LOG}")
+[[ $lines -eq 1 ]] || test_die "${THIS_LOG} there's one message in the log repeated $lines times."
 set -e
 rm "${THIS_LOG}"
 
@@ -269,7 +273,7 @@ rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some 
 grep -qE "^INFO" "${THIS_LOG}"
 rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some INFO"
 
-occurrence=$(grep -E "TASK \[Say hello\]" "${THIS_LOG}" | wc -l)
+occurrence=$(grep -cE "TASK \[Say hello\]" "${THIS_LOG}")
 [[ $occurrence -eq 1 ]] || test_die "Some Ansible stdout lines are repeated ${occurrence} times in place of exactly 1"
 set -e
 rm "${THIS_LOG}"
