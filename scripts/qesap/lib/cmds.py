@@ -219,7 +219,6 @@ def cmd_terraform(configure_data, base_project, dryrun, workspace='default', des
             print(' '.join(command))
         else:
             ret, out = lib.process_manager.subprocess_run(command)
-            log.debug('\n>    '.join(out))
             log.debug("Terraform process return ret:%d", ret)
             log_filename = f"terraform.{command[2]}.log.txt"
             log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
@@ -227,7 +226,7 @@ def cmd_terraform(configure_data, base_project, dryrun, workspace='default', des
                 log_file.write('\n'.join(out))
             if ret != 0:
                 log.error("command:%s returned non zero %d", command, ret)
-                return Status(f"Error at {command}")
+                return Status(f"Error rc: {ret} at {command}")
     return Status('ok')
 
 
