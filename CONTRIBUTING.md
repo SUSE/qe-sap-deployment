@@ -12,7 +12,7 @@ If you are looking for a task to start with, check out the Issue page on Github.
 
 ## How to get this repository working
 
-Upon having all tools referred in the main README, it's also necessary to install some additional Python dependencies that are listed in `requirements-dev.txt`.
+Upon having all tools referred in the main README, it's also necessary to install some additional Python dependencies that are listed in `scripts/qesap/requirements-dev.txt`.
 
 ### Relevant documentation
 
