@@ -328,6 +328,26 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     return True, ansible_cmd_seq
 
 
+def ansible_export_output(command, out):
+    """ Write the Ansible (or ansible-playbook) stdout to file
+
+    Function is in charge to:
+    - get a cmd and calculate from it the log file name to write. The filename is calculated, when available, from the playbook name: stripping '.yaml' and adding '.log.txt'
+    - open a file in write mode. Path for this file is the current directory
+    - write to the file the content of the out variable. Each element of the out list to a new file line
+
+    Args:
+        command (str list): one cmd element as prepared by ansible_command_sequence
+        out (str list): as returned by subprocess_run
+    """
+    playbook_path = command[4]
+    playbook_name = os.path.splitext(os.path.basename(playbook_path))[0]
+    log_filename = f"ansible.{playbook_name}.log.txt"
+    log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
+    with open(log_filename, 'w', encoding='utf-8') as log_file:
+        log_file.write('\n'.join(out))
+
+
 def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, profile=False, junit=False):
     """ Main executor for the deploy sub-command
 
@@ -351,10 +371,13 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
     # Validations
     config = CONF(configure_data)
     if not config.has_ansible():
-        return Status(f"Deployment configured without Ansible in {configure_data}")
+        err = f"Deployment configured without Ansible in {configure_data}"
+        log.error(err)
+        return Status(err)
 
     res, msg = ansible_validate(config, base_project, sequence, configure_data['provider'])
     if not res:
+        log.error(msg)
         return Status(msg)
 
     if not config.has_ansible_playbooks(sequence):
@@ -364,6 +387,7 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
     inventory = os.path.join(base_project, 'terraform', configure_data['provider'], 'inventory.yaml')
     ret, ansible_cmd_seq = ansible_command_sequence(configure_data['ansible'], base_project, sequence, verbose, inventory, profile, junit)
     if not ret:
+        log.error("ansible_command_sequence ret:%d", ret)
         return Status(ansible_cmd_seq)
 
     for command in ansible_cmd_seq:
@@ -372,17 +396,8 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
         else:
             ret, out = lib.process_manager.subprocess_run(**command)
             log.debug("Ansible process return ret:%d", ret)
-            export_ansible_output(command, out)
+            ansible_export_output(command['cmd'], out)
             if ret != 0:
                 log.error("command:%s returned non zero %d", command, ret)
-                return Status(f"Error at {command}")
+                return Status(f"Error rc: {ret} at {command}")
     return Status("ok")
-
-
-def export_ansible_output(command, out):
-    playbook_path = command['cmd'][4]
-    playbook_name = os.path.splitext(os.path.basename(playbook_path))[0]
-    log_filename = f"ansible.{playbook_name}.log.txt"
-    log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
-    with open(log_filename, 'w', encoding='utf-8') as log_file:
-        log_file.write('\n'.join(out))

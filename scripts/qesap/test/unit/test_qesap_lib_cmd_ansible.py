@@ -1,10 +1,17 @@
+from unittest import mock
 import logging
 import os
+import yaml
 
 
-from lib.cmds import export_ansible_output
+from lib.cmds import ansible_export_output, cmd_ansible
 
 log = logging.getLogger(__name__)
+FAKE_BIN_PATH = "/paese/della/cuccagna/"
+
+
+def fake_ansible_path(x):
+    return FAKE_BIN_PATH + x
 
 
 def test_export_ansible_output():
@@ -16,32 +23,79 @@ def test_export_ansible_output():
 
     test_dir = os.getcwd()
     test_file = os.path.join(test_dir, "ansible.testAll.log.txt")
-    command_to_sent = {
-        "test1": "test_value1",
-        "test2": "test_value2",
-        "test3": "test_value3",
-        "test4": "test_value4",
-        "cmd": [
-            "/tmp/exec_venv/bin/ansible",
-            "-vvvv",
-            "-i",
-            "/root/qe-sap-deployment/terraform/aws/inventory.yaml",
-            "/some/immaginary/path/testAll.yaml",
-            "-a",
-            '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"',
-        ],
-    }
-    ansible_output = """DEBUG    OUTPUT: ansible [core 2.13.5]
-                        DEBUG    OUTPUT:   config file = None
-                        DEBUG    OUTPUT:   configured module search path = ['/root/.ansible/plugins/modules', '/usr/share/ansible/plugins/modules']
-                        DEBUG    OUTPUT:   ansible python module location = /tmp/exec_venv/lib64/python3.11/site-packages/ansible
-                        DEBUG    OUTPUT:   ansible collection location = /root/.ansible/collections:/usr/share/ansible/collections
-                        DEBUG    OUTPUT:   executable location = /tmp/exec_venv/bin/ansible
-                        DEBUG    OUTPUT:   python version = 3.11.5 (main, Sep 06 2023, 11:21:05) [GCC]
-                        DEBUG    OUTPUT:   jinja version = 3.1.4
-                        DEBUG    OUTPUT:   libyaml = True"""
 
-    export_ansible_output(command_to_sent, ansible_output)
+    command_to_sent = [
+        "/tmp/exec_venv/bin/ansible-playbok",
+        "-vvvv",
+        "-i",
+        "/root/qe-sap-deployment/terraform/aws/inventory.yaml",
+        "/some/immaginary/path/testAll.yaml",
+        "-e",
+        "something=somevalue",
+    ]
+    ansible_output = """whatever multiline string
+    produced by Ansible"""
 
-    assert os.path.isfile(test_file), f"Ansible output file {test_file} was not created."
+    ansible_export_output(command_to_sent, ansible_output)
+
+    assert os.path.isfile(
+        test_file
+    ), f"Ansible output file {test_file} was not created."
     os.remove(test_file)
+
+
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
+@mock.patch("lib.process_manager.subprocess_run")
+def test_cmd_ansible(
+    subprocess_run,
+    _,
+    tmpdir,
+    create_playbooks,
+    create_inventory,
+    ansible_exe_call,
+    mock_call_ansibleplaybook,
+):
+    """
+    This test coverage overlap with tests from
+    scripts/qesap/test/unit/test_qesap_ansible.py
+
+    This one is calling lower API (like `cmd_ansible`)
+    than the other (that is using `main('ansible')`)
+
+    For this reason, in this file, there's only one single test
+    about cmd_ansible.
+
+    All other cmd_ansible functionality are tested in test_qesap_ansible.py
+    """
+
+    # Set env and input
+    conf_yaml = """---
+apiver: 3
+provider: "lolo"
+ansible:
+  hana_media: ciao
+  az_storage_account_name: bau
+  az_container_name: fao
+  az_sas_token: maoooo
+  create:
+    - babo.yaml
+"""
+    data = yaml.load(conf_yaml, Loader=yaml.FullLoader)
+    playbook = create_playbooks(["babo"])
+    inventory = create_inventory("lolo")
+
+    subprocess_run.return_value = (
+        0,
+        ["This is the ansible output", "Two lines of that"],
+    )
+
+    # Set expectation
+    calls = []
+    calls.append(mock.call(cmd=ansible_exe_call(inventory)))
+    calls.append(mock_call_ansibleplaybook(inventory, playbook[0]))
+
+    ret = cmd_ansible(data, tmpdir, False, False)
+
+    assert ret == 0
+
+    subprocess_run.assert_has_calls(calls)
