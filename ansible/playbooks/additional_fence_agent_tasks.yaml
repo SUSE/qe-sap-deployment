@@ -1,0 +1,28 @@
+---
+- name: PTF Installation
+  hosts: hana
+  remote_user: cloudadmin
+  become: true
+  become_user: root
+
+  tasks:
+    - name: Verify installation
+      command: "rpm -qf $(which fence_azure_arm)"
+      args:
+        _uses_shell: true
+      register: verify_installation
+
+    - name: Display verification result
+      debug:
+        var: verify_installation.stdout_lines
+
+    - name: Install additional Python packages
+      zypper:
+        name:
+          - python311-pexpect
+          - python311-pycurl
+        state: present
+        update_cache: true
+
+    - name: Modify fence_azure_arm script to use Python 3.11
+      command: "sed -i s/python3/python3.11/ /usr/sbin/fence_azure_arm"

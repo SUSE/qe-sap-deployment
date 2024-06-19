@@ -1,0 +1,60 @@
+---
+- name: PTF Installation
+  hosts: hana
+  remote_user: cloudadmin
+  become: true
+  become_user: root
+  vars:
+    ptf_url: "your_ptf_url"
+    ptf_user: "your_username_here"
+    ptf_password: "your_pass_here"
+    ptf_dir: "/tmp/ptf_dir"
+  tasks:
+    - name: Create directory for PTF installation
+      file:
+        path: "{{ ptf_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Download PTF files recursively with wget
+      command: "wget --no-directories --recursive --reject 'index.html*' --user={{ ptf_user }} --password={{ ptf_password }} --no-parent {{ ptf_url }}"
+      args:
+        chdir: "{{ ptf_dir }}"
+
+    - name: List downloaded files
+      command: "ls -la"
+      args:
+        chdir: "{{ ptf_dir }}"
+      register: download_list
+
+    - name: Display downloaded files
+      debug:
+        var: download_list.stdout_lines
+
+    - name: Find downloaded RPM files
+      find:
+        paths: "{{ ptf_dir }}"
+        patterns: "*.rpm"
+      register: rpm_files
+
+    - name: Display found RPM files
+      debug:
+        var: rpm_files.files
+
+    - name: Filter out src.rpm files
+      set_fact:
+        filtered_rpm_files: "{{ rpm_files.files | selectattr('path', 'search', '^(?!.*src\\.rpm$).*') | list }}"
+
+    - name: Display filtered RPM files
+      debug:
+        var: filtered_rpm_files
+
+    - name: Install PTF RPM packages
+      zypper:
+        name: "{{ item.path }}"
+        state: present
+        disable_gpg_check: true
+        update_cache: true
+      loop: "{{ filtered_rpm_files }}"
+      loop_control:
+        label: "{{ item.path }}"
