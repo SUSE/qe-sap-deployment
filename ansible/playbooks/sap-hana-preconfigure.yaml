@@ -75,4 +75,6 @@
   handlers:
     - name: Reboot
       ansible.builtin.reboot:
+        msg: "Reboot initiated by Ansible - after sap hana preconfigure"
         reboot_timeout: "{{ use_reboottimeout | int }}"
+        connect_timeout: 5
