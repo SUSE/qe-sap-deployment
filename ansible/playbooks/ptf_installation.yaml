@@ -5,21 +5,48 @@
   become: true
   become_user: root
   vars:
-    ptf_url: "your_ptf_url"
-    ptf_user: "your_username_here"
-    ptf_password: "your_pass_here"
+    url_timeout: 30
+    url_retries_cnt: 5
+    url_retries_delay: 10
     ptf_dir: "/tmp/ptf_dir"
+
   tasks:
+
     - name: Create directory for PTF installation
       file:
         path: "{{ ptf_dir }}"
         state: directory
         mode: '0755'
 
+    - name: Convert comma-separated string to list
+      set_fact:
+        az_blobs: "{{ ptf_files | split(',') }}"
+      when: sas_token is defined
+
+    - name: Download PTF files with SAS token
+      ansible.builtin.get_url:
+        url: "https://{{ storage }}.blob.core.windows.net/{{ container }}/{{ item }}?{{ sas_token }}"
+        dest: "{{ ptf_dir }}"
+        owner: root
+        group: root
+        mode: '0600'
+        timeout: "{{ url_timeout }}"
+      register: result
+      until: result is succeeded
+      retries: "{{ url_retries_cnt }}"
+      delay: "{{ url_retries_delay }}"
+      with_items: "{{ az_blobs }}"
+      when: sas_token is defined
+
     - name: Download PTF files recursively with wget
       command: "wget --no-directories --recursive --reject 'index.html*' --user={{ ptf_user }} --password={{ ptf_password }} --no-parent {{ ptf_url }}"
       args:
         chdir: "{{ ptf_dir }}"
+      when:
+        - sas_token is not defined
+        - ptf_user is defined
+        - ptf_password is defined
+        - ptf_url is defined
 
     - name: List downloaded files
       command: "ls -la"
