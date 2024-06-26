@@ -6,7 +6,10 @@
   vars:
     scale_out: false
     use_sapconf: false
-    use_reboottimeout: 600
+    # Set use_reboottimeout default value to 1200,
+    # as for AWS 'r5b.metal' instance type the reboot elapses at least 800 seconds
+    use_reboottimeout: 1200
+    use_connecttimeout: 10
     saptune_solution: HANA
     platform: azure
     cluster_node: true
@@ -77,4 +80,4 @@
       ansible.builtin.reboot:
         msg: "Reboot initiated by Ansible - after sap hana preconfigure"
         reboot_timeout: "{{ use_reboottimeout | int }}"
-        connect_timeout: 5
+        connect_timeout: "{{ use_connecttimeout | int }}"
