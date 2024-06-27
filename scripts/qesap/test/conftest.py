@@ -203,7 +203,7 @@ def ansible_exe_call():
             "all",
             "-a",
             "true",
-            '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"',
+            '--ssh-extra-args=-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new',
         ]
 
     return _callback

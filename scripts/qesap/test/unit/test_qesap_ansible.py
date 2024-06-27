@@ -543,7 +543,7 @@ def test_ansible_ssh(
     ssh-add -v "${ssh_key}"
 
     # Accept new ssh keys for ansible-controlled hosts
-    ansible ${AnsFlgs} all -a true --ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"
+    ansible ${AnsFlgs} all -a true --ssh-extra-args=-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new
     """
     provider = "grilloparlante"
     playbooks = {"create": ["get_cherry_wood", "made_pinocchio_head"]}

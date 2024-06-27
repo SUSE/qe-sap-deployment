@@ -8,9 +8,9 @@ This project is in a very early stage of development.
 
 Tools needed
 
-* Python >= 3.9
+* Python >= 3.10
 * terraform v1.5.7
-* ansible-core 2.13.5 : please refer to the **requirements.txt** file
+* ansible-core 2.16.8 : please refer to the **requirements.txt** file
 * cloud provider cli tools (`az`, `aws`, `gcloud`)
 
 The Python requirements could be managed with a virtual environment
