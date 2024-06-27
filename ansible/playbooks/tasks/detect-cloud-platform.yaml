@@ -16,7 +16,7 @@
       changed_when: false
       failed_when: false
       register: probe_aws
-
+      when: cloud_platform_name is undefined or cloud_platform_name | length == 0
 
     - name: "Probe for AWS 1"
       become: true
@@ -25,18 +25,27 @@
       changed_when: false
       failed_when: false
       register: probe_aws_1
+      when: cloud_platform_name is undefined or cloud_platform_name | length == 0 or cloud_platform_name == "aws"
 
     - name: Set AWS machine type fact
       ansible.builtin.set_fact:
         aws_machine_type: true
-      when: probe_aws_1.stdout is match(".*amazon")
+      when:
+        - cloud_platform_name is undefined or cloud_platform_name | length == 0 or cloud_platform_name == "aws"
+        - probe_aws_1.stdout is match(".*amazon")
 
     - name: Set AWS discovery fact
       ansible.builtin.set_fact:
         cloud_platform_is_aws: true
       when:
+        - cloud_platform_name is undefined or cloud_platform_name | length == 0
         - probe_aws.rc == 0
-        - probe_aws.stdout | lower == 'amazon ec2'  or probe_aws_1.stdout is match(".*amazon")
+        - probe_aws.stdout | lower == 'amazon ec2' or probe_aws_1.stdout is match(".*amazon")
+
+    - name: Set AWS  from var
+      ansible.builtin.set_fact:
+        cloud_platform_is_aws: true
+      when: cloud_platform_name is defined and cloud_platform_name == "aws"
 
 # SEE: https://stackoverflow.com/questions/30911775/how-to-know-if-a-machine-is-an-google-compute-engine-instance
 - name: "Detect GCP"
@@ -49,13 +58,21 @@
       changed_when: false
       failed_when: false
       register: probe_gcp
+      when: cloud_platform_name is undefined or cloud_platform_name | length == 0
 
     - name: Set GCP discovery fact
       ansible.builtin.set_fact:
         cloud_platform_is_gcp: true
       when:
+        - cloud_platform_name is undefined or cloud_platform_name | length == 0
         - probe_gcp.rc == 0
         - probe_gcp.stdout | lower == 'google'
+
+    - name: Set GCP from var
+      ansible.builtin.set_fact:
+        cloud_platform_is_gcp: true
+      when:
+        - cloud_platform_name is defined and cloud_platform_name == 'gcp'
 
 # SEE: https://stackoverflow.com/questions/11570965/how-to-detect-azure-amazon-vm
 - name: "Detect Azure"
@@ -68,6 +85,7 @@
       changed_when: false
       failed_when: false
       register: probe_azure_1
+      when: cloud_platform_name is undefined or cloud_platform_name | length == 0
 
     - name: "Probe for Azure 2/2"
       become: true
@@ -76,12 +94,26 @@
       changed_when: false
       failed_when: false
       register: probe_azure_2
+      when: cloud_platform_name is undefined or cloud_platform_name | length == 0
 
     - name: Set Azure Discovery Fact
       ansible.builtin.set_fact:
         cloud_platform_is_azure: true
-      when: probe_azure_1.rc == 0 and probe_azure_1.stdout | lower == 'microsoft corporation' or probe_azure_2.rc == 0 and probe_azure_2.stdout | lower == 'virtual machine'
+      when:
+        - cloud_platform_name is undefined or cloud_platform_name | length == 0
+        - probe_azure_1.rc == 0 and probe_azure_1.stdout | lower == 'microsoft corporation' or probe_azure_2.rc == 0 and probe_azure_2.stdout | lower == 'virtual machine'
+
+    - name: Set Azure from var
+      ansible.builtin.set_fact:
+        cloud_platform_is_azure: true
+      when:
+        - cloud_platform_name is defined and cloud_platform_name == 'azure'
 
 - name: "Set Cloud Platform"
-  set_fact:
+  ansible.builtin.set_fact:
     cloud_platform_name: "{% if cloud_platform_is_azure %}azure{% elif cloud_platform_is_aws %}aws{% elif cloud_platform_is_gcp %}gcp{% else %}unknown{% endif %}"
+  when: cloud_platform_name is undefined or cloud_platform_name | length == 0
+
+- name: "Cloud Platform detection result"
+  ansible.builtin.debug:
+    msg: "Cloud platform appears to be {{ cloud_platform_name }}"

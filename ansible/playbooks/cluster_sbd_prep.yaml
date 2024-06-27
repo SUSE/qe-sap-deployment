@@ -8,9 +8,7 @@
     - name: Detect cloud platform
       ansible.builtin.include_tasks:
         ./tasks/detect-cloud-platform.yaml
-    - name: Detection result
-      ansible.builtin.debug:
-        msg: "Cloud platform appears to be {{ cloud_platform_name }}"
+
     - name: Include sdb vars
       ansible.builtin.include_vars: ./vars/sbd_parameters.yaml
 
