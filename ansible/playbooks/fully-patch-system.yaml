@@ -5,7 +5,10 @@
   become: true
   become_user: root
   vars:
-    use_reboottimeout: 600
+    # Set use_reboottimeout default value to 1200,
+    # as for AWS 'r5b.metal' instance type the reboot elapses at least 800 seconds
+    use_reboottimeout: 1200
+    use_connecttimeout: 10
 
   tasks:
     # Fully patch system
@@ -21,4 +24,4 @@
       ansible.builtin.reboot:
         msg: "Reboot initiated by Ansible - after full patch system"
         reboot_timeout: "{{ use_reboottimeout | int }}"
-        connect_timeout: 5
+        connect_timeout: "{{ use_connecttimeout | int }}"
