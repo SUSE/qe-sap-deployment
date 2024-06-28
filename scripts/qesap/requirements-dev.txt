@@ -1,4 +1,4 @@
-flake8>=6.0.*
+flake8==6.*
 flake8-bugbear==23.5.*
 hypothesis==6.*
 pylint==3.1.*
