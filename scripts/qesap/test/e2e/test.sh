@@ -213,6 +213,20 @@ terraform_logs_number=$(find . -type f -name "terraform.*.log.txt" | wc -l)
 [[ $terraform_logs_number -eq 3 ]] || test_die "terraform .log.txt are not 3 files but has ${terraform_logs_number}"
 rm terraform.*.log.txt
 
+test_step "[test_3.yaml] test .log.txt file redirection in case of error"
+rm terraform.*.log.txt || echo "No terraform.*.log.txt to delete"
+echo "SOMETHING INVALID" > "${TEST_PROVIDER}/main.tf"
+set +e
+qesap.py --verbose -b ${QESAPROOT} -c test_3.yaml terraform
+set -e
+THIS_LOG="terraform.init.log.txt"
+lines=$(cat "${THIS_LOG}" | wc -l)
+[[ $lines -ne 0 ]] || test_die "${THIS_LOG} should not be empty"
+grep -E "SOMETHING INVALID" $THIS_LOG || test_die "Expected content not found in ${THIS_LOG}"
+rm terraform.*.log.txt
+rm "${TEST_PROVIDER}/main.tf"
+touch "${TEST_PROVIDER}/main.tf"
+
 echo "#######################################################################"
 echo "###                                                                 ###"
 echo "###                         A N S I B L E                           ###"
@@ -227,12 +241,18 @@ rc=$?; [[ $rc -ne 0 ]] || test_die "qesap.py ansible has to fail without invento
 set -e
 
 test_step "[test_3.yaml] Run Ansible with no playbooks"
+# "qesap.py ... ansible" shoul drun doing nothing if no playbooks has to be played
 # Keep in mind that test_3.yaml has no playbooks at all
 touch "${TEST_PROVIDER}/inventory.yaml"
-qesap.py --verbose -b ${QESAPROOT} -c test_3.yaml ansible || test_die "test_3.yaml fail on ansible"
-
-test_step "[test_3.yaml] Run Ansible with NO playbooks"
+rm ansible.*.log.txt || echo "Nothing to delete"
 qesap.py -b ${QESAPROOT} -c test_3.yaml ansible || test_die "test_3.yaml fail on ansible"
+ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
+[[ $ansible_logs_number -eq 0 ]] || test_die "ansible .log.txt are not 0 files but has ${ansible_logs_number}"
+
+test_step "[test_3.yaml] Run Ansible with no playbooks and no verbosity"
+# exactly same as the previous one but with "--verbose"
+rm ansible.*.log.txt || echo "Nothing to delete"
+qesap.py --verbose -b ${QESAPROOT} -c test_3.yaml ansible || test_die "test_3.yaml fail on ansible"
 ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
 [[ $ansible_logs_number -eq 0 ]] || test_die "ansible .log.txt are not 0 files but has ${ansible_logs_number}"
 
@@ -243,12 +263,15 @@ cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/sambuconero.yaml"
 cp inventory.yaml "${TEST_PROVIDER}/inventory.yaml"
 qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml configure || test_die "test_4.yaml fail on configure"
 # At the moment e2e does not ahve a way to really run ansible
+rm ansible.*.log.txt || echo "Nothing to delete"
 qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml --dryrun ansible || test_die "test_4.yaml fail on ansible"
 qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml --dryrun ansible |& tee "${THIS_LOG}"
 grep -E "ansible.*-i.*fragola/inventory.yaml.*all.*ssh-extra-args" \
     "${THIS_LOG}" || test_die "test_4.yaml dryrun fails in ansible command"
 grep -E "ansible-playbook.*-i.*fragola/inventory.yaml.*ansible/playbooks/sambuconero.yaml" \
     "${THIS_LOG}" || test_die "test_4.yaml dryrun fails in ansible-playbook command"
+ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
+[[ $ansible_logs_number -eq 0 ]] || test_die "ansible .log.txt are not 0 files but has ${ansible_logs_number}"
 rm "${THIS_LOG}"
 
 test_step "[test_4.yaml] Run Ansible PASS"
@@ -265,6 +288,7 @@ rm "${THIS_LOG}"
 test_step "[test_4.yaml] Ansible stdout with verbosity in case of PASS"
 THIS_LOG="${QESAPROOT}/test_4_ansible_pass_verbose.txt"
 rm "${THIS_LOG}" || echo "No ${THIS_LOG}"
+rm ansible.*.log.txt || echo "Nothing to delete"
 qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml ansible |& tee "${THIS_LOG}"
 set +e
 grep -qE "^DEBUG" "${THIS_LOG}"
@@ -276,7 +300,13 @@ rc=$?; [[ $rc -eq 0 ]] || test_die "rc:$rc in verbose mode there should be some 
 occurrence=$(grep -cE "TASK \[Say hello\]" "${THIS_LOG}")
 [[ $occurrence -eq 1 ]] || test_die "Some Ansible stdout lines are repeated ${occurrence} times in place of exactly 1"
 set -e
+# check presence of the subprocess .log.txt
+ansible_logs_number=$(find . -type f -name "ansible.sambuconero.log.txt" | wc -l)
+[[ $ansible_logs_number -eq 1 ]] || test_die "ansible.sambuconero.log.txt missing"
+# check content of the subprocess .log.txt
+grep -E "TASK.*Say hello" ansible.sambuconero.log.txt || test_die "Expected content not found in ansible.sambuconero.log.txt"
 rm "${THIS_LOG}"
+rm ansible.*.log.txt
 
 test_step "[test_6.yaml] Check redirection to file of Ansible logs"
 rm ansible.*.log.txt || echo "Nothing to delete"
@@ -287,4 +317,19 @@ qesap.py -b ${QESAPROOT} -c test_6.yaml ansible || test_die "test_6.yaml fail on
 ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
 # 3 playbooks plus a log file for the initial ansible (not ansible-playbook) call 
 [[ $ansible_logs_number -eq 4 ]] || test_die "ansible .log.txt are not 4 files but has ${ansible_logs_number}"
+rm ansible.*.log.txt
+
+test_step "[test_7.yaml] Check redirection to file of Ansible logs in case of error in the playbook execution"
+rm ansible.*.log.txt || echo "Nothing to delete"
+cp marasca.yaml "${QESAPROOT}/ansible/playbooks/"
+set +e
+qesap.py --verbose -b ${QESAPROOT} -c test_7.yaml ansible
+rc=$?; [[ $rc -ne 0 ]] || test_die "qesap.py ansible has to fail if ansible-playbook fails rc:$rc"
+set -e
+ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
+# 2 playbooks plus a log file for the initial ansible (not ansible-playbook) call
+[[ $ansible_logs_number -eq 3 ]] || test_die "ansible .log.txt are not 3 files but has ${ansible_logs_number}"
+grep -E "TASK.*Say hello" ansible.sambuconero.log.txt || test_die "Expected content not found in ansible.sambuconero.log.txt"
+grep -E "TASK.*This fails" ansible.marasca.log.txt || test_die "Expected content not found in ansible.marasca.log.txt"
+
 rm ansible.*.log.txt
