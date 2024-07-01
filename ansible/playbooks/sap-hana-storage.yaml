@@ -1,5 +1,6 @@
 ---
-- hosts: hana
+- name: SAP Hana storage
+  hosts: hana
   remote_user: cloudadmin
   become: true
   become_user: root
@@ -7,9 +8,6 @@
     - name: Detect cloud platform
       ansible.builtin.include_tasks:
         ./tasks/detect-cloud-platform.yaml
-    - name: Detection result
-      ansible.builtin.debug:
-        msg: "Cloud platform appears to be {{ cloud_platform_name }}"
 
   tasks:
     - name: Load AWS disk configuration for R4 instances
@@ -33,5 +31,5 @@
         sap_storage_cloud_type: 'generic'
         sap_storage_sap_type: 'sap_hana'
         sap_storage_action: 'prepare'
-      include_role:
+      ansible.builtin.include_role:
         name: ../roles/qe_sap_storage

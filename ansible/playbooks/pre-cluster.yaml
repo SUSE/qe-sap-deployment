@@ -1,14 +1,11 @@
 ---
-- hosts: all
-  name: Cluster preparation
+- name: Cluster preparation
+  hosts: all
   remote_user: cloudadmin
   pre_tasks:
     - name: Detect cloud platform
       ansible.builtin.include_tasks:
         ./tasks/detect-cloud-platform.yaml
-    - name: Detection result
-      ansible.builtin.debug:
-        msg: "Cloud platform appears to be {{ cloud_platform_name }}"
 
   tasks:
     - name: Ensure all hosts are present in all hosts /etc/hosts files
@@ -37,7 +34,7 @@
       ansible.builtin.file:
         path: "{{ ansible_env.HOME }}/.ssh"
         state: directory
-        owner: "{{ansible_user}}"
+        owner: "{{ ansible_user }}"
         group: users
         mode: '0700'
       when: inventory_hostname in groups.hana
@@ -57,7 +54,7 @@
 
     - name: Generate public/private keys for cloudadmin on hana hosts
       community.crypto.openssh_keypair:
-        owner: "{{ansible_user}}"
+        owner: "{{ ansible_user }}"
         group: users
         mode: '0600'
         path: "{{ ansible_env.HOME }}/.ssh/id_rsa"
@@ -80,7 +77,7 @@
 
     - name: Apply cloudadmin pub key to other node cloudadmin Authorised Keys
       ansible.posix.authorized_key:
-        user: "{{ansible_user}}"
+        user: "{{ ansible_user }}"
         state: present
         key: "{{ hostvars[item].ssh_user_keys.public_key }}"
       when: inventory_hostname in groups.hana and hostvars[item]['ansible_hostname'] in groups.hana and ansible_hostname != item
