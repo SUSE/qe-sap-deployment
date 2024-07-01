@@ -1,0 +1,9 @@
+---
+- name: Marasca
+  hosts: all
+  tasks:
+    - name: This fails
+      ansible.builtin.assert:
+        that: "'marasca' == 'matura'"
+        fail_msg: "Non ancora matura"
+        success_msg: "Matura!! enjoy..."
