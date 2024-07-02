@@ -296,9 +296,12 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     ansible_cmd_seq = []
     ssh_share = ansible_common.copy()
     ssh_share[0] = ansible_bin_paths['ansible']
+    # Don't set '--ssh-extra-args="..."' but 'ssh-extra-args=...'
+    # for avoiding the ansible ssh connection failure introduced by
+    # https://github.com/ansible/ansible/pull/78826 in "ansible-core 2.15.0"
     ssh_share.extend([
         'all', '-a', 'true',
-        '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'])
+        '--ssh-extra-args=-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new'])
     ansible_cmd_seq.append({'cmd': ssh_share})
     original_env = dict(os.environ)
     original_env['ANSIBLE_PIPELINING'] = 'True'
