@@ -246,6 +246,7 @@ touch "${TEST_PROVIDER}/inventory.yaml"
 rm ansible.*.log.txt || echo "Nothing to delete"
 qesap.py -b ${QESAPROOT} -c test_3.yaml ansible || test_die "test_3.yaml fail on ansible"
 ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
+echo "--> ansible_logs_number:${ansible_logs_number}"
 [[ $ansible_logs_number -eq 0 ]] || test_die "ansible .log.txt are not 0 files but has ${ansible_logs_number}"
 
 test_step "[test_3.yaml] Run Ansible with no playbooks and verbosity"
