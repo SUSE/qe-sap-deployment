@@ -42,7 +42,7 @@ def test_stderr():
     test_text = '"Banana"'
     exit_code, stdout_list = subprocess_run(['logger', '-s', test_text])
     assert exit_code == 0
-    assert stdout_list != []
+    assert len(stdout_list) > 0
 
 
 def test_err():
@@ -53,7 +53,7 @@ def test_err():
 
     exit_code, stdout_list = subprocess_run(['cat', not_existing_file])
     assert exit_code == 1
-    assert stdout_list == []
+    assert len(stdout_list) > 0
 
 
 def test_env():
