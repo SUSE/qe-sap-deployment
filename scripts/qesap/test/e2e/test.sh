@@ -288,3 +288,33 @@ ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
 # 3 playbooks plus a log file for the initial ansible (not ansible-playbook) call 
 [[ $ansible_logs_number -eq 4 ]] || test_die "ansible .log.txt are not 4 files but has ${ansible_logs_number}"
 rm ansible.*.log.txt
+
+test_step "[test_4.yaml] Run Ansible with --junit"
+find . -type f -name "sambuconero*.xml" -delete || echo "Nothing to delete"
+qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml ansible --junit . || test_die "test_4.yaml fail on ansible"
+junit_logs_number=$(find . -type f -name "sambuconero*.xml" | wc -l)
+echo "--> junit_logs_number:${junit_logs_number}"
+[[ $junit_logs_number -eq 1 ]] || test_die "ansible JUNIT reports should be 1 files but are ${junit_logs_number}"
+find . -type f -name "sambuconero*.xml" -delete
+
+test_step "[test_8.yaml] Run Ansible with --profile"
+rm ansible.*.log.txt || echo "Nothing to delete"
+cp goji.yaml "${QESAPROOT}/ansible/playbooks/"
+qesap.py --verbose -b ${QESAPROOT} -c test_8.yaml ansible --profile || test_die "test_8.yaml fail on ansible"
+time_reports=$(grep -cE " -+ [0-9.]+s" ansible.goji.log.txt)
+echo "--> time_reports:${time_reports}"
+[[ $time_reports -gt 1 ]] || test_die "ansible profile reports should be at least 1 but is ${time_reports}"
+rm ansible.*.log.txt
+
+test_step "[test_8.yaml] Run Ansible with --profile and --junit"
+rm ansible.*.log.txt || echo "Nothing to delete"
+find . -type f -name "goji*.xml" -delete || echo "Nothing to delete"
+qesap.py --verbose -b ${QESAPROOT} -c test_8.yaml ansible --profile --junit . || test_die "test_8.yaml fail on ansible"
+junit_logs_number=$(find . -type f -name "goji*.xml" | wc -l)
+echo "--> junit_logs_number:${junit_logs_number}"
+[[ $junit_logs_number -eq 1 ]] || test_die "ansible JUNIT reports should be 1 files but are ${junit_logs_number}"
+time_reports=$(grep -cE " -+ [0-9.]+s" ansible.goji.log.txt) || test_die "Test fails at profile output check"
+echo "--> time_reports:${time_reports}"
+[[ $time_reports -gt 1 ]] || test_die "ansible profile reports should be at least 1 but is ${time_reports}"
+rm ansible.*.log.txt
+find . -type f -name "goji*.xml" -delete

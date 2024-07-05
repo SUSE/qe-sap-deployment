@@ -305,11 +305,14 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     ansible_cmd_seq.append({'cmd': ssh_share})
     original_env = dict(os.environ)
     original_env['ANSIBLE_PIPELINING'] = 'True'
+    ansible_callbacks = []
     if profile:
-        original_env['ANSIBLE_CALLBACK_WHITELIST'] = 'ansible.posix.profile_tasks'
+        ansible_callbacks.append('ansible.posix.profile_tasks')
     if junit:
-        original_env['ANSIBLE_CALLBACKS_ENABLED'] = 'junit'
+        ansible_callbacks.append('junit')
         original_env['JUNIT_OUTPUT_DIR'] = junit
+    if len(ansible_callbacks) > 0:
+        original_env['ANSIBLE_CALLBACKS_ENABLED'] = ','.join(ansible_callbacks)
     if 'roles_path' in configure_data_ansible:
         original_env['ANSIBLE_ROLES_PATH'] = configure_data_ansible['roles_path']
 
