@@ -1,0 +1,15 @@
+---
+- name: Bacche di goji
+  hosts: all
+  tasks:
+    - name: Say hello
+      ansible.builtin.debug:
+        msg: "Hello worlds"
+
+    - name: Pause for 10 seconds to rest
+      ansible.builtin.pause:
+        seconds: 10
+
+    - name: Say goodbye
+      ansible.builtin.debug:
+        msg: "Bye bye"

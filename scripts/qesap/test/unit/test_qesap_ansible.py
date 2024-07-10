@@ -633,7 +633,7 @@ def test_ansible_profile(
     """
     Test that --profile result in Ansible called with an additional env variable
 
-        ANSIBLE_CALLBACK_WHITELIST=ansible.posix.profile_tasks
+        ANSIBLE_CALLBACKS_ENABLED=ansible.posix.profile_tasks
     """
     provider = "grilloparlante"
     playbooks = {"create": ["get_cherry_wood", "made_pinocchio_head"]}
@@ -653,7 +653,7 @@ def test_ansible_profile(
     calls = []
     expected_env = {"MELAMPO": "cane"}
     expected_env["ANSIBLE_PIPELINING"] = "True"
-    expected_env["ANSIBLE_CALLBACK_WHITELIST"] = "ansible.posix.profile_tasks"
+    expected_env["ANSIBLE_CALLBACKS_ENABLED"] = "ansible.posix.profile_tasks"
     for playbook in playbook_files_list:
         calls.append(mock_call_ansibleplaybook(inventory, playbook, env=expected_env))
 
