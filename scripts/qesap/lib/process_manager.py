@@ -24,13 +24,13 @@ def subprocess_run(cmd, env=None):
         log.info("with env %s", env)
 
     proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False, env=env)
+
+    ret_stdout = list(proc.stdout.decode('UTF-8').splitlines())
     if proc.returncode != 0:
         log.error("ERROR %d in %s", proc.returncode, ' '.join(cmd[0:1]))
-        for line in proc.stdout.decode('UTF-8').splitlines():
-            log.error("OUTPUT:          %s", line)
-        return (proc.returncode, [])
-    stdout = [line.decode("utf-8") for line in proc.stdout.splitlines()]
-
-    for line in stdout:
-        log.debug('OUTPUT: %s', line)
-    return (0, stdout)
+    for line in ret_stdout:
+        if proc.returncode != 0:
+            log.error("OUTPUT: %s", line)
+        else:
+            log.debug('OUTPUT: %s', line)
+    return (proc.returncode, ret_stdout)
