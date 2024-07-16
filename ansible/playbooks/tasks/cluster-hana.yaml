@@ -166,6 +166,8 @@
 - name: Cleanup if needed
   ansible.builtin.command:
     cmd: "crm resource cleanup {{ rsc_SAPHana }}"
+  retries: 3
+  delay: 10
   when:
     - reg_crm_status.stdout | regex_search('Failed Resource Actions') | trim | length != 0
     - is_primary
