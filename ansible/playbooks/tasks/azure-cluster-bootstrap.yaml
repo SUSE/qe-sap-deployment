@@ -83,6 +83,9 @@
   loop:
     - 'python311-azure-mgmt-compute'
     - 'python311-azure-identity'
+    - 'python311-pycurl'
+    - 'python311-msrestazure'
+    - 'python311-pexpect'
   when:
     - ansible_distribution_version is version('15.4', '>=')
   register: result
