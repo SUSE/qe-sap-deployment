@@ -98,7 +98,7 @@
         - "(rcg.rc != 0) or (use_suseconnect | bool)"
 
     - name: Check if repos are added after registration
-      ansible.builtin.command: zypper lr
+      ansible.builtin.command: zypper lr -u
       register: repos_after
       failed_when: repos_after.rc != 0
       when:
