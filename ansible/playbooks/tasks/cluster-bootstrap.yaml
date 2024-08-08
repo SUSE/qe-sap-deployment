@@ -222,6 +222,16 @@
     migration_threshold: "{{ (crm_rsc_options_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] | default('false') }}"
     op_default_timeout: "{{ (crm_op_options_show.stdout | regex_search('timeout=([0-9]*)', '\\1'))[0] | default('false') }}"
 
+- name: Set corosync facts
+  ansible.builtin.set_fact:
+    aws_stonith_cmd: |
+      crm configure primitive rsc_aws_stonith stonith:external/ec2 \
+      op start interval=0 timeout=180 \
+      op stop interval=0 timeout=180 \
+      op monitor interval=120 timeout=60 \
+      meta target-role=Started \
+      params tag={{ aws_stonith_tag}} pcmk_delay_max=15
+
 - name: Enable SBD [sbd]
   ansible.builtin.command:
     cmd: crm configure primitive rsc_iscsi_sbd stonith:external/sbd
@@ -230,18 +240,25 @@
     - use_sbd
     - is_primary
 
-- name: Configure AWS EC2 STONITH
-  ansible.builtin.command: >
-    crm configure primitive rsc_aws_stonith stonith:external/ec2
-    op start interval=0 timeout=180
-    op stop interval=0 timeout=180
-    op monitor interval=120 timeout=60
-    meta target-role=Started
-    params tag={{ aws_stonith_tag}} pcmk_delay_max=15
+- name: Configure AWS EC2 STONITH for sle 12sp5
+  ansible.builtin.command: "{{ aws_stonith_cmd }}"
   when:
     - is_primary
     - cloud_platform_is_aws
     - not (use_sbd | bool)
+    - ansible_distribution_major_version == '12'
+  register: stonith_config_result
+  failed_when: >
+    stonith_config_result.stderr_lines | select("match", "ERROR") | reject("match", "ERROR: warning") | list | length > 0
+
+
+- name: Configure AWS EC2 STONITH for sle 15
+  ansible.builtin.command: "{{ aws_stonith_cmd }}"
+  when:
+    - is_primary
+    - cloud_platform_is_aws
+    - not (use_sbd | bool)
+    - ansible_distribution_major_version != '12'
   register: stonith_config_result
   failed_when: "'ERROR' in stonith_config_result.stderr"
 
@@ -401,7 +418,7 @@
   when:
     - is_primary
     - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
-  until: reg_vip_location2.stdout_lines[0] | trim | split(' ') | last == primary_hostname
+  until: reg_vip_location2.stdout_lines | length > 0 and reg_vip_location2.stdout_lines[0] | trim | split(' ') | last == primary_hostname
   retries: 10
   delay: 6
 
