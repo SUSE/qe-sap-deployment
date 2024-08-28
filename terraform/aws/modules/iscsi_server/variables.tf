@@ -3,13 +3,13 @@ variable "common_variables" {
 }
 
 variable "availability_zones" {
-  type        = list(string)
   description = "Used availability zones"
+  type        = list(string)
 }
 
 variable "subnet_ids" {
-  type        = list(string)
   description = "Subnet ids to attach the machines network interface"
+  type        = list(string)
 }
 
 variable "name" {
@@ -23,24 +23,23 @@ variable "network_domain" {
 }
 
 variable "iscsi_count" {
-  type        = number
   description = "Number of iscsi machines to deploy"
+  type        = number
 }
 
 variable "instance_type" {
-  type        = string
   description = "The instance type of iscsi server node."
-  default     = "t2.large"
+  type        = string
 }
 
 variable "key_name" {
-  type        = string
   description = "AWS key pair name"
+  type        = string
 }
 
 variable "security_group_id" {
-  type        = string
   description = "Security group id"
+  type        = string
 }
 
 variable "host_ips" {

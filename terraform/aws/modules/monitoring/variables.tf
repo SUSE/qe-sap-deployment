@@ -11,7 +11,6 @@ variable "monitoring_enabled" {
 variable "instance_type" {
   description = "The instance type of monitoring node."
   type        = string
-  default     = "t3.micro"
 }
 
 variable "name" {
@@ -25,13 +24,13 @@ variable "network_domain" {
 }
 
 variable "key_name" {
-  type        = string
   description = "AWS key pair name"
+  type        = string
 }
 
 variable "security_group_id" {
-  type        = string
   description = "Security group id"
+  type        = string
 }
 
 variable "monitoring_srv_ip" {
@@ -41,13 +40,13 @@ variable "monitoring_srv_ip" {
 }
 
 variable "availability_zones" {
-  type        = list(string)
   description = "Used availability zones"
+  type        = list(string)
 }
 
 variable "subnet_ids" {
-  type        = list(string)
   description = "List of subnet IDs"
+  type        = list(string)
 }
 
 variable "timezone" {
