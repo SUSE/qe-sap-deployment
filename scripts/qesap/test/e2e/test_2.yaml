@@ -1,5 +1,5 @@
 ---
-apiver: 1
+apiver: 3
 provider: fragola
 terraform:
   variables:

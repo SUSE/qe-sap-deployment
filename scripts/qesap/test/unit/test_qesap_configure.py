@@ -17,7 +17,7 @@ def test_configure(configure_helper, config_yaml_sample):
 
 def test_configure_apiver(configure_helper):
     '''
-    The configure has to have a apiver field at top level
+    The configure has to have an apiver field at top level
     '''
     provider = 'pinocchio'
     conf = f"""---
@@ -87,7 +87,7 @@ def test_configure_checkfolder(base_args, tmpdir):
     config_file_name = str(tmpdir / 'config.yaml')
     with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(f"""---
-apiver: 2
+apiver: 3
 provider: {provider}
 ansible:
     hana_urls: onlyone
@@ -147,7 +147,7 @@ def test_configure_fail_at_missing_params(configure_helper):
     assert main(args) == 1
 
     conf = """---
-apiver: 2
+apiver: 3
 provider:
 terraform:
 ansible:"""
@@ -155,7 +155,7 @@ ansible:"""
     assert main(args) == 1
 
     conf = """---
-apiver: 2
+apiver: 3
 provider: something
 terraform:
 ansible:"""
@@ -177,7 +177,7 @@ def test_configure_check_terraform_cloud_provider(base_args, tmpdir):
     config_file_name = str(tmpdir / 'config.yaml')
     with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(f"""---
-apiver: 2
+apiver: 3
 provider: {provider}
 ansible:
     hana_urls: onlyone
@@ -203,7 +203,6 @@ terraform:
     config_file_name = str(tmpdir / 'config.yaml')
     with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(config)
-    os.makedirs(os.path.join(tmpdir, 'terraform'))
     os.makedirs(os.path.join(tmpdir, 'terraform', 'pinocchio'))
 
     args = base_args(base_dir=tmpdir, config_file=config_file_name)
@@ -211,7 +210,41 @@ terraform:
     assert main(args) == 0
 
 
-def test_configure_without_ansible_in_older_apiver(base_args, tmpdir):
+def test_configure_apiver_older_than_3(base_args, tmpdir):
+    '''
+       Test is using the no more supported apiver:2
+       so the configure has just to fail.
+    '''
+    config = """---
+apiver: 2
+provider: pinocchio
+terraform:
+  variables:
+    az_region: "westeurope"
+    hana_ips: ["10.0.0.2", "10.0.0.3"]
+    hana_data_disks_configuration:
+      disk_type: "hdd,hdd,hdd"
+      disks_size: "64,64,64"
+ansible: pippo
+"""
+    config_file_name = str(tmpdir / 'config.yaml')
+    with open(config_file_name, 'w', encoding='utf-8') as file:
+        file.write(config)
+    os.makedirs(os.path.join(tmpdir, 'terraform', 'pinocchio'))
+    os.makedirs(os.path.join(tmpdir, 'ansible', 'playbooks', 'vars'))
+
+    args = base_args(base_dir=tmpdir, config_file=config_file_name)
+    args.append('configure')
+    assert main(args) == 1
+
+
+def test_configure_apiver_older_than_3_no_ansible(base_args, tmpdir):
+    '''
+       Test is using the no more supported apiver:2
+       but it also does not have the ansible section at all
+       that is the only impacted one.
+       Allow this conf.yaml with old apiver in this case.
+    '''
     config = """---
 apiver: 2
 provider: pinocchio
@@ -226,7 +259,6 @@ terraform:
     config_file_name = str(tmpdir / 'config.yaml')
     with open(config_file_name, 'w', encoding='utf-8') as file:
         file.write(config)
-    os.makedirs(os.path.join(tmpdir, 'terraform'))
     os.makedirs(os.path.join(tmpdir, 'terraform', 'pinocchio'))
 
     args = base_args(base_dir=tmpdir, config_file=config_file_name)

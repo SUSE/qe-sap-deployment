@@ -17,106 +17,6 @@ def test_configure_create_ansible_hanamedia(configure_helper, config_yaml_sample
     assert os.path.isfile(hana_media)
 
 
-def test_configure_ansible_hanamedia_content_apiver2(configure_helper, validate_hana_media):
-    """
-    Test that an old apiver:2 config.yaml
-
-    ```
-    ansible:
-      hana_urls:
-        - https://<SOMETHING>.blob.core.windows.net/<CONTAINER>/<SAPCAR_EXE>
-        - https://<SOMETHING>.blob.core.windows.net/<CONTAINER>/IMDB_SERVER<VERSION>
-        - https://<SOMETHING>.blob.core.windows.net/<CONTAINER>/IMDB_CLIENT<VERSION>
-    ```
-
-    during 'configure', write a hana_media.yaml with
-    expected content
-
-    ```
-    az_storage_account_name: <SOMETHING>
-    az_container_name:       <CONTAINER>
-    az_sas_token:            <SAS_TOKEN>
-    az_blobs:
-      - <SAPCAR_EXE>
-      - <IMDB_SERVER_SAR>
-      - <IMDB_CLIENT_SAR>
-    ```
-    """
-    provider = 'pinocchio'
-    conf = f"""---
-apiver: 2
-provider: {provider}
-terraform:
-    variables:
-        az_region: "westeurope"
-ansible:
-  hana_urls:
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT"""
-    args, _, hana_media, _ = configure_helper(provider, conf)
-    assert main(args) == 0
-
-    res, msg = validate_hana_media(hana_media, account='SOMEONE', container='SOMETHING', token=None, sapcar='MY_SAPCAR_EXE', imdb_srv='MY_IMDB_SERVER', imdb_cln='MY_IMDB_CLIENT')
-    assert res, msg
-
-
-def test_configure_ansible_hanamedia_content_apiver2_invalidurl(configure_helper, validate_hana_media):
-    """
-    Test conversion old apiver:2 config.yaml that is using invalid urls
-    """
-    provider = 'pinocchio'
-    wrong_hana_urls = [
-        (
-            "MISSING ACCOUNT",
-            """
-    - https://.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT""",
-        ),
-        (
-            "MISSING CONTAINER",
-            """
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
-    - https://SOMEONE.blob.core.windows.net//MY_IMDB_CLIENT
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT""",
-        ),
-        (
-            "MISSING EXE",
-            """
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/""",
-        ),
-        (
-            "DIFFERENT ACCOUNT",
-            """
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
-    - https://SOMEONEELSE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER       # This is the wrong one DIFFERENT ACCOUNT
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT""",
-        ),
-        (
-            "DIFFERENT CONTAINER",
-            """
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER       # This is the wrong one DIFFERENT ACCOUNT
-    - https://SOMEONE.blob.core.windows.net/SOMETHINGELSE/MY_IMDB_CLIENT""",
-        ),
-    ]
-    for this_set in wrong_hana_urls:
-        conf = f"""---
-apiver: 2
-provider: {provider}
-terraform:
-    variables:
-        az_region: "westeurope"
-ansible:
-  hana_urls:
-{this_set[1]}"""
-        args, _, hana_media, _ = configure_helper(provider, conf)
-        assert main(args) != 0, f"{this_set[0]} error not detected"
-
-
 def test_configure_ansible_hanamedia_content_apiver3(configure_helper, validate_hana_media):
     """
     Test that an new apiver:3 config.yaml
@@ -238,31 +138,6 @@ def test_configure_create_ansible_hanavars(configure_helper, config_yaml_sample)
 
     assert main(args) == 0
     assert os.path.isfile(hana_vars)
-
-
-def test_configure_not_create_ansible_hanavars_apiver1(configure_helper, config_yaml_sample):
-    """
-    Test that 'configure' does not write a hana_vars.yaml file in
-    <BASE_DIR>/ansible/playbooks/vars
-    if apiver < 2
-    """
-    this_provider = 'pinocchio'
-    conf = f"""---
-apiver: 1
-provider: {this_provider}
-terraform:
-    variables:
-        az_region: "westeurope"
-ansible:
-  hana_urls:
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_SAPCAR_EXE
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_SERVER
-    - https://SOMEONE.blob.core.windows.net/SOMETHING/MY_IMDB_CLIENT"""
-
-    args, _, _, hana_vars = configure_helper(this_provider, conf)
-
-    assert main(args) == 0
-    assert not os.path.isfile(hana_vars)
 
 
 def test_configure_ansible_hanavar_content(configure_helper):

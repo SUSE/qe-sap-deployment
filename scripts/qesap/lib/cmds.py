@@ -52,40 +52,13 @@ def create_hana_media(config_ansible, apiver):
     """
     hanamedia_content = {}
     if apiver < 3:
-        hana_url_re = r'http.*://(?P<ACCOUNT>.+)\.blob\.core\.windows\.net/(?P<CONTAINER>.+)/(?P<EXE>.+)'
-        match = []
-        prev_account = None
-        prev_container = None
-        for this_media in config_ansible['hana_urls']:
-            this_match = re.search(hana_url_re, this_media)
-            if not this_match:
-                log.error("[%s] does not match regexp to extract ACCOUNT, CONTAINER or EXE", this_media)
-                return None, f"Problems in apiver: {apiver} data conversion"
-            this_account = this_match.group('ACCOUNT')
-            this_container = this_match.group('CONTAINER')
-            if prev_account is None:
-                prev_account = this_account
-            elif prev_account != this_account:
-                log.error("ACCOUNT [%s] does not match ACCOUNT [%s] used in previous url", this_account, prev_account)
-                return None, f"Problems in apiver: {apiver} data conversion"
-            if prev_container is None:
-                prev_container = this_match.group('CONTAINER')
-            elif prev_container != this_container:
-                log.error("CONTAINER [%s] does not match CONTAINER [%s] used in previous url", this_container, prev_container)
-                return None, f"Problems in apiver: {apiver} data conversion"
-            match.append(this_match)
-
-        hanamedia_content['az_storage_account_name'] = match[0].group('ACCOUNT')
-        hanamedia_content['az_container_name'] = match[0].group('CONTAINER')
-        hanamedia_content['az_blobs'] = []
-        for this_match in match:
-            hanamedia_content['az_blobs'].append(this_match.group('EXE'))
-    else:
-        hanamedia_content['az_storage_account_name'] = config_ansible['az_storage_account_name']
-        hanamedia_content['az_container_name'] = config_ansible['az_container_name']
-        if 'az_sas_token' in config_ansible:
-            hanamedia_content['az_sas_token'] = config_ansible['az_sas_token']
-        hanamedia_content['az_blobs'] = config_ansible['hana_media']
+        log.error("Apiver:%d is no longer supported", apiver)
+        return None, f"Problems in apiver: {apiver} data conversion"
+    hanamedia_content['az_storage_account_name'] = config_ansible['az_storage_account_name']
+    hanamedia_content['az_container_name'] = config_ansible['az_container_name']
+    if 'az_sas_token' in config_ansible:
+        hanamedia_content['az_sas_token'] = config_ansible['az_sas_token']
+    hanamedia_content['az_blobs'] = config_ansible['hana_media']
     return hanamedia_content, None
 
 
@@ -125,9 +98,6 @@ def cmd_configure(configure_data, base_project, dryrun):
         if err is not None:
             return Status(err)
         log.debug("Hana media %s:\n%s", cfg_paths['hana_media_file'], hanamedia_content)
-
-        if 'hana_vars' in configure_data['ansible'] and configure_data['apiver'] >= 2:
-            log.debug("Hana variables %s:\n%s", cfg_paths['hana_vars_file'], configure_data['ansible']['hana_vars'])
 
     if dryrun:
         print(f"Create {cfg_paths['tfvars_file']} with content {tfvar_content}")
