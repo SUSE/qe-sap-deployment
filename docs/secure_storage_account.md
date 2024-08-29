@@ -49,11 +49,13 @@ az storage container create -n sapmedia --account-name qesapmedia
 ## Allowing secure access the SAS tokens
 
 If the storage account and container were created using the above
-instructions then the blobs stored within will not be available to the
+instructions then the blobs stored within will be available to the
 public. To allow secure, private access to blobs a SAS token needs to
-be generated. SAS tokens have start and expiration dates, allowing
-tokens to expire over time. To create a SAS token which allows read only
-access and expires on 1/1/2025 for the container created with the above
+be generated.
+SAS tokens have start and expiration dates, allowing tokens
+to expire over time.
+To create a SAS token which allows read only access and expires on
+a specific date for the container created with the above
 instructions, run the following:
 
 ```shell
@@ -61,7 +63,7 @@ az storage container generate-sas --account-name qesapmedia --expiry 2025-01-01 
 ```
 
 A token will be returned in the form of a string. Copy this token and store it
-securely. This token will not be recoverable from Azure!
+securely. This token will not be recoverable from Azure neither manually revokable!
 
 ## Uploading blobs
 
@@ -88,8 +90,7 @@ no public access to the data.
 
 ## How to consume with Ansible
 
-The old playbook used to take a single variable which was a list of blob urls.
-The new version of the playbook will take four variables:
+The playbook will take four variables:
 
 * az_storage_account_name: string
 * az_container_name:       string
@@ -102,8 +103,3 @@ correctly.
 The playbook will compile the complete urls and download the media to `hana_download_path`
 which by default is `/hana/shared/install`.
 
-## Next Steps
-
-The proposal at the moment is to have a long standing SAS token which is
-reusable, however, a better approach may be use short lived SAS tokens
-which are generated on demand.

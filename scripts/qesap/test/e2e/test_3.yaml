@@ -11,3 +11,4 @@ ansible:
   hana_urls: mirtillo
   az_storage_account_name: ribes
   az_container_name: uvaspina
+  az_sas_token: SECRET

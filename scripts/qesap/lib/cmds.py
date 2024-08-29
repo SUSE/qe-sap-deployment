@@ -58,6 +58,8 @@ def create_hana_media(config_ansible, apiver):
     hanamedia_content['az_container_name'] = config_ansible['az_container_name']
     if 'az_sas_token' in config_ansible:
         hanamedia_content['az_sas_token'] = config_ansible['az_sas_token']
+    if 'az_key_name' in config_ansible:
+        hanamedia_content['az_key_name'] = config_ansible['az_key_name']
     hanamedia_content['az_blobs'] = config_ansible['hana_media']
     return hanamedia_content, None
 

@@ -381,6 +381,7 @@ provider: grilloparlante
 ansible:
     az_storage_account_name: pippo
     az_container_name: pippo
+    az_sas_token: SECRET
     hana_media:
     - somesome
     create:
@@ -432,6 +433,7 @@ provider: grilloparlante
 ansible:
     az_storage_account_name: pippo
     az_container_name: pippo
+    az_sas_token: SECRET
     hana_media:
     - somesome
     create:
@@ -490,6 +492,7 @@ provider: grilloparlante
 ansible:
     az_storage_account_name: pippo
     az_container_name: pippo
+    az_sas_token: SECRET
     hana_media:
     - somesome
     create:
@@ -746,6 +749,7 @@ provider: {provider}
 ansible:
     az_storage_account_name: pippo
     az_container_name: pippo
+    az_sas_token: SECRET
     hana_media:
     - somesome
     roles_path: somewhere

@@ -206,22 +206,25 @@ class CONF:
         if apiver < 3:
             log.error("Apiver: %d is no longer supported", apiver)
             return False
+
         if 'hana_media' not in ansible_conf or ansible_conf['hana_media'] is None:
             log.error("Missing or empty 'hana_media' in 'ansible' in the config")
             return False
+
         for media in ansible_conf['hana_media']:
             match = re.search(r'^http[s]?://.*', media)
             if match:
                 log.error("Media %s provided as full url. File name expected.", media)
                 return False
-        if 'az_storage_account_name' not in ansible_conf:
-            log.error("Missing 'az_storage_account_name' in 'ansible' in the config")
+
+        for var in ['az_storage_account_name', 'az_container_name']:
+            if var not in ansible_conf:
+                log.error("Missing '%s' in 'ansible' in the config", var)
+                return False
+
+        if 'az_sas_token' not in ansible_conf and 'az_key_name' not in ansible_conf:
+            log.error("Both az_sas_token and az_key_name missing in the config")
             return False
-        if 'az_container_name' not in ansible_conf:
-            log.error("Missing 'az_container_name' in 'ansible' in the config")
-            return False
-        if 'az_sas_token' not in ansible_conf:
-            log.warning("Missing 'az_sas_token' in 'ansible' in the config")
         return True
 
     def has_ansible_playbooks(self, sequence):
