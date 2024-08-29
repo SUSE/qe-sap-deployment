@@ -172,10 +172,13 @@ def create_playbooks(playbooks_dir):
 def ansible_config():
     def _callback(provider, playbooks):
         config_content = f"""---
-apiver: 2
+apiver: 3
 provider: {provider}
 ansible:
-    hana_urls: somesome"""
+    az_container_name: pippo
+    az_storage_account_name: pippo
+    hana_media:
+    - pippo"""
 
         for seq in ["create", "destroy"]:
             if seq in playbooks:

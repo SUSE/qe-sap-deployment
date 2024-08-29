@@ -145,7 +145,7 @@ def test_ansible_no_ansible(run, _, base_args, tmpdir):
     the `qesap.py ... ansible` command invocation has to fail.
     """
     config_content = """---
-apiver: 2
+apiver: 3
 provider: grilloparlante"""
     config_file_name = str(tmpdir / "config.yaml")
     with open(config_file_name, "w", encoding="utf-8") as file:
@@ -267,7 +267,8 @@ def test_ansible_no_bin(
     # Create the inventory and the playbook file
     # is needed to avoid the tested function to fails
     # due to the absence of them.
-    # This test does not want it: this test has to get a failure due to the lack of binary.
+    # This test does not want it: this test has to get
+    # a failure due to the lack of binary.
     create_inventory(provider)
     create_playbooks(playbooks["create"])
 
@@ -375,10 +376,13 @@ def test_ansible_playbook_argument(
     """
     provider = "grilloparlante"
     config_content = """---
-apiver: 2
+apiver: 3
 provider: grilloparlante
 ansible:
-    hana_urls: somesome
+    az_storage_account_name: pippo
+    az_container_name: pippo
+    hana_media:
+    - somesome
     create:
         - baboom.yaml -e pim=pam
     """
@@ -423,10 +427,13 @@ def test_ansible_e_reg(
     """
     provider = "grilloparlante"
     config_content = """---
-apiver: 2
+apiver: 3
 provider: grilloparlante
 ansible:
-    hana_urls: somesome
+    az_storage_account_name: pippo
+    az_container_name: pippo
+    hana_media:
+    - somesome
     create:
         - registration.yaml -e reg_code=${reg_code} -e email_address=${email}
     variables:
@@ -478,12 +485,15 @@ def test_ansible_e_sapconf(
     """
     provider = "grilloparlante"
     config_content = """---
-apiver: 2
+apiver: 3
 provider: grilloparlante
 ansible:
-    hana_urls: somesome
+    az_storage_account_name: pippo
+    az_container_name: pippo
+    hana_media:
+    - somesome
     create:
-        - sap-hana-preconfigure.yaml -e "use_sapconf=${sapconf}"
+    - sap-hana-preconfigure.yaml -e "use_sapconf=${sapconf}"
     variables:
         sapconf: True
     """
@@ -731,10 +741,13 @@ def test_ansible_env_roles_path(
     """
     provider = "grilloparlante"
     config_content = f"""---
-apiver: 2
+apiver: 3
 provider: {provider}
 ansible:
-    hana_urls: somesome
+    az_storage_account_name: pippo
+    az_container_name: pippo
+    hana_media:
+    - somesome
     roles_path: somewhere
     create:
       - get_cherry_wood.yaml"""

@@ -204,26 +204,24 @@ class CONF:
         Validate the media part of the ansible configure.yaml
         """
         if apiver < 3:
-            if 'hana_urls' not in ansible_conf:
-                log.error("Missing 'hana_urls' in 'ansible' in the config")
+            log.error("Apiver: %d is no longer supported", apiver)
+            return False
+        if 'hana_media' not in ansible_conf or ansible_conf['hana_media'] is None:
+            log.error("Missing or empty 'hana_media' in 'ansible' in the config")
+            return False
+        for media in ansible_conf['hana_media']:
+            match = re.search(r'^http[s]?://.*', media)
+            if match:
+                log.error("Media %s provided as full url. File name expected.", media)
                 return False
-        else:
-            if 'hana_media' not in ansible_conf:
-                log.error("Missing 'hana_media' in 'ansible' in the config")
-                return False
-            for media in ansible_conf['hana_media']:
-                match = re.search(r'^http[s]?://.*', media)
-                if match:
-                    log.error("Media %s provided as full url. File name expected.", media)
-                    return False
-            if 'az_storage_account_name' not in ansible_conf:
-                log.error("Missing 'az_storage_account_name' in 'ansible' in the config")
-                return False
-            if 'az_container_name' not in ansible_conf:
-                log.error("Missing 'az_container_name' in 'ansible' in the config")
-                return False
-            if 'az_sas_token' not in ansible_conf:
-                log.warning("Missing 'az_sas_token' in 'ansible' in the config")
+        if 'az_storage_account_name' not in ansible_conf:
+            log.error("Missing 'az_storage_account_name' in 'ansible' in the config")
+            return False
+        if 'az_container_name' not in ansible_conf:
+            log.error("Missing 'az_container_name' in 'ansible' in the config")
+            return False
+        if 'az_sas_token' not in ansible_conf:
+            log.warning("Missing 'az_sas_token' in 'ansible' in the config")
         return True
 
     def has_ansible_playbooks(self, sequence):
