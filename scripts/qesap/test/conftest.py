@@ -73,6 +73,7 @@ terraform:
 ansible:
   az_storage_account_name: SOMEONE
   az_container_name: SOMETHING
+  az_sas_token: SECRET
   hana_media:
     - SAPCAR_EXE
     - SAP_HANA_EXE
@@ -111,6 +112,7 @@ provider: {}
 ansible:
   az_storage_account_name: SOMEONE
   az_container_name: SOMETHING
+  az_sas_token: SECRET
   hana_media:
     - SAPCAR_EXE
     - SAP_HANA_EXE
@@ -177,6 +179,7 @@ provider: {provider}
 ansible:
     az_container_name: pippo
     az_storage_account_name: pippo
+    az_sas_token: SECRET
     hana_media:
     - pippo"""
 
@@ -425,6 +428,7 @@ def validate_hana_media():
     az_storage_account_name: <ACCOUNT>
     az_container_name:       <CONTAINER>
     az_sas_token:            <SAS_TOKEN>
+    az_key_name:             <KEY>
     az_blobs:
       - <SAPCAR_EXE>
       - <IMDB_SERVER_SAR>
@@ -437,6 +441,7 @@ def validate_hana_media():
         account="ACCOUNT",
         container="CONTAINER",
         token=None,
+        key=None,
         sapcar="SAPCAR_EXE",
         imdb_srv="IMDB_SERVER_SAR",
         imdb_cln="IMDB_CLIENT_SAR",
@@ -477,6 +482,19 @@ def validate_hana_media():
                     return (
                         False,
                         f"az_sas_token value is {data['az_sas_token']} and not expected {token}",
+                    )
+
+            # az_key_name is optional, test it only if requested
+            if key:
+                if "az_key_name" not in data:
+                    return (
+                        False,
+                        "az_key_name missing in the generated hana_media.yaml",
+                    )
+                if key != data["az_key_name"]:
+                    return (
+                        False,
+                        f"az_key_name value is {data['az_key_name']} and not expected {key}",
                     )
 
             blob_key = "az_blobs"
