@@ -759,14 +759,6 @@ variable "hwcct" {
   default     = false
 }
 
-# Pre deployment
-
-variable "pre_deployment" {
-  description = "Enable pre deployment local execution. Only available for clients running Linux"
-  type        = bool
-  default     = false
-}
-
 variable "hana_remote_python" {
   description = "Remote python interpreter that Ansible will use on HANA nodes"
   type        = string

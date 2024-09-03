@@ -37,8 +37,6 @@ For detailed information and deployment options have a look at `terraform.tfvars
 
 2) **Generate private and public keys for the cluster nodes without specifying the passphrase:**
 
-    Alternatively, you can set the `pre_deployment` variable to automatically create the cluster ssh keys.
-
     ``` shell
     mkdir -p ../sshkeys
     ssh-keygen -f ../sshkeys/cluster.id_rsa -q -P ""

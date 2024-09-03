@@ -62,10 +62,6 @@ public_key  = "/home/user/.ssh/id.rsa.key"
 ##########################
 # Other deployment options
 ##########################
-
-# Enable pre deployment steps (disabled by default)
-#pre_deployment = true
-
 # Test and QA purpose
 
 # Execute HANA Hardware Configuration Check Tool to bench filesystems

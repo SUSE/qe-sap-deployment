@@ -846,14 +846,6 @@ variable "hwcct" {
   default     = false
 }
 
-# Pre deployment
-
-variable "pre_deployment" {
-  description = "Enable pre deployment local execution. Only available for clients running Linux"
-  type        = bool
-  default     = false
-}
-
 # native fencing
 variable "fence_agent_app_id" {
   description = "ID of the azure service principal / application that is used for native fencing."
