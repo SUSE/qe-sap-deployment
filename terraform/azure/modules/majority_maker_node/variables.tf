@@ -2,6 +2,30 @@ variable "common_variables" {
   description = "Output of the common_variables module"
 }
 
+variable "name" {
+  description = "hostname, without the domain part"
+  type        = string
+}
+
+variable "node_count" {
+  type = number
+}
+
+variable "vm_size" {
+  description = "The instance type of DRDB node"
+  type        = string
+}
+
+variable "os_image" {
+  description = "sles4sap image used to create this module machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp2:gen2:latest"
+  type        = string
+}
+
+variable "sles4sap_uri" {
+  type    = string
+  default = ""
+}
+
 variable "az_region" {
   type    = string
   default = "westeurope"
@@ -16,14 +40,11 @@ variable "network_subnet_id" {
 }
 
 variable "storage_account" {
-  type = string
+  description = "Storage account name needed for the boot diagnostic"
+  type        = string
 }
 
 variable "hana_count" {
-  type = string
-}
-
-variable "name" {
   type = string
 }
 
@@ -34,25 +55,6 @@ variable "enable_accelerated_networking" {
 variable "host_ips" {
   description = "ip addresses to set to the nodes"
   type        = list(string)
-}
-
-variable "sles4sap_uri" {
-  type    = string
-  default = ""
-}
-
-variable "os_image" {
-  description = "sles4sap image used to create this module machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp2:gen2:latest"
-  type        = string
-}
-
-variable "node_count" {
-  type = number
-}
-
-variable "vm_size" {
-  type    = string
-  default = "Standard_D2s_v3"
 }
 
 variable "majority_maker_ip" {
