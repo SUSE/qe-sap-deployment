@@ -2,21 +2,22 @@ variable "common_variables" {
   description = "Output of the common_variables module"
 }
 
+variable "name" {
+  description = "hostname, without the domain part"
+  type        = string
+}
+
 variable "monitoring_enabled" {
   description = "enable the host to be monitored by exporters, e.g node_exporter"
   type        = bool
   default     = false
 }
 
-variable "instance_type" {
+variable "vm_size" {
   description = "The instance type of monitoring node."
   type        = string
 }
 
-variable "name" {
-  description = "hostname, without the domain part"
-  type        = string
-}
 
 variable "network_domain" {
   description = "hostname's network domain"

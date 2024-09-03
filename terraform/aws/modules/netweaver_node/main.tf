@@ -83,7 +83,7 @@ module "get_os_image" {
 resource "aws_instance" "netweaver" {
   count                       = local.vm_count
   ami                         = module.get_os_image.image_id
-  instance_type               = var.instance_type
+  instance_type               = var.vm_size
   key_name                    = var.key_name
   associate_public_ip_address = true
   subnet_id                   = element(aws_subnet.netweaver-subnet.*.id, count.index % 2) # %2 is used because there are not more than 2 subnets

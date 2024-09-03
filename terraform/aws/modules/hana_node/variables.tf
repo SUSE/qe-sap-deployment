@@ -18,8 +18,9 @@ variable "hana_count" {
   default     = 2
 }
 
-variable "instance_type" {
-  type = string
+variable "vm_size" {
+  description = "The instance type of hana node"
+  type        = string
 }
 
 variable "availability_zones" {

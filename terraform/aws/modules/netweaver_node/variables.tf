@@ -2,19 +2,9 @@ variable "common_variables" {
   description = "Output of the common_variables module"
 }
 
-variable "xscs_server_count" {
-  type    = number
-  default = 2
-}
-
 variable "app_server_count" {
   type    = number
   default = 2
-}
-
-variable "instance_type" {
-  description = "The instance type of netweaver node."
-  type        = string
 }
 
 variable "name" {
@@ -24,6 +14,17 @@ variable "name" {
 
 variable "network_domain" {
   description = "hostname's network domain"
+  type        = string
+}
+
+variable "xscs_server_count" {
+  description = "Number of xscs nodes"
+  type        = number
+  default     = 2
+}
+
+variable "vm_size" {
+  description = "The instance type of netweaver node."
   type        = string
 }
 

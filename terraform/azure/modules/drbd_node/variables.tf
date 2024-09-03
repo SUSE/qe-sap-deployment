@@ -11,18 +11,27 @@ variable "resource_group_name" {
   type = string
 }
 
+variable "drbd_count" {
+  description = "Number of drbd machines to create the cluster"
+  type        = number
+  default     = 2
+}
+
+variable "vm_size" {
+  description = "The instance type of drbd node"
+  type        = string
+  default     = "Standard_D2s_v3"
+}
+
 variable "network_subnet_id" {
   type = string
 }
 
 variable "storage_account" {
-  type = string
+  description = "Storage account name needed for the boot diagnostic"
+  type        = string
 }
 
-variable "drbd_count" {
-  type    = string
-  default = "2"
-}
 
 variable "host_ips" {
   description = "ip addresses to set to the nodes"
@@ -45,10 +54,6 @@ variable "name" {
   type        = string
 }
 
-variable "vm_size" {
-  type    = string
-  default = "Standard_D2s_v3"
-}
 
 variable "network_domain" {
   description = "hostname's network domain"

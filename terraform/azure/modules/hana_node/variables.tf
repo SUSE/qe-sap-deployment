@@ -20,7 +20,8 @@ variable "network_subnet_netapp_id" {
 }
 
 variable "storage_account" {
-  type = string
+  description = "Storage account name needed for the boot diagnostic"
+  type        = string
 }
 
 variable "hana_count" {
