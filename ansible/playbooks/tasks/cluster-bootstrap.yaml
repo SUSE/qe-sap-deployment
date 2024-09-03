@@ -222,7 +222,7 @@
     migration_threshold: "{{ (crm_rsc_options_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] | default('false') }}"
     op_default_timeout: "{{ (crm_op_options_show.stdout | regex_search('timeout=([0-9]*)', '\\1'))[0] | default('false') }}"
 
-- name: Set corosync facts
+- name: Stonith command [AWS]
   ansible.builtin.set_fact:
     aws_stonith_cmd: |
       crm configure primitive rsc_aws_stonith stonith:external/ec2 \
@@ -231,6 +231,7 @@
       op monitor interval=120 timeout=60 \
       meta target-role=Started \
       params tag={{ aws_stonith_tag}} pcmk_delay_max=15
+  when: cloud_platform_is_aws
 
 - name: Enable SBD [sbd]
   ansible.builtin.command:
