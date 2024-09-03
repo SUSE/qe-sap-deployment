@@ -13,7 +13,7 @@ module "get_os_image" {
 resource "aws_instance" "iscsisrv" {
   count                       = var.iscsi_count
   ami                         = module.get_os_image.image_id
-  instance_type               = var.instance_type
+  instance_type               = var.vm_size
   key_name                    = var.key_name
   associate_public_ip_address = true
   subnet_id                   = element(var.subnet_ids, count.index)

@@ -18,40 +18,39 @@ variable "drbd_count" {
   default     = 2
 }
 
-variable "instance_type" {
+variable "vm_size" {
   description = "The instance type of drbd node"
   type        = string
-  default     = "t2.large"
 }
 
 variable "availability_zones" {
-  type        = list(string)
   description = "Used availability zones"
+  type        = list(string)
 }
 
 variable "vpc_id" {
-  type        = string
   description = "Id of the vpc used for this deployment"
+  type        = string
 }
 
 variable "subnet_address_range" {
-  type        = list(string)
   description = "List with subnet address ranges in cidr notation to create the netweaver subnets"
+  type        = list(string)
 }
 
 variable "key_name" {
-  type        = string
   description = "AWS key pair name"
+  type        = string
 }
 
 variable "security_group_id" {
-  type        = string
   description = "Security group id"
+  type        = string
 }
 
 variable "route_table_id" {
-  type        = string
   description = "Route table id"
+  type        = string
 }
 
 variable "aws_credentials" {

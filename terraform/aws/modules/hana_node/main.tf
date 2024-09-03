@@ -50,7 +50,7 @@ module "get_os_image" {
 resource "aws_instance" "hana" {
   count                       = var.hana_count
   ami                         = module.get_os_image.image_id
-  instance_type               = var.instance_type
+  instance_type               = var.vm_size
   key_name                    = var.key_name
   associate_public_ip_address = true
   #disable_api_stop            = false # see https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-on-aws-cluster-configuration.html

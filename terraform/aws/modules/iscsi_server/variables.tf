@@ -27,7 +27,7 @@ variable "iscsi_count" {
   type        = number
 }
 
-variable "instance_type" {
+variable "vm_size" {
   description = "The instance type of iscsi server node."
   type        = string
 }
