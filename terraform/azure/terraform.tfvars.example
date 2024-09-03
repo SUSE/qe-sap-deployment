@@ -63,6 +63,7 @@ public_key  = "/home/myuser/.ssh/id_rsa.pub"
 ##########################
 # Other deployment options
 ##########################
+
 # Testing and QA purpose
 
 # Execute HANA Hardware Configuration Check Tool to bench filesystems
