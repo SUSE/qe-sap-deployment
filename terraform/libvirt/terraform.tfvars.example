@@ -58,10 +58,6 @@ iprange = "192.168.XXX.Y/24"
 ##########################
 # Other deployment options
 ##########################
-
-# Enable pre deployment steps (disabled by default)
-#pre_deployment = true
-
 # Testing and QA purpose
 
 # Execute HANA Hardware Configuration Check Tool to bench filesystems

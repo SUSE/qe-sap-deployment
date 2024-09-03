@@ -38,7 +38,7 @@ resource "aws_instance" "iscsisrv" {
   }
 
   tags = {
-    Name      = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
-    Workspace = var.common_variables["deployment_name"]
+    name      = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
+    workspace = var.common_variables["deployment_name"]
   }
 }

@@ -1,5 +1,7 @@
-**/.venv/
+**/.venv*/
 **/__pycache__/
+**/.hypo*/
+**/BUILD*/
 secret/
 terraform/**/inventory.yaml
 terraform/**/.terraform
@@ -15,8 +17,7 @@ ansible/playbooks/roles/sap_storage
 ansible/playbooks/vars/hana_media.yaml
 ansible/playbooks/vars/azure_hana_media.yaml
 ansible/playbooks/vars/hana_vars.yaml
-terraform.apply.log
-terraform.init.log
-terraform.plan.log
+*.log
+*.log.txt
 settings.json
 variables.sh

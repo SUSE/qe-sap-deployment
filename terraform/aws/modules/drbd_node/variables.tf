@@ -7,11 +7,6 @@ variable "name" {
   type        = string
 }
 
-variable "network_domain" {
-  description = "hostname's network domain"
-  type        = string
-}
-
 variable "drbd_count" {
   description = "Number of drbd machines to create the cluster"
   type        = number
@@ -20,6 +15,21 @@ variable "drbd_count" {
 
 variable "vm_size" {
   description = "The instance type of drbd node"
+  type        = string
+}
+
+variable "os_image" {
+  description = "sles4sap AMI image identifier or a pattern used to find the image name (e.g. suse-sles-sap-15-sp1-byos)"
+  type        = string
+}
+
+variable "os_owner" {
+  description = "OS image owner"
+  type        = string
+}
+
+variable "network_domain" {
+  description = "hostname's network domain"
   type        = string
 }
 
@@ -86,16 +96,6 @@ variable "drbd_data_disk_type" {
 
 variable "iscsi_srv_ip" {
   description = "iscsi server address"
-  type        = string
-}
-
-variable "os_image" {
-  description = "sles4sap AMI image identifier or a pattern used to find the image name (e.g. suse-sles-sap-15-sp1-byos)"
-  type        = string
-}
-
-variable "os_owner" {
-  description = "OS image owner"
   type        = string
 }
 

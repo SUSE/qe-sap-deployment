@@ -1,4 +1,4 @@
-# Google Cloud Platform deployment with Terraform and Salt
+# Google Cloud Platform deployment with Terraform and Ansible
 
 * [Quickstart](#quickstart)
 * [High level description](#high-level-description)
@@ -17,7 +17,8 @@ repository with Google Cloud Platform (GCP). Looking for another provider? See
 
 ## Quickstart
 
-This is a very short quickstart guide. For detailed information see [Using SUSE Automation to Deploy an SAP HANA Cluster on GCP - Getting Started🔗](https://documentation.suse.com/sbp/all/single-html/TRD-SLES-SAP-HA-automation-quickstart-cloud-gcp/).
+This is a very short guide. For detailed information see
+[Using SUSE Automation to Deploy an SAP HANA Cluster on GCP - Getting Started](https://documentation.suse.com/sbp/all/single-html/TRD-SLES-SAP-HA-automation-quickstart-cloud-gcp/).
 
 For detailed information and deployment options have a look at `terraform.tfvars.example`.
 
@@ -33,11 +34,9 @@ For detailed information and deployment options have a look at `terraform.tfvars
 
 2) **Generate private and public keys for the cluster nodes without specifying the passphrase:**
 
-    Alternatively, you can set the `pre_deployment` variable to automatically create the cluster ssh keys.
-
     ``` shell
-    mkdir -p ../salt/sshkeys
-    ssh-keygen -f ../salt/sshkeys/cluster.id_rsa -q -P ""
+    mkdir -p ../sshkeys
+    ssh-keygen -f ../sshkeys/cluster.id_rsa -q -P ""
     ```
 
     The key files need to have same name as defined in [terraform.tfvars](./terraform.tfvars.example).
@@ -80,17 +79,17 @@ For detailed information and deployment options have a look at `terraform.tfvars
 
 ## High level description
 
-This Terraform configuration deploys SAP HANA in a High-Availability Cluster on SUSE Linux Enterprise Server for SAP Applications in the **Google Cloud Platform**.
+This Terraform configuration files in this directory can be used to create the infrastructure required to install a SAP HanaSR cluster on SUSE Linux Enterprise Server for SAP Applications in the **Google Cloud Platform**.
 
 ![Highlevel description](../doc/highlevel_description_gcp.png)
 
 The infrastructure deployed includes:
 
+* compute instance groups
 * virtual network
 * subnets within the virtual network
 * firewall group with rules for access to the instances created in the subnet. Only allowed external network traffic is for the protocols: SSH, HTTP, HTTPS, and for the HAWK service. Internally to the subnet, all traffic is allowed.
 * Public IP access for the virtual machines (if enabled)
-* compute instance groups
 * load balancers
 * virtual machines
 * block devices

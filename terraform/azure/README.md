@@ -21,7 +21,7 @@ repository with Microsoft Azure. Looking for another provider? See
 ## Quickstart
 
 This is a very short guide. For detailed information see
- [Using SUSE Automation to Deploy an SAP HANA Cluster on Azure - Getting Started🔗](https://documentation.suse.com/sbp/all/single-html/TRD-SLES-SAP-HA-automation-quickstart-cloud-azure/).
+ [Using SUSE Automation to Deploy an SAP HANA Cluster on Azure - Getting Started](https://documentation.suse.com/sbp/all/single-html/TRD-SLES-SAP-HA-automation-quickstart-cloud-azure/).
 
 For detailed information and deployment options have a look at `terraform.tfvars.example`.
 
@@ -37,8 +37,6 @@ For detailed information and deployment options have a look at `terraform.tfvars
 
 2) **Generate private and public keys for the cluster nodes without specifying the passphrase:**
 
-    Alternatively, you can set the `pre_deployment` variable to automatically create the cluster ssh keys.
-
     ``` shell
     mkdir -p ../sshkeys
     ssh-keygen -f ../sshkeys/cluster.id_rsa -q -P ""
@@ -46,7 +44,7 @@ For detailed information and deployment options have a look at `terraform.tfvars
 
     The key files need to have same name as defined in [terraform.tfvars](./terraform.tfvars.example).
 
-3) **Configure Terraform Access to Azure**
+3) **Configure Terraform access to Azure**
 
     Install the azure command line client
 

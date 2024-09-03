@@ -490,14 +490,12 @@ variable "iscsi_ips" {
       can([for v in var.iscsi_ips : regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", v)])
     )
     error_message = "Invalid IP address format."
-
   }
 }
 
 variable "iscsi_lun_count" {
   description = "Number of LUN (logical units) to serve with the iscsi server. Each LUN can be used as a unique sbd disk"
   default     = 3
-
 }
 
 variable "iscsi_disk_size" {
@@ -778,7 +776,7 @@ variable "netweaver_cluster_fencing_mechanism" {
     condition = (
       can(regex("^(native|sbd)$", var.netweaver_cluster_fencing_mechanism))
     )
-    error_message = "Invalid Netweaver cluster fending mechanism. Options: native|sbd ."
+    error_message = "Invalid Netweaver cluster fencing mechanism. Options: native|sbd ."
   }
 }
 
@@ -836,20 +834,12 @@ variable "netweaver_shared_storage_type" {
   }
 }
 
-# Testing and QA
+# Testing and QA variables
 
 # Execute HANA Hardware Configuration Check Tool to bench filesystems.
 # The test takes several hours. See results in /root/hwcct_out
 variable "hwcct" {
   description = "Execute HANA Hardware Configuration Check Tool to bench filesystems"
-  type        = bool
-  default     = false
-}
-
-# Pre deployment
-
-variable "pre_deployment" {
-  description = "Enable pre deployment local execution. Only available for clients running Linux"
   type        = bool
   default     = false
 }

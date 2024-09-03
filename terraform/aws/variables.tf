@@ -776,20 +776,13 @@ variable "netweaver_shared_storage_type" {
 # Testing and QA variables
 
 # Execute HANA Hardware Configuration Check Tool to bench filesystems.
-# The test takes several hours. See results in /root/hwcct_out and in global log file /var/log/salt-result.log.
+# The test takes several hours. See results in /root/hwcct_out
 variable "hwcct" {
   description = "Execute HANA Hardware Configuration Check Tool to bench filesystems"
   type        = bool
   default     = false
 }
 
-# Pre deployment
-
-variable "pre_deployment" {
-  description = "Enable pre deployment local execution. Only available for clients running Linux"
-  type        = bool
-  default     = false
-}
 
 variable "hana_remote_python" {
   description = "Remote python interpreter that Ansible will use on HANA nodes"
@@ -802,3 +795,4 @@ variable "iscsi_remote_python" {
   type        = string
   default     = "/usr/bin/python3"
 }
+

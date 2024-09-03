@@ -716,12 +716,3 @@ variable "hwcct" {
   type        = bool
   default     = false
 }
-
-#
-# Pre deployment
-#
-variable "pre_deployment" {
-  description = "Enable pre deployment local execution. Only available for clients running Linux"
-  type        = bool
-  default     = false
-}

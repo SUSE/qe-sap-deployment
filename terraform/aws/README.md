@@ -1,4 +1,4 @@
-# AWS Public Cloud deployment with Terraform and Salt
+# AWS Public Cloud deployment with Terraform and Ansible
 
 * [Quickstart](#quickstart)
 * [High level description](#high-level-description)
@@ -18,7 +18,8 @@ provider? See [Getting started](../README.md#getting-started)
 
 ## Quickstart
 
-This is a very short guide. For detailed information see [Using SUSE Automation to Deploy an SAP HANA Cluster on AWS - Getting Started🔗](https://documentation.suse.com/sbp/all/single-html/TRD-SLES-SAP-HA-automation-quickstart-cloud-aws/).
+This is a very short guide. For detailed information see
+[Using SUSE Automation to Deploy an SAP HANA Cluster on AWS - Getting Started🔗](https://documentation.suse.com/sbp/all/single-html/TRD-SLES-SAP-HA-automation-quickstart-cloud-aws/).
 
 For detailed information and deployment options have a look at `terraform.tfvars.example`.
 
@@ -34,14 +35,12 @@ For detailed information and deployment options have a look at `terraform.tfvars
 
 2) **Generate private and public keys for the cluster nodes without specifying the passphrase:**
 
-    Alternatively, you can set the `pre_deployment` variable to automatically create the cluster ssh keys.
-
     ``` shell
-    mkdir -p ../salt/sshkeys
-    ssh-keygen -f ../salt/sshkeys/cluster.id_rsa -q -P ""
+    mkdir -p ../sshkeys
+    ssh-keygen -f ../sshkeys/cluster.id_rsa -q -P ""
     ```
 
-    The key files need to have same name as defined in [terraform.tfvars](terraform.tfvars.example).
+    The key files need to have same name as defined in [terraform.tfvars](./terraform.tfvars.example).
 
 3) **Configure API access to AWS**
 
@@ -130,12 +129,12 @@ For detailed information and deployment options have a look at `terraform.tfvars
 
     **Warning: If you use the 2nd option, the AWS web panel won't show that the created instances have any role attached, but they have. The limits in the IAM access makes this not visible, that's all.**
 
-4) **Deploy**:
+4) **Deploy**
 
     ``` shell
     terraform init
-    terraform workspace new my-execution # optional
-    terraform workspace select my-execution # optional
+    terraform workspace new myexecution # optional
+    terraform workspace select myexecution # optional
     terraform plan
     terraform apply
     ```
@@ -148,7 +147,7 @@ For detailed information and deployment options have a look at `terraform.tfvars
 
 ## High level description
 
-The terraform configuration creates the infrastructure needed for the installation of an SAP HANA cluster in System Replication mode, combined with the high-availability capabilities provided by the SUSE Linux Enterprise Server for SAP Applications in *AWS*.
+This Terraform configuration files in this directory can be used to create the infrastructure required to install a SAP HanaSR cluster in System Replication mode, combined with the high-availability capabilities provided by the SUSE Linux Enterprise Server for SAP Applications in *AWS*.
 
 ![High level description](../doc/highlevel_description_aws.png)
 
@@ -167,7 +166,9 @@ Internally to the subnet, all traffic is allowed.
 * shared EFS file systems
 * SSH key pairs
 
-By default it creates 3 instances in AWS: one for support services (mainly iSCSI as most other services - DHCP, NTP, etc - are provided by Amazon) and 2 cluster nodes, but this can be changed to deploy more cluster nodes as needed.
+By default, this configuration creates 3 instances in AWS: one for support services (mainly iSCSI as most other services - DHCP, NTP, etc - are provided by Amazon) and 2 cluster nodes, but this can be changed to deploy more cluster nodes as needed.
+
+Once the infrastructure is created by Terraform, the servers are provisioned with Ansible.
 
 ## Customization
 

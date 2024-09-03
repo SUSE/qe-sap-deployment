@@ -1,5 +1,5 @@
 #################################
-# qe-sa-deployment project configuration file
+# qe-sap-deployment project configuration file
 # Find all the available variables and definitions in the variables.tf file
 #################################
 
@@ -33,10 +33,7 @@ region = "europe-west1"
 # Deployment name. This variable is used to complement the name of multiple infrastructure resources adding the string as suffix
 # If it is not used, the terraform workspace string is used
 # The name must be unique among different deployments
-# deployment_name = "mydeployment"
-
-# Admin user for the created machines (default = cloudadmin)
-# admin_user = "cloudadmin"
+deployment_name = "mydeployment"
 
 # Add the "deployment_name" as a prefix to the hostname.
 #deployment_name_in_hostname = true
@@ -75,14 +72,14 @@ public_key  = "/home/myuser/.ssh/id_rsa.pub"
 # Path to local files or keys content
 #authorized_keys = ["/home/myuser/.ssh/id_rsa_second_key.pub", "/home/myuser/.ssh/id_rsa_third_key.pub", "ssh-rsa AAAAB3NzaC1yc2EAAAA...."]
 
+# Admin user to deploy in the remote machines. Defaults to cloudadmin
+#admin_user = "cloudadmin"
+
 ##########################
 # Other deployment options
 ##########################
 
-# Enable pre deployment steps (disabled by default)
-#pre_deployment = true
-
-# QA variables
+# Testing and QA purpose
 
 # Execute HANA Hardware Configuration Check Tool to bench filesystems
 # true or false (default)
@@ -93,10 +90,11 @@ public_key  = "/home/myuser/.ssh/id_rsa.pub"
 #########################
 
 # Hostname, without the domain part
-#hana_name = "vmhana"
+hana_name = "vmhana"
 
 # HANA machine type
-#machine_type = "n1-highmem-32"
+# VM size to use for the cluster nodes
+machine_type = "n1-highmem-32"
 
 # Custom sles4sap image
 # HANA machines image. By default, PAYG image is used (it will select the latest version that matches this name)
@@ -160,6 +158,7 @@ public_key  = "/home/myuser/.ssh/id_rsa.pub"
 #hana_sid = "PRD"
 # HANA instance number. It's composed of 2 integers string
 #hana_instance_number = "00"
+
 # HANA primary site name. Only used if HANA's system replication feature is enabled (hana_ha_enabled to true)
 #hana_primary_site = "Site1"
 # HANA secondary site name. Only used if HANA's system replication feature is enabled (hana_ha_enabled to true)
