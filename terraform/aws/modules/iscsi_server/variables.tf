@@ -12,8 +12,23 @@ variable "subnet_ids" {
   type        = list(string)
 }
 
+variable "os_image" {
+  description = "sles4sap AMI image identifier or a pattern used to find the image name (e.g. suse-sles-sap-15-sp1-byos)"
+  type        = string
+}
+
+variable "os_owner" {
+  description = "OS image owner"
+  type        = string
+}
+
 variable "name" {
   description = "hostname, without the domain part"
+  type        = string
+}
+
+variable "vm_size" {
+  description = "The instance type of iscsi server node."
   type        = string
 }
 
@@ -25,11 +40,6 @@ variable "network_domain" {
 variable "iscsi_count" {
   description = "Number of iscsi machines to deploy"
   type        = number
-}
-
-variable "vm_size" {
-  description = "The instance type of iscsi server node."
-  type        = string
 }
 
 variable "key_name" {
@@ -57,14 +67,4 @@ variable "lun_count" {
   description = "Number of LUN (logical units) to serve with the iscsi server. Each LUN can be used as a unique sbd disk"
   type        = number
   default     = 3
-}
-
-variable "os_image" {
-  description = "sles4sap AMI image identifier or a pattern used to find the image name (e.g. suse-sles-sap-15-sp1-byos)"
-  type        = string
-}
-
-variable "os_owner" {
-  description = "OS image owner"
-  type        = string
 }

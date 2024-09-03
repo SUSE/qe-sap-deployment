@@ -23,6 +23,16 @@ variable "vm_size" {
   type        = string
 }
 
+variable "os_image" {
+  description = "sles4sap AMI image identifier or a pattern used to find the image name (e.g. suse-sles-sap-15-sp1-byos)"
+  type        = string
+}
+
+variable "os_owner" {
+  description = "OS image owner"
+  type        = string
+}
+
 variable "availability_zones" {
   description = "Used availability zones"
   type        = list(string)
@@ -142,14 +152,4 @@ variable "iscsi_srv_ip" {
 variable "reg_code" {
   description = "If informed, register the product using SUSEConnect"
   default     = ""
-}
-
-variable "os_image" {
-  description = "sles4sap AMI image identifier or a pattern used to find the image name (e.g. suse-sles-sap-15-sp1-byos)"
-  type        = string
-}
-
-variable "os_owner" {
-  description = "OS image owner"
-  type        = string
 }

@@ -7,17 +7,16 @@ variable "name" {
   type        = string
 }
 
-variable "monitoring_enabled" {
-  description = "enable the host to be monitored by exporters, e.g node_exporter"
-  type        = bool
-  default     = false
-}
-
 variable "vm_size" {
   description = "The instance type of monitoring node."
   type        = string
 }
 
+variable "monitoring_enabled" {
+  description = "enable the host to be monitored by exporters, e.g node_exporter"
+  type        = bool
+  default     = false
+}
 
 variable "network_domain" {
   description = "hostname's network domain"

@@ -14,8 +14,8 @@ resource "aws_subnet" "netweaver-subnet" {
   cidr_block        = element(var.subnet_address_range, count.index)
   availability_zone = element(var.availability_zones, count.index)
   tags = {
-    Name      = "${var.common_variables["deployment_name"]}-netweaver-subnet-${count.index + 1}"
-    Workspace = var.common_variables["deployment_name"]
+    name      = "${var.common_variables["deployment_name"]}-netweaver-subnet-${count.index + 1}"
+    workspace = var.common_variables["deployment_name"]
   }
 }
 

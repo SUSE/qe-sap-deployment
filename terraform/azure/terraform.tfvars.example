@@ -1,5 +1,5 @@
 #################################
-# qe-sa-deployment project configuration file
+# qe-sap-deployment project configuration file
 # Find all the available variables and definitions in the variables.tf file
 #################################
 
@@ -23,10 +23,7 @@ subnet_address_range = "10.10.1.0/24"
 # Deployment name. This variable is used to complement the name of multiple infrastructure resources adding the string as suffix
 # If it is not used, the terraform workspace string is used
 # The name must be unique among different deployments
-deployment_name = "autotesting"
-
-# Admin user for the created machines
-admin_user = "cloudadmin"
+deployment_name = "mydeployment"
 
 # If BYOS images are used in the deployment, SCC registration code is required. Set `reg_code` and `reg_email` variables below
 # By default, all the images are PAYG, so these next parameters are not needed
@@ -51,7 +48,8 @@ os_image = "SUSE:sles-sap-15-sp3-byos:gen2:2022.05.05"
 # Besides the provisioning, the SSH connection for this keys will be authorized in the created machines
 # These keys are provided using the next two variables in 2 different ways
 # Path to already existing keys
-public_key  = "/home/user/.ssh/id.rsa.key"
+public_key  = "/home/myuser/.ssh/id_rsa.pub"
+
 # private_key is no more used for security reasons
 
 
@@ -59,10 +57,14 @@ public_key  = "/home/user/.ssh/id.rsa.key"
 # Path to local files or keys content
 #authorized_keys = ["/home/myuser/.ssh/id_rsa_second_key.pub", "/home/myuser/.ssh/id_rsa_third_key.pub", "ssh-rsa AAAAB3NzaC1yc2EAAAA...."]
 
+# Admin user to deploy in the remote machines. Defaults to cloudadmin
+#admin_user = "cloudadmin"
+
 ##########################
 # Other deployment options
 ##########################
-# Test and QA purpose
+
+# Testing and QA purpose
 
 # Execute HANA Hardware Configuration Check Tool to bench filesystems
 # true or false (default)
@@ -77,7 +79,6 @@ public_key  = "/home/user/.ssh/id.rsa.key"
 
 #########################
 # HANA machines variables
-# This example shows the demo option values.Find more options in the README file
 #########################
 
 # Hostname, without the domain part
@@ -260,7 +261,7 @@ hana_count = "2"
 ########################
 
 # Enable drbd cluster
-#drbd_enabled = true
+#drbd_enabled = false
 
 # Hostname, without the domain part
 #drbd_name = "vmdrbd"
@@ -287,6 +288,7 @@ hana_count = "2"
 # Netweaver related variables
 #############################
 
+# Enable netweaver cluster
 #netweaver_enabled = true
 
 # Hostname, without the domain part

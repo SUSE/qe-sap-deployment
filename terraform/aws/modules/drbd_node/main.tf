@@ -10,8 +10,8 @@ resource "aws_subnet" "drbd-subnet" {
   availability_zone = element(var.availability_zones, count.index)
 
   tags = {
-    Name      = "${var.common_variables["deployment_name"]}-drbd-subnet-${count.index + 1}"
-    Workspace = var.common_variables["deployment_name"]
+    name      = "${var.common_variables["deployment_name"]}-drbd-subnet-${count.index + 1}"
+    workspace = var.common_variables["deployment_name"]
   }
 }
 
@@ -64,8 +64,8 @@ resource "aws_instance" "drbd" {
   }
 
   tags = {
-    Name                                                 = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
-    Workspace                                            = var.common_variables["deployment_name"]
+    name                                                 = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
+    workspace                                            = var.common_variables["deployment_name"]
     "${var.common_variables["deployment_name"]}-cluster" = "${var.name}${format("%02d", count.index + 1)}"
   }
 }

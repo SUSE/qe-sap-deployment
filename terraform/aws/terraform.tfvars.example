@@ -1,5 +1,5 @@
 #################################
-# qe-sap-deployments project configuration file
+# qe-sap-deployment project configuration file
 # Find all the available variables and definitions in the variables.tf file
 #################################
 
@@ -27,7 +27,7 @@ aws_region = "eu-central-1"
 # Deployment name. This variable is used to complement the name of multiple infrastructure resources adding the string as suffix
 # If it is not used, the terraform workspace string is used
 # The name must be unique among different deployments
-# deployment_name = "mydeployment"
+deployment_name = "mydeployment"
 
 # Add the "deployment_name" as a prefix to the hostname.
 #deployment_name_in_hostname = true
@@ -93,7 +93,7 @@ public_key  = "/home/myuser/.ssh/id_rsa.pub"
 #########################
 
 # Hostname, without the domain part
-#hana_name = "vmhana"
+hana_name = "vmhana"
 
 # Instance type to use for the hana cluster nodes
 # SAP certified instances types can be found at https://aws.amazon.com/sap/instance-types/
@@ -108,7 +108,7 @@ public_key  = "/home/myuser/.ssh/id_rsa.pub"
 #hana_data_disk_size  = 1024 # 1024GB
 
 # Number of nodes in the cluster
-#hana_count = "2"
+hana_count = "2"
 
 # HANA machines image. By default, PAYG images are used
 # BYOS example with sles4sap 15 sp1 (this value is a pattern, it will select the latest version that matches this name)
@@ -126,7 +126,7 @@ public_key  = "/home/myuser/.ssh/id_rsa.pub"
 # not work with any memory size and will most likely fail with less than 16 GiB
 #hana_ignore_min_mem_check = false
 
-# IP address used to configure the hana cluster floating IP. It must belong to the same subnet than the machines!
+# IP address used to configure the hana cluster floating IP. It must belong to the same subnet than the hana machines
 #hana_cluster_vip = "192.168.1.10"
 
 # Select HANA cluster fencing mechanism. 'native' by default

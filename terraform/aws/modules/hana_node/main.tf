@@ -15,8 +15,8 @@ resource "aws_subnet" "hana-subnet" {
   availability_zone = element(var.availability_zones, count.index)
 
   tags = {
-    Name      = "${var.common_variables["deployment_name"]}-hana-subnet-${count.index + 1}"
-    Workspace = var.common_variables["deployment_name"]
+    name      = "${var.common_variables["deployment_name"]}-hana-subnet-${count.index + 1}"
+    workspace = var.common_variables["deployment_name"]
   }
 }
 
@@ -85,8 +85,8 @@ resource "aws_instance" "hana" {
   #}
 
   tags = {
-    Name                        = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
-    Workspace                   = var.common_variables["deployment_name"]
+    name                        = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
+    workspace                   = var.common_variables["deployment_name"]
     "${local.hana_stonith_tag}" = "${var.name}${format("%02d", count.index + 1)}"
   }
 }

@@ -52,8 +52,8 @@ resource "aws_vpc" "vpc" {
   enable_dns_support   = true
 
   tags = {
-    Name      = "${local.deployment_name}-vpc"
-    Workspace = local.deployment_name
+    name      = "${local.deployment_name}-vpc"
+    workspace = local.deployment_name
   }
 }
 
@@ -62,8 +62,8 @@ resource "aws_internet_gateway" "igw" {
   vpc_id = local.vpc_id
 
   tags = {
-    Name      = "${local.deployment_name}-igw"
-    Workspace = local.deployment_name
+    name      = "${local.deployment_name}-igw"
+    workspace = local.deployment_name
   }
 }
 
@@ -73,8 +73,8 @@ resource "aws_subnet" "infra-subnet" {
   availability_zone = element(data.aws_availability_zones.available.names, 0)
 
   tags = {
-    Name      = "${local.deployment_name}-infra-subnet"
-    Workspace = local.deployment_name
+    name      = "${local.deployment_name}-infra-subnet"
+    workspace = local.deployment_name
   }
 }
 
@@ -82,8 +82,8 @@ resource "aws_route_table" "route-table" {
   vpc_id = local.vpc_id
 
   tags = {
-    Name      = "${local.deployment_name}-hana-route-table"
-    Workspace = local.deployment_name
+    name      = "${local.deployment_name}-hana-route-table"
+    workspace = local.deployment_name
   }
 }
 
@@ -109,8 +109,8 @@ resource "aws_security_group" "secgroup" {
   vpc_id = local.vpc_id
 
   tags = {
-    Name      = "${local.deployment_name}-sg"
-    Workspace = local.deployment_name
+    name      = "${local.deployment_name}-sg"
+    workspace = local.deployment_name
   }
 }
 

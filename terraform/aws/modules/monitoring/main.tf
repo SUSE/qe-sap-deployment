@@ -36,7 +36,7 @@ resource "aws_instance" "monitoring" {
   }
 
   tags = {
-    Name      = "${var.common_variables["deployment_name"]}-${var.name}"
-    Workspace = var.common_variables["deployment_name"]
+    name      = "${var.common_variables["deployment_name"]}-${var.name}"
+    workspace = var.common_variables["deployment_name"]
   }
 }

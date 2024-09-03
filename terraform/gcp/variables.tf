@@ -45,17 +45,6 @@ variable "ip_cidr_range" {
   }
 }
 
-variable "public_key" {
-  description = "Content of a SSH public key or path to an already existing SSH public key. The key is only used to provision the machines and it is authorized for future accesses"
-  type        = string
-}
-
-variable "authorized_keys" {
-  description = "List of additional authorized SSH public keys content or path to already existing SSH public keys to access the created machines with the used admin user (root in this case)"
-  type        = list(string)
-  default     = []
-}
-
 variable "admin_user" {
   description = "Administration user used to create the machines"
   type        = string
@@ -68,8 +57,18 @@ variable "admin_user" {
   }
 }
 
-# Deployment variables
+variable "public_key" {
+  description = "Content of a SSH public key or path to an already existing SSH public key. The key is only used to provision the machines and it is authorized for future accesses"
+  type        = string
+}
 
+variable "authorized_keys" {
+  description = "List of additional authorized SSH public keys content or path to already existing SSH public keys to access the created machines with the used admin user (root in this case)"
+  type        = list(string)
+  default     = []
+}
+
+# Deployment variables
 variable "deployment_name" {
   description = "Suffix string added to some of the infrastructure resources names. If it is not provided, the terraform workspace string is used as suffix"
   type        = string
@@ -136,7 +135,6 @@ variable "additional_packages" {
 }
 
 # Hana related variables
-
 variable "hana_name" {
   description = "hostname, without the domain part"
   type        = string
@@ -216,7 +214,7 @@ variable "hana_backup_disk_size" {
 }
 
 variable "hana_fstype" {
-  description = "Filesystem type used by the disk where hana is installed"
+  description = "Filesystem type used by the disk where HANA is installed"
   type        = string
   default     = "xfs"
 }
@@ -496,25 +494,25 @@ variable "drbd_enabled" {
 }
 
 variable "drbd_machine_type" {
-  description = "The instance type of the drbd nodes"
+  description = "VM size for the DRBD machine"
   type        = string
   default     = "n1-standard-4"
 }
 
 variable "drbd_os_image" {
-  description = "The image used to create the drbd machines"
+  description = "The image used to create the DRBD machines"
   type        = string
   default     = ""
 }
 
 variable "drbd_data_disk_size" {
-  description = "Disk size of the disks used to store drbd content"
+  description = "Disk size of the disks used to store DRBD content"
   type        = string
   default     = "10"
 }
 
 variable "drbd_data_disk_type" {
-  description = "Disk type of the disks used to store drbd content"
+  description = "Disk type of the disks used to store DRBD content"
   type        = string
   default     = "pd-standard"
 }
@@ -588,7 +586,7 @@ variable "netweaver_network_domain" {
 }
 
 variable "netweaver_enabled" {
-  description = "Enable netweaver cluster creation"
+  description = "Enable netweaver cluster deployment"
   type        = bool
   default     = false
 }

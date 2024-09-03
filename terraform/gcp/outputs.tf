@@ -102,12 +102,12 @@ resource "local_file" "ansible_inventory" {
       hana_pip            = module.hana_node.hana_public_ip,
       hana-vip            = module.hana_node.hana_vip,
       hana_remote_python  = var.hana_remote_python,
-      name_prefix         = local.deployment_name,
       iscsi_name          = module.iscsi_server.iscsisrv_name,
       iscsi_pip           = module.iscsi_server.iscsisrv_public_ip,
       iscsi_enabled       = local.iscsi_enabled,
       iscsi_remote_python = var.iscsi_remote_python
       use_sbd             = local.use_sbd
+      name_prefix         = local.deployment_name,
   })
   filename = "inventory.yaml"
 }
