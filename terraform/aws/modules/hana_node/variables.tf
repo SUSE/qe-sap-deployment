@@ -13,13 +13,13 @@ variable "network_domain" {
 }
 
 variable "hana_count" {
-  description = "Number of hana nodes"
+  description = "Number of HANA machines to deploy"
   type        = number
   default     = 2
 }
 
 variable "vm_size" {
-  description = "The instance type of hana node"
+  description = "The instance type of HANA node"
   type        = string
 }
 

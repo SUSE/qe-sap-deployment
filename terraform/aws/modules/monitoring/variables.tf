@@ -8,7 +8,7 @@ variable "name" {
 }
 
 variable "vm_size" {
-  description = "The instance type of monitoring node."
+  description = "The instance type of MONITOR node"
   type        = string
 }
 
@@ -16,6 +16,16 @@ variable "monitoring_enabled" {
   description = "enable the host to be monitored by exporters, e.g node_exporter"
   type        = bool
   default     = false
+}
+
+variable "os_image" {
+  description = "sles4sap AMI image identifier or a pattern used to find the image name (e.g. suse-sles-sap-15-sp1-byos)"
+  type        = string
+}
+
+variable "os_owner" {
+  description = "OS image owner"
+  type        = string
 }
 
 variable "network_domain" {
@@ -54,12 +64,3 @@ variable "timezone" {
   default     = "Europe/Berlin"
 }
 
-variable "os_image" {
-  description = "sles4sap AMI image identifier or a pattern used to find the image name (e.g. suse-sles-sap-15-sp1-byos)"
-  type        = string
-}
-
-variable "os_owner" {
-  description = "OS image owner"
-  type        = string
-}

@@ -2,18 +2,8 @@ variable "common_variables" {
   description = "Output of the common_variables module"
 }
 
-variable "app_server_count" {
-  type    = number
-  default = 2
-}
-
 variable "name" {
   description = "hostname, without the domain part"
-  type        = string
-}
-
-variable "network_domain" {
-  description = "hostname's network domain"
   type        = string
 }
 
@@ -23,8 +13,28 @@ variable "xscs_server_count" {
   default     = 2
 }
 
+variable "app_server_count" {
+  type    = number
+  default = 2
+}
+
 variable "vm_size" {
   description = "The instance type of netweaver node."
+  type        = string
+}
+
+variable "os_image" {
+  description = "sles4sap AMI image identifier or a pattern used to find the image name (e.g. suse-sles-sap-15-sp1-byos)"
+  type        = string
+}
+
+variable "os_owner" {
+  description = "OS image owner"
+  type        = string
+}
+
+variable "network_domain" {
+  description = "hostname's network domain"
   type        = string
 }
 
@@ -100,12 +110,3 @@ variable "iscsi_srv_ip" {
   type        = string
 }
 
-variable "os_image" {
-  description = "sles4sap AMI image identifier or a pattern used to find the image name (e.g. suse-sles-sap-15-sp1-byos)"
-  type        = string
-}
-
-variable "os_owner" {
-  description = "OS image owner"
-  type        = string
-}

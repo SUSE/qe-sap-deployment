@@ -2,6 +2,31 @@ variable "common_variables" {
   description = "Output of the common_variables module"
 }
 
+variable "name" {
+  description = "hostname, without the domain part"
+  type        = string
+}
+
+variable "iscsi_count" {
+  description = "Number of ISCSI machines to deploy"
+  type        = number
+}
+
+variable "vm_size" {
+  description = "The instance type of ISCSI node"
+  type        = string
+}
+
+variable "os_image" {
+  description = "sles4sap image used to create this module machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp2:gen2:latest"
+  type        = string
+}
+
+variable "iscsi_srv_uri" {
+  type    = string
+  default = ""
+}
+
 variable "az_region" {
   type    = string
   default = "westeurope"
@@ -16,42 +41,18 @@ variable "network_subnet_id" {
 }
 
 variable "storage_account" {
-  type = string
-}
-
-variable "os_image" {
-  description = "sles4sap image used to create this module machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp2:gen2:latest"
+  description = "Storage account name needed for the boot diagnostic"
   type        = string
-}
-
-variable "iscsi_srv_uri" {
-  type    = string
-  default = ""
-}
-
-variable "name" {
-  description = "hostname, without the domain part"
-  type        = string
-}
-
-variable "vm_size" {
-  type    = string
-  default = "Standard_D2s_v3"
-}
-
-variable "network_domain" {
-  description = "hostname's network domain"
-  type        = string
-}
-
-variable "iscsi_count" {
-  description = "Number of iscsi machines to deploy"
-  type        = number
 }
 
 variable "host_ips" {
   description = "List of ip addresses to set to the machines"
   type        = list(string)
+}
+
+variable "network_domain" {
+  description = "hostname's network domain"
+  type        = string
 }
 
 variable "iscsi_disk_size" {

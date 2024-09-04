@@ -2,14 +2,19 @@ variable "common_variables" {
   description = "Output of the common_variables module"
 }
 
-variable "availability_zones" {
-  description = "Used availability zones"
-  type        = list(string)
+variable "name" {
+  description = "hostname, without the domain part"
+  type        = string
 }
 
-variable "subnet_ids" {
-  description = "Subnet ids to attach the machines network interface"
-  type        = list(string)
+variable "iscsi_count" {
+  description = "Number of ISCSI machines to deploy"
+  type        = number
+}
+
+variable "vm_size" {
+  description = "The instance type of ISCSI node"
+  type        = string
 }
 
 variable "os_image" {
@@ -22,24 +27,19 @@ variable "os_owner" {
   type        = string
 }
 
-variable "name" {
-  description = "hostname, without the domain part"
-  type        = string
+variable "availability_zones" {
+  description = "Used availability zones"
+  type        = list(string)
 }
 
-variable "vm_size" {
-  description = "The instance type of iscsi server node."
-  type        = string
+variable "subnet_ids" {
+  description = "Subnet ids to attach the machines network interface"
+  type        = list(string)
 }
 
 variable "network_domain" {
   description = "hostname's network domain"
   type        = string
-}
-
-variable "iscsi_count" {
-  description = "Number of iscsi machines to deploy"
-  type        = number
 }
 
 variable "key_name" {

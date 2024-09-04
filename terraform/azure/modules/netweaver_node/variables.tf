@@ -2,6 +2,40 @@ variable "common_variables" {
   description = "Output of the common_variables module"
 }
 
+variable "name" {
+  description = "hostname, without the domain part"
+  type        = string
+}
+
+variable "xscs_server_count" {
+  description = "Number of xscs nodes"
+  type        = number
+  default     = 2
+}
+
+variable "app_server_count" {
+  type    = number
+  default = 2
+}
+
+variable "xscs_vm_size" {
+  type = string
+}
+
+variable "app_vm_size" {
+  type = string
+}
+
+variable "os_image" {
+  description = "sles4sap image used to create this module machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp2:gen2:latest"
+  type        = string
+}
+
+variable "netweaver_image_uri" {
+  type    = string
+  default = ""
+}
+
 variable "az_region" {
   type    = string
   default = "westeurope"
@@ -20,37 +54,13 @@ variable "network_subnet_netapp_id" {
 }
 
 variable "storage_account" {
-  type = string
+  description = "Storage account name needed for the boot diagnostic"
+  type        = string
 }
 
 variable "network_domain" {
   description = "hostname's network domain"
   type        = string
-}
-
-variable "xscs_server_count" {
-  type    = number
-  default = 2
-}
-
-variable "app_server_count" {
-  type    = number
-  default = 2
-}
-
-variable "name" {
-  description = "hostname, without the domain part"
-  type        = string
-}
-
-variable "xscs_vm_size" {
-  type    = string
-  default = "Standard_D2s_v3"
-}
-
-variable "app_vm_size" {
-  type    = string
-  default = "Standard_D2s_v3"
 }
 
 variable "data_disk_type" {
@@ -101,16 +111,6 @@ variable "virtual_host_ips" {
   description = "virtual ip addresses to set to the nodes"
   type        = list(string)
   default     = ["10.74.1.35", "10.74.1.36", "10.74.1.37", "10.74.1.38"]
-}
-
-variable "netweaver_image_uri" {
-  type    = string
-  default = ""
-}
-
-variable "os_image" {
-  description = "sles4sap image used to create this module machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp2:gen2:latest"
-  type        = string
 }
 
 variable "iscsi_srv_ip" {

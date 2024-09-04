@@ -2,6 +2,32 @@ variable "common_variables" {
   description = "Output of the common_variables module"
 }
 
+variable "name" {
+  description = "hostname, without the domain part"
+  type        = string
+}
+
+variable "hana_count" {
+  description = "Number of HANA machines to deploy"
+  type        = number
+  default     = 2
+}
+
+variable "vm_size" {
+  description = "The instance type of HANA node"
+  type        = string
+}
+
+variable "os_image" {
+  description = "sles4sap image used to create this module machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp2:gen2:latest"
+  type        = string
+}
+
+variable "sles4sap_uri" {
+  type    = string
+  default = ""
+}
+
 variable "az_region" {
   type    = string
   default = "westeurope"
@@ -24,11 +50,6 @@ variable "storage_account" {
   type        = string
 }
 
-variable "hana_count" {
-  type    = string
-  default = "2"
-}
-
 variable "hana_instance_number" {
   description = "Instance number of the HANA system. It must be a 2 digits string. Examples: 00, 01, 10"
   type        = string
@@ -41,26 +62,6 @@ variable "enable_accelerated_networking" {
 variable "host_ips" {
   description = "ip addresses to set to the nodes"
   type        = list(string)
-}
-
-variable "sles4sap_uri" {
-  type    = string
-  default = ""
-}
-
-variable "os_image" {
-  description = "sles4sap image used to create this module machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp2:gen2:latest"
-  type        = string
-}
-
-variable "name" {
-  description = "hostname, without the domain part"
-  type        = string
-}
-
-variable "vm_size" {
-  type    = string
-  default = "Standard_E4s_v3"
 }
 
 variable "network_domain" {

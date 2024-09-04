@@ -2,6 +2,32 @@ variable "common_variables" {
   description = "Output of the common_variables module"
 }
 
+variable "name" {
+  description = "hostname, without the domain part"
+  type        = string
+}
+
+variable "drbd_count" {
+  description = "Number of DRDB machines to deploy"
+  type        = number
+  default     = 2
+}
+
+variable "vm_size" {
+  description = "The instance type of DRDB node"
+  type        = string
+}
+
+variable "os_image" {
+  description = "sles4sap image used to create this module machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp2:gen2:latest"
+  type        = string
+}
+
+variable "drbd_image_uri" {
+  type    = string
+  default = ""
+}
+
 variable "az_region" {
   type    = string
   default = "westeurope"
@@ -9,18 +35,6 @@ variable "az_region" {
 
 variable "resource_group_name" {
   type = string
-}
-
-variable "drbd_count" {
-  description = "Number of drbd machines to create the cluster"
-  type        = number
-  default     = 2
-}
-
-variable "vm_size" {
-  description = "The instance type of drbd node"
-  type        = string
-  default     = "Standard_D2s_v3"
 }
 
 variable "network_subnet_id" {
@@ -32,36 +46,14 @@ variable "storage_account" {
   type        = string
 }
 
-
 variable "host_ips" {
   description = "ip addresses to set to the nodes"
   type        = list(string)
   default     = ["10.74.1.20", "10.74.1.21"]
 }
 
-variable "drbd_image_uri" {
-  type    = string
-  default = ""
-}
-
-variable "os_image" {
-  description = "sles4sap image used to create this module machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp2:gen2:latest"
-  type        = string
-}
-
-variable "name" {
-  description = "hostname, without the domain part"
-  type        = string
-}
-
-
 variable "network_domain" {
   description = "hostname's network domain"
-  type        = string
-}
-
-variable "iscsi_srv_ip" {
-  description = "iscsi server address"
   type        = string
 }
 
@@ -72,6 +64,11 @@ variable "nfs_mounting_point" {
 
 variable "nfs_export_name" {
   description = "Name of the created export in the NFS service. Usually, the `sid` of the SAP instances is used"
+  type        = string
+}
+
+variable "iscsi_srv_ip" {
+  description = "iscsi server address"
   type        = string
 }
 

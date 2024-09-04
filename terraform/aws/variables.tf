@@ -783,7 +783,6 @@ variable "hwcct" {
   default     = false
 }
 
-
 variable "hana_remote_python" {
   description = "Remote python interpreter that Ansible will use on HANA nodes"
   type        = string
