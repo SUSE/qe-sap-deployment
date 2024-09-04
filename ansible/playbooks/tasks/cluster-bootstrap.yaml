@@ -233,6 +233,14 @@
       params tag={{ aws_stonith_tag}} pcmk_delay_max=15
   when: cloud_platform_is_aws
 
+- name: Set primary and secondary hostnames
+  ansible.builtin.set_fact:
+    primary_hostname: "{{ groups['hana'][0] }}"
+    secondary_hostname: "{{ groups['hana'][1] }}"
+  when:
+    - cloud_platform_is_gcp
+    - not (use_sbd | bool)
+
 - name: Enable SBD [sbd]
   ansible.builtin.command:
     cmd: crm configure primitive rsc_iscsi_sbd stonith:external/sbd
@@ -252,7 +260,6 @@
   failed_when: >
     stonith_config_result.stderr_lines | select("match", "ERROR") | reject("match", "ERROR: warning") | list | length > 0
 
-
 - name: Configure AWS EC2 STONITH for sle 15
   ansible.builtin.command: "{{ aws_stonith_cmd }}"
   when:
@@ -262,6 +269,56 @@
     - ansible_distribution_major_version != '12'
   register: stonith_config_result
   failed_when: "'ERROR' in stonith_config_result.stderr"
+
+# Thee following STONITH commands for GCP have been adapted from
+# https://cloud.google.com/solutions/sap/docs/sap-hana-ha-config-sles
+- name: Configure GCP Native Fencing STONITH for Primary
+  ansible.builtin.command: >
+    crm configure primitive rsc_gce_stonith_primary stonith:fence_gce
+    params
+    port="{{ primary_hostname }}"
+    zone="{{ primary_zone }}"
+    project="{{ project }}"
+    op monitor interval="300s" timeout="120s"
+    op start interval="0" timeout="60s"
+    meta target-role=Started
+  when:
+    - cloud_platform_is_gcp
+    - is_primary
+    - not (use_sbd | bool)
+
+- name: Configure GCP Native Fencing STONITH for Secondary
+  ansible.builtin.command: >
+    crm configure primitive rsc_gce_stonith_secondary stonith:fence_gce
+    params
+    port="{{ secondary_hostname }}"
+    zone="{{ secondary_zone }}"
+    project="{{ project }}"
+    op monitor interval="300s" timeout="120s"
+    op start interval="0" timeout="60s"
+    meta target-role=Started
+  when:
+    - cloud_platform_is_gcp
+    - is_primary
+    - not (use_sbd | bool)
+
+- name: Set Location of Primary Fencing Device (GCP)
+  ansible.builtin.command: >
+    crm configure location LOC_STONITH_{{ primary_hostname }} \
+    rsc_gce_stonith_primary -inf: "{{ primary_hostname }}"
+  when:
+    - cloud_platform_is_gcp
+    - is_primary
+    - not (use_sbd | bool)
+
+- name: Set Location of Secondary Fencing Device (GCP)
+  ansible.builtin.command: >
+    crm configure location LOC_STONITH_{{ secondary_hostname }} \
+    rsc_gce_stonith_secondary -inf: "{{ secondary_hostname }}"
+  when:
+    - cloud_platform_is_gcp
+    - is_primary
+    - not (use_sbd | bool)
 
 - name: Set stonith-timeout [sdb]
   ansible.builtin.command:

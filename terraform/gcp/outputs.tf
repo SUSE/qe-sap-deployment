@@ -105,7 +105,10 @@ resource "local_file" "ansible_inventory" {
       iscsi_name          = module.iscsi_server.iscsisrv_name,
       iscsi_pip           = module.iscsi_server.iscsisrv_public_ip,
       iscsi_enabled       = local.iscsi_enabled,
-      iscsi_remote_python = var.iscsi_remote_python
+      iscsi_remote_python = var.iscsi_remote_python,
+      gcp_project         = var.project,
+      gcp_primary_zone    = element(local.compute_zones, 0),
+      gcp_secondary_zone  = element(local.compute_zones, 1),
       use_sbd             = local.use_sbd
       name_prefix         = local.deployment_name,
   })
