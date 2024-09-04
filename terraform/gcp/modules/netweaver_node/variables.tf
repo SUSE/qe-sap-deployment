@@ -18,9 +18,8 @@ variable "app_server_count" {
   default = 2
 }
 
-variable "machine_type" {
-  type    = string
-  default = "n1-standard-4"
+variable "vm_size" {
+  type = string
 }
 
 variable "os_image" {

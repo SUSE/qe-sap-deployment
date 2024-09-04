@@ -365,6 +365,12 @@ variable "monitoring_name" {
   default     = "vmmonitoring"
 }
 
+variable "machine_type_monitor_server" {
+  description = "VM size for the monitor server machine"
+  type        = string
+  default     = "custom-1-2048"
+}
+
 variable "monitoring_network_domain" {
   description = "hostname's network domain"
   type        = string

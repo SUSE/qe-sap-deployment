@@ -13,9 +13,9 @@ variable "drbd_count" {
   default     = 2
 }
 
-variable "machine_type" {
-  type    = string
-  default = "n1-standard-4"
+variable "vm_size" {
+  description = "The instance type of DRDB node"
+  type        = string
 }
 
 variable "os_image" {

@@ -15,7 +15,7 @@ resource "google_compute_instance" "iscsisrv" {
   count        = var.iscsi_count
   name         = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
   description  = "iSCSI server"
-  machine_type = var.machine_type
+  machine_type = var.vm_size
   zone         = element(var.compute_zones, 0)
 
   can_ip_forward = true

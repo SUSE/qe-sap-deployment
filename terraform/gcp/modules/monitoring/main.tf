@@ -18,7 +18,7 @@ resource "google_compute_instance" "monitoring" {
   count        = var.monitoring_enabled == true ? 1 : 0
   name         = "${var.common_variables["deployment_name"]}-${var.name}"
   description  = "Monitoring server"
-  machine_type = "custom-1-2048"
+  machine_type = var.vm_size
   zone         = element(var.compute_zones, 0)
 
   can_ip_forward = true

@@ -13,10 +13,9 @@ variable "hana_count" {
   default     = 2
 }
 
-variable "machine_type" {
+variable "vm_size" {
   description = "The instance type of HANA node"
   type        = string
-  default     = "n1-highmem-32"
 }
 
 variable "os_image" {

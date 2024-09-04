@@ -7,6 +7,11 @@ variable "name" {
   type        = string
 }
 
+variable "vm_size" {
+  description = "The instance type of MONITOR node"
+  type        = string
+}
+
 variable "monitoring_enabled" {
   description = "enable the host to be monitored by exporters, e.g node_exporter"
   type        = bool

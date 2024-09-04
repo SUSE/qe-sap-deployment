@@ -12,9 +12,9 @@ variable "iscsi_count" {
   type        = number
 }
 
-variable "machine_type" {
-  type    = string
-  default = "custom-1-2048"
+variable "vm_size" {
+  description = "The instance type of ISCSI node"
+  type        = string
 }
 
 variable "os_image" {
