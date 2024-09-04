@@ -153,16 +153,16 @@ variable "hana_count" {
   default     = "2"
 }
 
-variable "machine_type" {
-  description = "The instance type of the hana nodes"
-  type        = string
-  default     = "n1-highmem-32"
-}
-
 variable "hana_os_image" {
   description = "The image used to create the hana machines"
   type        = string
   default     = ""
+}
+
+variable "machine_type" {
+  description = "The instance type of the hana nodes"
+  type        = string
+  default     = "n1-highmem-32"
 }
 
 variable "hana_ips" {
@@ -365,6 +365,12 @@ variable "monitoring_name" {
   default     = "vmmonitoring"
 }
 
+variable "machine_type_monitor_server" {
+  description = "VM size for the monitor server machine"
+  type        = string
+  default     = "custom-1-2048"
+}
+
 variable "monitoring_network_domain" {
   description = "hostname's network domain"
   type        = string
@@ -414,18 +420,6 @@ variable "sbd_storage_type" {
 # If iscsi is selected as sbd_storage_type
 # Use the next variables for advanced configuration
 
-variable "iscsi_name" {
-  description = "hostname, without the domain part"
-  type        = string
-  default     = "vmiscsi"
-}
-
-variable "iscsi_network_domain" {
-  description = "hostname's network domain"
-  type        = string
-  default     = ""
-}
-
 variable "iscsi_count" {
   description = "The number of iscsi servers to deploy"
   type        = number
@@ -438,14 +432,26 @@ variable "iscsi_count" {
   }
 }
 
+variable "iscsi_name" {
+  description = "hostname, without the domain part"
+  type        = string
+  default     = "vmiscsi"
+}
+
+variable "iscsi_network_domain" {
+  description = "hostname's network domain"
+  type        = string
+  default     = ""
+}
+
 variable "iscsi_os_image" {
-  description = "The image used to create the iscsi machines"
+  description = "sles4sap image used to create the ISCSI machines."
   type        = string
   default     = ""
 }
 
 variable "machine_type_iscsi_server" {
-  description = "The instance type of the iscsi nodes"
+  description = "VM size for the iscsi server machine"
   type        = string
   default     = "custom-1-2048"
 }
@@ -500,7 +506,7 @@ variable "drbd_machine_type" {
 }
 
 variable "drbd_os_image" {
-  description = "The image used to create the DRBD machines"
+  description = "sles4sap image used to create the DRBD machines."
   type        = string
   default     = ""
 }
@@ -586,7 +592,7 @@ variable "netweaver_network_domain" {
 }
 
 variable "netweaver_enabled" {
-  description = "Enable netweaver cluster deployment"
+  description = "Enable SAP Netweaver cluster deployment"
   type        = bool
   default     = false
 }
@@ -597,16 +603,16 @@ variable "netweaver_app_server_count" {
   default     = 2
 }
 
-variable "netweaver_machine_type" {
-  description = "The instance type of the netweaver nodes"
-  type        = string
-  default     = "n1-highmem-8"
-}
-
 variable "netweaver_os_image" {
   description = "The image used to create the netweaver machines"
   type        = string
   default     = ""
+}
+
+variable "netweaver_machine_type" {
+  description = "The instance type of the netweaver nodes"
+  type        = string
+  default     = "n1-highmem-8"
 }
 
 variable "netweaver_software_bucket" {
@@ -677,7 +683,7 @@ variable "netweaver_cluster_fencing_mechanism" {
     condition = (
       can(regex("^(native|sbd)$", var.netweaver_cluster_fencing_mechanism))
     )
-    error_message = "Invalid Netweaver cluster fending mechanism. Options: native|sbd ."
+    error_message = "Invalid Netweaver cluster fencing mechanism. Options: native|sbd ."
   }
 }
 
@@ -768,3 +774,4 @@ variable "iscsi_remote_python" {
   type        = string
   default     = "/usr/bin/python3"
 }
+

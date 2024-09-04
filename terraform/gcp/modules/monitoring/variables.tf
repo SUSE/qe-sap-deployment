@@ -7,10 +7,20 @@ variable "name" {
   type        = string
 }
 
+variable "vm_size" {
+  description = "The instance type of MONITOR node"
+  type        = string
+}
+
 variable "monitoring_enabled" {
   description = "enable the host to be monitored by exporters, e.g node_exporter"
   type        = bool
   default     = false
+}
+
+variable "os_image" {
+  description = "sles4sap image used to create this module machines."
+  type        = string
 }
 
 variable "compute_zones" {
@@ -23,18 +33,13 @@ variable "network_subnet_name" {
   type        = string
 }
 
-variable "os_image" {
-  description = "Image used to create the machine"
-  type        = string
-}
-
 variable "network_domain" {
   description = "hostname's network domain"
   type        = string
 }
 
 variable "monitoring_srv_ip" {
-  description = "Monitoring server address"
+  description = "monitoring server address"
   type        = string
   default     = ""
 }

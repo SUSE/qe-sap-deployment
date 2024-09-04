@@ -105,7 +105,7 @@ module "netweaver-load-balancer-ers" {
 }
 
 resource "google_compute_instance" "netweaver" {
-  machine_type = var.machine_type
+  machine_type = var.vm_size
   name         = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
   count        = local.vm_count
   zone         = element(var.compute_zones, count.index)

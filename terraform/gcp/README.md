@@ -79,7 +79,7 @@ For detailed information and deployment options have a look at `terraform.tfvars
 
 ## High level description
 
-This Terraform configuration files in this directory can be used to create the infrastructure required to install a SAP HanaSR cluster on SUSE Linux Enterprise Server for SAP Applications in the **Google Cloud Platform**.
+This Terraform configuration files in this directory can be used to create the infrastructure required to install a SAP HanaSR cluster on Suse Linux Enterprise Server for SAP Applications in the **Google Cloud Platform**.
 
 ![Highlevel description](../doc/highlevel_description_gcp.png)
 

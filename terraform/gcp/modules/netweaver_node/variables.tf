@@ -7,9 +7,24 @@ variable "name" {
   type        = string
 }
 
-variable "machine_type" {
-  type    = string
-  default = "n1-standard-4"
+variable "xscs_server_count" {
+  description = "Number of xscs nodes"
+  type        = number
+  default     = 2
+}
+
+variable "app_server_count" {
+  type    = number
+  default = 2
+}
+
+variable "vm_size" {
+  type = string
+}
+
+variable "os_image" {
+  description = "sles4sap image used to create this module machines."
+  type        = string
 }
 
 variable "compute_zones" {
@@ -24,21 +39,6 @@ variable "network_name" {
 
 variable "network_subnet_name" {
   description = "Subnet name to attach the network interface of the nodes"
-  type        = string
-}
-
-variable "xscs_server_count" {
-  type    = number
-  default = 2
-}
-
-variable "app_server_count" {
-  type    = number
-  default = 2
-}
-
-variable "os_image" {
-  description = "Image used to create the machine"
   type        = string
 }
 

@@ -7,9 +7,19 @@ variable "name" {
   type        = string
 }
 
-variable "machine_type" {
-  type    = string
-  default = "custom-1-2048"
+variable "iscsi_count" {
+  description = "Number of ISCSI machines to deploy"
+  type        = number
+}
+
+variable "vm_size" {
+  description = "The instance type of ISCSI node"
+  type        = string
+}
+
+variable "os_image" {
+  description = "sles4sap image used to create this module machines."
+  type        = string
 }
 
 variable "compute_zones" {
@@ -22,19 +32,9 @@ variable "network_subnet_name" {
   type        = string
 }
 
-variable "os_image" {
-  description = "Image used to create the machine"
-  type        = string
-}
-
 variable "network_domain" {
   description = "hostname's network domain"
   type        = string
-}
-
-variable "iscsi_count" {
-  type        = number
-  description = "Number of iscsi machines to deploy"
 }
 
 variable "host_ips" {
