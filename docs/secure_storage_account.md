@@ -54,12 +54,15 @@ public. To allow secure, private access to blobs a SAS token needs to
 be generated.
 SAS tokens have start and expiration dates, allowing tokens
 to expire over time.
-To create a SAS token which allows read only access and expires on
+
+Ansible accepts either the SAS token itself, or the key name to generate the token. In the first case, the user must generate the SAS token and place it in `ansible/playbooks/vars/hana_media.yaml` as `az_sas_token`. In the second case, the user must omit the token and specify the key name in `ansible/playbooks/vars/hana_media.yaml` as `az_key_name`, and ansible will generate the token as part of the `sap_hana_download_media` playbook.
+
+To generate a SAS token which allows read only access and expires on
 a specific date for the container created with the above
 instructions, run the following:
 
 ```shell
-az storage container generate-sas --account-name qesapmedia --expiry 2025-01-01 --name sapmedia --permissions r
+az storage container generate-sas --account-name <account_name> --expiry 2025-01-01 --account-key <account_key> --name sapmedia --permissions r
 ```
 
 A token will be returned in the form of a string. Copy this token and store it
