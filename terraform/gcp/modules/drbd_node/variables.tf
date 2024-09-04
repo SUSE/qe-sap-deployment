@@ -7,9 +7,20 @@ variable "name" {
   type        = string
 }
 
+variable "drbd_count" {
+  description = "Number of DRDB machines to deploy"
+  type        = number
+  default     = 2
+}
+
 variable "machine_type" {
   type    = string
   default = "n1-standard-4"
+}
+
+variable "os_image" {
+  description = "sles4sap image used to create this module machines."
+  type        = string
 }
 
 variable "compute_zones" {
@@ -27,16 +38,6 @@ variable "network_subnet_name" {
   type        = string
 }
 
-variable "drbd_count" {
-  description = "Count of drbd cluster nodes"
-  type        = string
-  default     = "2"
-}
-
-variable "os_image" {
-  description = "Image used to create the machine"
-  type        = string
-}
 
 variable "network_domain" {
   description = "hostname's network domain"
@@ -65,11 +66,6 @@ variable "host_ips" {
   type        = list(string)
 }
 
-variable "iscsi_srv_ip" {
-  description = "IP for iSCSI server"
-  type        = list(string)
-}
-
 variable "nfs_mounting_point" {
   description = "Mounting point of the NFS share created in to of DRBD (`/mnt` must not be used in Azure)"
   type        = string
@@ -79,3 +75,9 @@ variable "nfs_export_name" {
   description = "Name of the created export in the NFS service. Usually, the `sid` of the SAP instances is used"
   type        = string
 }
+
+variable "iscsi_srv_ip" {
+  description = "iscsi server address"
+  type        = list(string)
+}
+

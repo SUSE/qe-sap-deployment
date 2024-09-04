@@ -13,6 +13,11 @@ variable "monitoring_enabled" {
   default     = false
 }
 
+variable "os_image" {
+  description = "sles4sap image used to create this module machines."
+  type        = string
+}
+
 variable "compute_zones" {
   description = "gcp compute zones data"
   type        = list(string)
@@ -23,18 +28,13 @@ variable "network_subnet_name" {
   type        = string
 }
 
-variable "os_image" {
-  description = "Image used to create the machine"
-  type        = string
-}
-
 variable "network_domain" {
   description = "hostname's network domain"
   type        = string
 }
 
 variable "monitoring_srv_ip" {
-  description = "Monitoring server address"
+  description = "monitoring server address"
   type        = string
   default     = ""
 }
