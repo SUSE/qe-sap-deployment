@@ -4,6 +4,9 @@ all:
     use_sbd: ${use_sbd}
     gcp_cluster_ip: ${hana-vip}
     prefix: ${name_prefix}
+    project: ${gcp_project}
+    primary_zone: ${gcp_primary_zone}
+    secondary_zone: ${gcp_secondary_zone}
   children:
     hana:
       hosts:
