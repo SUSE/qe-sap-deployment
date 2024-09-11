@@ -194,7 +194,7 @@ variable "sles4sap_uri" {
 }
 
 # For reference:
-# Standard_M32ls has 32 VCPU, 256GiB RAM, 1000 GiB SSD
+# Standard_E4s_v3 has 4 VCPU, 32GiB RAM, 64 GiB SSD
 # You could find other supported instances in Azure documentation
 variable "hana_vm_size" {
   description = "VM size for the hana machine"
@@ -212,7 +212,7 @@ variable "hana_data_disks_configuration" {
   type = map(any)
   default = {
     disks_type       = "Premium_LRS,Premium_LRS,Premium_LRS,Premium_LRS,Premium_LRS,Premium_LRS,Premium_LRS"
-    disks_size       = "128,128,128,128,128,128,128"
+    disks_size       = "32,32,16,16,32,64,32"
     caching          = "None,None,None,None,None,None,None"
     writeaccelerator = "false,false,false,false,false,false,false"
     # The next variables are used during the provisioning

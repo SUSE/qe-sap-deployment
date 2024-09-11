@@ -177,7 +177,7 @@ After describing the physical disks, the logical volumes can be specified using 
  | ---------     | ---        | ---       | ---          | ---      | ---          |
  | **names**     | data       | log       | shared       | usrsap   | backup       |
  | **luns**      | 0,1        | 2,3       | 4            | 5        | 6            |
- | **lv_sizes**  | 100        | 100       | 1000         | 100      | 100          |
+ | **lv_sizes**  | 100        | 100       | 100          | 100      | 100          |
  | **paths**     | /hana/data | /hana/log | /hana/shared | /usr/sap | /hana/backup |
 
 As you see, there are 5 volume groups specified. Each volume group has its own name. It is set with parameter `names`.  The parameter `luns` assigns one LUN or a combination of several LUNs to a volume group. In the example above `data` uses disk with LUN **0** and **1**, but `backup` only uses disk with LUN **6**. A LUN can only be assigned to one volume group.
@@ -206,7 +206,7 @@ The **Demo** and **Small** sizes are targeted for non-production systems. The **
 
  |            | /hana/data          | /hana/log          | /hana/shared | /usr/sap    | /hana/backup     |
  | --------   | ----------          | ---------          | ------------ | --------    | ------------     |
- | **Demo**   | 2x128GB LUN 0,1     | 2x128GB LUN 2,3    | 128GB  LUN 4 | 128GB LUN 5 | 128GB    LUN 6   |
+ | **Demo**   | 2x32GB  LUN 0,1     | 2x16GB    LUN 2,3  | 32GB   LUN 4 | 64GB  LUN 5 | 32GB     LUN 6   |
  | **Small**  | 3x512GB LUN 0,1,2   | ← shared with data | 512GB  LUN 3 | 64GB  LUN 4 | 1024GB   LUN 5   |
  | **Medium** | 4x512GB LUN 0,1,2,3 | 2x512GB ¹ LUN 4,5  | 1024GB LUN 6 | 64GB  LUN 7 | 2x1024GB LUN 8,9 |
  | **Large**  | 3x1024GB LUN 0,1,2  | 2x512GB ¹ LUN 3,4  | 1024GB LUN 5 | 64GB  LUN 6 | 2x2048GB LUN 7,8 |
@@ -221,10 +221,10 @@ hana_vm_size = "Standard_E4s_v3"
 hana_enable_accelerated_networking = false
 hana_data_disks_configuration = {
   disks_type       = "Premium_LRS,Premium_LRS,Premium_LRS,Premium_LRS,Premium_LRS,Premium_LRS,Premium_LRS"
-  disks_size       = "128,128,128,128,128,128,128"
+  disks_size       = "32,32,16,16,32,64,32"
   caching          = "None,None,None,None,None,None,None"
   writeaccelerator = "false,false,false,false,false,false,false"
-  luns             = "0,1#2,3#4#5#6#7"
+  luns             = "0,1#2,3#4#5#6"
   names            = "data#log#shared#usrsap#backup"
   lv_sizes         = "100#100#100#100#100"
   paths            = "/hana/data#/hana/log#/hana/shared#/usr/sap#/hana/backup"
