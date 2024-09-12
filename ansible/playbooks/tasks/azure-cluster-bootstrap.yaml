@@ -146,7 +146,7 @@
     - max_tasks_int | int < 4096
 
 - name: Flush handlers
-  meta: flush_handlers
+  ansible.builtin.meta: flush_handlers
 
 - name: Ensure 'CLOUD_NETCONFIG_MANAGE' is disabled for eth0
   ansible.builtin.lineinfile:

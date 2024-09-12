@@ -6,7 +6,7 @@
 
   pre_tasks:
     - name: Source hana install variables
-      include_vars: ./vars/hana_vars.yaml
+      ansible.builtin.include_vars: ./vars/hana_vars.yaml
 
   vars:
     is_primary: "{{ ansible_play_hosts[0] == inventory_hostname }}"

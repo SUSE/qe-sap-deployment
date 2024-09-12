@@ -13,13 +13,13 @@
   tasks:
 
     - name: Create directory for PTF installation
-      file:
+      ansible.builtin.file:
         path: "{{ ptf_dir }}"
         state: directory
         mode: '0755'
 
     - name: Convert comma-separated string to list
-      set_fact:
+      ansible.builtin.set_fact:
         az_blobs: "{{ ptf_files | split(',') }}"
       when: sas_token is defined
 
@@ -39,7 +39,7 @@
       when: sas_token is defined
 
     - name: Download PTF files recursively with wget
-      command: "wget --no-directories --recursive --reject 'index.html*' --user={{ ptf_user }} --password={{ ptf_password }} --no-parent {{ ptf_url }}"
+      ansible.builtin.command: "wget --no-directories --recursive --reject 'index.html*' --user={{ ptf_user }} --password={{ ptf_password }} --no-parent {{ ptf_url }}"
       args:
         chdir: "{{ ptf_dir }}"
       when:
@@ -49,35 +49,35 @@
         - ptf_url is defined
 
     - name: List downloaded files
-      command: "ls -la"
+      ansible.builtin.command: "ls -la"
       args:
         chdir: "{{ ptf_dir }}"
       register: download_list
 
     - name: Display downloaded files
-      debug:
+      ansible.builtin.debug:
         var: download_list.stdout_lines
 
     - name: Find downloaded RPM files
-      find:
+      ansible.builtin.find:
         paths: "{{ ptf_dir }}"
         patterns: "*.rpm"
       register: rpm_files
 
     - name: Display found RPM files
-      debug:
+      ansible.builtin.debug:
         var: rpm_files.files
 
     - name: Filter out src.rpm files
-      set_fact:
+      ansible.builtin.set_fact:
         filtered_rpm_files: "{{ rpm_files.files | selectattr('path', 'search', '^(?!.*src\\.rpm$).*') | list }}"
 
     - name: Display filtered RPM files
-      debug:
+      ansible.builtin.debug:
         var: filtered_rpm_files
 
     - name: Install PTF RPM packages
-      zypper:
+      community.general.zypper:
         name: "{{ item.path }}"
         state: present
         disable_gpg_check: true
