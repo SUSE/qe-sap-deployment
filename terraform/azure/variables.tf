@@ -592,12 +592,6 @@ variable "drbd_os_image" {
   default     = ""
 }
 
-variable "drdb_os_major_version" {
-  description = "The major OS version of SLES drdb VMs.  If not set, this value will be computed.  Example: 15"
-  type        = string
-  default     = ""
-}
-
 variable "drbd_image_uri" {
   description = "Path to a custom azure image in a storage account used to create the drbd machines"
   type        = string

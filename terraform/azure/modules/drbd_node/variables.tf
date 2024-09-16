@@ -8,13 +8,13 @@ variable "name" {
 }
 
 variable "drbd_count" {
-  description = "Number of DRDB machines to deploy"
+  description = "Number of DRBD machines to deploy"
   type        = number
   default     = 2
 }
 
 variable "vm_size" {
-  description = "The instance type of DRDB node"
+  description = "The instance type of DRBD node"
   type        = string
 }
 
