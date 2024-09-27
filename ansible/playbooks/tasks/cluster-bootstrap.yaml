@@ -346,7 +346,7 @@
     cmd: >-
       crm configure property
       $id="cib-bootstrap-options"
-      stonith-timeout=600s
+      stonith-timeout=300s
   when:
     - stonith_timeout != '300s'
     - is_primary
