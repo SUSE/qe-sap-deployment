@@ -2,8 +2,6 @@
 - name: SAP HANA download media
   hosts: hana
   remote_user: cloudadmin
-  become: true
-  become_user: root
   vars:
     hana_download_path: /hana/shared/install
     url_timeout: 30
@@ -14,14 +12,6 @@
 
     - name: Include external variables
       ansible.builtin.include_vars: ./vars/hana_media.yaml
-
-    - name: Create software directory
-      ansible.builtin.file:
-        path: "{{ hana_download_path }}"
-        state: directory
-        owner: root
-        group: root
-        mode: 0755
 
     - name: Retrieve account key
       ansible.builtin.command: >-
@@ -65,6 +55,16 @@
       run_once: true
       when: az_sas_token is not defined or az_sas_token == ""
 
+    - name: Create software directory
+      ansible.builtin.file:
+        path: "{{ hana_download_path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+      become: true
+      become_user: root
+
     - name: Download HANA media with SAS token
       ansible.builtin.get_url:
         url: "https://{{ az_storage_account_name }}.blob.core.windows.net/{{ az_container_name }}/{{ item }}?{{ az_sas_token }}"
@@ -78,19 +78,6 @@
       retries: "{{ url_retries_cnt }}"
       delay: "{{ url_retries_delay }}"
       with_items: "{{ az_blobs }}"
+      become: true
+      become_user: root
       when: az_sas_token is defined
-
-    - name: Download HANA media without SAS token
-      ansible.builtin.get_url:
-        url: "https://{{ az_storage_account_name }}.blob.core.windows.net/{{ az_container_name }}/{{ item }}"
-        dest: "{{ hana_download_path + '/' + item | split('/') | last }}"
-        owner: root
-        group: root
-        mode: 0600
-        timeout: "{{ url_timeout }}"
-      register: result
-      until: result is succeeded
-      retries: "{{ url_retries_cnt }}"
-      delay: "{{ url_retries_delay }}"
-      with_items: "{{ az_blobs }}"
-      when: az_sas_token is not defined

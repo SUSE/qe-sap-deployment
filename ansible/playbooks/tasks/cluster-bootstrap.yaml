@@ -270,8 +270,8 @@
   register: stonith_config_result
   failed_when: "'ERROR' in stonith_config_result.stderr"
 
-# Thee following STONITH commands for GCP have been adapted from
-# https://cloud.google.com/solutions/sap/docs/sap-hana-ha-config-sles
+# The following STONITH commands for GCP have been adapted from
+# https://cloud.google.com/solutions/sap/docs/sap-hana-ha-config-sles#create_the_fencing_device_resources
 - name: Configure GCP Native Fencing STONITH for Primary
   ansible.builtin.command: >
     crm configure primitive rsc_gce_stonith_primary stonith:fence_gce
@@ -287,6 +287,8 @@
     - is_primary
     - not (use_sbd | bool)
 
+# Command to configure the Secondary has to be executed on the primary
+# https://cloud.google.com/solutions/sap/docs/sap-hana-ha-config-sles#create_the_fencing_device_resources
 - name: Configure GCP Native Fencing STONITH for Secondary
   ansible.builtin.command: >
     crm configure primitive rsc_gce_stonith_secondary stonith:fence_gce
