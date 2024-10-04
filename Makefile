@@ -56,7 +56,7 @@ static-ansible-syntax:
 	@python3 --version ; python3 tools/ansible_playbook_syntax_check.py
 
 static-ansible-lint:
-	@ansible-lint ansible/ --exclude ansible/playbooks/registration_role.yaml --exclude ansible/playbooks/vars/hana_media.yaml --exclude ansible/playbooks/vars/hana_vars.yaml
+	@ansible-lint --offline ansible/
 
 test-ut:
 	@cd scripts/qesap/ ; tox -e py311
