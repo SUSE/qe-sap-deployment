@@ -9,16 +9,16 @@
 - name: Set hana crm facts
   ansible.builtin.set_fact:
     crm_maintainence_mode: "{{ (crm_conf_hana_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
-    hana_topology_clone: "{{ crm_conf_hana_show.stdout | regex_search('clone cln_SAPHanaTopology') }}"
     stonith_timeout: "{{ crm_conf_hana_show.stdout | regex_search('stonith-timeout') }}"  # this should be variable!
-    hana_topology_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaTopology') }}"
-    hana_resource_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms msl_SAPHana_') }}"
     hana_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHana_') }}"
+    hana_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms msl_SAPHana_') }}"
+    hana_topology_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaTopology') }}"
+    hana_topology_clone: "{{ crm_conf_hana_show.stdout | regex_search('clone cln_SAPHanaTopology') }}"
     ip_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_ip_') }}"
     ip_nc: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_socat_') }}"
     ip_grp: "{{ crm_conf_hana_show.stdout | regex_search('group g_ip_') }}"
     ip_colo: "{{ crm_conf_hana_show.stdout | regex_search('colocation col_saphana_ip_') }}"
-    order: "{{ crm_conf_hana_show.stdout | regex_search('order ord_SAPHana') }}"
+    cluster_order: "{{ crm_conf_hana_show.stdout | regex_search('order ord_SAPHana') }}"
   when: is_primary
   changed_when: false
 
@@ -97,7 +97,7 @@
       interleave="true"
   when:
     - is_primary
-    - hana_resource_clone | length == 0
+    - hana_clone | length == 0
 
 - name: Configure colocation [aws]
   ansible.builtin.command:
@@ -135,7 +135,7 @@
       msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
   when:
     - is_primary
-    - order | length == 0
+    - cluster_order | length == 0
 
 
 # Get current maintenance state

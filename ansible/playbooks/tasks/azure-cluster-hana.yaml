@@ -5,20 +5,20 @@
   register: crm_conf_show
   changed_when: false
 
-- name: Set crm facts
+- name: Set hana crm facts
   ansible.builtin.set_fact:
     crm_maintenance_mode: "{{ (crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] }}"
     stonith_enabled: "{{ (crm_conf_show.stdout | regex_search('stonith-enabled=([a-z]*)', '\\1'))[0] | default('false') }}"
-    hana_topology_clone: "{{ crm_conf_show.stdout | regex_search('clone cln_SAPHanaTopology') }}"
     stonith_timeout: "{{ crm_conf_show.stdout | regex_search('stonith-timeout') }}"  # this should be variable!
-    hana_topology_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHanaTopology') }}"
-    hana_resource_clone: "{{ crm_conf_show.stdout | regex_search('ms msl_SAPHana_') }}"
     hana_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHana_') }}"
+    hana_clone: "{{ crm_conf_show.stdout | regex_search('ms msl_SAPHana_') }}"
+    hana_topology_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHanaTopology') }}"
+    hana_topology_clone: "{{ crm_conf_show.stdout | regex_search('clone cln_SAPHanaTopology') }}"
     ip_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_ip_') }}"
     ip_nc: "{{ crm_conf_show.stdout | regex_search('primitive rsc_socat_') }}"
     ip_grp: "{{ crm_conf_show.stdout | regex_search('group g_ip_') }}"
     ip_colo: "{{ crm_conf_show.stdout | regex_search('colocation col_saphana_ip_') }}"
-    order: "{{ crm_conf_show.stdout | regex_search('order ord_SAPHana_') }}"
+    cluster_order: "{{ crm_conf_show.stdout | regex_search('order ord_SAPHana_') }}"
     resource_stickiness: "{{ (crm_conf_show.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1'))[0] }}"
     migration_threshold: "{{ (crm_conf_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] }}"
   changed_when: false
@@ -104,7 +104,7 @@
       target-role="Started"
       interleave="true"
       maintenance="true"
-  when: hana_resource_clone | length == 0
+  when: hana_clone | length == 0
 
 - name: Validate cluster IP
   vars:
@@ -169,7 +169,7 @@
       Optional:
       cln_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
       msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
-  when: order | length == 0
+  when: cluster_order | length == 0
 
 - name: Wait for cluster to settle
   ansible.builtin.command:

@@ -9,16 +9,16 @@
 - name: Set hana crm facts
   ansible.builtin.set_fact:
     crm_maintainence_mode: "{{ (crm_conf_hana_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
-    hana_topology_clone: "{{ crm_conf_hana_show.stdout | regex_search('clone cln_SAPHanaTopology') }}"
     stonith_timeout: "{{ crm_conf_hana_show.stdout | regex_search('stonith-timeout') }}"  # this should be variable!
-    hana_topology_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaTopology') }}"
-    hana_resource_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms msl_SAPHana_') }}"
     hana_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHana_') }}"
+    hana_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms msl_SAPHana_') }}"
+    hana_topology_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaTopology') }}"
+    hana_topology_clone: "{{ crm_conf_hana_show.stdout | regex_search('clone cln_SAPHanaTopology') }}"
     ip_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_ip_') }}"
     ip_nc: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_socat_') }}"
     ip_grp: "{{ crm_conf_hana_show.stdout | regex_search('group g_ip_') }}"
     ip_colo: "{{ crm_conf_hana_show.stdout | regex_search('colocation col_saphana_ip_') }}"
-    order: "{{ crm_conf_hana_show.stdout | regex_search('order ord_SAPHana_') }}"
+    cluster_order: "{{ crm_conf_hana_show.stdout | regex_search('order ord_SAPHana_') }}"
   when: is_primary
   changed_when: false
 
@@ -94,7 +94,7 @@
       target-role="Started"
       interleave="true"
   when:
-    - hana_resource_clone | length == 0
+    - hana_clone | length == 0
     - is_primary
 
 - name: Configure colocation
@@ -115,7 +115,7 @@
       2000:
       cln_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
       msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
-  when: order | length == 0
+  when: cluster_order | length == 0
 
 # Get current maintainence state
 - name: Refresh cluster status
