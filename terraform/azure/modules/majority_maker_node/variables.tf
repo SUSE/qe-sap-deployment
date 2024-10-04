@@ -12,7 +12,7 @@ variable "node_count" {
 }
 
 variable "vm_size" {
-  description = "The instance type of DRDB node"
+  description = "The instance type of DRBD node"
   type        = string
 }
 
