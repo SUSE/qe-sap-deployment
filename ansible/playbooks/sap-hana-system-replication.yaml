@@ -11,7 +11,7 @@
       when: ansible_play_hosts | length != 2
 
     - name: Load HANA vars
-      include_vars: ./vars/hana_vars.yaml
+      ansible.builtin.include_vars: ./vars/hana_vars.yaml
 
   vars:
     install_path: /var/lib/qedep
