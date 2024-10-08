@@ -8,6 +8,6 @@ galaxy_info:
   min_ansible_version: 2.9
   platforms:
     - name: EL
-      versions: [ 7, 8, 9 ]
-  galaxy_tags: [ 'sap', 'hana', 'rhel', 'redhat', 'sles', 'suse' ]
+      versions: [7, 8, 9]
+  galaxy_tags: ['sap', 'hana', 'rhel', 'redhat', 'sles', 'suse']
 dependencies: []

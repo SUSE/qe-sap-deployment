@@ -21,7 +21,7 @@
     - name: SAP HANA hdblcm prepare - Find all SAR files in '{{ sap_hana_install_software_directory }}'
       ansible.builtin.find:
         paths: "{{ sap_hana_install_software_directory }}"
-        recurse: no
+        recurse: false
         file_type: file
         patterns: '*.SAR'
       register: __sap_hana_install_register_find_sarfiles

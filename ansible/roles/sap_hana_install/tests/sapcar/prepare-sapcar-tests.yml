@@ -21,13 +21,13 @@
         group: root
         mode: '0755'
 
-#    - name: Copy '/software/hana/{{ sap_hana_install_sapcar_filename }}' to '{{ sap_hana_install_software_directory }}'
-#      ansible.builtin.copy:
-#        src: "/software/hana/{{ sap_hana_install_sapcar_filename }}"
-#        dest: "{{ sap_hana_install_software_directory }}/"
-#        owner: root
-#        group: root
-#        mode: '0755'
+    # - name: Copy '/software/hana/{{ sap_hana_install_sapcar_filename }}' to '{{ sap_hana_install_software_directory }}'
+    #   ansible.builtin.copy:
+    #     src: "/software/hana/{{ sap_hana_install_sapcar_filename }}"
+    #     dest: "{{ sap_hana_install_software_directory }}/"
+    #     owner: root
+    #     group: root
+    #     mode: '0755'
 
     - name: Copy SAPCAR files from '/software/hana/' to '{{ sap_hana_install_software_directory }}'
       ansible.builtin.copy:
