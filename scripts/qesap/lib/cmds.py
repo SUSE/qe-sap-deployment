@@ -245,36 +245,8 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
         list of list of strings, each command is rappresented as a list of its arguments
     """
 
-    # if the config.yaml has playbooks, the ansible and ansible-playbooks executables
-    # has to be available too
-    ansible_bin_paths = {}
-    for ansible_bin in ['ansible', 'ansible-playbook']:
-        binpath = shutil.which(ansible_bin)
-        if not binpath:
-            log.error("Missing binary %s", ansible_bin)
-            return False, f"Missing binary {ansible_bin}"
-        ansible_bin_paths[ansible_bin] = binpath
-
-    ansible_common = [ansible_bin_paths['ansible-playbook']]
-    if verbose:
-        ansible_common.append('-vvvv')
-    else:
-        ansible_common.append('-vv')
-
-    ansible_common.append('-i')
-    ansible_common.append(inventory)
-
-    ansible_cmd = []
-    ansible_cmd_seq = []
-    ssh_share = ansible_common.copy()
-    ssh_share[0] = ansible_bin_paths['ansible']
-    # Don't set '--ssh-extra-args="..."' but 'ssh-extra-args=...'
-    # for avoiding the ansible ssh connection failure introduced by
-    # https://github.com/ansible/ansible/pull/78826 in "ansible-core 2.15.0"
-    ssh_share.extend([
-        'all', '-a', 'true',
-        '--ssh-extra-args=-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new'])
-    ansible_cmd_seq.append({'cmd': ssh_share})
+    # 1. Create the environment variable set
+    #    that will be used by any command
     original_env = dict(os.environ)
     original_env['ANSIBLE_PIPELINING'] = 'True'
     ansible_callbacks = []
@@ -287,6 +259,38 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
         original_env['ANSIBLE_CALLBACKS_ENABLED'] = ','.join(ansible_callbacks)
     if 'roles_path' in configure_data_ansible:
         original_env['ANSIBLE_ROLES_PATH'] = configure_data_ansible['roles_path']
+
+    # 2. Verify that needed binary are usable
+    ansible_bin_paths = {}
+    for ansible_bin in ['ansible', 'ansible-playbook']:
+        binpath = shutil.which(ansible_bin)
+        if not binpath:
+            log.error("Missing binary %s", ansible_bin)
+            return False, f"Missing binary {ansible_bin}"
+        ansible_bin_paths[ansible_bin] = binpath
+
+    # 3. Compose common parts of all ansible commands
+    ansible_common = [ansible_bin_paths['ansible-playbook']]
+    if verbose:
+        ansible_common.append('-vvvv')
+    else:
+        ansible_common.append('-vv')
+    ansible_common.append('-i')
+    ansible_common.append(inventory)
+
+    # 4. Start composing and accumulating the list of all needed commands
+    ansible_cmd = []
+    ansible_cmd_seq = []
+    ssh_share = ansible_common.copy()
+    ssh_share[0] = ansible_bin_paths['ansible']
+    # Don't set '--ssh-extra-args="..."' but 'ssh-extra-args=...'
+    # for avoiding the ansible ssh connection failure introduced by
+    # https://github.com/ansible/ansible/pull/78826 in "ansible-core 2.15.0"
+    ssh_share.extend([
+        'all', '-a', 'true',
+        '--ssh-extra-args=-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new'])
+    ansible_cmd_seq.append({'cmd': ssh_share})
+
 
     for playbook in configure_data_ansible[sequence]:
         ansible_cmd = ansible_common.copy()
