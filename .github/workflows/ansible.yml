@@ -9,6 +9,8 @@ on:
       - ansible/**
       - requirements.txt
       - .github/workflows/ansible.yml
+      - Makefile
+      - tools/**
 
 jobs:
   build:
