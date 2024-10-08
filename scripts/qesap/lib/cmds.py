@@ -291,11 +291,12 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
         '--ssh-extra-args=-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new'])
     ansible_cmd_seq.append({'cmd': ssh_share})
 
-
     for playbook in configure_data_ansible[sequence]:
         ansible_cmd = ansible_common.copy()
         playbook_cmd = playbook.split(' ')
         log.debug("playbook:%s", playbook)
+        # get the file named in the conf.yaml from playbook_cmd
+        # and append the full path within the repo folder
         playbook_filename = os.path.join(base_project, 'ansible', 'playbooks', playbook_cmd[0])
         ansible_cmd.append(playbook_filename)
         for ply_cmd in playbook_cmd[1:]:
@@ -314,7 +315,8 @@ def ansible_export_output(command, out):
     """ Write the Ansible (or ansible-playbook) stdout to file
 
     Function is in charge to:
-    - get a cmd and calculate from it the log file name to write. The filename is calculated, when available, from the playbook name: stripping '.yaml' and adding '.log.txt'
+    - get a cmd and calculate from it the log file name to write.
+      The filename is calculated, when available, from the playbook name: stripping '.yaml' and adding '.log.txt'
     - open a file in write mode. Path for this file is the current directory
     - write to the file the content of the out variable. Each element of the out list to a new file line
 
@@ -322,7 +324,17 @@ def ansible_export_output(command, out):
         command (str list): one cmd element as prepared by ansible_command_sequence
         out (str list): as returned by subprocess_run
     """
-    playbook_path = command[4]
+    # log name has to be derived from the name of the playbook:
+    # search the playbook name in all command words.
+    playbook_path = None
+    for cmd_element in command:
+        match = re.search(rf"{os.path.join('ansible', 'playbooks')}.*", cmd_element)
+        if match:
+            playbook_path = cmd_element
+            break
+    if playbook_path is None:
+        log.error("Unable to find which one is the playbook in %s", command)
+        return
     playbook_name = os.path.splitext(os.path.basename(playbook_path))[0]
     log_filename = f"ansible.{playbook_name}.log.txt"
     log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
@@ -378,7 +390,9 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
         else:
             ret, out = lib.process_manager.subprocess_run(**command)
             log.debug("Ansible process return ret:%d", ret)
-            ansible_export_output(command['cmd'], out)
+            # only write separated files for ansible-playbook commands
+            if 'ansible-playbook' in command['cmd'][0]:
+                ansible_export_output(command['cmd'], out)
             if ret != 0:
                 log.error("command:%s returned non zero %d", command, ret)
                 return Status(f"Error rc: {ret} at {command}")

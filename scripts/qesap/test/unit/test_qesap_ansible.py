@@ -690,7 +690,8 @@ def test_ansible_junit(
     mock_call_ansibleplaybook,
 ):
     """
-    Test that --junit result in Ansible called with two additional env variables
+    Test that using '--junit' on the glue script command line
+    results in two additional env variables added at each ansible command execution
 
         ANSIBLE_CALLBACKS_ENABLED=junit
         JUNIT_OUTPUT_DIR="/something/somewhere"

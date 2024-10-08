@@ -29,7 +29,7 @@ def test_export_ansible_output():
         "-vvvv",
         "-i",
         "/root/qe-sap-deployment/terraform/aws/inventory.yaml",
-        "/some/immaginary/path/testAll.yaml",
+        "/some/immaginary/path/ansible/playbooks/testAll.yaml",
         "-e",
         "something=somevalue",
     ]
