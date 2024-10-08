@@ -9,7 +9,6 @@ echo "Run YAMLLINT_CMD:${YAMLLINT_CMD}"
 yamllint --version || exit 1
 
 find ansible/ \
-    -type f \
-    -iname "*.yml" -or -iname "*.yaml" \
-    ! -name "hana_media.yaml" ! -name "hana_vars.yaml" \
-    -exec ${YAMLLINT_CMD} {} +
+    -type f -iname "*.yml" -or -iname "*.yaml" \
+    ! -name "hana_media.yaml" ! -name "hana_vars.yaml" |\
+    xargs -I{} ${YAMLLINT_CMD} {}

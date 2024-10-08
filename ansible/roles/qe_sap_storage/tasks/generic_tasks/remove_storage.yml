@@ -18,7 +18,7 @@
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Remove Filesystem
   shell: |
     /sbin/wipefs --all -f /dev/mapper/{{ item.value.vg }}-{{ item.value.lv }}
-  ignore_errors: yes
+  ignore_errors: true
 
 # Remove Logical Volume
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Remove Logical Volume
@@ -26,11 +26,11 @@
     lv: "{{ item.value.lv }}"
     vg: "{{ item.value.vg }}"
     state: absent
-    force: yes
+    force: true
 
 # Remove Volume Group
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Remove Volume Group
   lvg:
     vg: "{{ item.value.vg }}"
     state: absent
-    force: yes
+    force: true

@@ -1,43 +1,43 @@
 ---
 
-- debug:
+- ansible.builtin.debug:
     msg: "{{ item }} "
 
 # Create Volume Group
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Volume Group One
-  lvg:
+  community.general.lvg:
     vg: "{{ item.value.vg }}"
     pvs: "{{ item.value.pv }}"
-    force: yes
+    force: true
 
 # Create Logical Group - One
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Logical Volume - One
-  lvol:
+  community.general.lvol:
     vg: "{{ item.value.vg }}"
     lv: "{{ item.value.lv }}"
     size: 100%VG
-  when: 
+  when:
     - "item.value.numluns == '1'"
 
 # Create Logical Group - Striped
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Logical Volume - Striped
-  lvol:
+  community.general.lvol:
     vg: "{{ item.value.vg }}"
     lv: "{{ item.value.lv }}"
     size: 100%VG
     opts: "-i {{ item.value.numluns }} -I {{ item.value.stripesize }}"
-  when: 
+  when:
     - "item.value.numluns != '1'"
 
 # Create Filesystem
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Filesystem
-  filesystem:
+  community.general.filesystem:
     fstype: xfs
     dev: "/dev/{{ item.value.vg }}/{{ item.value.lv }}"
 
 # Mount Filesystem
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Mount
-  mount:
+  ansible.posix.mount:
     path: "{{ item.value.directory }}"
     fstype: xfs
     src: "/dev/mapper/{{ item.value.vg }}-{{ item.value.lv }}"

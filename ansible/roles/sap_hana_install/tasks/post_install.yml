@@ -28,13 +28,12 @@
       ansible.builtin.include_tasks: post_install/recreate_tenant_database.yml
       when: sap_hana_install_recreate_tenant_database|d(true)
 
-# Optional Post Install Tasks
-
-# not needed because already done in sap_general_preconfigure
-#- name: SAP HANA Post Install - Update /etc/hosts
-#  ansible.builtin.include_tasks: post_install/update_etchosts.yml
-#  when:
-#    - "sap_hana_install_update_etchosts | bool"
+    # Optional Post Install Tasks
+    # not needed because already done in sap_general_preconfigure
+    # - name: SAP HANA Post Install - Update /etc/hosts
+    #   ansible.builtin.include_tasks: post_install/update_etchosts.yml
+    #   when:
+    #     - "sap_hana_install_update_etchosts | bool"
 
     - name: SAP HANA Post Install - Firewall
       ansible.builtin.include_tasks: post_install/firewall.yml
@@ -53,7 +52,6 @@
 
   when: sap_hana_install_new_system|d(true)
 
-################
 
 - name: Perform an hdblcm installation check
   block:
@@ -66,7 +64,7 @@
           !/^ /&&/^<!-- /{printf ("<!-- Ansible managed -->\n")}
           /^ /{split ($0, b, "[\*\*\*]"); gsub (">", ""); split ($0, a, "<"); printf ("%s\{\{ sap_hana_install_%s|d(sap_hana_install_master_password) \}\}%s\n", b[1], a[2], b[4])}' {{ sap_hana_install_configfile_directory }}/{{ sap_hana_install_configfile_template_prefix }}.cfg.xml > {{ sap_hana_install_configfile_directory }}/{{ sap_hana_install_configfile_template_prefix }}.xml.j2
       register: __sap_hana_install_create_jinja2_template
-      changed_when: no
+      changed_when: false
 
     - name: SAP HANA hdblcm installation check - Display the location of the remote Jinja2 template
       ansible.builtin.debug:
@@ -111,8 +109,8 @@
       ansible.builtin.debug:
         var: __sap_hana_install_fact_installation_check_command
 
-# Reason for noqa: The command to be executed contains input redirection
-    - name: SAP HANA hdblcm installation check - Perform the check # noqa command-instead-of-shell
+    # Reason for noqa: The command to be executed contains input redirection
+    - name: SAP HANA hdblcm installation check - Perform the check  # noqa command-instead-of-shell
       ansible.builtin.shell: "{{ __sap_hana_install_fact_installation_check_command }}"
       args:
         chdir: "{{ sap_hana_install_install_path }}/{{ sap_hana_install_sid }}/global/hdb/install/bin"
@@ -124,8 +122,8 @@
         var: __sap_hana_install_register_installation_check.stdout_lines
       when: sap_hana_install_use_hdbcheck|d(true)
 
-# Reason for noqa: The command to be executed contains input redirection
-    - name: SAP HANA hdblcm installation check - Perform the check # noqa command-instead-of-shell
+    # Reason for noqa: The command to be executed contains input redirection
+    - name: SAP HANA hdblcm installation check - Perform the check  # noqa command-instead-of-shell
       ansible.builtin.shell: "{{ __sap_hana_install_fact_installation_check_command }}"
       args:
         chdir: "{{ sap_hana_install_install_path }}/{{ sap_hana_install_sid }}/hdblcm"
@@ -152,7 +150,7 @@
   args:
     chdir: "{{ sap_hana_install_install_path }}/{{ sap_hana_install_sid }}/hdblcm"
   register: __sap_hana_install_register_install_result
-  changed_when: no
+  changed_when: false
   when: not ansible_check_mode
 
 - name: Set fact - HANA version
@@ -174,8 +172,8 @@
       - '  Hosts            -       {{ __sap_hana_install_fact_hana_hosts }}'
       - '  SID              -       {{ sap_hana_install_sid }}'
       - '  NR               -       {{ sap_hana_install_number }}'
-#      - '  Master Password  -       {{ sap_hana_install_master_password }}'
-#      - '  IP               -       {{ ansible_default_ipv4.address|default(ansible_all_ipv4_addresses[0]) }}'
-#      - '  Host             -       {{ ansible_hostname }}'
-#      - '  FQDN             -       {{ ansible_fqdn }}'
+      # - '  Master Password  -       {{ sap_hana_install_master_password }}'
+      # - '  IP               -       {{ ansible_default_ipv4.address|default(ansible_all_ipv4_addresses[0]) }}'
+      # - '  Host             -       {{ ansible_hostname }}'
+      # - '  FQDN             -       {{ ansible_fqdn }}'
   when: not ansible_check_mode
