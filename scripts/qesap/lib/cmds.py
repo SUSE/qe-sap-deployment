@@ -289,7 +289,7 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
         # the folder is not created.
         # Create an empty folder in advance, if it is not already there
         # so that the glue script called can always suppose that at least the folder is present.
-        ansible_cmd_seq.append({'cmd': ['mkdir', junit]})
+        ansible_cmd_seq.append({'cmd': ['mkdir', '-p', junit]})
 
     ssh_share = ansible_common.copy()
     ssh_share[0] = ansible_bin_paths['ansible']

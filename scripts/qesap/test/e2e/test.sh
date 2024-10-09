@@ -389,14 +389,16 @@ rm "${QESAPROOT}/ansible/playbooks/marasca.yaml"
 rm "${TEST_PROVIDER}/inventory.yaml"
 
 test_step "[test_4.yaml] Run Ansible with --junit"
+THIS_REPORT_DIR="${QESAPROOT}/junit_reports/nested/nested"
 cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/sambuconero.yaml"
 cp inventory.yaml "${TEST_PROVIDER}/inventory.yaml"
 find . -type f -name "sambuconero*.xml" -delete || echo "Nothing to delete"
-qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml ansible --junit . || test_die "test_4.yaml fail on ansible"
+qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml ansible --junit ${THIS_REPORT_DIR} || test_die "test_4.yaml fail on ansible"
 junit_logs_number=$(find . -type f -name "sambuconero*.xml" | wc -l)
 echo "--> junit_logs_number:${junit_logs_number}"
 [[ $junit_logs_number -eq 1 ]] || test_die "ansible JUNIT reports should be 1 files but are ${junit_logs_number}"
 find . -type f -name "sambuconero*.xml" -delete
+rm -rf ${THIS_REPORT_DIR}
 
 test_step "[test_8.yaml] Run Ansible with --profile"
 rm ansible.*.log.txt || echo "Nothing to delete"
