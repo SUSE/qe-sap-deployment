@@ -261,7 +261,6 @@ rm "${THIS_LOG}" || echo "No ${THIS_LOG} to delete"
 cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/sambuconero.yaml"
 cp inventory.yaml "${TEST_PROVIDER}/inventory.yaml"
 qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml configure || test_die "test_4.yaml fail on configure"
-# At the moment e2e does not ahve a way to really run ansible
 rm ansible.*.log.txt || echo "Nothing to delete"
 qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml --dryrun ansible || test_die "test_4.yaml fail on ansible"
 qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml --dryrun ansible |& tee "${THIS_LOG}"
@@ -272,10 +271,48 @@ grep -E "ansible-playbook.*-i.*fragola/inventory.yaml.*ansible/playbooks/sambuco
 ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
 [[ $ansible_logs_number -eq 0 ]] || test_die "ansible .log.txt are not 0 files but has ${ansible_logs_number}"
 rm "${THIS_LOG}"
+rm "${QESAPROOT}/ansible/playbooks/sambuconero.yaml"
+rm "${TEST_PROVIDER}/inventory.yaml"
+
+test_step "[test_4.yaml] Run Ansible dryrun junit"
+# --junit also add a mkdir command at the beginning of the sequence
+THIS_LOG="${QESAPROOT}/ansible.log"
+THIS_REPORT_DIR="${QESAPROOT}/junit_reports"
+rm "${THIS_LOG}" || echo "No ${THIS_LOG} to delete"
+rm -rf "${THIS_REPORT_DIR}" || echo "No ${THIS_REPORT_DIR} to delete"
+cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/sambuconero.yaml"
+cp inventory.yaml "${TEST_PROVIDER}/inventory.yaml"
+qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml configure || test_die "test_4.yaml fail on configure"
+rm ansible.*.log.txt || echo "Nothing to delete"
+# Start by checking that mkdir is not in the command list if --junit is NOT used
+qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml --dryrun ansible |& tee "${THIS_LOG}"
+set +e
+grep -q mkdir "${THIS_LOG}"
+rc=$?; [[ $rc -ne 0 ]] || test_die "Command sequence in ${THIS_LOG} has not to contain mkdir, as --junit is not used"
+set -e
+# Now try again but this time using --junit
+qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml --dryrun ansible --junit ${THIS_REPORT_DIR} |& tee "${THIS_LOG}"
+set +e
+grep -q mkdir "${THIS_LOG}"
+rc=$?; [[ $rc -eq 0 ]] || test_die "Command sequence in ${THIS_LOG} has to contain mkdir, as --junit is used"
+set -e
+[[ ! -d "${THIS_REPORT_DIR}" ]] || test_die "--dryrun has not to create any folder in ${THIS_REPORT_DIR}"
+# Try again but now create the folder in advance: mkdir should be skipped
+mkdir ${THIS_REPORT_DIR}
+qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml --dryrun ansible --junit ${THIS_REPORT_DIR} |& tee "${THIS_LOG}"
+set +e
+grep -q mkdir "${THIS_LOG}"
+rc=$?; [[ $rc -ne 0 ]] || test_die "Command sequence in ${THIS_LOG} has not to contain mkdir, as --junit is used but folder was already there"
+set -e
+rm "${THIS_LOG}"
+rm "${QESAPROOT}/ansible/playbooks/sambuconero.yaml"
+rm "${TEST_PROVIDER}/inventory.yaml"
+rm -rf "${THIS_REPORT_DIR}"
 
 test_step "[test_4.yaml] Run Ansible PASS"
+cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/sambuconero.yaml"
+cp inventory.yaml "${TEST_PROVIDER}/inventory.yaml"
 qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml ansible || test_die "test_4.yaml fail on ansible"
-
 test_step "[test_4.yaml] Ansible stdout in case of PASS"
 THIS_LOG="${QESAPROOT}/test_4_ansible_pass.txt"
 rm "${THIS_LOG}" || echo "No ${THIS_LOG} to delete"
@@ -284,11 +321,15 @@ lines=$(cat "${THIS_LOG}" | wc -l)
 echo "--> lines:${lines}"
 [[ $lines -eq 0 ]] || test_die "${THIS_LOG} should be empty but has ${lines} lines"
 rm "${THIS_LOG}"
+rm "${QESAPROOT}/ansible/playbooks/sambuconero.yaml"
+rm "${TEST_PROVIDER}/inventory.yaml"
 
 test_step "[test_4.yaml] Ansible stdout with verbosity in case of PASS"
 THIS_LOG="${QESAPROOT}/test_4_ansible_pass_verbose.txt"
 rm "${THIS_LOG}" || echo "No ${THIS_LOG}"
 rm ansible.*.log.txt || echo "Nothing to delete"
+cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/sambuconero.yaml"
+cp inventory.yaml "${TEST_PROVIDER}/inventory.yaml"
 qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml ansible |& tee "${THIS_LOG}"
 set +e
 grep -qE "^DEBUG" "${THIS_LOG}"
@@ -308,22 +349,31 @@ ansible_logs_number=$(find . -type f -name "ansible.sambuconero.log.txt" | wc -l
 grep -E "TASK.*Say hello" ansible.sambuconero.log.txt || test_die "Expected content not found in ansible.sambuconero.log.txt"
 rm "${THIS_LOG}"
 rm ansible.*.log.txt
+rm "${QESAPROOT}/ansible/playbooks/sambuconero.yaml"
+rm "${TEST_PROVIDER}/inventory.yaml"
 
 test_step "[test_6.yaml] Check redirection to file of ansible-playbook logs"
 rm ansible.*.log.txt || echo "Nothing to delete"
 cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/timbio.yaml"
 cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/buga.yaml"
 cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/purace.yaml"
+cp inventory.yaml "${TEST_PROVIDER}/inventory.yaml"
 qesap.py -b ${QESAPROOT} -c test_6.yaml ansible || test_die "test_6.yaml fail on ansible"
 ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
 echo "--> ansible_logs_number:${ansible_logs_number}"
 # 3 playbooks means 3 logs
 [[ $ansible_logs_number -eq 3 ]] || test_die "ansible .log.txt are not 3 files but has ${ansible_logs_number}"
 rm ansible.*.log.txt
+rm "${QESAPROOT}/ansible/playbooks/timbio.yaml"
+rm "${QESAPROOT}/ansible/playbooks/buga.yaml"
+rm "${QESAPROOT}/ansible/playbooks/purace.yaml"
+rm "${TEST_PROVIDER}/inventory.yaml"
 
 test_step "[test_7.yaml] Check redirection to file of ansible-playbook logs in case of error in the playbook execution"
 rm ansible.*.log.txt || echo "Nothing to delete"
-cp marasca.yaml "${QESAPROOT}/ansible/playbooks/"
+cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/sambuconero.yaml"
+cp marasca.yaml "${QESAPROOT}/ansible/playbooks/marasca.yaml"
+cp inventory.yaml "${TEST_PROVIDER}/inventory.yaml"
 set +e
 qesap.py --verbose -b ${QESAPROOT} -c test_7.yaml ansible
 rc=$?; [[ $rc -ne 0 ]] || test_die "qesap.py ansible has to fail if ansible-playbook fails rc:$rc"
@@ -334,8 +384,13 @@ ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
 grep -E "TASK.*Say hello" ansible.sambuconero.log.txt || test_die "Expected content not found in ansible.sambuconero.log.txt"
 grep -E "TASK.*This fails" ansible.marasca.log.txt || test_die "Expected content not found in ansible.marasca.log.txt"
 rm ansible.*.log.txt
+rm "${QESAPROOT}/ansible/playbooks/sambuconero.yaml"
+rm "${QESAPROOT}/ansible/playbooks/marasca.yaml"
+rm "${TEST_PROVIDER}/inventory.yaml"
 
 test_step "[test_4.yaml] Run Ansible with --junit"
+cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/sambuconero.yaml"
+cp inventory.yaml "${TEST_PROVIDER}/inventory.yaml"
 find . -type f -name "sambuconero*.xml" -delete || echo "Nothing to delete"
 qesap.py --verbose -b ${QESAPROOT} -c test_4.yaml ansible --junit . || test_die "test_4.yaml fail on ansible"
 junit_logs_number=$(find . -type f -name "sambuconero*.xml" | wc -l)
