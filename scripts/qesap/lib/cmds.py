@@ -245,36 +245,8 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
         list of list of strings, each command is rappresented as a list of its arguments
     """
 
-    # if the config.yaml has playbooks, the ansible and ansible-playbooks executables
-    # has to be available too
-    ansible_bin_paths = {}
-    for ansible_bin in ['ansible', 'ansible-playbook']:
-        binpath = shutil.which(ansible_bin)
-        if not binpath:
-            log.error("Missing binary %s", ansible_bin)
-            return False, f"Missing binary {ansible_bin}"
-        ansible_bin_paths[ansible_bin] = binpath
-
-    ansible_common = [ansible_bin_paths['ansible-playbook']]
-    if verbose:
-        ansible_common.append('-vvvv')
-    else:
-        ansible_common.append('-vv')
-
-    ansible_common.append('-i')
-    ansible_common.append(inventory)
-
-    ansible_cmd = []
-    ansible_cmd_seq = []
-    ssh_share = ansible_common.copy()
-    ssh_share[0] = ansible_bin_paths['ansible']
-    # Don't set '--ssh-extra-args="..."' but 'ssh-extra-args=...'
-    # for avoiding the ansible ssh connection failure introduced by
-    # https://github.com/ansible/ansible/pull/78826 in "ansible-core 2.15.0"
-    ssh_share.extend([
-        'all', '-a', 'true',
-        '--ssh-extra-args=-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new'])
-    ansible_cmd_seq.append({'cmd': ssh_share})
+    # 1. Create the environment variable set
+    #    that will be used by any command
     original_env = dict(os.environ)
     original_env['ANSIBLE_PIPELINING'] = 'True'
     ansible_callbacks = []
@@ -288,10 +260,43 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     if 'roles_path' in configure_data_ansible:
         original_env['ANSIBLE_ROLES_PATH'] = configure_data_ansible['roles_path']
 
+    # 2. Verify that needed binary are usable
+    ansible_bin_paths = {}
+    for ansible_bin in ['ansible', 'ansible-playbook']:
+        binpath = shutil.which(ansible_bin)
+        if not binpath:
+            log.error("Missing binary %s", ansible_bin)
+            return False, f"Missing binary {ansible_bin}"
+        ansible_bin_paths[ansible_bin] = binpath
+
+    # 3. Compose common parts of all ansible commands
+    ansible_common = [ansible_bin_paths['ansible-playbook']]
+    if verbose:
+        ansible_common.append('-vvvv')
+    else:
+        ansible_common.append('-vv')
+    ansible_common.append('-i')
+    ansible_common.append(inventory)
+
+    # 4. Start composing and accumulating the list of all needed commands
+    ansible_cmd = []
+    ansible_cmd_seq = []
+    ssh_share = ansible_common.copy()
+    ssh_share[0] = ansible_bin_paths['ansible']
+    # Don't set '--ssh-extra-args="..."' but 'ssh-extra-args=...'
+    # for avoiding the ansible ssh connection failure introduced by
+    # https://github.com/ansible/ansible/pull/78826 in "ansible-core 2.15.0"
+    ssh_share.extend([
+        'all', '-a', 'true',
+        '--ssh-extra-args=-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new'])
+    ansible_cmd_seq.append({'cmd': ssh_share})
+
     for playbook in configure_data_ansible[sequence]:
         ansible_cmd = ansible_common.copy()
         playbook_cmd = playbook.split(' ')
         log.debug("playbook:%s", playbook)
+        # get the file named in the conf.yaml from playbook_cmd
+        # and append the full path within the repo folder
         playbook_filename = os.path.join(base_project, 'ansible', 'playbooks', playbook_cmd[0])
         ansible_cmd.append(playbook_filename)
         for ply_cmd in playbook_cmd[1:]:
@@ -310,7 +315,8 @@ def ansible_export_output(command, out):
     """ Write the Ansible (or ansible-playbook) stdout to file
 
     Function is in charge to:
-    - get a cmd and calculate from it the log file name to write. The filename is calculated, when available, from the playbook name: stripping '.yaml' and adding '.log.txt'
+    - get a cmd and calculate from it the log file name to write.
+      The filename is calculated, when available, from the playbook name: stripping '.yaml' and adding '.log.txt'
     - open a file in write mode. Path for this file is the current directory
     - write to the file the content of the out variable. Each element of the out list to a new file line
 
@@ -318,7 +324,17 @@ def ansible_export_output(command, out):
         command (str list): one cmd element as prepared by ansible_command_sequence
         out (str list): as returned by subprocess_run
     """
-    playbook_path = command[4]
+    # log name has to be derived from the name of the playbook:
+    # search the playbook name in all command words.
+    playbook_path = None
+    for cmd_element in command:
+        match = re.search(rf"{os.path.join('ansible', 'playbooks')}.*", cmd_element)
+        if match:
+            playbook_path = cmd_element
+            break
+    if playbook_path is None:
+        log.error("Unable to find which one is the playbook in %s", command)
+        return
     playbook_name = os.path.splitext(os.path.basename(playbook_path))[0]
     log_filename = f"ansible.{playbook_name}.log.txt"
     log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
@@ -374,7 +390,9 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
         else:
             ret, out = lib.process_manager.subprocess_run(**command)
             log.debug("Ansible process return ret:%d", ret)
-            ansible_export_output(command['cmd'], out)
+            # only write separated files for ansible-playbook commands
+            if 'ansible-playbook' in command['cmd'][0]:
+                ansible_export_output(command['cmd'], out)
             if ret != 0:
                 log.error("command:%s returned non zero %d", command, ret)
                 return Status(f"Error rc: {ret} at {command}")

@@ -309,7 +309,7 @@ grep -E "TASK.*Say hello" ansible.sambuconero.log.txt || test_die "Expected cont
 rm "${THIS_LOG}"
 rm ansible.*.log.txt
 
-test_step "[test_6.yaml] Check redirection to file of Ansible logs"
+test_step "[test_6.yaml] Check redirection to file of ansible-playbook logs"
 rm ansible.*.log.txt || echo "Nothing to delete"
 cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/timbio.yaml"
 cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/buga.yaml"
@@ -317,11 +317,11 @@ cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/purace.yaml"
 qesap.py -b ${QESAPROOT} -c test_6.yaml ansible || test_die "test_6.yaml fail on ansible"
 ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
 echo "--> ansible_logs_number:${ansible_logs_number}"
-# 3 playbooks plus a log file for the initial ansible (not ansible-playbook) call 
-[[ $ansible_logs_number -eq 4 ]] || test_die "ansible .log.txt are not 4 files but has ${ansible_logs_number}"
+# 3 playbooks means 3 logs
+[[ $ansible_logs_number -eq 3 ]] || test_die "ansible .log.txt are not 3 files but has ${ansible_logs_number}"
 rm ansible.*.log.txt
 
-test_step "[test_7.yaml] Check redirection to file of Ansible logs in case of error in the playbook execution"
+test_step "[test_7.yaml] Check redirection to file of ansible-playbook logs in case of error in the playbook execution"
 rm ansible.*.log.txt || echo "Nothing to delete"
 cp marasca.yaml "${QESAPROOT}/ansible/playbooks/"
 set +e
@@ -329,8 +329,8 @@ qesap.py --verbose -b ${QESAPROOT} -c test_7.yaml ansible
 rc=$?; [[ $rc -ne 0 ]] || test_die "qesap.py ansible has to fail if ansible-playbook fails rc:$rc"
 set -e
 ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
-# 2 playbooks plus a log file for the initial ansible (not ansible-playbook) call
-[[ $ansible_logs_number -eq 3 ]] || test_die "ansible .log.txt are not 3 files but has ${ansible_logs_number}"
+# 2 playbooks means 2 logs
+[[ $ansible_logs_number -eq 2 ]] || test_die "ansible .log.txt are not 2 files but has ${ansible_logs_number}"
 grep -E "TASK.*Say hello" ansible.sambuconero.log.txt || test_die "Expected content not found in ansible.sambuconero.log.txt"
 grep -E "TASK.*This fails" ansible.marasca.log.txt || test_die "Expected content not found in ansible.marasca.log.txt"
 rm ansible.*.log.txt
