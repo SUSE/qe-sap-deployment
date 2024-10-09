@@ -185,7 +185,7 @@ ansible:
   hana_vars:
     sap_hana_install_software_directory: /hana/shared/install
     sap_hana_install_master_password: 'DoNotUseThisPassw0rd'
-    sap_hana_install_sid: 'HDB'
+    sap_hana_install_sid: 'UT0'
     sap_hana_install_instance_number: '00'
     sap_domain: "qe-test.example.com"
     primary_site: 'goofy'
@@ -242,11 +242,11 @@ ansible:
     secondary_site: 'miky'
 """
     args, _, _, hana_vars = configure_helper(
-        provider, conf.format(provider, "/aaa/bbb/ccc", "HDB", "00")
+        provider, conf.format(provider, "/aaa/bbb/ccc", "UT0", "00")
     )
     assert main(args) == 0
     args, _, _, hana_vars = configure_helper(
-        provider, conf.format(provider, "ccc", "HDB", "00")
+        provider, conf.format(provider, "ccc", "UT0", "00")
     )
     assert (
         main(args) != 0
@@ -256,17 +256,17 @@ ansible:
     )
     assert main(args) != 0, "Wrong 'sap_hana_install_sid'='HD' not detected."
     args, _, _, hana_vars = configure_helper(
-        provider, conf.format(provider, "/aaa/bbb/ccc", "HDB", "0")
+        provider, conf.format(provider, "/aaa/bbb/ccc", "UT0", "0")
     )
     assert main(args) != 0, "Wrong 'sap_hana_install_instance_number'='0' not detected."
     args, _, _, hana_vars = configure_helper(
-        provider, conf.format(provider, "/aaa/bbb/ccc", "HDB", "AA")
+        provider, conf.format(provider, "/aaa/bbb/ccc", "UT0", "AA")
     )
     assert (
         main(args) != 0
     ), "Wrong 'sap_hana_install_instance_number'='AA' not detected."
     args, _, _, hana_vars = configure_helper(
-        provider, conf.format(provider, "/aaa/bbb/ccc", "HDB", "000")
+        provider, conf.format(provider, "/aaa/bbb/ccc", "UT0", "000")
     )
     assert (
         main(args) != 0
