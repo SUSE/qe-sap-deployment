@@ -119,7 +119,7 @@
   ansible.builtin.command:
     cmd: >-
       crm configure primitive
-      rsc_ip_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       ocf:heartbeat:IPaddr2
       meta
       target-role="Started"
@@ -147,7 +147,7 @@
     cmd: >-
       crm configure group
       g_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
-      rsc_ip_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       {{ rsc_socat }}
   when: ip_grp | length == 0
 
