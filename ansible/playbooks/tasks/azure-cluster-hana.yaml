@@ -18,7 +18,7 @@
     ip_nc: "{{ crm_conf_show.stdout | regex_search('primitive rsc_socat_') }}"
     ip_grp: "{{ crm_conf_show.stdout | regex_search('group g_ip_') }}"
     ip_colo: "{{ crm_conf_show.stdout | regex_search('colocation col_saphana_ip_') }}"
-    cluster_order: "{{ crm_conf_show.stdout | regex_search('order ord_SAPHanaCtl_') }}"
+    cluster_order: "{{ crm_conf_show.stdout | regex_search('order ord_SAPHana_') }}"
     resource_stickiness: "{{ (crm_conf_show.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1'))[0] }}"
     migration_threshold: "{{ (crm_conf_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] }}"
   changed_when: false
@@ -165,7 +165,7 @@
   ansible.builtin.command:
     cmd: >-
       crm configure order
-      ord_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      ord_SAPHana_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       Optional:
       cln_SAPHanaTpg_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}

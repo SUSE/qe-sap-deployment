@@ -18,7 +18,7 @@
     ip_nc: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_socat_') }}"
     ip_grp: "{{ crm_conf_hana_show.stdout | regex_search('group g_ip_') }}"
     ip_colo: "{{ crm_conf_hana_show.stdout | regex_search('colocation col_saphana_ip_') }}"
-    cluster_order: "{{ crm_conf_hana_show.stdout | regex_search('order ord_SAPHanaCtl_') }}"
+    cluster_order: "{{ crm_conf_hana_show.stdout | regex_search('order ord_SAPHana_') }}"
   when: is_primary
   changed_when: false
 
