@@ -10,15 +10,15 @@
   ansible.builtin.set_fact:
     crm_maintainence_mode: "{{ (crm_conf_hana_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
     stonith_timeout: "{{ crm_conf_hana_show.stdout | regex_search('stonith-timeout') }}"  # this should be variable!
-    hana_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHana_') }}"
-    hana_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms msl_SAPHana_') }}"
-    hana_topology_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaTopology') }}"
-    hana_topology_clone: "{{ crm_conf_hana_show.stdout | regex_search('clone cln_SAPHanaTopology') }}"
+    hana_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaCtl_') }}"
+    hana_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms msl_SAPHanaCtl_') }}"
+    hana_topology_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaTpg') }}"
+    hana_topology_clone: "{{ crm_conf_hana_show.stdout | regex_search('clone cln_SAPHanaTpg') }}"
     ip_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_ip_') }}"
     ip_nc: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_socat_') }}"
     ip_grp: "{{ crm_conf_hana_show.stdout | regex_search('group g_ip_') }}"
     ip_colo: "{{ crm_conf_hana_show.stdout | regex_search('colocation col_saphana_ip_') }}"
-    cluster_order: "{{ crm_conf_hana_show.stdout | regex_search('order ord_SAPHana_') }}"
+    cluster_order: "{{ crm_conf_hana_show.stdout | regex_search('order ord_SAPHanaCtl_') }}"
   when: is_primary
   changed_when: false
 
@@ -31,10 +31,10 @@
   ansible.builtin.command:
     cmd: >-
       crm configure primitive
-      rsc_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      rsc_SAPHanaTpg_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       ocf:suse:SAPHanaTopology
       operations
-      $id="rsc_sap2_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations"
+      $id="rsc_sap2_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}-operations"
       op monitor interval="10" timeout="600"
       op start interval="0" timeout="600"
       op stop interval="0" timeout="300"
@@ -48,8 +48,8 @@
   ansible.builtin.command:
     cmd: >-
       crm configure clone
-      cln_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
-      rsc_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      cln_SAPHanaTpg_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      rsc_SAPHanaTpg_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       meta
       clone-node-max="1"
       target-role="Started"
@@ -62,10 +62,10 @@
   ansible.builtin.command:
     cmd: >-
       crm configure primitive
-      rsc_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      rsc_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       ocf:suse:SAPHana
       operations
-      $id="rsc_sap_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations"
+      $id="rsc_sap_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}-operations"
       op start interval="0" timeout="3600"
       op stop interval="0" timeout="3600"
       op promote interval="0" timeout="3600"
@@ -85,8 +85,8 @@
   ansible.builtin.command:
     cmd: >-
       crm configure ms
-      msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
-      rsc_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      rsc_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       meta
       notify="true"
       clone-max="2"
@@ -101,10 +101,10 @@
   ansible.builtin.command:
     cmd: >-
       crm configure colocation
-      col_saphana_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      col_saphana_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       2000:
-      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Started
-      msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Master
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}:Started
+      msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}:Master
   when: ip_colo | length == 0
 
 - name: Configure order
@@ -113,8 +113,8 @@
       crm configure order
       ord_SAPHana
       2000:
-      cln_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
-      msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      cln_SAPHanaTpg_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
   when: cluster_order | length == 0
 
 # Get current maintainence state
