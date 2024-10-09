@@ -281,6 +281,16 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     # 4. Start composing and accumulating the list of all needed commands
     ansible_cmd = []
     ansible_cmd_seq = []
+
+    if junit and not os.path.isdir(junit):
+        # This is the folder also used in the Ansible configuration JUNIT_OUTPUT_DIR.
+        # ansible-playbook is able to create it from its own but
+        # is a failure occur in the first sequence command, that is ansible and not ansible-playbook,
+        # the folder is not created.
+        # Create an empty folder in advance, if it is not already there
+        # so that the glue script called can always suppose that at least the folder is present.
+        ansible_cmd_seq.append({'cmd': ['mkdir', '-p', junit]})
+
     ssh_share = ansible_common.copy()
     ssh_share[0] = ansible_bin_paths['ansible']
     # Don't set '--ssh-extra-args="..."' but 'ssh-extra-args=...'
