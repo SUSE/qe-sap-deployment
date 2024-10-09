@@ -81,7 +81,7 @@ ansible:
   hana_vars:
     sap_hana_install_software_directory: /hana/shared/install
     sap_hana_install_master_password: 'DoNotUseThisPassw0rd'
-    sap_hana_install_sid: 'HDB'
+    sap_hana_install_sid: 'UT0'
     sap_hana_install_instance_number: '00'
     sap_domain: "qe-test.example.com"
     primary_site: 'goofy'
@@ -120,7 +120,7 @@ ansible:
   hana_vars:
     sap_hana_install_software_directory: /hana/shared/install
     sap_hana_install_master_password: 'DoNotUseThisPassw0rd'
-    sap_hana_install_sid: 'HDB'
+    sap_hana_install_sid: 'UT0'
     sap_hana_install_instance_number: '00'
     sap_domain: "qe-test.example.com"
     primary_site: 'goofy'
