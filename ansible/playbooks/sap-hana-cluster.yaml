@@ -30,6 +30,7 @@
       ansible.builtin.systemd:
         name: pacemaker
         state: started
+        enabled: true
 
   pre_tasks:
     - name: Detect cloud platform
