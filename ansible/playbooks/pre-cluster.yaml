@@ -2,6 +2,8 @@
 - name: Cluster preparation
   hosts: all
   remote_user: cloudadmin
+  vars:
+    crm_rootless: false
   pre_tasks:
     - name: Detect cloud platform
       ansible.builtin.include_tasks:
@@ -37,7 +39,9 @@
         owner: "{{ ansible_user }}"
         group: users
         mode: '0700'
-      when: inventory_hostname in groups.hana
+      when:
+        - inventory_hostname in groups.hana
+        - crm_rootless
 
     - name: Generate public/private keys for root on hana hosts
       become: true
@@ -61,7 +65,9 @@
         type: rsa
         size: 4096
       register: ssh_user_keys
-      when: inventory_hostname in groups.hana
+      when:
+        - inventory_hostname in groups.hana
+        - crm_rootless
 
     - name: Apply root key to root Authorised Keys
       become: true
@@ -80,7 +86,11 @@
         user: "{{ ansible_user }}"
         state: present
         key: "{{ hostvars[item].ssh_user_keys.public_key }}"
-      when: inventory_hostname in groups.hana and hostvars[item]['ansible_hostname'] in groups.hana and ansible_hostname != item
+      when:
+        - inventory_hostname in groups.hana
+        - hostvars[item]['ansible_hostname'] in groups.hana
+        - ansible_hostname != item
+        - crm_rootless
       with_items: "{{ groups['all'] }}"
 
     - name: Slurp ssh daemon public key
