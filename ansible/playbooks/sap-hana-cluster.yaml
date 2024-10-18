@@ -18,7 +18,7 @@
     crypto_cipher: aes256
     # Define some names in a central place
     rsc_socat: "rsc_socat_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}"
-    rsc_SAPHana: "rsc_SAPHana_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}"
+    rsc_saphanactl: "rsc_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}"
 
 
   handlers:
@@ -80,7 +80,7 @@
         cmd: >-
           crm resource
           refresh
-          msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+          msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       when: is_primary
 
     - name: Wait for cluster to settle
@@ -93,6 +93,6 @@
         cmd: >-
           crm resource
           maintenance
-          msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+          msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
           off
       when: is_primary
