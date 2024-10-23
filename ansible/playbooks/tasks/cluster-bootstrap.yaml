@@ -423,7 +423,7 @@
   ansible.builtin.command:
     cmd: >-
       crm configure primitive
-      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       ocf:suse:aws-vpc-move-ip params
       ip={{ aws_cluster_ip }}
       routing_table={{ aws_route_table_id }}
@@ -441,7 +441,7 @@
   ansible.builtin.command:
     cmd: >-
       crm configure primitive
-      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       IPaddr2
       params ip={{ gcp_cluster_ip }}
       cidr_netmask=32
@@ -457,7 +457,7 @@
   ansible.builtin.command:
     cmd: >-
       crm resource locate
-      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
   register: reg_vip_location
   changed_when: false
   when: is_primary
@@ -469,7 +469,7 @@
   ansible.builtin.command:
     cmd: >-
       crm resource move
-      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       {{ primary_hostname }}
   register: reg_move_cmd
   when:
@@ -483,7 +483,7 @@
   ansible.builtin.command:
     cmd: >-
       crm resource locate
-      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
   register: reg_vip_location2
   when:
     - is_primary
@@ -496,7 +496,7 @@
   ansible.builtin.command:
     cmd: >-
       crm resource clear
-      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
   when:
     - is_primary
     - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
@@ -521,7 +521,7 @@
     cmd: >-
       crm configure group
       grp_ip_hc
-      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       rsc_healthcheck_primary
   when:
     - is_primary
