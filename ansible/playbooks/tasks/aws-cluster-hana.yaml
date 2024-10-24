@@ -112,7 +112,7 @@
     cmd: >-
       crm configure order
       ord_SAPHana
-      2000:
+      Optional:
       cln_SAPHanaTpg_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
   when: cluster_order | length == 0

@@ -125,12 +125,15 @@
     - ip_colo | length == 0
     - cloud_platform_is_gcp
 
+# Order configured as documentation for both AWS and GCP dictates
+# AWS: https://documentation.suse.com/sbp/sap-15/html/SLES4SAP-hana-sr-guide-perfopt-15-aws/index.html#id-constraints
+# GCP: https://cloud.google.com/solutions/sap/docs/sap-hana-ha-config-sles#create_the_saphana_primitive_resource
 - name: Configure order
   ansible.builtin.command:
     cmd: >-
       crm configure order
       ord_SAPHana
-      2000:
+      Optional:
       cln_SAPHanaTpg_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
   when:
