@@ -33,6 +33,7 @@ Variables:
 
 * reg_code
 * email_address
+* sles_modules
 
 Variable Source = ./variables.sh
 
@@ -45,6 +46,17 @@ If no repos are found, the playbook will first attempt to register with SCC
 using `registercloudguest`. If the command is available, it will be used for
 registration. If `registercloudguest` is not available then `SUSEConnect` will
 be used.
+
+
+There's a task allowing register additional modules that require a dedicated regcode.
+The module names and regcodes can be provided in the `ansible-playbook` command line as list of hashes (named sles_modules).
+
+The format should be like this:
+
+```
+create:
+    - registration.yaml (.......other variables here......) -e sles_modules='[{"key":"<module1>","value":"<regcode1>"},{"key":"<module2","value":"<regcode2>"}]'
+```
 
 ## pre-cluster
 
