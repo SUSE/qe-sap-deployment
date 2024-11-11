@@ -39,7 +39,7 @@
       InstanceNumber="{{ sap_hana_install_instance_number }}"
   when: hana_topology_resource | length == 0
 
-- name: Set stonith-timeout [sdb]
+- name: Set stonith-timeout [sbd]
   ansible.builtin.command:
     cmd: crm configure property stonith-timeout=144
   when:
@@ -51,12 +51,19 @@
     cmd: crm configure property stonith-timeout=900
   when:
     - stonith_timeout | length == 0
-    - use_sbd | bool
+    - not use_sbd | bool
 
 - name: Enable stonith
   ansible.builtin.command:
     cmd: crm configure property stonith-enabled=true
   when: stonith_enabled != 'true'
+
+  # see https://learn.microsoft.com/en-us/azure/sap/workloads/high-availability-guide-suse-pacemaker?tabs=msi#create-a-fencing-device-on-the-pacemaker-cluster
+- name: Enable concurrent fencing (native fencing)
+  ansible.builtin.command:
+    cmd: crm configure property concurrent-fencing=true
+  when:
+    - not use_sbd | bool
 
 - name: Create HANA topology clone
   ansible.builtin.command:
