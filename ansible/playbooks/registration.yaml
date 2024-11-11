@@ -97,6 +97,30 @@
         - not_registered_found
         - "(rcg.rc != 0) or (use_suseconnect | bool)"
 
+    # Latest version of cloud-regionsrv-client is needed in PAYG, and image
+    # needs to be registered in order for zypper up to work.
+    # see https://www.suse.com/c/long-term-service-pack-support-for-payg-instances-simplified/
+    - name: Ensure cloud-regionsrv-client is on latest version.
+      community.general.zypper:
+        name: cloud-regionsrv-client
+        state: latest
+      when:
+        - not not_registered_found
+        - sles_modules is defined and sles_modules | length > 0
+
+    - name: Add additional authenticated modules
+      ansible.builtin.command: SUSEConnect -p {{ item.key }} -r {{ item.value }}
+      register: result
+      until: result is succeeded
+      retries: 10
+      delay: 60
+      when:
+        - not_registered_found
+        - sles_modules is defined and sles_modules | length > 0
+      loop: "{{ sles_modules }}"
+      loop_control:
+        label: "{{ item.key }}"
+
     - name: Check if repos are added after registration
       ansible.builtin.command: zypper lr -u
       register: repos_after
