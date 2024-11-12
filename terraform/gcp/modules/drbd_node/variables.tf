@@ -56,11 +56,6 @@ variable "drbd_data_disk_type" {
   default     = "pd-standard"
 }
 
-variable "gcp_credentials_file" {
-  description = "Path to your local gcp credentials file"
-  type        = string
-}
-
 variable "host_ips" {
   description = "ip addresses to set to the nodes"
   type        = list(string)
