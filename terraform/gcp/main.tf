@@ -138,23 +138,22 @@ module "common_variables" {
 }
 
 module "drbd_node" {
-  source               = "./modules/drbd_node"
-  common_variables     = module.common_variables.configuration
-  name                 = var.drbd_name
-  network_domain       = var.drbd_network_domain == "" ? var.network_domain : var.drbd_network_domain
-  drbd_count           = var.drbd_enabled == true ? 2 : 0
-  vm_size              = var.drbd_machine_type
-  compute_zones        = local.compute_zones
-  network_name         = local.vpc_name
-  network_subnet_name  = local.subnet_name
-  os_image             = local.drbd_os_image
-  drbd_data_disk_size  = var.drbd_data_disk_size
-  drbd_data_disk_type  = var.drbd_data_disk_type
-  gcp_credentials_file = var.gcp_credentials_file
-  host_ips             = local.drbd_ips
-  iscsi_srv_ip         = module.iscsi_server.iscsisrv_ip
-  nfs_mounting_point   = var.drbd_nfs_mounting_point
-  nfs_export_name      = var.netweaver_sid
+  source              = "./modules/drbd_node"
+  common_variables    = module.common_variables.configuration
+  name                = var.drbd_name
+  network_domain      = var.drbd_network_domain == "" ? var.network_domain : var.drbd_network_domain
+  drbd_count          = var.drbd_enabled == true ? 2 : 0
+  vm_size             = var.drbd_machine_type
+  compute_zones       = local.compute_zones
+  network_name        = local.vpc_name
+  network_subnet_name = local.subnet_name
+  os_image            = local.drbd_os_image
+  drbd_data_disk_size = var.drbd_data_disk_size
+  drbd_data_disk_type = var.drbd_data_disk_type
+  host_ips            = local.drbd_ips
+  iscsi_srv_ip        = module.iscsi_server.iscsisrv_ip
+  nfs_mounting_point  = var.drbd_nfs_mounting_point
+  nfs_export_name     = var.netweaver_sid
 }
 
 module "netweaver_node" {
@@ -169,7 +168,6 @@ module "netweaver_node" {
   network_name              = local.vpc_name
   network_subnet_name       = local.subnet_name
   os_image                  = local.netweaver_os_image
-  gcp_credentials_file      = var.gcp_credentials_file
   host_ips                  = local.netweaver_ips
   iscsi_srv_ip              = module.iscsi_server.iscsisrv_ip
   netweaver_software_bucket = var.netweaver_software_bucket
@@ -187,7 +185,6 @@ module "hana_node" {
   network_name          = local.vpc_name
   network_subnet_name   = local.subnet_name
   os_image              = local.hana_os_image
-  gcp_credentials_file  = var.gcp_credentials_file
   host_ips              = local.hana_ips
   iscsi_srv_ip          = module.iscsi_server.iscsisrv_ip
   hana_data_disk_type   = var.hana_data_disk_type
