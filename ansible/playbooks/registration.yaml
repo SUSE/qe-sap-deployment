@@ -1,5 +1,6 @@
 ---
-- hosts: all
+- name: Register
+  hosts: all
   remote_user: cloudadmin
   become: true
   become_user: root
@@ -10,6 +11,10 @@
   tasks:
 
     # Pre flight checks
+    - name: Check for SUSEConnect binary presence
+      ansible.builtin.command: which SUSEConnect
+      changed_when: false
+
     # Do we have repos?  If not, we need to register
     - name: Check for registration
       ansible.builtin.command: SUSEConnect -s
@@ -19,28 +24,37 @@
 
     # Check if there are instances of `Not Registered` in it
     - name: Check for 'Not Registered'
-      set_fact:
+      ansible.builtin.set_fact:
         not_registered_found: "{{ 'Not Registered' in repos.stdout }}"
       ignore_errors: true
 
     # Is registercloudguest available?
+    # only run it if:
+    #  - there's at least one 'Not Registered' module
+    #  - the user does not require only use SUSEConnect with `use_suseconnect`
     - name: Check for registercloudguest
       ansible.builtin.command: which registercloudguest
-      register: rcg
+      register: is_registercloudguest_bin
       failed_when: false
       changed_when: false
       when:
         - not_registered_found
+        - not use_suseconnect | bool
 
     # Execute Section
-    - name: registercloudguest pre-run cleaning
+
+    # Start by pre-cleaning all. Only run it if:
+    #  - the registercloudguest binary is available
+    #  - there's at least one 'Not Registered' module
+    #  - the user does not require only use SUSEConnect with 'use_suseconnect'
+    - name: Pre-run cleaning registercloudguest
       ansible.builtin.command: registercloudguest --clean
       when:
         - not_registered_found
-        - rcg.rc == 0
+        - is_registercloudguest_bin.rc == 0
         - not use_suseconnect | bool
 
-    - name: registercloudguest registration
+    - name: Run registercloudguest registration
       ansible.builtin.command: registercloudguest --force-new -r "{{ reg_code }}" -e "{{ email_address }}"
       register: result
       until: result is succeeded
@@ -49,10 +63,13 @@
       failed_when: result.rc != 0 or result.stderr != ""
       when:
         - not_registered_found
-        - rcg.rc == 0
+        - is_registercloudguest_bin.rc == 0
         - not use_suseconnect | bool
 
-    # If registercloudguest is not present fall back on SUSEConnect
+    # Fall back on SUSEConnect if:
+    #   - registercloudguest is not present
+    # or
+    #   - the user explicitly require using SUSEConnect
     - name: SUSEConnect registration
       ansible.builtin.command: SUSEConnect -r "{{ reg_code }}" -e "{{ email_address }}"
       register: result
@@ -61,9 +78,10 @@
       delay: 60
       when:
         - not_registered_found
-        - "(rcg.rc != 0) or (use_suseconnect | bool)"
+        - "(is_registercloudguest_bin.rc != 0) or (use_suseconnect | bool)"
 
-    # There are additional repos to add.  These are handled differently for SLES 15 and SLES12
+    # There are additional repos to add.
+    # These are handled differently for SLES 15 and SLES12
     - name: Add SLES 12 Advanced Systems Modules
       ansible.builtin.command: SUSEConnect -p sle-module-adv-systems-management/12/{{ ansible_facts['architecture'] }} -r "{{ reg_code }}"
       register: result
@@ -72,8 +90,6 @@
       delay: 60
       when:
         - ansible_facts['distribution_major_version'] == "12"
-        - not_registered_found
-        - "(rcg.rc != 0) or (use_suseconnect | bool)"
 
     - name: Add SLES 12 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/12/{{ ansible_facts['architecture'] }}
@@ -84,7 +100,7 @@
       when:
         - ansible_facts['distribution_major_version'] == "12"
         - not_registered_found
-        - "(rcg.rc != 0) or (use_suseconnect | bool)"
+        - "(is_registercloudguest_bin.rc != 0) or (use_suseconnect | bool)"
 
     - name: Add SLES 15 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/{{ ansible_facts['distribution_version'] }}/{{ ansible_facts['architecture'] }}
@@ -95,7 +111,7 @@
       when:
         - ansible_facts['distribution_major_version'] == "15"
         - not_registered_found
-        - "(rcg.rc != 0) or (use_suseconnect | bool)"
+        - "(is_registercloudguest_bin.rc != 0) or (use_suseconnect | bool)"
 
     # Latest version of cloud-regionsrv-client is needed in PAYG, and image
     # needs to be registered in order for zypper up to work.
@@ -105,7 +121,6 @@
         name: cloud-regionsrv-client
         state: latest
       when:
-        - not not_registered_found
         - sles_modules is defined and sles_modules | length > 0
 
     - name: Add additional authenticated modules
@@ -115,7 +130,6 @@
       retries: 10
       delay: 60
       when:
-        - not_registered_found
         - sles_modules is defined and sles_modules | length > 0
       loop: "{{ sles_modules }}"
       loop_control:
@@ -125,5 +139,3 @@
       ansible.builtin.command: zypper lr -u
       register: repos_after
       failed_when: repos_after.rc != 0
-      when:
-        - not_registered_found
