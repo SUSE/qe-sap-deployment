@@ -31,15 +31,11 @@
     # Is registercloudguest available?
     # only run it if:
     #  - there's at least one 'Not Registered' module
-    #  - the user does not require only use SUSEConnect with `use_suseconnect`
     - name: Check for registercloudguest
       ansible.builtin.command: which registercloudguest
       register: is_registercloudguest_bin
       failed_when: false
       changed_when: false
-      when:
-        - not_registered_found
-        - not use_suseconnect | bool
 
     # Execute Section
 
@@ -123,7 +119,7 @@
       when:
         - sles_modules is defined and sles_modules | length > 0
 
-    - name: Add additional authenticated modules
+    - name: Add additional authenticated modules [SUSEConnnect]
       ansible.builtin.command: SUSEConnect -p {{ item.key }} -r {{ item.value }}
       register: result
       until: result is succeeded
@@ -131,6 +127,21 @@
       delay: 60
       when:
         - sles_modules is defined and sles_modules | length > 0
+        - "(is_registercloudguest_bin.rc != 0) or (use_suseconnect | bool)"
+      loop: "{{ sles_modules }}"
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: Add additional authenticated modules [registercloudguest]
+      ansible.builtin.command: registercloudguest -r {{ item.value }}
+      register: result
+      until: result is succeeded
+      retries: 10
+      delay: 60
+      when:
+        - sles_modules is defined and sles_modules | length > 0
+        - is_registercloudguest_bin.rc == 0
+        - not use_suseconnect | bool
       loop: "{{ sles_modules }}"
       loop_control:
         label: "{{ item.key }}"
