@@ -60,7 +60,7 @@
     sap_storage_cloud_type: 'generic'
     sap_storage_sap_type: 'sap_hana'
     sap_storage_action: 'prepare'
-  include_role:
+  ansible.buildin.include_role:
     name: ../roles/qe_sap_storage
 
 - name: Configure HANA SBD target

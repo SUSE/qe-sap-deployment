@@ -139,7 +139,7 @@
         mode: '0600'
 
 - name: Flush handler
-  meta: flush_handlers
+  ansible.builtin.meta: flush_handlers
 
 - name: Get DefaultTasksMax value
   ansible.builtin.command:  # noqa command-instead-of-module
@@ -181,7 +181,7 @@
     - max_tasks_int | int < 4096
 
 - name: Flush handlers
-  meta: flush_handlers
+  ansible.builtin.meta: flush_handlers
 
 # check crm status and fail if not return code != 0
 - name: Check the cluster is up
@@ -230,7 +230,7 @@
       op stop interval=0 timeout=180 \
       op monitor interval=120 timeout=60 \
       meta target-role=Started \
-      params tag={{ aws_stonith_tag}} pcmk_delay_max=15
+      params tag={{ aws_stonith_tag }} pcmk_delay_max=15
   when: cloud_platform_is_aws
 
 - name: Set primary and secondary hostnames

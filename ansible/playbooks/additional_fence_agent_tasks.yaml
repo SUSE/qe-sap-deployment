@@ -7,17 +7,17 @@
 
   tasks:
     - name: Verify installation
-      command: "rpm -qf $(which fence_azure_arm)"
+      ansible.builtin.shell: "rpm -qf $(which fence_azure_arm)"
       args:
         _uses_shell: true
       register: verify_installation
 
     - name: Display verification result
-      debug:
+      ansible.builtin.debug:
         var: verify_installation.stdout_lines
 
     - name: Install additional Python packages
-      zypper:
+      community.general.zypper:
         name:
           - python311-pexpect
           - python311-pycurl
