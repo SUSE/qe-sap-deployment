@@ -48,12 +48,12 @@
       tags: bootstrap
 
     - name: Base Cluster Configuration [aws]
-      ansible.builtin.include_tasks: ./tasks/cluster-bootstrap.yaml
+      ansible.builtin.include_tasks: ./tasks/aws-cluster-bootstrap.yaml
       when: cloud_platform_is_aws
       tags: bootstrap
 
     - name: Base Cluster Configuration [gcp]
-      ansible.builtin.include_tasks: ./tasks/cluster-bootstrap.yaml
+      ansible.builtin.include_tasks: ./tasks/gcp-cluster-bootstrap.yaml
       when: cloud_platform_is_gcp
       tags: bootstrap
 
