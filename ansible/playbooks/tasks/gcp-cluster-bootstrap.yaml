@@ -1,0 +1,419 @@
+---
+# This cluster-bootstrap playbook is an attempt of creating a standard way to build
+# clusters for GCP cloud platforms.
+
+# It assumes that all cloud detection has already been run
+- name: Set corosync template path
+  ansible.builtin.set_fact:
+    corosync_template: "../templates/gcp_corosync.conf.j2"
+
+- name: Ensure cluster dependencies are installed
+  community.general.zypper:
+    name: ['corosync', 'crmsh', 'fence-agents', 'ha-cluster-bootstrap', 'pacemaker', 'patterns-ha-ha_sles', 'resource-agents', 'cluster-glue', 'rsyslog', 'socat']  # Caution, no version control here (yet)
+    state: present
+  register: result
+  until: result is succeeded
+  retries: 3
+  delay: 60
+
+# This is a workaround for https://bugzilla.suse.com/show_bug.cgi?id=1231153
+# If it is fixed, this task will no longer be needed
+- name: Install python-httplib2 via zypper
+  zypper:
+    name: python-httplib2
+    state: present
+  when: ansible_distribution_major_version == '12'
+  register: httplib2_zypper
+  ignore_errors: true
+
+# The following tasks check that the file /etc/corosync/authkey exists on each node and that all nodes have an identical copy
+# if either of the the above conditions are false the back `Create authkeys` is run.
+# It will shutdown pacemaker on all nodes, write the authfile to the primary node and then copy it the other nodes.
+# Finally, it will notify a handler to start corosync.
+- name: Ensure logd is enabled and started
+  ansible.builtin.systemd:
+    name: logd
+    state: started
+    enabled: true
+
+- name: Register authkey status
+  ansible.builtin.stat:
+    path: /etc/corosync/authkey
+  register: authkey_reg
+
+- name: Set authkey facts
+  ansible.builtin.set_fact:
+    sum: "{{ authkey_reg.stat.checksum | default('nosum') }}"
+    reg: "{{ authkey_reg.stat.isreg | default('false') }}"
+
+- name: Set authkey json data
+  ansible.builtin.set_fact:
+    authkey_data: "{{ groups.hana | map('extract', hostvars) | list | json_query('[].{host: ansible_hostname,isreg: reg,cryptosum: sum }') }}"
+  run_once: true
+
+# The following 3 tasks determine if any of nodes will be changed by writing the the corosync file (either the file changing or not currently existing)
+# If any of the nodes will change, the `Write corosync` block will run.  It will shutdown pacemaker on all nodes, write corosync and then notify a handler to
+# start corosync.
+- name: Check if template write will make changes
+  ansible.builtin.template:  # noqa no-relative-paths
+    src: "{{ corosync_template }}"
+    dest: /etc/corosync/corosync.conf
+    owner: root
+    group: root
+    mode: '0600'
+  check_mode: true
+  register: temp_check
+
+- name: Set corosync facts
+  ansible.builtin.set_fact:
+    write_corosync: "{{ temp_check.changed }}"
+
+- name: Set corosync json data
+  ansible.builtin.set_fact:
+    corosync_data: "{{ groups.hana | map('extract', hostvars) | list | json_query('[].{host: ansible_hostname,write_corosync: write_corosync}') }}"
+  run_once: true
+
+- name: Create authkeys
+  when: authkey_data|json_query('[].cryptosum')|unique|length != 1 or authkey_data|json_query('[?isreg==`false`]')|count > 0
+  notify: Start pacemaker
+  block:
+    - name: Stop pacemaker
+      ansible.builtin.systemd:
+        name: pacemaker
+        state: stopped
+
+    - name: Create cluster secret
+      ansible.builtin.command:
+        cmd: corosync-keygen
+        creates: /etc/corosync/authkey
+      when: is_primary
+
+    - name: Fetch authkey
+      ansible.builtin.fetch:
+        src: /etc/corosync/authkey
+        dest: /tmp/authkey_tmp
+        flat: true
+      when: is_primary
+
+    - name: Copy authkey
+      ansible.builtin.copy:
+        src: /tmp/authkey_tmp
+        dest: /etc/corosync/authkey
+        owner: root
+        group: root
+        mode: '0400'
+      when: not is_primary
+
+- name: Write corosync.conf
+  when: corosync_data|json_query('[?write_corosync==`true`]')|count > 0
+  notify: Start pacemaker
+  block:
+    - name: Stop pacemaker
+      ansible.builtin.systemd:
+        name: pacemaker
+        state: stopped
+
+    - name: Write the corosync.conf template
+      ansible.builtin.template:  # noqa no-relative-paths
+        src: "{{ corosync_template }}"
+        dest: /etc/corosync/corosync.conf
+        owner: root
+        group: root
+        mode: '0600'
+
+- name: Flush handler
+  meta: flush_handlers
+
+- name: Get DefaultTasksMax value
+  ansible.builtin.command:  # noqa command-instead-of-module
+    cmd: systemctl --no-pager show
+  register: systemd_result
+  changed_when: false
+
+- name: Check max tasks infinity
+  ansible.builtin.set_fact:
+    max_tasks: infinity
+  loop: "{{ systemd_result.stdout_lines }}"
+  when: item is search("DefaultTasksMax=infinity")
+
+- name: Check max tasks integer
+  ansible.builtin.set_fact:
+    max_tasks_int: "{{ item | split('=') | last }}"
+  loop: "{{ systemd_result.stdout_lines }}"
+  when:
+    - item is search("DefaultTasksMax=")
+    - item is not search("DefaultTasksMax=infinity")
+
+- name: Set DefaultTasksMax
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: '^DefaultTasksMax='
+    line: 'DefaultTasksMax=4096'
+    state: present
+    backup: true
+  when:
+    - max_tasks is defined
+    - max_tasks is not match('infinity')
+
+- name: Set DefaultTasksMax
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: '^DefaultTasksMax='
+    line: 'DefaultTasksMax=4096'
+    state: present
+    backup: true
+  when:
+    - max_tasks is defined
+    - max_tasks_int is defined
+    - max_tasks_int | int < 4096
+
+- name: Flush handlers
+  meta: flush_handlers
+
+# check crm status and fail if not return code != 0
+- name: Check the cluster is up
+  ansible.builtin.command:
+    cmd: crm status
+  changed_when: false
+
+- name: Get general cluster configuration
+  ansible.builtin.command:
+    cmd: crm configure show
+  register: crm_conf_show
+  changed_when: false
+
+- name: Get rsc-options cluster configuration
+  ansible.builtin.command:
+    cmd: crm configure show rsc-options
+  register: crm_rsc_options_show
+  changed_when: false
+  failed_when: false
+
+- name: Get op_defaults cluster configuration
+  ansible.builtin.command:
+    cmd: crm configure show op_defaults
+  register: crm_op_options_show
+  changed_when: false
+  failed_when: false
+
+- name: Set cluster facts
+  ansible.builtin.set_fact:
+    sbd_stonith: "{{ (crm_conf_show.stdout | regex_search('(rsc_iscsi_sbd)', '\\1'))[0] | default('false') }}"
+    stonith_enabled: "{{ (crm_conf_show.stdout | regex_search('stonith-enabled=([a-z]*)', '\\1'))[0] | default('false') }}"
+    stonith_action: "{{ (crm_conf_show.stdout | regex_search('stonith-action=([a-z]*)', '\\1'))[0] | default('false') }}"
+    stonith_timeout: "{{ (crm_conf_show.stdout | regex_search('stonith-timeout=([a-z0-9]*)', '\\1'))[0] | default('false') }}"
+    rsc_ip: "{{ crm_conf_show.stdout | regex_search('(rsc_ip_)') }}"
+    rsc_healthcheck_primary: "{{ crm_conf_show.stdout | regex_search('(rsc_healthcheck_primary)') }}"
+    grp_ip_hc: "{{ crm_conf_show.stdout | regex_search('(grp_ip_hc)') }}"
+    resource_stickiness: "{{ (crm_rsc_options_show.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1'))[0] | default('false') }}"
+    migration_threshold: "{{ (crm_rsc_options_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] | default('false') }}"
+    op_default_timeout: "{{ (crm_op_options_show.stdout | regex_search('timeout=([0-9]*)', '\\1'))[0] | default('false') }}"
+
+- name: Set primary and secondary hostnames
+  ansible.builtin.set_fact:
+    primary_hostname: "{{ groups['hana'][0] }}"
+    secondary_hostname: "{{ groups['hana'][1] }}"
+  when:
+    - not (use_sbd | bool)
+
+- name: Enable SBD [sbd]
+  ansible.builtin.command:
+    cmd: crm configure primitive rsc_iscsi_sbd stonith:external/sbd
+  when:
+    - sbd_stonith | string | lower  == 'false'
+    - use_sbd
+    - is_primary
+
+# The following STONITH commands for GCP have been adapted from
+# https://cloud.google.com/solutions/sap/docs/sap-hana-ha-config-sles#create_the_fencing_device_resources
+- name: Configure GCP Native Fencing STONITH for Primary
+  ansible.builtin.command: >
+    crm configure primitive rsc_gce_stonith_primary stonith:fence_gce
+    params
+    port="{{ primary_hostname }}"
+    zone="{{ primary_zone }}"
+    project="{{ project }}"
+    op monitor interval="300s" timeout="120s"
+    op start interval="0" timeout="60s"
+    meta target-role=Started
+  when:
+    - is_primary
+    - not (use_sbd | bool)
+
+# Command to configure the Secondary has to be executed on the primary
+# https://cloud.google.com/solutions/sap/docs/sap-hana-ha-config-sles#create_the_fencing_device_resources
+- name: Configure GCP Native Fencing STONITH for Secondary
+  ansible.builtin.command: >
+    crm configure primitive rsc_gce_stonith_secondary stonith:fence_gce
+    params
+    port="{{ secondary_hostname }}"
+    zone="{{ secondary_zone }}"
+    project="{{ project }}"
+    op monitor interval="300s" timeout="120s"
+    op start interval="0" timeout="60s"
+    meta target-role=Started
+  when:
+    - is_primary
+    - not (use_sbd | bool)
+
+- name: Set Location of Primary Fencing Device (GCP)
+  ansible.builtin.command: >
+    crm configure location LOC_STONITH_{{ primary_hostname }} \
+    rsc_gce_stonith_primary -inf: "{{ primary_hostname }}"
+  when:
+    - is_primary
+    - not (use_sbd | bool)
+
+- name: Set Location of Secondary Fencing Device (GCP)
+  ansible.builtin.command: >
+    crm configure location LOC_STONITH_{{ secondary_hostname }} \
+    rsc_gce_stonith_secondary -inf: "{{ secondary_hostname }}"
+  when:
+    - is_primary
+    - not (use_sbd | bool)
+
+- name: Set stonith timeout [native - gcp]
+  ansible.builtin.command:
+    cmd: >-
+      crm configure property
+      $id="cib-bootstrap-options"
+      stonith-timeout=300s
+  when:
+    - stonith_timeout != '300s'
+    - is_primary
+    - not (use_sbd | bool)
+
+- name: Enable stonith
+  ansible.builtin.command:
+    cmd: >-
+      crm configure property
+      $id="cib-bootstrap-options"
+      stonith-enabled=true
+  when:
+    - stonith_enabled | string | lower != 'true'
+    - is_primary
+
+- name: Set rsc_defaults resource stickiness
+  ansible.builtin.command:
+    cmd: >-
+      crm configure rsc_defaults
+      $id="rsc-options"
+      resource-stickiness=1000
+  when:
+    - resource_stickiness != '1000'
+    - is_primary
+  register: reg_rsc_defaults
+  until: reg_rsc_defaults.rc == 0
+  retries: 10
+  delay: 10
+
+- name: Set rsc_defaults migration threshold
+  ansible.builtin.command:
+    cmd: >-
+      crm configure rsc_defaults
+      $id="rsc-options"
+      migration-threshold=5000
+  when:
+    - migration_threshold != '5000'
+    - is_primary
+
+- name: Set op_defaults timeout
+  ansible.builtin.command:
+    cmd: crm configure op_defaults timeout=600
+  when:
+    - op_default_timeout != '600'
+    - is_primary
+
+- name: Configure cluster IP
+  ansible.builtin.command:
+    cmd: >-
+      crm configure primitive
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      IPaddr2
+      params ip={{ gcp_cluster_ip }}
+      cidr_netmask=32
+      nic=eth0
+      op monitor interval=3600s timeout=60s
+  when:
+    - rsc_ip | length == 0
+    - is_primary
+
+# TODO - ensure VIP is located on the primary before continuing
+- name: Locate cluster IP
+  ansible.builtin.command:
+    cmd: >-
+      crm resource locate
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+  register: reg_vip_location
+  changed_when: false
+  when: is_primary
+  until: reg_vip_location.stderr == ''
+  retries: 10
+  delay: 6
+
+- name: Move cluster IP to primary HANA node
+  ansible.builtin.command:
+    cmd: >-
+      crm resource move
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      {{ primary_hostname }}
+  register: reg_move_cmd
+  when:
+    - is_primary
+    - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
+  until: reg_move_cmd.rc == 0
+  retries: 10
+  delay: 6
+
+- name: Wait for move IP move to complete
+  ansible.builtin.command:
+    cmd: >-
+      crm resource locate
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+  register: reg_vip_location2
+  when:
+    - is_primary
+    - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
+  until: reg_vip_location2.stdout_lines | length > 0 and reg_vip_location2.stdout_lines[0] | trim | split(' ') | last == primary_hostname
+  retries: 10
+  delay: 6
+
+- name: Clear the move constraint
+  ansible.builtin.command:
+    cmd: >-
+      crm resource clear
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+  when:
+    - is_primary
+    - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
+
+- name: Configure primary health check
+  ansible.builtin.command:
+    cmd: >-
+      crm configure primitive
+      rsc_healthcheck_primary
+      anything
+      params
+      binfile="/usr/bin/socat"
+      cmdline_options="-U TCP-LISTEN:625{{ sap_hana_install_instance_number }},backlog=10,fork,reuseaddr /dev/null"
+      op monitor timeout=20s interval=10s op_params depth=0
+  when:
+    - is_primary
+    - rsc_healthcheck_primary | length == 0
+
+- name: Configure cluster IP and health check probe
+  ansible.builtin.command:
+    cmd: >-
+      crm configure group
+      grp_ip_hc
+      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      rsc_healthcheck_primary
+  when:
+    - is_primary
+    - grp_ip_hc | length == 0
+
+# For debug purpose only
+- name: Get cluster status at the end
+  ansible.builtin.command:
+    cmd: crm configure show
+  changed_when: false

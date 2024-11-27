@@ -1,17 +1,11 @@
 ---
-# This cluster-bootstrap tais an attempt of creating a standard way to build
-# clusters for the three supported cloud platforms.
+# This cluster-bootstrap playbook is an attempt of creating a standard way to build
+# clusters for AWS cloud platforms.
 
 # It assumes that all cloud detection has already been run
-- name: Set corosync template path [aws]
+- name: Set corosync template path
   ansible.builtin.set_fact:
     corosync_template: "../templates/aws_corosync.conf.j2"
-  when: cloud_platform_is_aws
-
-- name: Set corosync template path [gcp]
-  ansible.builtin.set_fact:
-    corosync_template: "../templates/gcp_corosync.conf.j2"
-  when: cloud_platform_is_gcp
 
 # This collection of tasks bootstraps the cluster following guidance from
 # https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-on-aws-ha-cluster-configuration-on-sles.html
@@ -20,7 +14,6 @@
     path: /root/.aws
     state: directory
     mode: '0700'
-  when: cloud_platform_is_aws
 
 - name: Upload aws files
   ansible.builtin.copy:
@@ -32,7 +25,6 @@
   loop:
     - credentials
     - config
-  when: cloud_platform_is_aws
 
 - name: Ensure cluster dependencies are installed
   community.general.zypper:
@@ -42,6 +34,16 @@
   until: result is succeeded
   retries: 3
   delay: 60
+
+# This is a workaround for https://bugzilla.suse.com/show_bug.cgi?id=1231153
+# If it is fixed, this task will no longer be needed
+- name: Install python-httplib2 via zypper
+  zypper:
+    name: python-httplib2
+    state: present
+  when: ansible_distribution_major_version == '12'
+  register: httplib2_zypper
+  ignore_errors: true
 
 # The following tasks check that the file /etc/corosync/authkey exists on each node and that all nodes have an identical copy
 # if either of the the above conditions are false the back `Create authkeys` is run.
@@ -157,7 +159,9 @@
   ansible.builtin.set_fact:
     max_tasks_int: "{{ item | split('=') | last }}"
   loop: "{{ systemd_result.stdout_lines }}"
-  when: item is search("DefaultTasksMax=") and item is not search("DefaultTasksMax=infinity")
+  when:
+    - item is search("DefaultTasksMax=")
+    - item is not search("DefaultTasksMax=infinity")
 
 - name: Set DefaultTasksMax
   ansible.builtin.lineinfile:
@@ -166,7 +170,9 @@
     line: 'DefaultTasksMax=4096'
     state: present
     backup: true
-  when: max_tasks is defined and max_tasks is not match('infinity')
+  when:
+    - max_tasks is defined
+    - max_tasks is not match('infinity')
 
 - name: Set DefaultTasksMax
   ansible.builtin.lineinfile:
@@ -222,25 +228,6 @@
     migration_threshold: "{{ (crm_rsc_options_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] | default('false') }}"
     op_default_timeout: "{{ (crm_op_options_show.stdout | regex_search('timeout=([0-9]*)', '\\1'))[0] | default('false') }}"
 
-- name: Stonith command [AWS]
-  ansible.builtin.set_fact:
-    aws_stonith_cmd: |
-      crm configure primitive rsc_aws_stonith stonith:external/ec2 \
-      op start interval=0 timeout=180 \
-      op stop interval=0 timeout=180 \
-      op monitor interval=120 timeout=60 \
-      meta target-role=Started \
-      params tag={{ aws_stonith_tag}} pcmk_delay_max=15
-  when: cloud_platform_is_aws
-
-- name: Set primary and secondary hostnames
-  ansible.builtin.set_fact:
-    primary_hostname: "{{ groups['hana'][0] }}"
-    secondary_hostname: "{{ groups['hana'][1] }}"
-  when:
-    - cloud_platform_is_gcp
-    - not (use_sbd | bool)
-
 - name: Enable SBD [sbd]
   ansible.builtin.command:
     cmd: crm configure primitive rsc_iscsi_sbd stonith:external/sbd
@@ -249,11 +236,20 @@
     - use_sbd
     - is_primary
 
+- name: Stonith command
+  ansible.builtin.set_fact:
+    aws_stonith_cmd: |
+      crm configure primitive rsc_aws_stonith stonith:external/ec2 \
+      op start interval=0 timeout=180 \
+      op stop interval=0 timeout=180 \
+      op monitor interval=120 timeout=60 \
+      meta target-role=Started \
+      params tag={{ aws_stonith_tag}} pcmk_delay_max=15
+
 - name: Configure AWS EC2 STONITH for sle 12sp5
   ansible.builtin.command: "{{ aws_stonith_cmd }}"
   when:
     - is_primary
-    - cloud_platform_is_aws
     - not (use_sbd | bool)
     - ansible_distribution_major_version == '12'
   register: stonith_config_result
@@ -264,73 +260,10 @@
   ansible.builtin.command: "{{ aws_stonith_cmd }}"
   when:
     - is_primary
-    - cloud_platform_is_aws
     - not (use_sbd | bool)
     - ansible_distribution_major_version != '12'
   register: stonith_config_result
   failed_when: "'ERROR' in stonith_config_result.stderr"
-
-# This is a workaround for https://bugzilla.suse.com/show_bug.cgi?id=1231153
-# If it is fixed, this task will no longer be needed
-- name: Install python-httplib2 via zypper
-  zypper:
-    name: python-httplib2
-    state: present
-  when: ansible_distribution_major_version == '12'
-  register: httplib2_zypper
-  ignore_errors: true
-
-# The following STONITH commands for GCP have been adapted from
-# https://cloud.google.com/solutions/sap/docs/sap-hana-ha-config-sles#create_the_fencing_device_resources
-- name: Configure GCP Native Fencing STONITH for Primary
-  ansible.builtin.command: >
-    crm configure primitive rsc_gce_stonith_primary stonith:fence_gce
-    params
-    port="{{ primary_hostname }}"
-    zone="{{ primary_zone }}"
-    project="{{ project }}"
-    op monitor interval="300s" timeout="120s"
-    op start interval="0" timeout="60s"
-    meta target-role=Started
-  when:
-    - cloud_platform_is_gcp
-    - is_primary
-    - not (use_sbd | bool)
-
-# Command to configure the Secondary has to be executed on the primary
-# https://cloud.google.com/solutions/sap/docs/sap-hana-ha-config-sles#create_the_fencing_device_resources
-- name: Configure GCP Native Fencing STONITH for Secondary
-  ansible.builtin.command: >
-    crm configure primitive rsc_gce_stonith_secondary stonith:fence_gce
-    params
-    port="{{ secondary_hostname }}"
-    zone="{{ secondary_zone }}"
-    project="{{ project }}"
-    op monitor interval="300s" timeout="120s"
-    op start interval="0" timeout="60s"
-    meta target-role=Started
-  when:
-    - cloud_platform_is_gcp
-    - is_primary
-    - not (use_sbd | bool)
-
-- name: Set Location of Primary Fencing Device (GCP)
-  ansible.builtin.command: >
-    crm configure location LOC_STONITH_{{ primary_hostname }} \
-    rsc_gce_stonith_primary -inf: "{{ primary_hostname }}"
-  when:
-    - cloud_platform_is_gcp
-    - is_primary
-    - not (use_sbd | bool)
-
-- name: Set Location of Secondary Fencing Device (GCP)
-  ansible.builtin.command: >
-    crm configure location LOC_STONITH_{{ secondary_hostname }} \
-    rsc_gce_stonith_secondary -inf: "{{ secondary_hostname }}"
-  when:
-    - cloud_platform_is_gcp
-    - is_primary
-    - not (use_sbd | bool)
 
 - name: Set stonith-timeout [sdb]
   ansible.builtin.command:
@@ -339,7 +272,6 @@
     - stonith_timeout != '144'
     - use_sbd | bool
     - is_primary
-    - cloud_platform_is_aws
 
 - name: Set stonith timeout [native - aws]
   ansible.builtin.command:
@@ -351,19 +283,6 @@
     - stonith_timeout != '600s'
     - is_primary
     - not (use_sbd | bool)
-    - cloud_platform_is_aws
-
-- name: Set stonith timeout [native - gcp]
-  ansible.builtin.command:
-    cmd: >-
-      crm configure property
-      $id="cib-bootstrap-options"
-      stonith-timeout=300s
-  when:
-    - stonith_timeout != '300s'
-    - is_primary
-    - not (use_sbd | bool)
-    - cloud_platform_is_gcp
 
 - name: Enable stonith
   ansible.builtin.command:
@@ -375,7 +294,7 @@
     - stonith_enabled | string | lower != 'true'
     - is_primary
 
-- name: Disable stonith action [aws]
+- name: Disable stonith action
   ansible.builtin.command:
     cmd: >-
       crm configure property
@@ -384,9 +303,8 @@
   when:
     - stonith_action != 'off'
     - is_primary
-    - cloud_platform_is_aws
 
-- name: Set rsc_defaults resource stickiness [aws/gcp]
+- name: Set rsc_defaults resource stickiness
   ansible.builtin.command:
     cmd: >-
       crm configure rsc_defaults
@@ -395,13 +313,12 @@
   when:
     - resource_stickiness != '1000'
     - is_primary
-    - cloud_platform_is_aws or cloud_platform_is_gcp
   register: reg_rsc_defaults
   until: reg_rsc_defaults.rc == 0
   retries: 10
   delay: 10
 
-- name: Set rsc_defaults migration threshold [aws/gcp]
+- name: Set rsc_defaults migration threshold
   ansible.builtin.command:
     cmd: >-
       crm configure rsc_defaults
@@ -410,7 +327,6 @@
   when:
     - migration_threshold != '5000'
     - is_primary
-    - cloud_platform_is_aws or cloud_platform_is_gcp
 
 - name: Set op_defaults timeout
   ansible.builtin.command:
@@ -419,7 +335,7 @@
     - op_default_timeout != '600'
     - is_primary
 
-- name: Configure cluster IP [aws]
+- name: Configure cluster IP
   ansible.builtin.command:
     cmd: >-
       crm configure primitive
@@ -435,22 +351,6 @@
   when:
     - rsc_ip | length == 0
     - is_primary
-    - cloud_platform_is_aws
-
-- name: Configure cluster IP [gcp]
-  ansible.builtin.command:
-    cmd: >-
-      crm configure primitive
-      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
-      IPaddr2
-      params ip={{ gcp_cluster_ip }}
-      cidr_netmask=32
-      nic=eth0
-      op monitor interval=3600s timeout=60s
-  when:
-    - rsc_ip | length == 0
-    - is_primary
-    - cloud_platform_is_gcp
 
 # TODO - ensure VIP is located on the primary before continuing
 - name: Locate cluster IP
@@ -500,33 +400,6 @@
   when:
     - is_primary
     - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
-
-- name: Configure primary health check [gcp]
-  ansible.builtin.command:
-    cmd: >-
-      crm configure primitive
-      rsc_healthcheck_primary
-      anything
-      params
-      binfile="/usr/bin/socat"
-      cmdline_options="-U TCP-LISTEN:625{{ sap_hana_install_instance_number }},backlog=10,fork,reuseaddr /dev/null"
-      op monitor timeout=20s interval=10s op_params depth=0
-  when:
-    - is_primary
-    - cloud_platform_is_gcp
-    - rsc_healthcheck_primary | length == 0
-
-- name: Configure cluster IP and health check probe [gcp]
-  ansible.builtin.command:
-    cmd: >-
-      crm configure group
-      grp_ip_hc
-      rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
-      rsc_healthcheck_primary
-  when:
-    - is_primary
-    - grp_ip_hc | length == 0
-    - cloud_platform_is_gcp
 
 # For debug purpose only
 - name: Get cluster status at the end
