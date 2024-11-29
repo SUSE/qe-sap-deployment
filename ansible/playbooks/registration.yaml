@@ -38,6 +38,17 @@
       changed_when: false
 
     # Execute Section
+    - name: Validate reg code
+      ansible.builtin.assert:
+        that:
+          - reg_code | length > 0
+        fail_msg: "'reg_code' must not be empty"
+        success_msg: "'reg_code' is OK"
+      changed_when: false
+      when:
+        - not_registered_found
+        - is_registercloudguest_bin.rc == 0
+        - not use_suseconnect | bool
 
     # Start by pre-cleaning all. Only run it if:
     #  - the registercloudguest binary is available
@@ -45,6 +56,8 @@
     #  - the user does not require only use SUSEConnect with 'use_suseconnect'
     - name: Pre-run cleaning registercloudguest
       ansible.builtin.command: registercloudguest --clean
+      register: cleanout
+      changed_when: cleanout.rc == 0
       when:
         - not_registered_found
         - is_registercloudguest_bin.rc == 0
