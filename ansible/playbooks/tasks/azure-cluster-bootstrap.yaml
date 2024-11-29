@@ -14,20 +14,6 @@
   retries: 3
   delay: 60
 
-- name: Ensure cluster dependencies for SLES >= 15-SP4 are installed
-  community.general.zypper:
-    name: "{{ item }}"  # Caution, no version control here (yet)
-    state: present
-  loop:
-    - fence-agents-azure-arm    # Workaround for bsc#1224797. We should remove this line once the base OS images include the package
-  register: result
-  until: result is succeeded
-  retries: 3
-  delay: 60
-  when:
-    - ansible_distribution_version is version('15.4', '>=') or
-      ansible_distribution_version is version('12.5', '==')
-
 - name: Get the status of all extensions
   ansible.builtin.command:
     cmd: SUSEConnect -s
