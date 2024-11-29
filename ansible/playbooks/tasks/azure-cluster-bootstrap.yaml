@@ -14,7 +14,8 @@
   retries: 3
   delay: 60
 
-- name: Ensure cluster dependencies for SLES >= 15-SP4 are installed
+# 15-SP6 Image refresh on 20241113 get it pre-installed
+- name: Ensure cluster dependencies for SLES 15-SP4 and 15-SP5 are installed
   community.general.zypper:
     name: "{{ item }}"  # Caution, no version control here (yet)
     state: present
@@ -25,7 +26,8 @@
   retries: 3
   delay: 60
   when:
-    - ansible_distribution_version is version('15.4', '>=') or
+    - ansible_distribution_version is version('15.4', '==') or
+      ansible_distribution_version is version('15.5', '==') or
       ansible_distribution_version is version('12.5', '==')
 
 - name: Get the status of all extensions
@@ -47,6 +49,8 @@
 - name: Activate public cloud module [SLES 12]
   ansible.builtin.command:
     cmd: SUSEConnect -p sle-module-public-cloud/12/x86_64  # Only works on x86_64 for now!
+  register: __suseconnect_sle_module_public_cloud_12
+  changed_when: __suseconnect_sle_module_public_cloud_12.rc == 0
   when:
     - ansible_distribution_major_version == '12'
     - public_cloud_module != 'Registered'
@@ -54,6 +58,8 @@
 - name: Activate public cloud module [SLES 15]
   ansible.builtin.command:
     cmd: "SUSEConnect -p sle-module-public-cloud/{{ ansible_distribution_version }}/x86_64"  # Only works on x86_64 for now!
+  register: __suseconnect_sle_module_public_cloud_15
+  changed_when: __suseconnect_sle_module_public_cloud_15.rc == 0
   when:
     - ansible_distribution_major_version == '15'
     - public_cloud_module != 'Registered'
@@ -146,7 +152,7 @@
     - max_tasks_int | int < 4096
 
 - name: Flush handlers
-  meta: flush_handlers
+  ansible.builtin.meta: flush_handlers
 
 - name: Ensure 'CLOUD_NETCONFIG_MANAGE' is disabled for eth0
   ansible.builtin.lineinfile:
@@ -281,6 +287,8 @@
 - name: Ensure maintenance mode is active
   ansible.builtin.command:
     cmd: crm configure property maintenance-mode=true
+  register: __crm_maintenance_true
+  changed_when: __crm_maintenance_true.rc == 0
   when:
     - is_primary
     - crm_maintenance_mode is false or crm_maintenance_mode == 'unknown'
@@ -301,6 +309,8 @@
       pcmk_reboot_timeout=900
       pcmk_delay_max=15
       op monitor interval=3600 timeout=120
+  register: __crm_cfg_fence_azure_arm_msi
+  changed_when: __crm_cfg_fence_azure_arm_msi.rc == 0
   when:
     - is_primary
     - rsc_st_azure | length == 0
@@ -323,6 +333,8 @@
       power_timeout=240
       pcmk_reboot_timeout=900
       op monitor interval=3600 timeout=120
+  register: __crm_cfg_fence_azure_arm_spn
+  changed_when: __crm_cfg_fence_azure_arm_spn.rc == 0
   when:
     - is_primary
     - rsc_st_azure | length == 0
@@ -336,6 +348,8 @@
       ocf:heartbeat:azure-events-az
       meta allow-unhealthy-nodes=true
       op monitor interval=10s
+  register: __crm_cfg_az_events
+  changed_when: __crm_cfg_az_events.rc == 0
   when:
     - is_primary
     - rsc_azure_events | length == 0
@@ -346,6 +360,8 @@
       crm configure clone
       cln_azure-events-az
       rsc_azure-events-az
+  register: __crm_cfg_azure_cln
+  changed_when: __crm_cfg_azure_cln.rc == 0
   when:
     - is_primary
     - cln_azure_events| length == 0
@@ -367,6 +383,8 @@
 - name: Ensure maintenance mode is deactivated
   ansible.builtin.command:
     cmd: crm configure property maintenance-mode=false
+  register: __crm_maintenance_false
+  changed_when: __crm_maintenance_false.rc == 0
   when:
     - is_primary
     - crm_maintenance_mode is true or crm_maintenance_mode == 'unknown'
