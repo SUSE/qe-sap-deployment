@@ -18,10 +18,10 @@
     executable: /bin/bash
   become: true
   become_user: "{{ sap_hana_install_sid | lower }}adm"
-  when: 
+  when:
     - not ansible_check_mode
     - sap_hana_set_log_mode_overwrite
-  changed_when: no
+  changed_when: false
   register: __sap_hana_install_hdbsql_logmode
   tags: sap_hana_install_set_log_mode
 

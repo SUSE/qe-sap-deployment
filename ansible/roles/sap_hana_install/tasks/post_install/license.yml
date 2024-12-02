@@ -12,6 +12,6 @@
   become: true
   become_user: "{{ sap_hana_install_sid | lower }}adm"
   changed_when: "'0 rows affected' in addlicense.stdout"
-# Variable not used:
-#  register: __sap_hana_install_register_post_install_apply_license
+  # Variable not used:
+  #  register: __sap_hana_install_register_post_install_apply_license
   when: sap_hana_install_apply_license
