@@ -82,3 +82,80 @@ resource "google_compute_firewall" "ha_firewall_allow_tcp" {
   }
 }
 
+# IBSM related network imports
+
+data "google_compute_network" "ibsm_vpc" {
+  count = var.enable_ibsm_peering
+  name  = var.ibsm_vpc_name
+}
+
+data "google_compute_subnetwork" "ibsm_subnet" {
+  count  = var.enable_ibsm_peering
+  name   = var.ibsm_subnet_name
+  region = var.ibsm_subnet_region
+}
+
+# IBSM Peering resources
+
+# Peering from HANA VPC to ibsm VPC
+resource "google_compute_network_peering" "hana_to_ibsm" {
+  count = var.enable_ibsm_peering
+
+  name                 = "${local.deployment_name}-hana-to-ibsm"
+  network              = local.network_link
+  peer_network         = data.google_compute_network.ibsm_vpc[0].self_link
+  export_custom_routes = true
+  import_custom_routes = true
+}
+
+# Peering from ibsm VPC to HANA VPC
+resource "google_compute_network_peering" "ibsm_to_hana" {
+  count = var.enable_ibsm_peering
+
+  name                 = "ibsm-to-${local.deployment_name}-hana"
+  network              = data.google_compute_network.ibsm_vpc[0].self_link
+  peer_network         = local.network_link
+  export_custom_routes = true
+  import_custom_routes = true
+}
+
+# Allow internal traffic from HANA VPC to ibsm VPC
+resource "google_compute_firewall" "allow_internal_from_hana" {
+  count = var.enable_ibsm_peering
+
+  name    = "${local.deployment_name}-fw-allow-from-hana"
+  network = data.google_compute_network.ibsm_vpc[0].name
+
+  allow {
+    protocol = "icmp"
+  }
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22", "80"]
+  }
+
+  source_ranges = [local.subnet_address_range]
+  description   = "Allow internal traffic from HANA VPC to ibsm VPC"
+}
+
+# Allow internal traffic from ibsm VPC to HANA VPC
+resource "google_compute_firewall" "allow_internal_from_ibsm" {
+  count = var.enable_ibsm_peering
+
+  name    = "${local.deployment_name}-fw-allow-from-ibsm"
+  network = local.vpc_name
+
+  allow {
+    protocol = "icmp"
+  }
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22", "80"]
+  }
+
+  source_ranges = [data.google_compute_subnetwork.ibsm_subnet[0].ip_cidr_range]
+  description   = "Allow internal traffic from ibsm VPC to HANA VPC"
+}
+
