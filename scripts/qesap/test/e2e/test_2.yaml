@@ -3,4 +3,10 @@ apiver: 3
 provider: fragola
 terraform:
   variables:
-    fruit: lampone
+    fruit_string: "lampone"
+    fruit_string_noquot: lampone
+    fruit_int: 42
+    fruit_bool: True
+    fruit_list:
+      - '10.0.0.1'
+      - '10.0.0.2'
