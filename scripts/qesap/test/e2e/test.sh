@@ -40,12 +40,17 @@ test_step "Minimal configure only with Terraform"
 # `qesap.py configure` generate a terraform.tfvars file
 # in the provider folder indicated in the conf.yaml
 # and with content from the conf.yaml terraform section
+# Also test different YAML to TFVARS data type conversions
 TEST_PROVIDER="${QESAPROOT}/terraform/fragola"
 mkdir -p "${TEST_PROVIDER}"
 qesap.py --verbose -b ${QESAPROOT} -c test_2.yaml configure || test_die "Should exit with zero rc but is rc:$?"
 TEST_TERRAFORM_TFVARS="${TEST_PROVIDER}/terraform.tfvars"
 test_file "${TEST_TERRAFORM_TFVARS}"
-grep -q lampone "${TEST_TERRAFORM_TFVARS}" || test_die "${TEST_TERRAFORM_TFVARS} generated from test_2.yaml should contain the world lampone"
+grep -qE "fruit_string.*=.*\"lampone\"" "${TEST_TERRAFORM_TFVARS}" || test_die "${TEST_TERRAFORM_TFVARS} generated from test_2.yaml: string conversion"
+grep -qE "fruit_string_noquot.*=.*\"lampone\"" "${TEST_TERRAFORM_TFVARS}" || test_die "${TEST_TERRAFORM_TFVARS} generated from test_2.yaml: string conversion noquot"
+grep -qE "fruit_int = 42" "${TEST_TERRAFORM_TFVARS}" || test_die "${TEST_TERRAFORM_TFVARS} generated from test_2.yaml: int conversion"
+grep -qE "fruit_bool = true" "${TEST_TERRAFORM_TFVARS}" || test_die "${TEST_TERRAFORM_TFVARS} generated from test_2.yaml: bool conversion"
+grep -qE "fruit_list.*=.*\[\"10.*\]" "${TEST_TERRAFORM_TFVARS}" || test_die "${TEST_TERRAFORM_TFVARS} generated from test_2.yaml: list conversion"
 
 test_step "[test_3.yaml] configure with also Ansible"
 # `qesap.py configure` generate some ansible .yaml files

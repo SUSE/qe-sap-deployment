@@ -42,7 +42,7 @@ terraform:
     tfvar_content, err = create_tfvars(config, None)
 
     assert err is None, "Unexpected err from create_tfvars:" + str(err)
-    assert tfvar_content == '\nsandwiches = "5"'
+    assert tfvar_content == '\nsandwiches = 5'
 
 
 def test_create_tfvars_list():
