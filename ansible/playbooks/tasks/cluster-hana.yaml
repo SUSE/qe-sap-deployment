@@ -8,12 +8,14 @@
 
 - name: Set hana crm facts
   ansible.builtin.set_fact:
-    crm_maintainence_mode: "{{ (crm_conf_hana_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
+    crm_maintenance_mode: "{{ (crm_conf_hana_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
     stonith_timeout: "{{ crm_conf_hana_show.stdout | regex_search('stonith-timeout') }}"  # this should be variable!
     hana_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaCtl_') }}"
-    hana_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms msl_SAPHanaCtl_') }}"
+    hana_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms ms(.)_SAPHanaCtl_') }}"
     hana_topology_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaTpg') }}"
     hana_topology_clone: "{{ crm_conf_hana_show.stdout | regex_search('clone cln_SAPHanaTpg') }}"
+    hana_filesystem_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHanaFil_') }}"
+    hana_filesystem_clone: "{{ crm_conf_show.stdout | regex_search('primitive cln_SAPHanaFil_') }}"
     ip_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_ip_') }}"
     ip_nc: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_socat_') }}"
     ip_grp: "{{ crm_conf_hana_show.stdout | regex_search('group g_ip_') }}"
@@ -22,10 +24,10 @@
   when: is_primary
   changed_when: false
 
-- name: Ensure maintainence mode is active
+- name: Ensure maintenance mode is active
   ansible.builtin.command:
-    cmd: crm configure property maintenance-mode=true
-  when: crm_maintainence_mode is false or crm_maintainence_mode == 'unknown'
+    cmd: crm maintenance on
+  when: crm_maintenance_mode is false or crm_maintenance_mode == 'unknown'
 
 - name: Create HANA topology resource
   ansible.builtin.command:
@@ -87,7 +89,7 @@
   ansible.builtin.command:
     cmd: >-
       crm configure ms
-      msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      {{ ms_saphanactl }}
       {{ rsc_saphanactl }}
       meta
       notify="true"
@@ -99,6 +101,44 @@
     - is_primary
     - hana_clone | length == 0
 
+- name: Create HANA Filesystem resource
+  ansible.builtin.command:
+    cmd: >-
+      crm configure primitive
+      rsc_SAPHanaFil_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      ocf:suse:SAPHanaFilesystem
+      operations
+      $id="rsc_sap3_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}-operations"
+      op start interval="0" timeout="10"
+      op stop interval="0" timeout="20"
+      op monitor interval="120" timeout="120"
+      params
+      SID="{{ sap_hana_install_sid }}"
+      InstanceNumber="{{ sap_hana_install_instance_number }}"
+      ON_FAIL_ACTION="fence"
+  register: cmd_crm_chfr_output
+  changed_when: cmd_crm_chfr_output.rc != 0
+  when:
+    - use_sap_hana_sr_angi | bool
+    - hana_filesystem_resource | length == 0
+
+- name: Create HANA Filesystem clone
+  ansible.builtin.command:
+    cmd: >-
+      crm configure clone
+      cln_SAPHanaFil_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      rsc_SAPHanaFil_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      meta
+      clone-max="2"
+      clone-node-max="1"
+      target-role="Started"
+      interleave="true"
+  register: cmd_crm_chfc_output
+  changed_when: cmd_crm_chfc_output.rc != 0
+  when:
+    - use_sap_hana_sr_angi | bool
+    - hana_filesytem_clone | length == 0
+
 - name: Configure colocation [aws]
   ansible.builtin.command:
     cmd: >-
@@ -106,7 +146,7 @@
       col_saphana_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       2000:
       rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}:Started
-      msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}:Master
+      {{ ms_saphanactl }}:Master
   when:
     - is_primary
     - ip_colo | length == 0
@@ -119,7 +159,7 @@
       col_saphana_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       4000:
       rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}:Started
-      msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}:Master
+      {{ ms_saphanactl }}:Master
   when:
     - is_primary
     - ip_colo | length == 0
@@ -135,7 +175,7 @@
       ord_SAPHana
       Optional:
       cln_SAPHanaTpg_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
-      msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      {{ ms_saphanactl }}
   when:
     - is_primary
     - cluster_order | length == 0
@@ -150,19 +190,19 @@
 
 - name: Set crm facts
   ansible.builtin.set_fact:
-    refreshed_crm_maintainence_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
+    refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
   changed_when: false
 
-- name: Ensure maintainence mode is disabled
+- name: Ensure maintenance mode is disabled
   ansible.builtin.command:
-    cmd: crm configure property maintenance-mode=false
+    cmd: crm maintenance off
   when:
     - is_primary
-    - refreshed_crm_maintainence_mode is true or refreshed_crm_maintainence_mode == 'unknown'
+    - refreshed_crm_maintenance_mode is true or refreshed_crm_maintenance_mode == 'unknown'
 
 - name: Get cluster state
   ansible.builtin.command:
-    cmd: crm status
+    cmd: crm status full
   register: reg_crm_status
   when: is_primary
 

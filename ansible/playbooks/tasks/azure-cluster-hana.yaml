@@ -11,9 +11,11 @@
     stonith_enabled: "{{ (crm_conf_show.stdout | regex_search('stonith-enabled=([a-z]*)', '\\1'))[0] | default('false') }}"
     stonith_timeout: "{{ crm_conf_show.stdout | regex_search('stonith-timeout') }}"  # this should be variable!
     hana_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHanaCtl_') }}"
-    hana_clone: "{{ crm_conf_show.stdout | regex_search('ms msl_SAPHanaCtl_') }}"
+    hana_clone: "{{ crm_conf_show.stdout | regex_search('ms ms(.)_SAPHanaCtl_') }}"
     hana_topology_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHanaTpg') }}"
     hana_topology_clone: "{{ crm_conf_show.stdout | regex_search('clone cln_SAPHanaTpg') }}"
+    hana_filesystem_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHanaFil_') }}"
+    hana_filesystem_clone: "{{ crm_conf_show.stdout | regex_search('primitive cln_SAPHanaFil_') }}"
     ip_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_ip_') }}"
     ip_nc: "{{ crm_conf_show.stdout | regex_search('primitive rsc_socat_') }}"
     ip_grp: "{{ crm_conf_show.stdout | regex_search('group g_ip_') }}"
@@ -23,21 +25,10 @@
     migration_threshold: "{{ (crm_conf_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] }}"
   changed_when: false
 
-- name: Create HANA topology resource
+- name: Ensure maintenance mode is active
   ansible.builtin.command:
-    cmd: >-
-      crm configure primitive
-      rsc_SAPHanaTpg_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
-      ocf:suse:SAPHanaTopology
-      operations
-      $id="rsc_sap2_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}-operations"
-      op monitor interval="10" timeout="600"
-      op start interval="0" timeout="600"
-      op stop interval="0" timeout="300"
-      params
-      SID="{{ sap_hana_install_sid }}"
-      InstanceNumber="{{ sap_hana_install_instance_number }}"
-  when: hana_topology_resource | length == 0
+    cmd: crm maintenance on
+  when: crm_maintenance_mode is false or crm_maintenance_mode == 'unknown'
 
 - name: Set stonith-timeout [sbd]
   ansible.builtin.command:
@@ -65,6 +56,22 @@
   when:
     - not use_sbd | bool
 
+- name: Create HANA topology resource
+  ansible.builtin.command:
+    cmd: >-
+      crm configure primitive
+      rsc_SAPHanaTpg_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      ocf:suse:SAPHanaTopology
+      operations
+      $id="rsc_sap2_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}-operations"
+      op monitor interval="10" timeout="600"
+      op start interval="0" timeout="600"
+      op stop interval="0" timeout="300"
+      params
+      SID="{{ sap_hana_install_sid }}"
+      InstanceNumber="{{ sap_hana_install_instance_number }}"
+  when: hana_topology_resource | length == 0
+
 - name: Create HANA topology clone
   ansible.builtin.command:
     cmd: >-
@@ -88,7 +95,7 @@
       op start interval="0" timeout="3600"
       op stop interval="0" timeout="3600"
       op promote interval="0" timeout="3600"
-      op monitor interval="60" role="Master" timeout=\"700\"
+      op monitor interval="60" role="Master" timeout="700"
       op monitor interval="61" role="Slave" timeout="700"
       params
       SID="{{ sap_hana_install_sid }}"
@@ -102,7 +109,7 @@
   ansible.builtin.command:
     cmd: >-
       crm configure ms
-      msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      {{ ms_saphanactl }}
       {{ rsc_saphanactl }}
       meta
       notify="true"
@@ -112,6 +119,42 @@
       interleave="true"
       maintenance="true"
   when: hana_clone | length == 0
+
+- name: Create HANA Filesystem resource
+  ansible.builtin.command:
+    cmd: >-
+      crm configure
+      primitive
+      rsc_SAPHanaFil_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      ocf:suse:SAPHanaFilesystem
+      operations
+      $id="rsc_sap3_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}-operations"
+      op start interval="0" timeout="10"
+      op stop interval="0" timeout="20"
+      op monitor interval="120" timeout="120"
+      params
+      SID="{{ sap_hana_install_sid }}"
+      InstanceNumber="{{ sap_hana_install_instance_number }}"
+      ON_FAIL_ACTION="fence"
+  when:
+    - use_sap_hana_sr_angi | bool
+    - hana_filesystem_resource | length == 0
+
+- name: Create HANA Filesystem clone
+  ansible.builtin.command:
+    cmd: >-
+      crm configure
+      clone
+      cln_SAPHanaFil_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      rsc_SAPHanaFil_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      meta
+      clone-max="2"
+      clone-node-max="1"
+      target-role="Started"
+      interleave="true"
+  when:
+    - use_sap_hana_sr_angi | bool
+    - hana_filesytem_clone | length == 0
 
 - name: Validate cluster IP
   vars:
@@ -165,7 +208,7 @@
       col_saphana_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       4000:
       g_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}:Started
-      msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}:Master
+      {{ ms_saphanactl }}:Master
   when: ip_colo | length == 0
 
 - name: Configure order
@@ -175,7 +218,7 @@
       ord_SAPHana_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       Optional:
       cln_SAPHanaTpg_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
-      msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+      {{ ms_saphanactl }}
   when: cluster_order | length == 0
 
 - name: Wait for cluster to settle

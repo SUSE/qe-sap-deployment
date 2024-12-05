@@ -5,6 +5,8 @@
   become: true
   become_user: root
   vars:
+    # SAPHahaSR-angi
+    use_sap_hana_sr_angi: false
     # is_primary is selected so that tasks that need to be issued one are honoured correctly
     is_primary: "{{ ansible_play_hosts[0] == inventory_hostname }}"
     primary_hostname: "{{ ansible_play_hosts[0] }}"
@@ -19,6 +21,7 @@
     # Define some names in a central place
     rsc_socat: "rsc_socat_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}"
     rsc_saphanactl: "rsc_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}"
+    ms_saphanactl: "msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}"
 
 
   handlers:
@@ -40,6 +43,11 @@
     - name: Load SAP HANA variables
       ansible.builtin.include_vars: ./vars/hana_vars.yaml
 
+    - name: Re-set HANA Angi vars
+      ansible.builtin.set_fact:
+        ms_saphanactl: "mst_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}"
+      when:
+        - use_sap_hana_sr_angi | bool
 
   tasks:
     - name: Base Cluster Configuration [azure]
@@ -81,12 +89,7 @@
         cmd: >-
           crm resource
           refresh
-          msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
-      when: is_primary
-
-    - name: Wait for cluster to settle
-      ansible.builtin.command:
-        cmd: cs_wait_for_idle -s 5
+          {{ ms_saphanactl }}
       when: is_primary
 
     - name: MS Resource Maintenance off
@@ -94,6 +97,11 @@
         cmd: >-
           crm resource
           maintenance
-          msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+          {{ ms_saphanactl }}
           off
+      when: is_primary
+
+    - name: Wait for cluster to settle
+      ansible.builtin.command:
+        cmd: cs_wait_for_idle -s 5
       when: is_primary
