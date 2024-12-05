@@ -9,9 +9,13 @@
     use_suseconnect: false  # Set to false unless specified
 
   tasks:
-    - name: Example of debug message mind to be intercepted by OSADO test
+    - name: Example of debug message with Bugzilla mention, minds to be intercepted by OSADO test
       ansible.builtin.debug:
         msg: "[OSADO][softfail] bsc#123456789 Here a generic message with some explanations."
+
+    - name: Example of debug message with Jira mention, minds to be intercepted by OSADO test
+      ansible.builtin.debug:
+        msg: "[OSADO][softfail] jsc#PROJECT-1234 Here a generic message with some explanations."
 
     # Pre flight checks
     - name: Check for SUSEConnect binary presence
