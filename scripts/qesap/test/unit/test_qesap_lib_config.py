@@ -2,17 +2,49 @@ import re
 from lib.config import CONF
 
 
-def test_tfvars_yaml_string(config_data_sample):
+def test_tfvars_yaml_string():
     """
-    Check string based variable format tfvars output
+    Check string variable format tfvars output
     :param config_data_sample:
     input similar to yaml config file
     :return:
     true or false
     """
-    az_region = 'westeurope'
-    expected_result = rf'az_region = \"{az_region}\"'
-    c = CONF(config_data_sample())
+    expected_result = r"gianni = \"pinotto\""
+    c = CONF({"terraform": {"variables": {"gianni": "pinotto"}}})
+    actual_result = c.yaml_to_tfvars()
+    assert re.search(expected_result, actual_result)
+
+
+def test_tfvars_yaml_int():
+    """
+    Check int variable format tfvars output
+    :param config_data_sample:
+    input similar to yaml config file
+    :return:
+    true or false
+    """
+    expected_result = r"gianni = 42"
+    c = CONF({"terraform": {"variables": {"gianni": 42}}})
+    actual_result = c.yaml_to_tfvars()
+    assert re.search(expected_result, actual_result)
+
+
+def test_tfvars_yaml_bool():
+    """
+    Check bool variable format tfvars output
+    :param config_data_sample:
+    input similar to yaml config file
+    :return:
+    true or false
+    """
+    expected_result = r"gianni = true"
+    c = CONF({"terraform": {"variables": {"gianni": (1 == 1)}}})
+    actual_result = c.yaml_to_tfvars()
+    assert re.search(expected_result, actual_result)
+
+    expected_result = r"gianni = false"
+    c = CONF({"terraform": {"variables": {"gianni": not True}}})
     actual_result = c.yaml_to_tfvars()
     assert re.search(expected_result, actual_result)
 
@@ -25,7 +57,7 @@ def test_tfvars_yaml_list(config_data_sample):
     :return:
     true or false
     """
-    hana_ips = ['10.0.0.2', '10.0.0.3']
+    hana_ips = ["10.0.0.2", "10.0.0.3"]
     expected_result = r'hana_ips = \["10.0.0.2", "10.0.0.3"]'
     c = CONF(config_data_sample(hana_ips))
     actual_result = c.yaml_to_tfvars()
@@ -38,11 +70,13 @@ def test_tfvars_yaml_dict(config_data_sample):
     :param config_data_sample:
     :return:
     """
-    hana_disk_configuration = {'disk_type': 'hdd,hdd,hdd', 'disks_size': '64,64,64'}
+    hana_disk_configuration = {"disk_type": "hdd,hdd,hdd", "disks_size": "64,64,64"}
 
-    expected_result = r'hana_data_disks_configuration = {' \
-                      r'(\s|\t)+disk_type = "hdd,hdd,hdd"' \
-                      r'(\s|\t)+disks_size = "64,64,64"'
+    expected_result = (
+        r"hana_data_disks_configuration = {"
+        r'(\s|\t)+disk_type = "hdd,hdd,hdd"'
+        r'(\s|\t)+disks_size = "64,64,64"'
+    )
     c = CONF(config_data_sample(hana_disk_configuration))
     actual_result = c.yaml_to_tfvars()
     assert re.search(expected_result, actual_result)
