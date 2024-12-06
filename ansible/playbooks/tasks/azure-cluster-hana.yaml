@@ -245,6 +245,13 @@
     cmd: crm configure rsc_defaults resource-stickiness=1000
   when: resource_stickiness != '1000'
 
+# Get current maintenance state
+- name: Refresh cluster status
+  ansible.builtin.command:
+    cmd: crm configure show
+  register: refreshed_crm_conf_show
+  changed_when: false
+
 - name: Refresh crm facts
   ansible.builtin.set_fact:
     refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
