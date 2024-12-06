@@ -775,3 +775,29 @@ variable "iscsi_remote_python" {
   default     = "/usr/bin/python3"
 }
 
+# Peering related variables
+
+variable "enable_ibsm_peering" {
+  description = "Enable netwrk peering between hana vpc and ibsm vpc (0 to disable, 1 to enable)"
+  type        = number
+  default     = 0
+}
+
+variable "ibsm_vpc_name" {
+  description = "Name of the ibsm VPC network"
+  type        = string
+  default     = ""
+}
+
+variable "ibsm_subnet_name" {
+  description = "Name of the ibsm subnet"
+  type        = string
+  default     = ""
+}
+
+variable "ibsm_subnet_region" {
+  description = "Region of the ibsm subnet"
+  type        = string
+  default     = ""
+}
+
