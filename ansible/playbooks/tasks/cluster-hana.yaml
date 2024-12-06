@@ -188,7 +188,7 @@
   register: refreshed_crm_conf_show
   changed_when: false
 
-- name: Set crm facts
+- name: Refresh crm facts
   ansible.builtin.set_fact:
     refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
   changed_when: false

@@ -221,6 +221,10 @@
       {{ ms_saphanactl }}
   when: cluster_order | length == 0
 
+- name: Ensure maintenance mode is off
+  ansible.builtin.command:
+    cmd: crm maintenance off
+
 - name: Wait for cluster to settle
   ansible.builtin.command:
     cmd: cs_wait_for_idle -s 5
@@ -241,10 +245,15 @@
     cmd: crm configure rsc_defaults resource-stickiness=1000
   when: resource_stickiness != '1000'
 
-- name: Ensure migration-threshold is configured
+- name: Refresh crm facts
+  ansible.builtin.set_fact:
+    refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
+  changed_when: false
+
+- name: Ensure maintenance mode is disabled
   ansible.builtin.command:
-    cmd: crm configure rsc_defaults migration-threshold=5000
-  when: migration_threshold != '1000'
+    cmd: crm maintenance off
+  when: refreshed_crm_maintenance_mode is true or refreshed_crm_maintenance_mode == 'unknown'
 
 # For debug purpose only
 - name: Get cluster status at the end

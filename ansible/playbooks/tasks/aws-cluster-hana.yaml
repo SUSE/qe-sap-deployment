@@ -164,7 +164,7 @@
   register: refreshed_crm_conf_show
   changed_when: false
 
-- name: Set crm facts
+- name: Refresh crm facts
   ansible.builtin.set_fact:
     refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
   changed_when: false
@@ -173,3 +173,9 @@
   ansible.builtin.command:
     cmd: crm maintenance off
   when: refreshed_crm_maintenance_mode is true or refreshed_crm_maintenance_mode == 'unknown'
+
+# For debug purpose only
+- name: Get cluster status at the end
+  ansible.builtin.command:
+    cmd: crm configure show
+  changed_when: false
