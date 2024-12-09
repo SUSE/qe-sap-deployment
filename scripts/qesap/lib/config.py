@@ -13,14 +13,25 @@ def yaml_to_tfvars_entry(key, value):
     Apply the proper conversion when moving
     variables from the YAML to the tfvars
     """
-    if isinstance(value, (str, int)):
-        entry = f'{key} = "{str(value)}"'
+
+    # ref: https://developer.hashicorp.com/terraform/language/expressions/types#strings
+    #      and https://developer.hashicorp.com/terraform/language/expressions/strings
+    if isinstance(value, str):
+        log.debug("Value '%s' detected as str.", value)
+        entry = f'{key} = "{value}"'
+    # ref: https://developer.hashicorp.com/terraform/language/expressions/types#numbers
+    elif isinstance(value, int) and not isinstance(value, bool):
+        log.debug("Value '%s' detected as int.", value)
+        entry = f'{key} = {value}'
     elif isinstance(value, bool):
-        entry = f'{key} = "{str(value).lower()}"'
+        log.debug("Value '%s' detected as bool.", value)
+        entry = f'{key} = {str(value).lower()}'
     elif isinstance(value, list):
+        log.debug("Value '%s' detected as list.", value)
         entry = '", "'.join(value)
         entry = f'{key} = ["{entry}"]'
     elif isinstance(value, dict):
+        log.debug("Value '%s' detected as dict.", value)
         param_value = ""
         for dict_key, dict_value in value.items():
             param_value = f'{param_value}\t{dict_key} = "{dict_value}"\n'
