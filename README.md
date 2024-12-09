@@ -276,9 +276,10 @@ export ANSIBLE_ROLES_PATH=<the-dir-where-the-role-is-located>
 . . . (run deployment as you would normally do)
 ```
 
-### How to rewrite an ansible task to be softfailed automatically in OSADO
+### Mark temporary workaround for known issues
 
-To softfailed an ansible task it is needed to add a msg attribute in the task following this format:
+If Ansible code is added to temporary workaround known issue, already associated to an open ticket, there's a convention to communicate it to openQA.
+Use `ansible.buildin.debug` with a specific format.
 
 ```yaml
 msg: "[OSADO][softfail] [bsc or jsc]#[number] [short description]"
