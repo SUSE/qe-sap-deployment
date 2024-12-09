@@ -275,3 +275,20 @@ If the user does not wish to copy the role in the `roles` folder of this reposit
 export ANSIBLE_ROLES_PATH=<the-dir-where-the-role-is-located>
 . . . (run deployment as you would normally do)
 ```
+
+### Mark temporary workaround for known issues
+
+If Ansible code is added to temporary workaround known issue, already associated to an open ticket, there's a convention to communicate it to openQA.
+Use `ansible.buildin.debug` with a specific format.
+
+```yaml
+msg: "[OSADO][softfail] [bsc or jsc]#[number] [short description]"
+```
+
+Here a complete example:
+
+```yaml
+- name: Example of debug message
+      ansible.builtin.debug:
+        msg: "[OSADO][softfail] bsc#123456789 Here a generic message with some explanations."
+```
