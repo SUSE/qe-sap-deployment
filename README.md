@@ -275,3 +275,19 @@ If the user does not wish to copy the role in the `roles` folder of this reposit
 export ANSIBLE_ROLES_PATH=<the-dir-where-the-role-is-located>
 . . . (run deployment as you would normally do)
 ```
+
+### How to rewrite an ansible task to be softfailed automatically in OSADO
+
+To softfailed an ansible task it is needed to add a msg attribute in the task following this format:
+
+```yaml
+msg: "[OSADO][softfail] [bsc or jsc]#[number] [short description]"
+```
+
+Here a complete example:
+
+```yaml
+- name: Example of debug message
+      ansible.builtin.debug:
+        msg: "[OSADO][softfail] bsc#123456789 Here a generic message with some explanations."
+```
