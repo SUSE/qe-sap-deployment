@@ -38,8 +38,7 @@
         state: present
         replacefiles: true
       when:
-        - (ansible_facts['distribution_version'] == '15.1') and
-          (not use_sap_hana_sr_angi | bool)
+        - ansible_facts['distribution_version'] == '15.1' and not use_sap_hana_sr_angi | bool
       register: result
       until: result is succeeded
       retries: 3
