@@ -5,7 +5,7 @@
   become_user: root
   vars:
     # SAPHahaSR-angi
-    use_sap_hana_sr_angi: false
+    use_sap_hana_sr_angi: "{{ use_sap_hana_sr_angi | false }}"
     scale_out: false
     use_sapconf: false
     # Set use_reboottimeout default value to 1200,
