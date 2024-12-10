@@ -16,7 +16,7 @@
     __hooks_dir: "/usr/share/SAPHanaSR/"
     __sapcontrol: "/usr/sap/hostctrl/exe/sapcontrol"
     # SAPHahaSR-angi
-    use_sap_hana_sr_angi: "{{ use_sap_hana_sr_angi | dafault(false) }}"
+    use_sap_hana_sr_angi: "{{ use_sap_hana_sr_angi | default(false) }}"
     __hooks_dir_angi: "/usr/share/SAPHanaSR-angi/"
 
   handlers:
