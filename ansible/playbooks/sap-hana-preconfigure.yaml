@@ -5,7 +5,7 @@
   become_user: root
   vars:
     # SAPHahaSR-angi
-    use_sap_hana_sr_angi: "{{ use_sap_hana_sr_angi | default(false) }}"
+    use_hana_sr_angi: "{{ use_sap_hana_sr_angi | default(false) }}"
     scale_out: false
     use_sapconf: false
     # Set use_reboottimeout default value to 1200,
@@ -38,7 +38,7 @@
         state: present
         replacefiles: true
       when:
-        - ansible_facts['distribution_version'] == '15.1' and not use_sap_hana_sr_angi | bool
+        - ansible_facts['distribution_version'] == '15.1' and not use_hana_sr_angi | bool
       register: result
       until: result is succeeded
       retries: 3
@@ -82,19 +82,19 @@
       loop:
         - 'SAPHanaSR-doc'
         - 'SAPHanaSR'
-      when: use_sap_hana_sr_angi | bool
+      when: use_hana_sr_angi | bool
 
     - name: Ensure SAPHanaSR-angi is installed when angi is used
       community.general.zypper:
         name: SAPHanaSR-angi
         state: present
-      when: cluster_node and use_sap_hana_sr_angi | bool
+      when: cluster_node and use_hana_sr_angi | bool
 
     - name: Ensure supportutils-plugin-ha-sap is installed when angi is used
       community.general.zypper:
         name: supportutils-plugin-ha-sap
         state: present
-      when: cluster_node and use_sap_hana_sr_angi | bool
+      when: cluster_node and use_hana_sr_angi | bool
     # SAPHanaSR-angi -END-
 
 

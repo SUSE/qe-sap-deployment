@@ -16,7 +16,7 @@
     __hooks_dir: "/usr/share/SAPHanaSR/"
     __sapcontrol: "/usr/sap/hostctrl/exe/sapcontrol"
     # SAPHahaSR-angi
-    use_sap_hana_sr_angi: "{{ use_sap_hana_sr_angi | default(false) }}"
+    use_hana_sr_angi: "{{ use_sap_hana_sr_angi | default(false) }}"
     __hooks_dir_angi: "/usr/share/SAPHanaSR-angi/"
 
   handlers:
@@ -63,7 +63,7 @@
         group: sapsys
         state: directory
         mode: '0775'
-      when: not use_sap_hana_sr_angi | bool
+      when: not use_hana_sr_angi | bool
 
     - name: Ensure SAPHanaSR-angi hooks directory exists
       ansible.builtin.file:
@@ -72,7 +72,7 @@
         group: sapsys
         state: directory
         mode: '0775'
-      when: use_sap_hana_sr_angi | bool
+      when: use_hana_sr_angi | bool
 
     - name: Ensure System Replication hooks are installed and configured
       notify:
@@ -94,7 +94,7 @@
             - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'path', 'value': '{{ __hooks_dir }}'}
             - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'execution_order', 'value': '1'}
             - {'section': 'trace', 'key': 'ha_dr_saphanasr', 'value': 'info'}
-          when: not use_sap_hana_sr_angi | bool
+          when: not use_hana_sr_angi | bool
 
         - name: Ensure ha_dr_provider_SAPHanaSR-angi section exists in global.ini
           community.general.ini_file:
@@ -117,7 +117,7 @@
             - {'section': 'trace', 'key': 'ha_dr_sushanasr', 'value': 'info'}
             - {'section': 'trace', 'key': 'ha_dr_suschksrv', 'value': 'info'}
             - {'section': 'trace', 'key': 'ha_dr_sustkover', 'value': 'info'}
-          when: use_sap_hana_sr_angi | bool
+          when: use_hana_sr_angi | bool
 
         - name: Add hooks into sudoers
           ansible.builtin.lineinfile:
@@ -135,7 +135,7 @@
             - {'regexp': '^Cmnd_Alias SOK_SITEB', 'line': 'Cmnd_Alias SOK_SITEB = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ secondary_site }} -v SOK -t crm_config -s SAPHanaSR'}
             - {'regexp': '^Cmnd_Alias SFAIL_SITEB', 'line': 'Cmnd_Alias SFAIL_SITEB = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ secondary_site }} -v SFAIL -t crm_config -s SAPHanaSR'}
             - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: SOK_SITEA, SFAIL_SITEA, SOK_SITEB, SFAIL_SITEB'}
-          when: not use_sap_hana_sr_angi | bool
+          when: not use_hana_sr_angi | bool
 
         - name: Add angi hooks into sudoers
           ansible.builtin.lineinfile:
@@ -150,4 +150,4 @@
             - {'regexp': '^#ANSIBLE MANAGED DOCUMENT', 'line': '#ANSIBLE MANAGED DOCUMENT - no manual edits!'}
             - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_*'}
             - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: /usr/bin/SAPHanaSR-hookHelper --sid={{ sap_hana_install_sid | upper }} *'}
-          when: use_sap_hana_sr_angi | bool
+          when: use_hana_sr_angi | bool

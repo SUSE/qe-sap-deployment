@@ -137,7 +137,7 @@
       InstanceNumber="{{ sap_hana_install_instance_number }}"
       ON_FAIL_ACTION="fence"
   when:
-    - use_sap_hana_sr_angi | bool
+    - use_hana_sr_angi | bool
     - hana_filesystem_resource | length == 0
 
 - name: Create HANA Filesystem clone
@@ -153,7 +153,7 @@
       target-role="Started"
       interleave="true"
   when:
-    - use_sap_hana_sr_angi | bool
+    - use_hana_sr_angi | bool
     - hana_filesytem_clone | length == 0
 
 - name: Validate cluster IP

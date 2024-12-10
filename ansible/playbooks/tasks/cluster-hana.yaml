@@ -119,7 +119,7 @@
   register: cmd_crm_chfr_output
   changed_when: cmd_crm_chfr_output.rc != 0
   when:
-    - use_sap_hana_sr_angi | bool
+    - use_hana_sr_angi | bool
     - hana_filesystem_resource | length == 0
 
 - name: Create HANA Filesystem clone
@@ -136,7 +136,7 @@
   register: cmd_crm_chfc_output
   changed_when: cmd_crm_chfc_output.rc != 0
   when:
-    - use_sap_hana_sr_angi | bool
+    - use_hana_sr_angi | bool
     - hana_filesytem_clone | length == 0
 
 - name: Configure colocation [aws]
