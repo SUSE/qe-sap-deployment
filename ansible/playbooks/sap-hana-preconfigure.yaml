@@ -3,6 +3,11 @@
   remote_user: cloudadmin
   become: true
   become_user: root
+  
+  pre_tasks:
+    - name: Source hana install variables
+      include_vars: ./vars/hana_vars.yaml
+
   vars:
     # SAPHahaSR-angi
     use_hana_sr_angi: "{{ use_sap_hana_sr_angi | default(false) }}"
