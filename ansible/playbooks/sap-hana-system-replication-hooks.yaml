@@ -82,7 +82,7 @@
             - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'execution_order', 'value': '1'}
             - {'section': 'trace', 'key': 'ha_dr_saphanasr', 'value': 'info'}
 
-        - name: Add hooks into sudoers
+        - name: Add hooks into sudoers (SAPHanaSR-ScaleUp entries for writing srHook cluster attribute)
           ansible.builtin.lineinfile:
             path: /etc/sudoers.d/HanaSystemReplication
             state: present
@@ -97,4 +97,20 @@
             - {'regexp': '^Cmnd_Alias SFAIL_SITEA ', 'line': 'Cmnd_Alias SFAIL_SITEA = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ primary_site }} -v SFAIL -t crm_config -s SAPHanaSR'}
             - {'regexp': '^Cmnd_Alias SOK_SITEB', 'line': 'Cmnd_Alias SOK_SITEB = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ secondary_site }} -v SOK -t crm_config -s SAPHanaSR'}
             - {'regexp': '^Cmnd_Alias SFAIL_SITEB', 'line': 'Cmnd_Alias SFAIL_SITEB = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ secondary_site }} -v SFAIL -t crm_config -s SAPHanaSR'}
-            - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: SOK_SITEA, SFAIL_SITEA, SOK_SITEB, SFAIL_SITEB'}
+            - {'regexp': '^Cmnd_Alias HOOK_HELPER', 'line': 'Cmnd_Alias HOOK_HELPER = /usr/sbin/SAPHanaSR-hookHelper --sid={{ sap_hana_install_sid | upper }} --case=checkTakeover'}
+            - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: SOK_SITEA, SFAIL_SITEA, SOK_SITEB, SFAIL_SITEB, HOOK_HELPER'}
+          when: 0
+
+        - name: Add hooks into sudoers (SAPHanaSR-ScaleUp entries for writing srHook cluster attribute and SAPHanaSR-hookHelper)
+          ansible.builtin.lineinfile:
+            path: /etc/sudoers.d/HanaSystemReplication
+            state: present
+            regexp: "{{ item.regexp }}"
+            line: "{{ item.line }}"
+            validate: /usr/sbin/visudo -cf %s
+            create: true
+            mode: '0440'
+          loop:
+            - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_*'}
+            - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: /usr/sbin/SAPHanaSR-hookHelper *'}
+          when: 1
