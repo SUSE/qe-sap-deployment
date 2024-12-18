@@ -106,13 +106,13 @@
             backup: true
           loop:
             - {'section': 'ha_dr_provider_sushanasr', 'key': 'provider', 'value': 'susHanaSR'}
-            - {'section': 'ha_dr_provider_sushanasr', 'key': 'path', 'value': '{{ __hooks_dir }}'}
+            - {'section': 'ha_dr_provider_sushanasr', 'key': 'path', 'value': '{{ __hooks_dir_angi }}'}
             - {'section': 'ha_dr_provider_sushanasr', 'key': 'execution_order', 'value': '1'}
             - {'section': 'ha_dr_provider_sustkover', 'key': 'provider', 'value': 'susTkOver'}
-            - {'section': 'ha_dr_provider_sustkover', 'key': 'path', 'value': '{{ __hooks_dir }}'}
+            - {'section': 'ha_dr_provider_sustkover', 'key': 'path', 'value': '{{ __hooks_dir_angi }}'}
             - {'section': 'ha_dr_provider_sustkover', 'key': 'execution_order', 'value': '2'}
             - {'section': 'ha_dr_provider_suschksrv', 'key': 'provider', 'value': 'susChkSrv'}
-            - {'section': 'ha_dr_provider_suschksrv', 'key': 'path', 'value': '{{ __hooks_dir }}'}
+            - {'section': 'ha_dr_provider_suschksrv', 'key': 'path', 'value': '{{ __hooks_dir_angi }}'}
             - {'section': 'ha_dr_provider_suschksrv', 'key': 'execution_order', 'value': '3'}
             - {'section': 'trace', 'key': 'ha_dr_sushanasr', 'value': 'info'}
             - {'section': 'trace', 'key': 'ha_dr_suschksrv', 'value': 'info'}

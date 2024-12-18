@@ -80,7 +80,8 @@
       when: not use_sapconf | bool
 
     # SAPHanaSR-angi -BEGIN-
-    - name: Ensure SAPHanaSR-doc and SAPHanaSR in NOT installed when angi is used
+
+    - name: Ensure SAPHanaSR-doc and SAPHanaSR is NOT installed when angi is used
       community.general.zypper:
         name: "{{ item }}"
         state: absent
@@ -89,17 +90,15 @@
         - 'SAPHanaSR'
       when: use_hana_sr_angi | bool
 
-    - name: Ensure SAPHanaSR-angi is installed when angi is used
+    - name: Ensure SAPHanaSR-angi and supportutils plugin is installed when angi is used
       community.general.zypper:
-        name: SAPHanaSR-angi
+        name: "{{ item }}"
         state: present
+      loop:
+        - 'SAPHanaSR-angi'
+        - 'supportutils-plugin-ha-sap'
       when: cluster_node and use_hana_sr_angi | bool
 
-    - name: Ensure supportutils-plugin-ha-sap is installed when angi is used
-      community.general.zypper:
-        name: supportutils-plugin-ha-sap
-        state: present
-      when: cluster_node and use_hana_sr_angi | bool
     # SAPHanaSR-angi -END-
 
 
