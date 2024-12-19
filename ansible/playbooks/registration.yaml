@@ -26,7 +26,6 @@
     - name: Check for 'Not Registered'
       ansible.builtin.set_fact:
         not_registered_found: "{{ 'Not Registered' in repos.stdout }}"
-      ignore_errors: true
 
     # Is registercloudguest available?
     # only run it if:
@@ -51,7 +50,7 @@
 
     - name: Softfail for old cloud-regionsrv-client in 15sp2
       ansible.builtin.debug:
-        msg: 
+        msg:
           - "[OSADO][softfail] bsc#1217583 IPv6 handling during registration"
           - "use_suseconnect: {{ use_suseconnect }}"
       when:
@@ -100,6 +99,7 @@
       retries: 10
       delay: 60
       failed_when: result.rc != 0 or result.stderr != ""
+      changed_when: result.rc == 0
       when:
         - not_registered_found
         - is_registercloudguest_bin.rc == 0
@@ -112,6 +112,7 @@
     - name: SUSEConnect registration
       ansible.builtin.command: SUSEConnect -r "{{ reg_code }}" -e "{{ email_address }}"
       register: result
+      changed_when: result.rc == 0
       until: result is succeeded
       retries: 10
       delay: 60
@@ -124,6 +125,7 @@
     - name: Add SLES 12 Advanced Systems Modules
       ansible.builtin.command: SUSEConnect -p sle-module-adv-systems-management/12/{{ ansible_facts['architecture'] }} -r "{{ reg_code }}"
       register: result
+      changed_when: result.rc == 0
       until: result is succeeded
       retries: 10
       delay: 60
@@ -133,6 +135,7 @@
     - name: Add SLES 12 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/12/{{ ansible_facts['architecture'] }}
       register: result
+      changed_when: result.rc == 0
       until: result is succeeded
       retries: 10
       delay: 60
@@ -144,6 +147,7 @@
     - name: Add SLES 15 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/{{ ansible_facts['distribution_version'] }}/{{ ansible_facts['architecture'] }}
       register: result
+      changed_when: result.rc == 0
       until: result is succeeded
       retries: 10
       delay: 60
@@ -165,6 +169,7 @@
     - name: Add additional authenticated modules [SUSEConnnect]
       ansible.builtin.command: SUSEConnect -p {{ item.key }} -r {{ item.value }}
       register: result
+      changed_when: result.rc == 0
       until: result is succeeded
       retries: 10
       delay: 60
@@ -178,6 +183,7 @@
     - name: Add additional authenticated modules [registercloudguest]
       ansible.builtin.command: registercloudguest -r {{ item.value }}
       register: result
+      changed_when: result.rc == 0
       until: result is succeeded
       retries: 10
       delay: 60
