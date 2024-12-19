@@ -81,7 +81,7 @@
       AUTOMATED_REGISTER="false"
   when:
     - hana_resource | length == 0
-    - no use_hana_sr_angi | bool
+    - not use_hana_sr_angi | bool
     - is_primary
 
 - name: Create HANA angi resource

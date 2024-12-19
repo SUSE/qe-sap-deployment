@@ -84,7 +84,7 @@
   when:
     - is_primary
     - hana_resource | length == 0
-    - no use_hana_sr_angi | bool
+    - not use_hana_sr_angi | bool
 
 - name: Create HANA angi resource
   ansible.builtin.command:

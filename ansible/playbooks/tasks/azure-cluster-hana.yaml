@@ -104,8 +104,8 @@
       DUPLICATE_PRIMARY_TIMEOUT="7200"
       AUTOMATED_REGISTER="false"
   when:
-    - no use_hana_sr_angi | bool
     - hana_resource | length == 0
+    - not use_hana_sr_angi | bool
 
 - name: Create HANA angi resource
   ansible.builtin.command:
