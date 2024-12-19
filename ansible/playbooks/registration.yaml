@@ -37,6 +37,36 @@
       failed_when: false
       changed_when: false
 
+    # Next four tasks are about bug bsc 1217583. This bug is already fixed
+    # in cloud-regionsrv-client 10.1.7, but SLES 15SP2 does not have it in
+    # the image, only get it after an update. But, at least for BYOS images,
+    # update is not possible with registercloudguest, due to the bug itself.
+    # Workaround is to force registration with SUSEConnect
+    - name: Gather the package facts to check cloud-regionsrv-client in 15sp2
+      ansible.builtin.package_facts:
+        manager: auto
+      when:
+        - ansible_facts['distribution_version'] == '15.2'
+        - not use_suseconnect | bool
+
+    - name: Softfail for old cloud-regionsrv-client in 15sp2
+      ansible.builtin.debug:
+        msg: 
+          - "[OSADO][softfail] bsc#1217583 IPv6 handling during registration"
+          - "use_suseconnect: {{ use_suseconnect }}"
+      when:
+        - ansible_facts['distribution_version'] == '15.2'
+        - ansible_facts.packages['cloud-regionsrv-client'][0].version is version('10.1.7', '<')
+        - not use_suseconnect | bool
+
+    - name: Force SUSEConnect usage in case of old cloud-regionsrv-client avoiding 1217583
+      ansible.builtin.set_fact:
+        use_suseconnect: true
+      when:
+        - ansible_facts['distribution_version'] == '15.2'
+        - ansible_facts.packages['cloud-regionsrv-client'][0].version is version('10.1.7', '<')
+        - not use_suseconnect | bool
+
     # Execute Section
     - name: Validate reg code
       ansible.builtin.assert:
