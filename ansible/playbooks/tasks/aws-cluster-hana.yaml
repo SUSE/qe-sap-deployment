@@ -81,6 +81,32 @@
       AUTOMATED_REGISTER="false"
   when:
     - hana_resource | length == 0
+    - no use_hana_sr_angi | bool
+    - is_primary
+
+- name: Create HANA angi resource
+  ansible.builtin.command:
+    cmd: >-
+    crm configure primitive
+    {{ rsc_saphanactl }}
+    ocf:suse:SAPHanaController
+    op start interval="0" timeout="3600"
+    op stop interval="0" timeout="3600"
+    op promote interval="0" timeout="900"
+    op demote interval="0" timeout="320"
+    op monitor interval="60" role="Promoted" timeout="700"
+    op monitor interval="61" role="Unpromoted" timeout="700"
+    params
+    SID="{{ sap_hana_install_sid }}"
+    InstanceNumber="{{ sap_hana_install_instance_number }}"
+    PREFER_SITE_TAKEOVER="true"
+    DUPLICATE_PRIMARY_TIMEOUT="7200"
+    AUTOMATED_REGISTER="false"
+    meta
+    priority="100"
+  when:
+    - hana_resource | length == 0
+    - use_hana_sr_angi | bool
     - is_primary
 
 - name: Create HANA resource clone
