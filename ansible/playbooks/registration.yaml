@@ -26,7 +26,6 @@
     - name: Check for 'Not Registered'
       ansible.builtin.set_fact:
         not_registered_found: "{{ 'Not Registered' in repos.stdout }}"
-      ignore_errors: true
 
     # Is registercloudguest available?
     # only run it if:
@@ -36,6 +35,36 @@
       register: is_registercloudguest_bin
       failed_when: false
       changed_when: false
+
+    # Next four tasks are about bug bsc 1217583. This bug is already fixed
+    # in cloud-regionsrv-client 10.1.7, but SLES 15SP2 does not have it in
+    # the image, only get it after an update. But, at least for BYOS images,
+    # update is not possible with registercloudguest, due to the bug itself.
+    # Workaround is to force registration with SUSEConnect
+    - name: Gather the package facts to check cloud-regionsrv-client in 15sp2
+      ansible.builtin.package_facts:
+        manager: auto
+      when:
+        - ansible_facts['distribution_version'] == '15.2'
+        - not use_suseconnect | bool
+
+    - name: Softfail for old cloud-regionsrv-client in 15sp2
+      ansible.builtin.debug:
+        msg:
+          - "[OSADO][softfail] bsc#1217583 IPv6 handling during registration"
+          - "use_suseconnect: {{ use_suseconnect }}"
+      when:
+        - ansible_facts['distribution_version'] == '15.2'
+        - ansible_facts.packages['cloud-regionsrv-client'][0].version is version('10.1.7', '<')
+        - not use_suseconnect | bool
+
+    - name: Force SUSEConnect usage in case of old cloud-regionsrv-client avoiding 1217583
+      ansible.builtin.set_fact:
+        use_suseconnect: true
+      when:
+        - ansible_facts['distribution_version'] == '15.2'
+        - ansible_facts.packages['cloud-regionsrv-client'][0].version is version('10.1.7', '<')
+        - not use_suseconnect | bool
 
     # Execute Section
     - name: Validate reg code
@@ -70,6 +99,7 @@
       retries: 10
       delay: 60
       failed_when: result.rc != 0 or result.stderr != ""
+      changed_when: result.rc == 0
       when:
         - not_registered_found
         - is_registercloudguest_bin.rc == 0
@@ -82,6 +112,7 @@
     - name: SUSEConnect registration
       ansible.builtin.command: SUSEConnect -r "{{ reg_code }}" -e "{{ email_address }}"
       register: result
+      changed_when: result.rc == 0
       until: result is succeeded
       retries: 10
       delay: 60
@@ -94,6 +125,7 @@
     - name: Add SLES 12 Advanced Systems Modules
       ansible.builtin.command: SUSEConnect -p sle-module-adv-systems-management/12/{{ ansible_facts['architecture'] }} -r "{{ reg_code }}"
       register: result
+      changed_when: result.rc == 0
       until: result is succeeded
       retries: 10
       delay: 60
@@ -103,6 +135,7 @@
     - name: Add SLES 12 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/12/{{ ansible_facts['architecture'] }}
       register: result
+      changed_when: result.rc == 0
       until: result is succeeded
       retries: 10
       delay: 60
@@ -114,6 +147,7 @@
     - name: Add SLES 15 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/{{ ansible_facts['distribution_version'] }}/{{ ansible_facts['architecture'] }}
       register: result
+      changed_when: result.rc == 0
       until: result is succeeded
       retries: 10
       delay: 60
@@ -135,6 +169,7 @@
     - name: Add additional authenticated modules [SUSEConnnect]
       ansible.builtin.command: SUSEConnect -p {{ item.key }} -r {{ item.value }}
       register: result
+      changed_when: result.rc == 0
       until: result is succeeded
       retries: 10
       delay: 60
@@ -148,6 +183,7 @@
     - name: Add additional authenticated modules [registercloudguest]
       ansible.builtin.command: registercloudguest -r {{ item.value }}
       register: result
+      changed_when: result.rc == 0
       until: result is succeeded
       retries: 10
       delay: 60
