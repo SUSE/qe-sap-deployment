@@ -163,7 +163,7 @@
   changed_when: cmd_crm_chfc_output.rc != 0
   when:
     - use_hana_sr_angi | bool
-    - hana_filesytem_clone | length == 0
+    - hana_filesystem_clone | length == 0
 
 - name: Configure colocation [aws]
   ansible.builtin.command:

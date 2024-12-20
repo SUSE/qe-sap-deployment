@@ -180,7 +180,7 @@
       interleave="true"
   when:
     - use_hana_sr_angi | bool
-    - hana_filesytem_clone | length == 0
+    - hana_filesystem_clone | length == 0
 
 - name: Validate cluster IP
   vars:
