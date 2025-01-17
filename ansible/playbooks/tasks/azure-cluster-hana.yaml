@@ -247,6 +247,16 @@
       {{ ms_saphanactl }}
   when: cluster_order | length == 0
 
+- name: Ensure resource-stickiness is configured
+  ansible.builtin.command:
+    cmd: crm configure rsc_defaults resource-stickiness=1000
+  when: resource_stickiness != '1000'
+
+- name: Ensure migration-threshold is configured
+  ansible.builtin.command:
+    cmd: crm configure rsc_defaults migration-threshold=5000
+  when: migration_threshold != '5000'
+
 - name: Ensure maintenance mode is off
   ansible.builtin.command:
     cmd: crm maintenance off
@@ -265,11 +275,6 @@
 - name: Wait for cluster to settle
   ansible.builtin.command:
     cmd: cs_wait_for_idle -s 5
-
-- name: Ensure resource-stickiness is configured
-  ansible.builtin.command:
-    cmd: crm configure rsc_defaults resource-stickiness=1000
-  when: resource_stickiness != '1000'
 
 # Get current maintenance state
 - name: Refresh cluster status
