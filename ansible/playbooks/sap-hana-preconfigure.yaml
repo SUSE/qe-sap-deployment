@@ -3,7 +3,7 @@
   remote_user: cloudadmin
   become: true
   become_user: root
-  
+
   pre_tasks:
     - name: Source hana install variables
       include_vars: ./vars/hana_vars.yaml
@@ -80,7 +80,6 @@
       when: not use_sapconf | bool
 
     # SAPHanaSR-angi -BEGIN-
-
     - name: Ensure SAPHanaSR-doc and SAPHanaSR is NOT installed when angi is used
       community.general.zypper:
         name: "{{ item }}"
@@ -98,9 +97,6 @@
         - 'SAPHanaSR-angi'
         - 'supportutils-plugin-ha-sap'
       when: cluster_node and use_hana_sr_angi | bool
-
-    # SAPHanaSR-angi -END-
-
 
   # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/reboot_module.html#parameters
   # reboot_timeout Maximum seconds to wait for machine to reboot and respond to a test command.  Default: 600
