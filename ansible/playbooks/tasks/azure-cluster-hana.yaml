@@ -25,6 +25,19 @@
     migration_threshold: "{{ (crm_conf_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] }}"
   changed_when: false
 
+- name: Gather package facts
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Set variables for clone command and promoted term
+  set_fact:
+    clone_command: >-
+      {{ 'ms' if ansible_facts.packages['pacemaker'][0].version is version('2.1.9', '<')
+         else 'clone' }}
+    promoted_term: >-
+      {{ 'Master' if ansible_facts.packages['pacemaker'][0].version is version('2.1.9', '<')
+         else 'Promoted' }}
+
 - name: Ensure maintenance mode is active
   ansible.builtin.command:
     cmd: crm maintenance on
@@ -134,7 +147,7 @@
 - name: Create HANA resource clone
   ansible.builtin.command:
     cmd: >-
-      crm configure ms
+      crm configure {{ clone_command }}
       {{ ms_saphanactl }}
       {{ rsc_saphanactl }}
       meta
@@ -144,6 +157,7 @@
       target-role="Started"
       interleave="true"
       maintenance="true"
+      {% if clone_command == 'clone' %}promotable="true"{% endif %}
   when: hana_clone | length == 0
 
 - name: Create HANA Filesystem resource
@@ -234,7 +248,7 @@
       col_saphana_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       4000:
       g_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}:Started
-      {{ ms_saphanactl }}:Master
+      {{ ms_saphanactl }}:{{ promoted_term }}
   when: ip_colo | length == 0
 
 - name: Configure order
