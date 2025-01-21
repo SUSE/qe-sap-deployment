@@ -15,6 +15,9 @@
     # https://documentation.suse.com/sbp/sap-15/html/SLES4SAP-hana-sr-guide-PerfOpt-15/index.html#cha.s4s.hana-hook
     __hooks_dir: "/usr/share/SAPHanaSR/"
     __sapcontrol: "/usr/sap/hostctrl/exe/sapcontrol"
+    # SAPHahaSR-angi
+    use_hana_sr_angi: "{{ use_sap_hana_sr_angi | default(false) }}"
+    __hooks_dir_angi: "/usr/share/SAPHanaSR-angi/"
 
   handlers:
     - name: Stop HANA
@@ -53,13 +56,23 @@
         - 'sap_hana_install_sid'
         - 'sap_hana_install_instance_number'
 
-    - name: Ensure hooks directory exists
+    - name: Ensure SAPHanaSR hooks directory exists
       ansible.builtin.file:
         path: "{{ __hooks_dir }}"
         owner: "{{ sap_hana_install_sid | lower }}adm"
         group: sapsys
         state: directory
         mode: '0775'
+      when: not use_hana_sr_angi | bool
+
+    - name: Ensure SAPHanaSR-angi hooks directory exists
+      ansible.builtin.file:
+        path: "{{ __hooks_dir_angi }}"
+        owner: "{{ sap_hana_install_sid | lower }}adm"
+        group: sapsys
+        state: directory
+        mode: '0775'
+      when: use_hana_sr_angi | bool
 
     - name: Ensure System Replication hooks are installed and configured
       notify:
@@ -81,6 +94,30 @@
             - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'path', 'value': '{{ __hooks_dir }}'}
             - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'execution_order', 'value': '1'}
             - {'section': 'trace', 'key': 'ha_dr_saphanasr', 'value': 'info'}
+          when: not use_hana_sr_angi | bool
+
+        - name: Ensure ha_dr_provider_SAPHanaSR-angi section exists in global.ini
+          community.general.ini_file:
+            path: /usr/sap/{{ sap_hana_install_sid }}/SYS/global/hdb/custom/config/global.ini
+            section: "{{ item.section }}"
+            option: "{{ item.key }}"
+            value: "{{ item.value }}"
+            mode: '0644'
+            backup: true
+          loop:
+            - {'section': 'ha_dr_provider_sushanasr', 'key': 'provider', 'value': 'susHanaSR'}
+            - {'section': 'ha_dr_provider_sushanasr', 'key': 'path', 'value': '{{ __hooks_dir_angi }}'}
+            - {'section': 'ha_dr_provider_sushanasr', 'key': 'execution_order', 'value': '1'}
+            - {'section': 'ha_dr_provider_sustkover', 'key': 'provider', 'value': 'susTkOver'}
+            - {'section': 'ha_dr_provider_sustkover', 'key': 'path', 'value': '{{ __hooks_dir_angi }}'}
+            - {'section': 'ha_dr_provider_sustkover', 'key': 'execution_order', 'value': '2'}
+            - {'section': 'ha_dr_provider_suschksrv', 'key': 'provider', 'value': 'susChkSrv'}
+            - {'section': 'ha_dr_provider_suschksrv', 'key': 'path', 'value': '{{ __hooks_dir_angi }}'}
+            - {'section': 'ha_dr_provider_suschksrv', 'key': 'execution_order', 'value': '3'}
+            - {'section': 'trace', 'key': 'ha_dr_sushanasr', 'value': 'info'}
+            - {'section': 'trace', 'key': 'ha_dr_suschksrv', 'value': 'info'}
+            - {'section': 'trace', 'key': 'ha_dr_sustkover', 'value': 'info'}
+          when: use_hana_sr_angi | bool
 
         - name: Add hooks into sudoers
           ansible.builtin.lineinfile:
@@ -98,3 +135,19 @@
             - {'regexp': '^Cmnd_Alias SOK_SITEB', 'line': 'Cmnd_Alias SOK_SITEB = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ secondary_site }} -v SOK -t crm_config -s SAPHanaSR'}
             - {'regexp': '^Cmnd_Alias SFAIL_SITEB', 'line': 'Cmnd_Alias SFAIL_SITEB = /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ secondary_site }} -v SFAIL -t crm_config -s SAPHanaSR'}
             - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: SOK_SITEA, SFAIL_SITEA, SOK_SITEB, SFAIL_SITEB'}
+          when: not use_hana_sr_angi | bool
+
+        - name: Add angi hooks into sudoers
+          ansible.builtin.lineinfile:
+            path: /etc/sudoers.d/HanaSystemReplication
+            state: present
+            regexp: "{{ item.regexp }}"
+            line: "{{ item.line }}"
+            validate: /usr/sbin/visudo -cf %s
+            create: true
+            mode: '0440'
+          loop:
+            - {'regexp': '^#ANSIBLE MANAGED DOCUMENT', 'line': '#ANSIBLE MANAGED DOCUMENT - no manual edits!'}
+            - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_*'}
+            - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: /usr/bin/SAPHanaSR-hookHelper --sid={{ sap_hana_install_sid | upper }} *'}
+          when: use_hana_sr_angi | bool
