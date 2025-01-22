@@ -25,18 +25,6 @@ subnet_address_range = "10.10.1.0/24"
 # The name must be unique among different deployments
 deployment_name = "mydeployment"
 
-# If BYOS images are used in the deployment, SCC registration code is required. Set `reg_code` and `reg_email` variables below
-# By default, all the images are PAYG, so these next parameters are not needed
-#reg_code = "<<REG_CODE>>"
-#reg_email = "<<your email>>"
-
-# To add additional modules from SCC. None of them is needed by default
-#reg_additional_modules = {
-#    "sle-module-adv-systems-management/12/x86_64" = ""
-#    "sle-module-containers/12/x86_64" = ""
-#    "sle-ha-geo/12.4/x86_64" = "<<REG_CODE>>"
-#}
-
 # Default os_image. This value is not used if the specific values are set (e.g.: hana_os_image)
 # Run the next command to get the possible options and use the 4th column value (version can be changed by `latest`)
 # az vm image list --output table --publisher SUSE --all
@@ -198,8 +186,6 @@ hana_count = "2"
 # HANA instance configuration
 # Find some references about the variables in:
 # https://help.sap.com
-# HANA instance system identifier. The system identifier must be composed by 3 uppercase chars/digits string starting always with a character (there are some restricted options).
-#hana_sid = "PRD"
 # HANA instance number. It's composed of 2 integers string
 #hana_instance_number = "00"
 

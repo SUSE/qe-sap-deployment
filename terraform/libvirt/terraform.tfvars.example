@@ -40,17 +40,6 @@ iprange = "192.168.XXX.Y/24"
 # Add the "deployment_name" as a prefix to the hostname.
 #deployment_name_in_hostname = true
 
-# SUSE Customer Center Registration parameters.
-#reg_code = "<<REG_CODE>>"
-#reg_email = "<<your email>>"
-
-# For any sle12 version the additional module sle-module-adv-systems-management/12/x86_64 is mandatory if reg_code is provided
-#reg_additional_modules = {
-#    "sle-module-adv-systems-management/12/x86_64" = ""
-#    "sle-module-containers/12/x86_64" = ""
-#    "sle-ha-geo/12.4/x86_64" = "<<REG_CODE>>"
-#}
-
 # Authorize additional keys optionally (in this case, the private key is not required)
 # Path to local files or keys content
 #authorized_keys = ["/home/myuser/.ssh/id_rsa_second_key.pub", "/home/myuser/.ssh/id_rsa_third_key.pub", "ssh-rsa AAAAB3NzaC1yc2EAAAA...."]
@@ -114,7 +103,6 @@ iprange = "192.168.XXX.Y/24"
 # HANA instance configuration
 # Find some references about the variables in:
 # https://help.sap.com
-# HANA instance system identifier. The system identifier must be composed by 3 uppercase chars/digits string starting always with a character (there are some restricted options).
 #hana_sid = "PRD"
 # HANA instance number. It's composed of 2 integers string
 #hana_instance_number = "00"

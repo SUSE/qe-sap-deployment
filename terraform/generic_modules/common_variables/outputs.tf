@@ -19,10 +19,6 @@ output "configuration" {
     region                      = var.region
     deployment_name             = var.deployment_name
     deployment_name_in_hostname = var.deployment_name_in_hostname
-    reg_code                    = var.reg_code
-    reg_email                   = var.reg_email
-    reg_additional_modules      = var.reg_additional_modules
-    additional_packages         = var.additional_packages
     public_key                  = local.public_key
     private_key                 = local.private_key
     authorized_keys             = var.authorized_keys
@@ -30,9 +26,7 @@ output "configuration" {
     monitoring_enabled          = var.monitoring_enabled
     monitoring_srv_ip           = var.monitoring_srv_ip
     hana = {
-      sid                            = var.hana_sid
       instance_number                = var.hana_instance_number
-      cost_optimized_sid             = var.hana_cost_optimized_sid
       cost_optimized_instance_number = var.hana_cost_optimized_instance_number
       primary_site                   = var.hana_primary_site
       secondary_site                 = var.hana_secondary_site
@@ -67,7 +61,6 @@ output "configuration" {
       nfs_share             = var.netweaver_nfs_share
       sapmnt_path           = var.netweaver_sapmnt_path
       hana_ip               = var.netweaver_hana_ip
-      hana_sid              = var.netweaver_hana_sid
       hana_instance_number  = var.netweaver_hana_instance_number
       hana_sr_enabled       = var.hana_ha_enabled
       shared_storage_type   = var.netweaver_shared_storage_type

@@ -168,7 +168,7 @@ Internally to the subnet, all traffic is allowed.
 
 By default, this configuration creates 3 instances in AWS: one for support services (mainly iSCSI as most other services - DHCP, NTP, etc - are provided by Amazon) and 2 cluster nodes, but this can be changed to deploy more cluster nodes as needed.
 
-Once the infrastructure is created by Terraform, the servers are provisioned with Ansible.
+Once the infrastructure is created by Terraform, the servers can be provisioned with Ansible.
 
 ## Customization
 
