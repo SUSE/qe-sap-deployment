@@ -26,28 +26,6 @@ variable "deployment_name_in_hostname" {
   type        = bool
 }
 
-variable "reg_code" {
-  description = "If informed, register the product using SUSEConnect"
-  default     = ""
-}
-
-variable "reg_email" {
-  description = "Email used for the registration"
-  default     = ""
-}
-
-variable "reg_additional_modules" {
-  description = "Map of the modules to be registered. Module name = Regcode, when needed."
-  type        = map(string)
-  default     = {}
-}
-
-variable "additional_packages" {
-  description = "extra packages which should be installed"
-  type        = list(any)
-  default     = []
-}
-
 variable "public_key" {
   description = "Content of a SSH public key or path to an already existing SSH public key. The key is only used to provision the machines and it is authorized for future accesses"
   type        = string

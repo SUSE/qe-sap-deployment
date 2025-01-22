@@ -39,18 +39,6 @@ deployment_name = "mydeployment"
 # aws-cli credentials file. Located on ~/.aws/credentials on Linux, MacOS or Unix or at C:\Users\USERNAME\.aws\credentials on Windows
 #aws_credentials = "~/.aws/credentials"
 
-# Supply SCC registration code to register BYOS images to SCC. Keep it commented if using PAYG images or if registration of BYOS
-# images is not required
-#reg_code = "<<REG_CODE>>"
-#reg_email = "<<your email>>"
-
-# To add additional modules from SCC. None of them is needed by default
-#reg_additional_modules = {
-#    "sle-module-adv-systems-management/12/x86_64" = ""
-#    "sle-module-containers/12/x86_64" = ""
-#    "sle-ha-geo/12.4/x86_64" = "<<REG_CODE>>"
-#}
-
 # Default os_image and os_owner. These values are not used if the specific values are set (e.g.: hana_os_image)
 # BYOS example with sles4sap 15 sp3 (this value is a pattern, it will select the latest version that matches this name)
 #os_image = "suse-sles-sap-15-sp3-byos"
@@ -83,10 +71,6 @@ public_key  = "/home/myuser/.ssh/id_rsa.pub"
 # Disable all extra packages that do not come from the image
 # true or false (default)
 #offline_mode = false
-
-# Execute HANA Hardware Configuration Check Tool to bench filesystems
-# true or false (default)
-#hwcct = false
 
 #########################
 # HANA machines variables
@@ -146,7 +130,6 @@ hana_count = "2"
 # Find some references about the variables in:
 # https://help.sap.com
 # HANA instance system identifier. The system identifier must be composed by 3 uppercase chars/digits string starting always with a character (there are some restricted options).
-#hana_sid = "PRD"
 # HANA instance number. It's composed of 2 integers string
 #hana_instance_number = "00"
 # HANA primary site name. Only used if HANA's system replication feature is enabled (hana_ha_enabled to true)

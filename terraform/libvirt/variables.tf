@@ -178,18 +178,6 @@ variable "hana_ips" {
   }
 }
 
-variable "hana_sid" {
-  description = "System identifier of the HANA system. It must be a 3 characters string (check the restrictions in the SAP documentation pages). Examples: PRD, HA1"
-  type        = string
-  default     = "PRD"
-}
-
-variable "hana_cost_optimized_sid" {
-  description = "System identifier of the HANA cost-optimized system. It must be a 3 characters string (check the restrictions in the SAP documentation pages). Examples: PRD, HA1"
-  type        = string
-  default     = "QAS"
-}
-
 variable "hana_instance_number" {
   description = "Instance number of the HANA system. It must be a 2 digits string. Examples: 00, 01, 10"
   type        = string

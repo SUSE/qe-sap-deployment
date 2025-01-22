@@ -1,25 +1,3 @@
-variable "hana_sid" {
-  description = "System identifier of the HANA system. It must be a 3 characters string (check the restrictions in the SAP documentation pages). Examples: prd, ha1"
-  type        = string
-  validation {
-    condition = (
-      can(regex("^[A-Z][A-Z0-9]{2}$", var.hana_sid))
-    )
-    error_message = "The HANA system identifier must be composed by 3 uppercase chars/digits string starting always with a character (there are some restricted options)."
-  }
-}
-
-variable "hana_cost_optimized_sid" {
-  description = "System identifier of the HANA cost-optimized system. It must be a 3 characters string (check the restrictions in the SAP documentation pages). Examples: prd, ha1"
-  type        = string
-  validation {
-    condition = (
-      can(regex("^[A-Z][A-Z0-9]{2}$", var.hana_cost_optimized_sid))
-    )
-    error_message = "The HANA system identifier must be composed by 3 uppercase chars/digits string starting always with a character (there are some restricted options)."
-  }
-}
-
 variable "hana_instance_number" {
   description = "Instance number of the HANA system. It must be a 2 digits string. Examples: 00, 01, 10"
   type        = string

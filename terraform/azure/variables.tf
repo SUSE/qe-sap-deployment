@@ -131,37 +131,6 @@ variable "timezone" {
   default     = "Europe/Berlin"
 }
 
-variable "reg_code" {
-  description = "If informed, register the product using SUSEConnect"
-  type        = string
-  default     = ""
-}
-
-variable "reg_email" {
-  description = "Email used for the registration"
-  default     = ""
-}
-
-# The module format must follow SUSEConnect convention:
-# <module_name>/<product_version>/<architecture>
-# Example: Suggested modules for SLES for SAP 15
-# - sle-module-basesystem/15/x86_64
-# - sle-module-desktop-applications/15/x86_64
-# - sle-module-server-applications/15/x86_64
-# - sle-ha/15/x86_64 (Need the same regcode as SLES for SAP)
-# - sle-module-sap-applications/15/x86_64
-
-variable "reg_additional_modules" {
-  description = "Map of the modules to be registered. Module name = Regcode, when needed."
-  type        = map(string)
-  default     = {}
-}
-
-variable "additional_packages" {
-  description = "Extra packages to be installed"
-  default     = []
-}
-
 # Hana related variables
 variable "hana_name" {
   description = "hostname, without the domain part"
@@ -279,18 +248,6 @@ variable "hana_fstype" {
   description = "Filesystem type used by the disk where HANA is installed"
   type        = string
   default     = "xfs"
-}
-
-variable "hana_sid" {
-  description = "System identifier of the HANA system. It must be a 3 characters string (check the restrictions in the SAP documentation pages). Examples: PRD, HA1"
-  type        = string
-  default     = "PRD"
-}
-
-variable "hana_cost_optimized_sid" {
-  description = "System identifier of the HANA cost-optimized system. It must be a 3 characters string (check the restrictions in the SAP documentation pages). Examples: PRD, HA1"
-  type        = string
-  default     = "QAS"
 }
 
 variable "hana_instance_number" {

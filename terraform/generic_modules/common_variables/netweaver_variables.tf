@@ -111,17 +111,6 @@ variable "netweaver_hana_ip" {
   type        = string
 }
 
-variable "netweaver_hana_sid" {
-  description = "System identifier of the HANA system (e.g.: HA1 or PRD)"
-  type        = string
-  validation {
-    condition = (
-      can(regex("^[A-Z][A-Z0-9]{2}$", var.netweaver_hana_sid))
-    )
-    error_message = "The HANA system identifier must be composed by 3 uppercase chars/digits string starting always with a character (there are some restricted options)."
-  }
-}
-
 variable "netweaver_hana_instance_number" {
   description = "Instance number of the HANA system. It must be a 2 digits string. Examples: 00, 01, 10"
   type        = string

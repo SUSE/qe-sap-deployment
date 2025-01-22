@@ -73,10 +73,6 @@ module "common_variables" {
   region                      = var.region
   deployment_name             = local.deployment_name
   deployment_name_in_hostname = var.deployment_name_in_hostname
-  reg_code                    = var.reg_code
-  reg_email                   = var.reg_email
-  reg_additional_modules      = var.reg_additional_modules
-  additional_packages         = var.additional_packages
   public_key                  = var.public_key
   authorized_keys             = var.authorized_keys
   authorized_user             = var.admin_user
@@ -84,9 +80,7 @@ module "common_variables" {
   monitoring_enabled                  = var.monitoring_enabled
   monitoring_srv_ip                   = var.monitoring_enabled ? local.monitoring_srv_ip : ""
   hana_hwcct                          = var.hwcct
-  hana_sid                            = var.hana_sid
   hana_instance_number                = var.hana_instance_number
-  hana_cost_optimized_sid             = var.hana_cost_optimized_sid
   hana_cost_optimized_instance_number = var.hana_cost_optimized_instance_number
   hana_primary_site                   = var.hana_primary_site
   hana_secondary_site                 = var.hana_secondary_site
@@ -115,7 +109,6 @@ module "common_variables" {
   netweaver_nfs_share                 = var.drbd_enabled ? "${local.drbd_cluster_vip}:/${var.netweaver_sid}" : var.netweaver_nfs_share
   netweaver_sapmnt_path               = var.netweaver_sapmnt_path
   netweaver_hana_ip                   = var.hana_ha_enabled ? local.hana_cluster_vip : element(local.hana_ips, 0)
-  netweaver_hana_sid                  = var.hana_sid
   netweaver_hana_instance_number      = var.hana_instance_number
   netweaver_ha_enabled                = var.netweaver_ha_enabled
   netweaver_cluster_vip_mechanism     = var.netweaver_cluster_vip_mechanism
