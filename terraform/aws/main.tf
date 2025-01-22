@@ -63,19 +63,12 @@ module "common_variables" {
   provider_type                       = "aws"
   deployment_name                     = local.deployment_name
   deployment_name_in_hostname         = var.deployment_name_in_hostname
-  reg_code                            = var.reg_code
-  reg_email                           = var.reg_email
-  reg_additional_modules              = var.reg_additional_modules
-  additional_packages                 = var.additional_packages
   public_key                          = var.public_key
   authorized_keys                     = var.authorized_keys
   authorized_user                     = var.admin_user
   monitoring_enabled                  = var.monitoring_enabled
   monitoring_srv_ip                   = var.monitoring_enabled ? local.monitoring_ip : ""
-  hana_hwcct                          = var.hwcct
-  hana_sid                            = var.hana_sid
   hana_instance_number                = var.hana_instance_number
-  hana_cost_optimized_sid             = var.hana_cost_optimized_sid
   hana_cost_optimized_instance_number = var.hana_cost_optimized_instance_number
   hana_primary_site                   = var.hana_primary_site
   hana_secondary_site                 = var.hana_secondary_site
@@ -104,7 +97,6 @@ module "common_variables" {
   netweaver_nfs_share                 = var.drbd_enabled ? "${local.drbd_cluster_vip}:/${var.netweaver_sid}" : var.netweaver_nfs_share
   netweaver_sapmnt_path               = var.netweaver_sapmnt_path
   netweaver_hana_ip                   = var.hana_ha_enabled ? local.hana_cluster_vip : element(local.hana_ips, 0)
-  netweaver_hana_sid                  = var.hana_sid
   netweaver_hana_instance_number      = var.hana_instance_number
   netweaver_ha_enabled                = var.netweaver_ha_enabled
   netweaver_cluster_vip_mechanism     = "route"
@@ -150,24 +142,6 @@ module "drbd_node" {
   iscsi_srv_ip          = join("", module.iscsi_server.iscsisrv_ip)
   nfs_mounting_point    = var.drbd_nfs_mounting_point
   nfs_export_name       = var.netweaver_sid
-}
-
-module "iscsi_server" {
-  source             = "./modules/iscsi_server"
-  common_variables   = module.common_variables.configuration
-  name               = var.iscsi_name
-  network_domain     = var.iscsi_network_domain == "" ? var.network_domain : var.iscsi_network_domain
-  iscsi_count        = local.iscsi_enabled == true ? var.iscsi_count : 0
-  availability_zones = data.aws_availability_zones.available.names
-  subnet_ids         = aws_subnet.infra-subnet.*.id
-  os_image           = local.iscsi_os_image
-  os_owner           = local.iscsi_os_owner
-  vm_size            = var.iscsi_instancetype
-  key_name           = aws_key_pair.key-pair.key_name
-  security_group_id  = local.security_group_id
-  host_ips           = local.iscsi_ips
-  lun_count          = var.iscsi_lun_count
-  iscsi_disk_size    = var.iscsi_disk_size
 }
 
 module "netweaver_node" {
@@ -236,3 +210,22 @@ module "monitoring" {
   subnet_ids         = aws_subnet.infra-subnet.*.id
   timezone           = var.timezone
 }
+
+module "iscsi_server" {
+  source             = "./modules/iscsi_server"
+  common_variables   = module.common_variables.configuration
+  name               = var.iscsi_name
+  network_domain     = var.iscsi_network_domain == "" ? var.network_domain : var.iscsi_network_domain
+  iscsi_count        = local.iscsi_enabled == true ? var.iscsi_count : 0
+  availability_zones = data.aws_availability_zones.available.names
+  subnet_ids         = aws_subnet.infra-subnet.*.id
+  os_image           = local.iscsi_os_image
+  os_owner           = local.iscsi_os_owner
+  vm_size            = var.iscsi_instancetype
+  key_name           = aws_key_pair.key-pair.key_name
+  security_group_id  = local.security_group_id
+  host_ips           = local.iscsi_ips
+  lun_count          = var.iscsi_lun_count
+  iscsi_disk_size    = var.iscsi_disk_size
+}
+
