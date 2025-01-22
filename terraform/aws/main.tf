@@ -15,16 +15,14 @@ locals {
   iscsi_ip_start = 5
   iscsi_ips      = length(var.iscsi_ips) != 0 ? var.iscsi_ips : [for ip_index in range(local.iscsi_ip_start, var.iscsi_count + local.iscsi_ip_start) : cidrhost(local.infra_subnet_address_range, ip_index)]
 
-
-
   # The next locals are used to map the ip index with the subnet range (something like python enumerate method)
   hana_ip_start              = 10
-  hana_ips                   = length(var.hana_ips) != 0 ? var.hana_ips : [for index in range(var.hana_count) : cidrhost(element(local.hana_subnet_address_range, index % 2), index + local.hana_ip_start)]
+  hana_ips                   = length(var.hana_ips) != 0 ? var.hana_ips : [for ip_index in range(var.hana_count) : cidrhost(element(local.hana_subnet_address_range, ip_index), ip_index + local.hana_ip_start)]
   hana_cluster_vip           = var.hana_cluster_vip != "" ? var.hana_cluster_vip : cidrhost(var.virtual_address_range, local.hana_ip_start)
   hana_cluster_vip_secondary = var.hana_cluster_vip_secondary != "" ? var.hana_cluster_vip_secondary : cidrhost(var.virtual_address_range, local.hana_ip_start + 1)
 
   drbd_ip_start    = 20
-  drbd_ips         = length(var.drbd_ips) != 0 ? var.drbd_ips : [for index in range(2) : cidrhost(element(local.drbd_subnet_address_range, index % 2), index + local.drbd_ip_start)]
+  drbd_ips         = length(var.drbd_ips) != 0 ? var.drbd_ips : [for ip_index in range(2) : cidrhost(element(local.drbd_subnet_address_range, ip_index), ip_index + local.drbd_ip_start)]
   drbd_cluster_vip = var.drbd_cluster_vip != "" ? var.drbd_cluster_vip : cidrhost(var.virtual_address_range, local.drbd_ip_start)
 
   netweaver_xscs_server_count = var.netweaver_enabled ? (var.netweaver_ha_enabled ? 2 : 1) : 0
@@ -32,7 +30,7 @@ locals {
   netweaver_virtual_ips_count = var.netweaver_ha_enabled ? max(local.netweaver_count, 3) : max(local.netweaver_count, 2) # We need at least 2 virtual ips, if ASCS and PAS are in the same machine
 
   netweaver_ip_start    = 30
-  netweaver_ips         = length(var.netweaver_ips) != 0 ? var.netweaver_ips : [for index in range(local.netweaver_count) : cidrhost(element(local.netweaver_subnet_address_range, index % 2), index + local.netweaver_ip_start)]
+  netweaver_ips         = length(var.netweaver_ips) != 0 ? var.netweaver_ips : [for ip_index in range(local.netweaver_count) : cidrhost(element(local.netweaver_subnet_address_range, ip_index), ip_index + local.netweaver_ip_start)]
   netweaver_virtual_ips = length(var.netweaver_virtual_ips) != 0 ? var.netweaver_virtual_ips : [for ip_index in range(local.netweaver_ip_start, local.netweaver_ip_start + local.netweaver_virtual_ips_count) : cidrhost(var.virtual_address_range, ip_index)]
 
   # Check if iscsi server has to be created

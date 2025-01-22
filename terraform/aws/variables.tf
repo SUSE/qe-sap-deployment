@@ -41,9 +41,9 @@ variable "vpc_address_range" {
   default     = "10.0.0.0/16"
   validation {
     condition = (
-      can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}$", var.vpc_address_range))
+      can(cidrnetmask(var.vpc_address_range))
     )
-    error_message = "Invalid IP range format. It must be something like: 102.168.10.5/24 ."
+    error_message = "Must be a valid IPv4 CIDR block address."
   }
 }
 
@@ -53,7 +53,7 @@ variable "virtual_address_range" {
   default     = "192.168.1.0/24"
   validation {
     condition = (
-      can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}$", var.virtual_address_range))
+      can(cidrnetmask(var.virtual_address_range))
     )
     error_message = "Invalid IP range format. It must be something like: 102.168.10.5/24 ."
   }
