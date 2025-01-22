@@ -142,7 +142,6 @@ machine_type = "n1-highmem-32"
 # HANA instance configuration
 # Find some references about the variables in:
 # https://help.sap.com
-# HANA instance system identifier. The system identifier must be composed by 3 uppercase chars/digits string starting always with a character (there are some restricted options).
 #hana_sid = "PRD"
 # HANA instance number. It's composed of 2 integers string
 #hana_instance_number = "00"
