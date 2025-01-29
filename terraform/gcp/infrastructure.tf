@@ -39,6 +39,8 @@ resource "google_compute_subnetwork" "ha_subnet" {
 }
 
 # Network firewall rules
+# All ports open for internal traffic, in line with what google suggests for cases like 
+# the load balancer and health checks. Outside traffic is only allowed through select ports.
 resource "google_compute_firewall" "ha_firewall_allow_internal" {
   name          = "${local.deployment_name}-fw-internal"
   network       = local.vpc_name
