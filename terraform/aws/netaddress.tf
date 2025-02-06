@@ -1,4 +1,5 @@
-# This file is used to create some locals storing the IP addresses of all the machines.
+# This file is used to calculate and store in some local variables
+# the IP addresses of all the machines.
 
 locals {
 
@@ -7,12 +8,12 @@ locals {
   # R A N G E s
   ###################################################
   ###################################################
-  # There are a hierarchy of nested ranges
-  #  - all of them fit in the vpc_address_range
-  #  - the vpc range fits 4 subranges: infra, hana, netweaver, drbd
+  # There is a hierarchy of nested ranges
+  #  - all of them belong and fit in the vpc_address_range
+  #  - the vpc_address_range accomodates 4 subranges: infra, hana, netweaver, drbd
   #  - infra is always present, it has 8 address (but first 4 are reserved by AWS).
-  #    It fits IPs for monitor and iscsi
-  #  - hana is not a single one but a set of ranges, one for each hana_count (so can be missing).
+  #    Infra range fits the IPs for monitor and iscsi machines.
+  #  - hana is not a single range but a set of ranges, one for each hana_count (so eventually it can be missing as count can be zero).
   #    Hana ranges are placed after the infra one.
   #    They are 8 address wide (but first 4 are reserved by AWS)
   #  - netweaver are always 2 ranges. Starting point if after infra and hana (using hana_count)
