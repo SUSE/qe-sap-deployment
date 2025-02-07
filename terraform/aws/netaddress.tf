@@ -27,7 +27,7 @@ locals {
 
   ###################################################
   # INFRA
-  infra_subnet_address_range_size = 8
+  infra_subnet_address_range_size = 3
   infra_subnet_offset             = 0
   infra_subnet_address_range = (
     var.infra_subnet_address_range != "" ?
@@ -38,7 +38,7 @@ locals {
 
   ###################################################
   # HANA
-  hana_subnet_address_range_size = 8
+  hana_subnet_address_range_size = 3
   hana_subnet_offset             = local.infra_subnet_offset + 1
   hana_subnet_address_range = (
     length(var.hana_subnet_address_range) != 0 ?
@@ -52,7 +52,7 @@ locals {
   ###################################################
   # NETWEAVER
   # The 2 is hardcoded because we create 2 subnets for NW always
-  netweaver_subnet_address_range_size = 8
+  netweaver_subnet_address_range_size = 3
   netweaver_subnet_offset             = local.hana_subnet_offset + var.hana_count
   netweaver_subnet_count              = 2
   netweaver_subnet_address_range = (
@@ -67,7 +67,7 @@ locals {
   ###################################################
   # DRBD
   # The 2 is hardcoded considering we create 2 subnets for NW always
-  drbd_subnet_address_range_size = 8
+  drbd_subnet_address_range_size = 3
   drbd_subnet_offset             = local.netweaver_subnet_offset + local.netweaver_subnet_count
   drbd_subnet_count              = 2
   drbd_subnet_address_range = (
