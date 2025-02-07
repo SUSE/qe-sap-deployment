@@ -470,7 +470,7 @@ variable "iscsi_os_owner" {
 variable "iscsi_instancetype" {
   description = "The instance type of the iscsi server node."
   type        = string
-  default     = "t3a.small"
+  default     = "t3.small"
 }
 
 variable "iscsi_ips" {
