@@ -330,7 +330,7 @@
       crm configure primitive
       rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       IPaddr2
-      params ip={{ gcp_cluster_ip }}
+      params ip={{ cluster_ip }}
       cidr_netmask=32
       nic=eth0
       op monitor interval=3600s timeout=60s
