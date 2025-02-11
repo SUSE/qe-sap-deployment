@@ -1,14 +1,51 @@
 ---
 
-- debug:
+- name: Storage profile details
+  debug:
     msg: "{{ item }} "
+
+- name: Determine the root device
+  command: "findmnt -n -o SOURCE /"
+  register: root_device
+  changed_when: false
+
+# Cut any partition suffixes like p1, p2
+- name: Normalize root device name
+  ansible.builtin.set_fact:
+    root_device_name: "{{ root_device.stdout | regex_replace('p[0-9]+$', '') }}"
+
+# If root is not nvme0n1, and it also exists in pv, switch it with nvme0n1 in pv
+# This part of the code only runs if the root_device is not nvme0n1
+# It searches in the item.pv list for the root_device, and if it is found
+# it gets replaced with nvme0n1, which is free to use.
+# This is necessary because nvme1n1-nvme7n1 are given specific roles in aws_hana_storage_profile.yaml
+# and if one of them is root, it needs to be replaced with nvme0n1 (the original root, now free)
+- name: Adjust PV list for storage profile "{{ item.key }}"
+  ansible.builtin.set_fact:
+    adjusted_pv: "{{ item.value.pv | map('regex_replace', '^' ~ root_device_name ~ '$', '/dev/nvme0n1') | list }}"
+  when: 
+    - root_device_name != '/dev/nvme0n1'
+    - root_device_name in item.value.pv
+
+- name: Physical Volume list that will be used
+  debug:
+    msg: "Using PV list: {{ (adjusted_pv is defined and (adjusted_pv | length) > 0) | ternary(adjusted_pv, item.value.pv) }}"
 
 # Create Volume Group
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Volume Group One
   lvg:
     vg: "{{ item.value.vg }}"
-    pvs: "{{ item.value.pv }}"
+    pvs: "{{ (adjusted_pv is defined and (adjusted_pv | length) > 0) | ternary(adjusted_pv, item.value.pv) }}"
     force: yes
+  register: lvg_result
+  until: lvg_result is successful
+  retries: 5
+  delay: 10
+
+- name: Clear adjusted_pv fact for the next iteration
+  ansible.builtin.set_fact:
+    adjusted_pv: ""
+  when: adjusted_pv is defined
 
 # Create Logical Group - One
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Logical Volume - One
