@@ -58,9 +58,9 @@ The project is composed by files in many different code languages: Terraform, An
 * All code needs to be checked locally. As the repository contains different kinds of code (Terraform, Ansible, Python, Documentation, bash scripts), any PR need to be prepared in different way, accordingly to its content:
   * Documentation: some of the Markdown files are tested for Markdown syntax and spelling.
   * Python code: it is mostly important for the glue script code in `scripts/qesap`. The code is statically tested with pylint and flake8. These tests can be executed manually with `make static-py` or with `tox -e pylint`. Some unit testing are also associated with the qesap.py script. They can be executed with `tox` or using `make test`.
-  * Ansible code: code can be statically tested using `make static-ansible`.
+  * Ansible code: code can be statically tested using `make static-ansible`. It is also recommended to run `make static-ansible-lint` and fix at least warnings in the edited file (please consider that for the moment this target is not part of any github pipeline)
 
-* Every pull request is tested by our CI system for different purposes:
+* Every pull request is tested by CI system defined in this repo.
 
 Also see the [DoD/DoR][1] as a helpful (but not mandatory) guideline for new contributions.
 
