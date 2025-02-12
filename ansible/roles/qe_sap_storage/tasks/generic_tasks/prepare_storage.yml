@@ -1,11 +1,11 @@
 ---
 
 - name: Storage profile details
-  debug:
+  ansible.builtin.debug:
     msg: "{{ item }} "
 
 - name: Determine the root device
-  command: "findmnt -n -o SOURCE /"
+  ansible.builtin.command: "findmnt -n -o SOURCE /"
   register: root_device
   changed_when: false
 
@@ -23,20 +23,20 @@
 - name: Adjust PV list for storage profile "{{ item.key }}"
   ansible.builtin.set_fact:
     adjusted_pv: "{{ item.value.pv | map('regex_replace', '^' ~ root_device_name ~ '$', '/dev/nvme0n1') | list }}"
-  when: 
+  when:
     - root_device_name != '/dev/nvme0n1'
     - root_device_name in item.value.pv
 
 - name: Physical Volume list that will be used
-  debug:
+  ansible.builtin.debug:
     msg: "Using PV list: {{ (adjusted_pv is defined and (adjusted_pv | length) > 0) | ternary(adjusted_pv, item.value.pv) }}"
 
 # Create Volume Group
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Volume Group One
-  lvg:
+- name: SAP Storage Preparation - Volume Group One - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }}
+  community.general.lvg:
     vg: "{{ item.value.vg }}"
     pvs: "{{ (adjusted_pv is defined and (adjusted_pv | length) > 0) | ternary(adjusted_pv, item.value.pv) }}"
-    force: yes
+    force: true
   register: lvg_result
   until: lvg_result is successful
   retries: 5
@@ -49,32 +49,32 @@
 
 # Create Logical Group - One
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Logical Volume - One
-  lvol:
+  community.general.lvol:
     vg: "{{ item.value.vg }}"
     lv: "{{ item.value.lv }}"
     size: 100%VG
-  when: 
+  when:
     - "item.value.numluns == '1'"
 
 # Create Logical Group - Striped
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Logical Volume - Striped
-  lvol:
+  community.general.lvol:
     vg: "{{ item.value.vg }}"
     lv: "{{ item.value.lv }}"
     size: 100%VG
     opts: "-i {{ item.value.numluns }} -I {{ item.value.stripesize }}"
-  when: 
+  when:
     - "item.value.numluns != '1'"
 
 # Create Filesystem
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Filesystem
-  filesystem:
+  community.general.filesystem:
     fstype: xfs
     dev: "/dev/{{ item.value.vg }}/{{ item.value.lv }}"
 
 # Mount Filesystem
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Mount
-  mount:
+  ansible.posix.mount:
     path: "{{ item.value.directory }}"
     fstype: xfs
     src: "/dev/mapper/{{ item.value.vg }}-{{ item.value.lv }}"
