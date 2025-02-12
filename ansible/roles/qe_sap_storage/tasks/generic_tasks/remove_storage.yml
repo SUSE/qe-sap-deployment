@@ -22,7 +22,7 @@
 
 # Remove Logical Volume
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Remove Logical Volume
-  lvol:
+  community.general.lvol:
     lv: "{{ item.value.lv }}"
     vg: "{{ item.value.vg }}"
     state: absent
@@ -30,7 +30,7 @@
 
 # Remove Volume Group
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Remove Volume Group
-  lvg:
+  community.general.lvg:
     vg: "{{ item.value.vg }}"
     state: absent
     force: yes

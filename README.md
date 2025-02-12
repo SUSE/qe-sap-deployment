@@ -279,7 +279,7 @@ export ANSIBLE_ROLES_PATH=<the-dir-where-the-role-is-located>
 ### Mark temporary workaround for known issues
 
 If Ansible code is added to temporary workaround known issue, already associated to an open ticket, there's a convention to communicate it to openQA.
-Use `ansible.buildin.debug` with a specific format.
+Use `ansible.builtin.debug` with a specific format.
 
 ```yaml
 msg: "[OSADO][softfail] [bsc or jsc]#[number] [short description]"
