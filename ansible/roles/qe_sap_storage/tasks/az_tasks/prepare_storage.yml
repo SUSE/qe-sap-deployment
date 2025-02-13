@@ -22,7 +22,7 @@
         executable: /bin/bash
       register: pvs_reg
 
-    - name: Recors pvs list
+    - name: Records pvs list
       ansible.builtin.set_fact:
         pvs_list: "{{ pvs_reg.stdout.split() }}"
 
