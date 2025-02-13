@@ -2,13 +2,13 @@
 
 # Unmount Filesystem
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Unmount Filesystem
-  mount:
+  ansible.posix.mount:
     path: "{{ item.value.directory }}"
     state: absent
 
 # Remove Filesystem
 - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Remove Filesystem
-  shell: |
+  ansible.builtin.shell: |
     /sbin/wipefs --all -f /dev/mapper/{{ item.value.vg }}-{{ item.value.lv }}
 
 # Remove Logical Volume
