@@ -22,7 +22,6 @@
   zypper:
     name: python-httplib2
     state: present
-  when: ansible_distribution_major_version == '12'
   register: httplib2_zypper
   ignore_errors: true
 
