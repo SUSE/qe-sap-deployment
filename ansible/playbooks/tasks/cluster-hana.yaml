@@ -37,11 +37,6 @@
       {{ 'Master' if ansible_facts.packages['pacemaker'][0].version is version('2.1.9', '<')
          else 'Promoted' }}
 
-- name: Ensure maintenance mode is active
-  ansible.builtin.command:
-    cmd: crm maintenance on
-  when: crm_maintenance_mode is false or crm_maintenance_mode == 'unknown'
-
 - name: Create HANA topology resource
   ansible.builtin.command:
     cmd: >-
@@ -136,6 +131,7 @@
       clone-node-max="1"
       target-role="Started"
       interleave="true"
+      maintenance="true"
       {% if clone_command == 'clone' %}promotable="true"{% endif %}
   when:
     - is_primary
@@ -179,6 +175,10 @@
     - use_hana_sr_angi | bool
     - hana_filesystem_clone | length == 0
 
+- name: Wait for cluster to settle
+  ansible.builtin.command:
+    cmd: cs_wait_for_idle -s 5
+
 - name: Configure colocation [aws]
   ansible.builtin.command:
     cmd: >-
@@ -205,6 +205,10 @@
     - ip_colo | length == 0
     - cloud_platform_is_gcp
 
+- name: Wait for cluster to settle
+  ansible.builtin.command:
+    cmd: cs_wait_for_idle -s 5
+
 # Order configured as documentation for both AWS and GCP dictates
 # AWS: https://documentation.suse.com/sbp/sap-15/html/SLES4SAP-hana-sr-guide-perfopt-15-aws/index.html#id-constraints
 # GCP: https://cloud.google.com/solutions/sap/docs/sap-hana-ha-config-sles#create_the_saphana_primitive_resource
@@ -220,25 +224,25 @@
     - is_primary
     - cluster_order | length == 0
 
-
-# Get current maintenance state
-- name: Refresh cluster status
+- name: Wait for cluster to settle
   ansible.builtin.command:
-    cmd: crm configure show
-  register: refreshed_crm_conf_show
-  changed_when: false
+    cmd: cs_wait_for_idle -s 5
 
-- name: Refresh crm facts
-  ansible.builtin.set_fact:
-    refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
-  changed_when: false
-
-- name: Ensure maintenance mode is disabled
+- name: Refresh SAPHana resource clone
   ansible.builtin.command:
-    cmd: crm maintenance off
-  when:
-    - is_primary
-    - refreshed_crm_maintenance_mode is true or refreshed_crm_maintenance_mode == 'unknown'
+    cmd: "crm resource refresh {{ ms_saphanactl }}"
+
+- name: Wait for cluster to settle
+  ansible.builtin.command:
+    cmd: cs_wait_for_idle -s 5
+
+- name: Remove maintenance mode from resource clone
+  ansible.builtin.command:
+    cmd: "crm resource maintenance {{ ms_saphanactl }} off"
+
+- name: Wait for cluster to settle
+  ansible.builtin.command:
+    cmd: cs_wait_for_idle -s 5
 
 - name: Get cluster state
   ansible.builtin.command:
@@ -254,6 +258,10 @@
   when:
     - reg_crm_status.stdout | regex_search('Failed Resource Actions') | trim | length != 0
     - is_primary
+
+- name: Wait for cluster to settle
+  ansible.builtin.command:
+    cmd: cs_wait_for_idle -s 5
 
 # For debug purpose only
 - name: Get cluster status at the end
