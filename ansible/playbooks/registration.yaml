@@ -131,6 +131,8 @@
       delay: 60
       when:
         - ansible_facts['distribution_major_version'] == "12"
+        - not_registered_found
+        - "(is_registercloudguest_bin.rc != 0) or (use_suseconnect | bool)"
 
     - name: Add SLES 12 public cloud module
       ansible.builtin.command: SUSEConnect -p sle-module-public-cloud/12/{{ ansible_facts['architecture'] }}
