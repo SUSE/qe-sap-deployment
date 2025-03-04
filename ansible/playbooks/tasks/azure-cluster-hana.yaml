@@ -2,27 +2,29 @@
 - name: Get cluster status
   ansible.builtin.command:
     cmd: crm configure show
-  register: crm_conf_show
-  changed_when: false
+  register: crm_conf_hana_show
+  changed_when: crm_conf_hana_show.rc == 0
+  when: is_primary
 
 - name: Set hana crm facts
   ansible.builtin.set_fact:
-    crm_maintenance_mode: "{{ (crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] }}"
-    stonith_enabled: "{{ (crm_conf_show.stdout | regex_search('stonith-enabled=([a-z]*)', '\\1'))[0] | default('false') }}"
-    stonith_timeout: "{{ crm_conf_show.stdout | regex_search('stonith-timeout') }}"  # this should be variable!
-    hana_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHanaCtl_') }}"
-    hana_clone: "{{ crm_conf_show.stdout | regex_search('ms ms(.)_SAPHanaCtl_') }}"
-    hana_topology_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHanaTpg') }}"
-    hana_topology_clone: "{{ crm_conf_show.stdout | regex_search('clone cln_SAPHanaTpg') }}"
-    hana_filesystem_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHanaFil_') }}"
-    hana_filesystem_clone: "{{ crm_conf_show.stdout | regex_search('primitive cln_SAPHanaFil_') }}"
-    ip_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_ip_') }}"
-    ip_nc: "{{ crm_conf_show.stdout | regex_search('primitive rsc_socat_') }}"
-    ip_grp: "{{ crm_conf_show.stdout | regex_search('group g_ip_') }}"
-    ip_colo: "{{ crm_conf_show.stdout | regex_search('colocation col_saphana_ip_') }}"
-    cluster_order: "{{ crm_conf_show.stdout | regex_search('order ord_SAPHana_') }}"
-    resource_stickiness: "{{ (crm_conf_show.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1'))[0] }}"
-    migration_threshold: "{{ (crm_conf_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] }}"
+    crm_maintenance_mode: "{{ (crm_conf_hana_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
+    stonith_enabled: "{{ (crm_conf_hana_show.stdout | regex_search('stonith-enabled=([a-z]*)', '\\1'))[0] | default('false') }}"
+    stonith_timeout: "{{ crm_conf_hana_show.stdout | regex_search('stonith-timeout') }}"  # this should be variable!
+    hana_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaCtl_') }}"
+    hana_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms ms(.)_SAPHanaCtl_') }}"
+    hana_topology_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaTpg') }}"
+    hana_topology_clone: "{{ crm_conf_hana_show.stdout | regex_search('clone cln_SAPHanaTpg') }}"
+    hana_filesystem_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaFil_') }}"
+    hana_filesystem_clone: "{{ crm_conf_hana_show.stdout | regex_search('primitive cln_SAPHanaFil_') }}"
+    ip_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_ip_') }}"
+    ip_nc: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_socat_') }}"
+    ip_grp: "{{ crm_conf_hana_show.stdout | regex_search('group g_ip_') }}"
+    ip_colo: "{{ crm_conf_hana_show.stdout | regex_search('colocation col_saphana_ip_') }}"
+    cluster_order: "{{ crm_conf_hana_show.stdout | regex_search('order ord_SAPHana_') }}"
+    resource_stickiness: "{{ (crm_conf_hana_show.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1'))[0] }}"
+    migration_threshold: "{{ (crm_conf_hana_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] }}"
+  when: is_primary
   changed_when: false
 
 - name: Gather package facts
@@ -30,7 +32,7 @@
     manager: auto
 
 - name: Set variables for clone command and promoted term
-  set_fact:
+  ansible.builtin.set_fact:
     clone_command: >-
       {{ 'ms' if ansible_facts.packages['pacemaker'][0].version is version('2.1.9', '<')
          else 'clone' }}
@@ -38,36 +40,44 @@
       {{ 'Master' if ansible_facts.packages['pacemaker'][0].version is version('2.1.9', '<')
          else 'Promoted' }}
 
-- name: Ensure maintenance mode is active
-  ansible.builtin.command:
-    cmd: crm maintenance on
-  when: crm_maintenance_mode is false or crm_maintenance_mode == 'unknown'
-
 - name: Set stonith-timeout [sbd]
   ansible.builtin.command:
     cmd: crm configure property stonith-timeout=144
   when:
+    - is_primary
     - stonith_timeout | length == 0
     - use_sbd | bool
+  register: result
+  changed_when: result.rc == 0
 
 - name: Set stonith-timeout [azure fencing]
   ansible.builtin.command:
     cmd: crm configure property stonith-timeout=900
   when:
+    - is_primary
     - stonith_timeout | length == 0
     - not use_sbd | bool
+  register: result
+  changed_when: result.rc == 0
 
 - name: Enable stonith
   ansible.builtin.command:
     cmd: crm configure property stonith-enabled=true
-  when: stonith_enabled != 'true'
+  when:
+    - is_primary
+    - stonith_enabled != 'true'
+  register: result
+  changed_when: result.rc == 0
 
   # see https://learn.microsoft.com/en-us/azure/sap/workloads/high-availability-guide-suse-pacemaker?tabs=msi#create-a-fencing-device-on-the-pacemaker-cluster
 - name: Enable concurrent fencing (native fencing)
   ansible.builtin.command:
     cmd: crm configure property concurrent-fencing=true
   when:
+    - is_primary
     - not use_sbd | bool
+  register: result
+  changed_when: result.rc == 0
 
 - name: Create HANA topology resource
   ansible.builtin.command:
@@ -83,7 +93,11 @@
       params
       SID="{{ sap_hana_install_sid }}"
       InstanceNumber="{{ sap_hana_install_instance_number }}"
-  when: hana_topology_resource | length == 0
+  when:
+    - is_primary
+    - hana_topology_resource | length == 0
+  register: result
+  changed_when: result.rc == 0
 
 - name: Create HANA topology clone
   ansible.builtin.command:
@@ -95,7 +109,11 @@
       clone-node-max="1"
       target-role="Started"
       interleave="true"
-  when: hana_topology_clone | length == 0
+  when:
+    - is_primary
+    - hana_topology_clone | length == 0
+  register: result
+  changed_when: result.rc == 0
 
 - name: Create HANA resource
   ansible.builtin.command:
@@ -117,8 +135,11 @@
       DUPLICATE_PRIMARY_TIMEOUT="7200"
       AUTOMATED_REGISTER="false"
   when:
+    - is_primary
     - hana_resource | length == 0
     - not use_hana_sr_angi | bool
+  register: result
+  changed_when: result.rc == 0
 
 - name: Create HANA angi resource
   ansible.builtin.command:
@@ -141,9 +162,15 @@
       meta
       priority="100"
   when:
+    - is_primary
     - hana_resource | length == 0
     - use_hana_sr_angi | bool
+  register: result
+  changed_when: result.rc == 0
 
+# Add HANA resource controller clone/ms into the cluster configuration
+# in maintenance mode, as described in
+# https://documentation.suse.com/sbp/sap-15/html/SLES4SAP-hana-sr-guide-PerfOpt-15/index.html#id-saphana
 - name: Create HANA resource clone
   ansible.builtin.command:
     cmd: >-
@@ -158,13 +185,16 @@
       interleave="true"
       maintenance="true"
       {% if clone_command == 'clone' %}promotable="true"{% endif %}
-  when: hana_clone | length == 0
+  when:
+    - is_primary
+    - hana_clone | length == 0
+  register: result
+  changed_when: result.rc == 0
 
 - name: Create HANA Filesystem resource
   ansible.builtin.command:
     cmd: >-
-      crm configure
-      primitive
+      crm configure primitive
       rsc_SAPHanaFil_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       ocf:suse:SAPHanaFilesystem
       operations
@@ -176,15 +206,17 @@
       SID="{{ sap_hana_install_sid }}"
       InstanceNumber="{{ sap_hana_install_instance_number }}"
       ON_FAIL_ACTION="fence"
+  register: cmd_crm_chfr_output
+  changed_when: cmd_crm_chfr_output.rc != 0
   when:
+    - is_primary
     - use_hana_sr_angi | bool
     - hana_filesystem_resource | length == 0
 
 - name: Create HANA Filesystem clone
   ansible.builtin.command:
     cmd: >-
-      crm configure
-      clone
+      crm configure clone
       cln_SAPHanaFil_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       rsc_SAPHanaFil_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       meta
@@ -192,14 +224,17 @@
       clone-node-max="1"
       target-role="Started"
       interleave="true"
+  register: cmd_crm_chfc_output
+  changed_when: cmd_crm_chfc_output.rc != 0
   when:
+    - is_primary
     - use_hana_sr_angi | bool
     - hana_filesystem_clone | length == 0
 
 - name: Validate cluster IP
   vars:
     ip_regex: "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
-  assert:
+  ansible.builtin.assert:
     that: cluster_ip is match(ip_regex)
     fail_msg: "The provided cluster IP address is not valid."
   when: cluster_ip is defined
@@ -217,7 +252,11 @@
       $id="rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}-operations"
       op monitor interval="10s" timeout="20s"
       params ip="{{ cluster_ip }}"
-  when: ip_resource | length == 0
+  when:
+    - is_primary
+    - ip_resource | length == 0
+  register: result
+  changed_when: result.rc == 0
 
 - name: Create socat resource
   ansible.builtin.command:
@@ -230,7 +269,11 @@
       op monitor timeout="20" interval="10"
       op_params depth=0
       meta resource-stickiness=0
-  when: ip_nc | length == 0
+  when:
+    - is_primary
+    - ip_nc | length == 0
+  register: result
+  changed_when: result.rc == 0
 
 - name: Configure IP group
   ansible.builtin.command:
@@ -239,7 +282,11 @@
       g_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       {{ rsc_socat }}
-  when: ip_grp | length == 0
+  when:
+    - is_primary
+    - ip_grp | length == 0
+  register: result
+  changed_when: result.rc == 0
 
 - name: Configure hana/IP colocation
   ansible.builtin.command:
@@ -249,7 +296,11 @@
       4000:
       g_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}:Started
       {{ ms_saphanactl }}:{{ promoted_term }}
-  when: ip_colo | length == 0
+  when:
+    - is_primary
+    - ip_colo | length == 0
+  register: result
+  changed_when: result.rc == 0
 
 - name: Configure order
   ansible.builtin.command:
@@ -259,53 +310,84 @@
       Optional:
       cln_SAPHanaTpg_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       {{ ms_saphanactl }}
-  when: cluster_order | length == 0
+  when:
+    - is_primary
+    - cluster_order | length == 0
+  register: result
+  changed_when: result.rc == 0
 
 - name: Ensure resource-stickiness is configured
   ansible.builtin.command:
     cmd: crm configure rsc_defaults resource-stickiness=1000
-  when: resource_stickiness != '1000'
+  when:
+    - is_primary
+    - resource_stickiness != '1000'
+  register: result
+  changed_when: result.rc == 0
 
 - name: Ensure migration-threshold is configured
   ansible.builtin.command:
     cmd: crm configure rsc_defaults migration-threshold=5000
-  when: migration_threshold != '5000'
-
-- name: Ensure maintenance mode is off
-  ansible.builtin.command:
-    cmd: crm maintenance off
-
-- name: Wait for cluster to settle
-  ansible.builtin.command:
-    cmd: cs_wait_for_idle -s 5
-
-# Assume that hana resource needs a cleanup
-# There really should be a way of checking if this needs to be run!
-# Plus the linter doesn't like it!
-- name: Cleanup
-  ansible.builtin.command:
-    cmd: crm resource cleanup {{ rsc_saphanactl }}
+  when:
+    - is_primary
+    - migration_threshold != '5000'
+  register: result
+  changed_when: result.rc == 0
 
 - name: Wait for cluster to settle
   ansible.builtin.command:
     cmd: cs_wait_for_idle -s 5
-
-# Get current maintenance state
-- name: Refresh cluster status
-  ansible.builtin.command:
-    cmd: crm configure show
-  register: refreshed_crm_conf_show
+  when:
+    - is_primary
+    - cluster_order | length == 0
   changed_when: false
 
-- name: Refresh crm facts
-  ansible.builtin.set_fact:
-    refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
+- name: Refresh SAPHana resource clone
+  ansible.builtin.command:
+    cmd: "crm resource refresh {{ ms_saphanactl }}"
+  when: is_primary
   changed_when: false
 
-- name: Ensure maintenance mode is disabled
+- name: Wait for cluster to settle
   ansible.builtin.command:
-    cmd: crm maintenance off
-  when: refreshed_crm_maintenance_mode is true or refreshed_crm_maintenance_mode == 'unknown'
+    cmd: cs_wait_for_idle -s 5
+  when: is_primary
+  changed_when: false
+
+- name: Remove maintenance mode from resource clone
+  ansible.builtin.command:
+    cmd: "crm resource maintenance {{ ms_saphanactl }} off"
+  when: is_primary
+  changed_when: false
+
+- name: Wait for cluster to settle
+  ansible.builtin.command:
+    cmd: cs_wait_for_idle -s 5
+  when: is_primary
+  changed_when: false
+
+- name: Get cluster state
+  ansible.builtin.command:
+    cmd: crm status full
+  register: reg_crm_status
+  when: is_primary
+  changed_when: reg_crm_status.stdout | length != 0
+
+- name: Cleanup if needed
+  ansible.builtin.command:
+    cmd: "crm resource cleanup {{ rsc_saphanactl }}"
+  retries: 3
+  delay: 10
+  when:
+    - reg_crm_status.stdout | regex_search('Failed Resource Actions') | trim | length != 0
+    - is_primary
+  changed_when: false
+
+- name: Wait for cluster to settle
+  ansible.builtin.command:
+    cmd: cs_wait_for_idle -s 5
+  when: is_primary
+  changed_when: false
 
 # For debug purpose only
 - name: Get cluster status at the end
