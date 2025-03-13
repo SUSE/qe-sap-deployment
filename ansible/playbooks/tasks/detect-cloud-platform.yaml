@@ -4,7 +4,7 @@
     cloud_platform_is_aws: false
     cloud_platform_is_gcp: false
     cloud_platform_is_azure: false
-    aws_machine_type: false
+    aws_machine_type_is_r4: false
 
 - name: "Detect AWS"
   block:
@@ -29,7 +29,7 @@
 
     - name: Set AWS machine type fact
       ansible.builtin.set_fact:
-        aws_machine_type: true
+        aws_machine_type_is_r4: true
       when:
         - cloud_platform_name is undefined or cloud_platform_name | length == 0 or cloud_platform_name == "aws"
         - probe_aws_1.stdout is match(".*amazon")
