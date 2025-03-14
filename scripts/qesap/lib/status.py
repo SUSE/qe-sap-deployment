@@ -19,6 +19,7 @@ class Status(int):
     msg = ""
 
     def __new__(cls, str_or_int):
+        value = None
         if isinstance(str_or_int, str):
             value = 0 if str_or_int == "ok" else 1
         elif isinstance(str_or_int, int):
