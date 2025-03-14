@@ -148,6 +148,7 @@ confidence=HIGH,
 disable=line-too-long,
         missing-module-docstring,
         unused-argument,
+        too-many-branches,
         too-many-locals,
         too-many-arguments,
         too-many-positional-arguments
