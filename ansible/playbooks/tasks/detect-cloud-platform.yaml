@@ -18,34 +18,25 @@
       register: probe_aws
       when: cloud_platform_name is undefined or cloud_platform_name | length == 0
 
-    - name: "Probe for AWS 1"
-      become: true
-      become_user: root
-      ansible.builtin.command: dmidecode -s bios-version  # | grep -iq "Amazon"
-      changed_when: false
-      failed_when: false
-      register: probe_aws_1
-      when: cloud_platform_name is undefined or cloud_platform_name | length == 0 or cloud_platform_name == "aws"
-
-    - name: Set AWS machine type fact
-      ansible.builtin.set_fact:
-        aws_machine_type_is_r4: true
-      when:
-        - cloud_platform_name is undefined or cloud_platform_name | length == 0 or cloud_platform_name == "aws"
-        - probe_aws_1.stdout is match(".*amazon")
-
     - name: Set AWS discovery fact
       ansible.builtin.set_fact:
         cloud_platform_is_aws: true
       when:
         - cloud_platform_name is undefined or cloud_platform_name | length == 0
         - probe_aws.rc == 0
-        - probe_aws.stdout | lower == 'amazon ec2' or probe_aws_1.stdout is match(".*amazon")
+        - probe_aws.stdout | lower == 'amazon ec2'
 
-    - name: Set AWS  from var
+    - name: Set AWS from var
       ansible.builtin.set_fact:
         cloud_platform_is_aws: true
       when: cloud_platform_name is defined and cloud_platform_name == "aws"
+
+    - name: Set AWS machine type fact for R4 instances
+      ansible.builtin.set_fact:
+        aws_machine_type_is_r4: true
+      when:
+        - cloud_platform_name is undefined or cloud_platform_name | length == 0 or cloud_platform_name == "aws"
+        - hana_machinetype is match("r4.*")
 
 # SEE: https://stackoverflow.com/questions/30911775/how-to-know-if-a-machine-is-an-google-compute-engine-instance
 - name: "Detect GCP"
