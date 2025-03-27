@@ -14,3 +14,5 @@ ansible:
   az_sas_token: '***'
   create:
     - goji.yaml
+  destroy:
+    - ribes_nero.yaml
