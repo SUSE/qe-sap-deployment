@@ -6,10 +6,16 @@
       ansible.builtin.debug:
         msg: "Hello worlds"
 
-    - name: Pause for 10 seconds to rest
+    - name: Pause for 5 seconds to rest
       ansible.builtin.pause:
-        seconds: 10
+        seconds: 5
 
     - name: Say goodbye
       ansible.builtin.debug:
         msg: "Bye bye"
+
+    - name: Create a file
+      ansible.builtin.file:
+        path: goji.bacche
+        mode: '0444'
+        state: touch
