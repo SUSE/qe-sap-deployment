@@ -4,7 +4,7 @@ terraform {
     # Configure the Azure Provider
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.13.0"
+      version = "~> 3.116.0"
     }
     null = {
       source  = "hashicorp/null"

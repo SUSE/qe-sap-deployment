@@ -153,11 +153,11 @@ resource "azurerm_lb_rule" "hanadb_exporter" {
 # hana network configuration
 
 resource "azurerm_network_interface" "hana" {
-  count                         = var.hana_count
-  name                          = "nic-${var.name}${format("%02d", count.index + 1)}"
-  location                      = var.az_region
-  resource_group_name           = var.resource_group_name
-  enable_accelerated_networking = var.enable_accelerated_networking
+  count                          = var.hana_count
+  name                           = "nic-${var.name}${format("%02d", count.index + 1)}"
+  location                       = var.az_region
+  resource_group_name            = var.resource_group_name
+  accelerated_networking_enabled = var.enable_accelerated_networking
 
   ip_configuration {
     name                          = "ipconf-primary"
