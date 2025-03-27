@@ -431,7 +431,7 @@ qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun ansible || test_die 
 test_split
 echo "Run the script again collecting the output"
 qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun ansible |& tee "${THIS_LOG}"
-grep -E "ansible.*-i.*${PROVIDER}/inventory.yaml.*all.*ssh-extra-args=.*" \
+grep -E "ansible.*-i.*${PROVIDER}/inventory.yaml.*all.*ssh-extra-args=\".*\"" \
     "${THIS_LOG}" || test_die "${QESAP_CFG} dryrun fails in ansible command"
 grep -E "ansible-playbook.*-i.*${PROVIDER}/inventory.yaml.*ansible/playbooks/sambuconero.yaml" \
     "${THIS_LOG}" || test_die "${QESAP_CFG} dryrun fails in ansible-playbook command"
