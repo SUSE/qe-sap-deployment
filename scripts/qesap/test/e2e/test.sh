@@ -269,6 +269,40 @@ test_file "${TEST_TERRAFORM_TFSTATE}"
 rm "${TEST_TERRAFORM_TFSTATE}"
 
 #######################################################################
+test_step "[${QESAP_CFG}] Run dryrun Terraform workspace"
+# correct execution of terraform with workspaces in dryrun mode:
+THIS_LOG="${QESAPROOT}/test_3_terraform.log"
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun terraform -w DONALDUCK || test_die "${QESAP_CFG} fail on dryrun terraform workspace"
+TEST_TERRAFORM_TFSTATE="${TEST_PROVIDER}/terraform.tfstate"
+[[ ! -f "${TEST_TERRAFORM_TFSTATE}" ]] || test_die "File ${TEST_TERRAFORM_TFVARS} has been generated but it should not be in dryrun mode!"
+
+test_split
+echo "Run the script again collecting the output"
+qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun terraform -w DONALDUCK |& tee "${THIS_LOG}"
+for t_step in init workspace plan apply; do
+  echo "***Detect ${t_step} command***"
+  grep -qE "terraform.*${t_step}" \
+    "${THIS_LOG}" || test_die "${QESAP_CFG} terraform workspace dryrun does not have expected ${t_step} command in the output"
+done
+rm ${THIS_LOG}
+
+#######################################################################
+test_step "[${QESAP_CFG}] Run Terraform with workspaces"
+
+# Test is using an empty main.tf placed in the right provider folder
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} terraform -w DONALDUCK || test_die "${QESAP_CFG} fail on terraform with workspace"
+ls -lai "${TEST_PROVIDER}"
+
+[[ ! -f "${TEST_TERRAFORM_TFSTATE}" ]] || test_die "File ${TEST_TERRAFORM_TFVARS} has been generated but it should not"
+[[ -d "${TEST_TERRAFORM_TFSTATE}.d" ]] || test_die "Folder ${TEST_TERRAFORM_TFVARS}.d has not been generated"
+
+#######################################################################
+test_step "[${QESAP_CFG}] Run Terraform destroy with workspaces"
+
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} terraform -w DONALDUCK -d || test_die "${QESAP_CFG} fail on terraform destroy with workspace"
+rm -rf "${TEST_TERRAFORM_TFSTATE}.d"
+
+#######################################################################
 test_step "[${QESAP_CFG}] test stdout for terraform PASS"
 # run `qesap.py terraform` both with and without `--verbose`
 # - The stdout in --verbose has to have some strings starting with both DEBUG and INFO
