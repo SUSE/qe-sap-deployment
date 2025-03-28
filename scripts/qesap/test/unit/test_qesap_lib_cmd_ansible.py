@@ -18,21 +18,13 @@ def test_export_ansible_output():
     """
     Utility function that get the ansible command line and the command output.
     Function calculate the log name by extracting the ansible playbook name from the command line.
-    Function take the content of out and write it to a file in the current directory
+    Function take the content of stdout and write it to a file in the current directory
     """
 
     test_dir = os.getcwd()
     test_file = os.path.join(test_dir, "ansible.testAll.log.txt")
 
-    command_to_sent = [
-        "/tmp/exec_venv/bin/ansible-playbok",
-        "-vvvv",
-        "-i",
-        "/root/qe-sap-deployment/terraform/aws/inventory.yaml",
-        "/some/immaginary/path/ansible/playbooks/testAll.yaml",
-        "-e",
-        "something=somevalue",
-    ]
+    command_to_sent = "/tmp/exec_venv/bin/ansible-playbok -vvvv -i /root/qe-sap-deployment/terraform/aws/inventory.yaml /some/immaginary/path/ansible/playbooks/testAll.yaml -e something=somevalue"
     ansible_output = """whatever multiline string
     produced by Ansible"""
 
@@ -89,9 +81,7 @@ ansible:
         ["This is the ansible output", "Two lines of that"],
     )
 
-    # Set expectation
-    calls = []
-    calls.append(mock.call(cmd=ansible_exe_call(inventory)))
+    calls = [mock.call(cmd=ansible_exe_call(inventory))]
     calls.append(mock_call_ansibleplaybook(inventory, playbook[0]))
 
     ret = cmd_ansible(data, tmpdir, False, False)

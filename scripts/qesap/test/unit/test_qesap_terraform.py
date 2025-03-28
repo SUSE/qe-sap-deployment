@@ -10,8 +10,8 @@ log = logging.getLogger(__name__)
 
 terraform_cmds = [
     ('init'),
-    ('plan', '-out=plan.zip'),
-    ('apply', '-auto-approve', 'plan.zip')
+    ('plan -out=plan.zip'),
+    ('apply -auto-approve plan.zip')
 ]
 
 
@@ -36,20 +36,7 @@ def test_terraform_call_terraform(subprocess_run, terraform_cmd_args, args_helpe
     subprocess_run.return_value = (0, [])
     assert main(args) == 0
     subprocess_run.assert_called()
-
-    calls = []
-    terraform_cmd = [
-        'terraform',
-        f"-chdir={terraform_dir}"]
-    if isinstance(terraform_cmd_args, str):
-        terraform_cmd.append(terraform_cmd_args)
-    else:
-        for arg in terraform_cmd_args:
-            terraform_cmd.append(arg)
-    terraform_cmd.append('-no-color')
-    calls.append(mock.call(terraform_cmd))
-
-    subprocess_run.assert_has_calls(calls)
+    subprocess_run.assert_has_calls([mock.call(f"terraform -chdir={terraform_dir} {terraform_cmd_args} -no-color")])
 
 
 @mock.patch("lib.process_manager.subprocess_run", side_effect=[(0, []), (1, []), (1, [])])
@@ -72,7 +59,7 @@ def test_terraform_stop_at_failure(subprocess_run, args_helper, config_yaml_samp
         terraform_cmd = terraform_cmd_common.copy()
         terraform_cmd += terraform_cmd_args
         terraform_cmd.append('-no-color')
-        calls.append(mock.call(terraform_cmd))
+        calls.append(mock.call(' '.join(terraform_cmd)))
 
     assert main(args) == 1
 
@@ -97,10 +84,7 @@ def test_terraform_logs(subprocess_run, terraform_cmd_args, args_helper, config_
 
     assert main(args) == 0
 
-    if isinstance(terraform_cmd_args, str):
-        cmd = terraform_cmd_args
-    else:
-        cmd = terraform_cmd_args[0]
+    cmd = terraform_cmd_args.split()[0]
     assert os.path.isfile(f"terraform.{cmd}.log.txt")
 
 
@@ -120,10 +104,7 @@ def test_terraform_logs_content(subprocess_run, terraform_cmd_args, args_helper,
 
     assert main(args) == 0
 
-    if isinstance(terraform_cmd_args, str):
-        cmd = terraform_cmd_args
-    else:
-        cmd = terraform_cmd_args[0]
+    cmd = terraform_cmd_args.split()[0]
     with open(f"terraform.{cmd}.log.txt", 'r', encoding='utf-8') as log_file:
         log_lines = log_file.read().splitlines()
     assert terraform_output == log_lines
@@ -156,16 +137,7 @@ terraform:
     subprocess_run.assert_called()
 
     calls = []
-    terraform_cmd = [
-        'one_special_terraform_exe',
-        f"-chdir={terraform_dir}"]
-    if isinstance(terraform_cmd_args, str):
-        terraform_cmd.append(terraform_cmd_args)
-    else:
-        for arg in terraform_cmd_args:
-            terraform_cmd.append(arg)
-    terraform_cmd.append('-no-color')
-    calls.append(mock.call(terraform_cmd))
+    calls.append(mock.call(f"one_special_terraform_exe -chdir={terraform_dir} {terraform_cmd_args} -no-color"))
 
     subprocess_run.assert_has_calls(calls)
 
@@ -234,12 +206,7 @@ def test_terraform_call_terraform_destroy(subprocess_run, args_helper, config_ya
 
     subprocess_run.return_value = (0, [])
     calls = []
-    calls.append(mock.call([
-        'terraform',
-        f"-chdir={terraform_dir}",
-        'destroy',
-        '-auto-approve',
-        '-no-color']))
+    calls.append(mock.call(f"terraform -chdir={terraform_dir} destroy -auto-approve -no-color"))
 
     assert main(args) == 0
     subprocess_run.assert_called()
@@ -261,9 +228,7 @@ def test_terraform_call_terraform_workspace(subprocess_run, args_helper, config_
     subprocess_run.assert_called()
 
     calls = []
-    expected_terraform_cmd = ['terraform', f"-chdir={terraform_dir}"]
-    expected_terraform_cmd.extend(['workspace', 'new', 'lucignolo', '-no-color'])
-    calls.append(mock.call(expected_terraform_cmd))
+    calls.append(mock.call(f"terraform -chdir={terraform_dir} workspace new lucignolo -no-color"))
 
     subprocess_run.assert_has_calls(calls)
 
@@ -283,11 +248,7 @@ def test_terraform_call_terraform_workspace_destroy(subprocess_run, args_helper,
     subprocess_run.assert_called()
 
     calls = []
-    expected_terraform_cmd = ['terraform', f"-chdir={terraform_dir}"]
-    expected_terraform_cmd.extend(['workspace', 'select', 'default', '-no-color'])
-    calls.append(mock.call(expected_terraform_cmd))
-    expected_terraform_cmd = ['terraform', f"-chdir={terraform_dir}"]
-    expected_terraform_cmd.extend(['workspace', 'delete', 'lucignolo', '-no-color'])
-    calls.append(mock.call(expected_terraform_cmd))
+    calls.append(mock.call(f"terraform -chdir={terraform_dir} workspace select default -no-color"))
+    calls.append(mock.call(f"terraform -chdir={terraform_dir} workspace delete lucignolo -no-color"))
 
     subprocess_run.assert_has_calls(calls)
