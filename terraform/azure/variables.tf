@@ -881,3 +881,16 @@ variable "iscsi_remote_python" {
   default     = "/usr/bin/python3"
 }
 
+# Network peering variables
+variable "ibsm_vnet_name" {
+  description = "Name of the IBSM vnet"
+  type        = string
+  default     = ""
+}
+
+variable "ibsm_rg" {
+  description = "Name of the IBSM resource group"
+  type        = string
+  default     = ""
+}
+

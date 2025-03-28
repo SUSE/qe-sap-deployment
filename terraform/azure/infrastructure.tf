@@ -313,3 +313,34 @@ resource "azurerm_network_security_group" "mysecgroup" {
     workspace = local.deployment_name
   }
 }
+
+# IBSM
+data "azurerm_virtual_network" "ibsm_vnet" {
+  count               = (var.ibsm_rg != "" && var.ibsm_vnet_name != "") ? 1 : 0
+  name                = var.ibsm_vnet_name
+  resource_group_name = var.ibsm_rg
+}
+
+# Peering from the IBSM vnet to deployment vnet
+resource "azurerm_virtual_network_peering" "ibsm_to_target" {
+  count = (var.ibsm_rg != "" && var.ibsm_vnet_name != "") ? 1 : 0
+
+  name                      = "${var.ibsm_vnet_name}-${local.vnet_name}"
+  resource_group_name       = var.ibsm_rg
+  virtual_network_name      = data.azurerm_virtual_network.ibsm_vnet[0].name
+  remote_virtual_network_id = azurerm_virtual_network.mynet[0].id
+
+  allow_virtual_network_access = true
+}
+
+# Peering from deployment vnet back to the IBSM vnet
+resource "azurerm_virtual_network_peering" "target_to_ibsm" {
+  count = (var.ibsm_rg != "" && var.ibsm_vnet_name != "") ? 1 : 0
+
+  name                      = "${local.vnet_name}-${var.ibsm_vnet_name}"
+  resource_group_name       = local.resource_group_name
+  virtual_network_name      = azurerm_virtual_network.mynet[0].name
+  remote_virtual_network_id = data.azurerm_virtual_network.ibsm_vnet[0].id
+
+  allow_virtual_network_access = true
+}
