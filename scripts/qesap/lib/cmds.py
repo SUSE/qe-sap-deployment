@@ -176,10 +176,10 @@ def cmd_terraform(configure_data, base_project, dryrun, workspace='default', des
     cmds = []
     terraform_common_cmd = [config.get_terraform_bin(), f"-chdir={cfg_paths['provider']}"]
     if destroy:
+        cmds.append(terraform_common_cmd + ['destroy', '-auto-approve', '-no-color'])
         if workspace != 'default':
             cmds.append(terraform_common_cmd + ['workspace', 'select', 'default', '-no-color'])
             cmds.append(terraform_common_cmd + ['workspace', 'delete', workspace, '-no-color'])
-        cmds.append(terraform_common_cmd + ['destroy', '-auto-approve', '-no-color'])
     else:
         cmds.append(terraform_common_cmd + ['init', '-no-color'])
         if workspace != 'default':
@@ -260,7 +260,7 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     if 'roles_path' in configure_data_ansible:
         original_env['ANSIBLE_ROLES_PATH'] = configure_data_ansible['roles_path']
 
-    # 2. Verify that needed binary are usable
+    # 2. Verify that the two needed binaries are usable
     ansible_bin_paths = {}
     for ansible_bin in ['ansible', 'ansible-playbook']:
         binpath = shutil.which(ansible_bin)
@@ -292,6 +292,16 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
         ansible_cmd_seq.append({'cmd': ['mkdir', '-p', junit]})
 
     ssh_share = ansible_common.copy()
+
+    # This is to avoid any manual intervention during first connection.
+    # Without this code it is usually needed to interactively
+    # accept the ssh host fingerprint.
+    # It is implemented using https://docs.ansible.com/ansible/latest/command_guide/intro_adhoc.html
+    #  - the binary used is 'ansible' instead of 'ansible-playbook'
+    #  - option 'all' runs the same command on all hosts in the inventory (that comes from ansible_common)
+    #  - '-a' is for running a single command remotely,
+    #  - 'true' is just the simplest possible command as th epoint is not what we run but establishing a first connection
+    # to have the fingerprint saved in the local known_host file.
     ssh_share[0] = ansible_bin_paths['ansible']
     # Don't set '--ssh-extra-args="..."' but 'ssh-extra-args=...'
     # for avoiding the ansible ssh connection failure introduced by

@@ -73,6 +73,10 @@ class CONF:
         self.conf = configure_data
 
     def get_terraform_bin(self):
+        """
+           Allow to specify a custom binary to be used in place of terraform.
+           Could be maybe used to give a try to opentofu.
+        """
         if 'bin' in self.conf['terraform']:
             return self.conf['terraform']['bin']
         # The user does not specify any custom binary in its config.yaml
@@ -126,6 +130,9 @@ class CONF:
         return True
 
     def has_tfvar_template(self):
+        """
+            Search for terraform template conf.yaml region
+        """
         if 'terraform' not in self.conf or self.conf['terraform'] is None:
             log.info("No 'terraform' in the config.yaml")
             return False
@@ -207,6 +214,9 @@ class CONF:
         return True
 
     def has_ansible(self):
+        """
+            Check if the ansible conf.yaml region is present
+        """
         return 'ansible' in self.conf
 
     @staticmethod
@@ -254,6 +264,9 @@ class CONF:
         return True
 
     def get_playbooks(self, sequence):
+        """
+            Get list of playbooks
+        """
         return self.conf['ansible'][sequence]
 
     def validate_ansible_config(self, sequence):
