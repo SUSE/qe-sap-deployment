@@ -1,0 +1,8 @@
+---
+- name: Ribes nero
+  hosts: all
+  tasks:
+    - name: Delete file created by goji.yaml
+      ansible.builtin.file:
+        path: goji.bacche
+        state: absent

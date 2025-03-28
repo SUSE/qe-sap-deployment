@@ -11,8 +11,11 @@ ansible:
   hana_urls: mirtillo
   az_storage_account_name: ribes
   az_container_name: uvaspina
-  az_sas_token: '***'
+  az_key_name: '***'
   create:
     - sambuconero.yaml
     - marasca.yaml
     - sambuconero.yaml
+    - goji.yaml
+  destroy:
+    - ribes_nero.yaml

@@ -3,7 +3,7 @@ apiver: 3
 provider: fragola
 terraform:
   variables:
-    jam: rosa_selvatica
+    fruit: lampone
 ansible:
   hana_media:
     - mora
@@ -13,4 +13,6 @@ ansible:
   az_container_name: uvaspina
   az_sas_token: '***'
   create:
+    - sambuconero.yaml
+    - marasca.yaml
     - sambuconero.yaml
