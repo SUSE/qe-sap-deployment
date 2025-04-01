@@ -4,6 +4,11 @@
 # - Private node name
 # - Public node name
 
+# Timestamp of apply
+output "Timestamp" {
+  value = timestamp()
+}
+
 # iSCSI server
 
 output "iscsisrv_ip" {
