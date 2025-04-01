@@ -173,26 +173,29 @@ def cmd_terraform(configure_data, base_project, dryrun, workspace='default', des
     if not cfg_paths:
         return Status(f"Invalid folder structure at {base_project}")
 
+    terraform_common_cmd = f"{config.get_terraform_bin()} -chdir={cfg_paths['provider']}"
+
     cmds = []
-    terraform_common_cmd = [config.get_terraform_bin(), f"-chdir={cfg_paths['provider']}"]
     if destroy:
-        cmds.append(terraform_common_cmd + ['destroy', '-auto-approve', '-no-color'])
+        cmds.append(f"{terraform_common_cmd} destroy -auto-approve")
         if workspace != 'default':
-            cmds.append(terraform_common_cmd + ['workspace', 'select', 'default', '-no-color'])
-            cmds.append(terraform_common_cmd + ['workspace', 'delete', workspace, '-no-color'])
+            cmds.append(f"{terraform_common_cmd} workspace select default")
+            cmds.append(f"{terraform_common_cmd} workspace delete {workspace}")
     else:
-        cmds.append(terraform_common_cmd + ['init', '-no-color'])
+        cmds.append(f"{terraform_common_cmd} init")
         if workspace != 'default':
-            cmds.append(terraform_common_cmd + ['workspace', 'new', workspace, '-no-color'])
-        cmds.append(terraform_common_cmd + ['plan', '-out=plan.zip', '-no-color'])
-        cmds.append(terraform_common_cmd + ['apply', '-auto-approve', 'plan.zip', '-no-color'])
+            cmds.append(f"{terraform_common_cmd} workspace new {workspace}")
+        cmds.append(f"{terraform_common_cmd} plan -out=plan.zip")
+        cmds.append(f"{terraform_common_cmd} apply -auto-approve plan.zip")
+
     for command in cmds:
+        command += ' -no-color'
         if dryrun:
-            print(' '.join(command))
+            print(command)
         else:
             ret, out = lib.process_manager.subprocess_run(command)
             log.debug("Terraform process return ret:%d", ret)
-            log_filename = f"terraform.{command[2]}.log.txt"
+            log_filename = f"terraform.{command.split()[2]}.log.txt"
             log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
             with open(log_filename, 'w', encoding='utf-8') as log_file:
                 log_file.write('\n'.join(out))
@@ -242,7 +245,7 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
         junit (str): enable junit report and provide folder where to store report
 
     Returns:
-        list of list of strings, each command is rappresented as a list of its arguments
+        list of strings, each of them is an anslble or ansible-playbook command
     """
 
     # 1. Create the environment variable set
@@ -270,16 +273,15 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
         ansible_bin_paths[ansible_bin] = binpath
 
     # 3. Compose common parts of all ansible commands
-    ansible_common = [ansible_bin_paths['ansible-playbook']]
+    #    so the set of generic arguments that apply both
+    #    to ansible and ansible-playbook
+    ansible_common = '-vv'
     if verbose:
-        ansible_common.append('-vvvv')
-    else:
-        ansible_common.append('-vv')
-    ansible_common.append('-i')
-    ansible_common.append(inventory)
+        # add two more 'v' without any space
+        ansible_common += 'vv'
+    ansible_common += f" -i {inventory}"
 
-    # 4. Start composing and accumulating the list of all needed commands
-    ansible_cmd = []
+    # 4. Start composing and accumulating all needed commands in a list
     ansible_cmd_seq = []
 
     if junit and not os.path.isdir(junit):
@@ -289,9 +291,7 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
         # the folder is not created.
         # Create an empty folder in advance, if it is not already there
         # so that the glue script called can always suppose that at least the folder is present.
-        ansible_cmd_seq.append({'cmd': ['mkdir', '-p', junit]})
-
-    ssh_share = ansible_common.copy()
+        ansible_cmd_seq.append({'cmd': f"mkdir -p {junit}"})
 
     # This is to avoid any manual intervention during first connection.
     # Without this code it is usually needed to interactively
@@ -300,34 +300,42 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     #  - the binary used is 'ansible' instead of 'ansible-playbook'
     #  - option 'all' runs the same command on all hosts in the inventory (that comes from ansible_common)
     #  - '-a' is for running a single command remotely,
-    #  - 'true' is just the simplest possible command as th epoint is not what we run but establishing a first connection
+    #  - 'true' is just the simplest possible command as the point is not what we run but establishing a first connection
     # to have the fingerprint saved in the local known_host file.
-    ssh_share[0] = ansible_bin_paths['ansible']
+    ssh_share = f"{ansible_bin_paths['ansible']} {ansible_common} all -a true"
     # Don't set '--ssh-extra-args="..."' but 'ssh-extra-args=...'
     # for avoiding the ansible ssh connection failure introduced by
     # https://github.com/ansible/ansible/pull/78826 in "ansible-core 2.15.0"
-    ssh_share.extend([
-        'all', '-a', 'true',
-        '--ssh-extra-args=-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new'])
+    ssh_share += ' --ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'
     ansible_cmd_seq.append({'cmd': ssh_share})
 
     for playbook in configure_data_ansible[sequence]:
-        ansible_cmd = ansible_common.copy()
-        playbook_cmd = playbook.split(' ')
+        # playbook input is here from the conf.yaml
+        # 1. it could be a string only with one playbook file name, no path
+        # 2. it could have some arguments, so single string with arguments separated by spaces
+        # 3. it could have variables to be resolved (variables are a custom internal string replacement concept)
+        #
+        # Before to run compose the command line, apply some normalization:
+        # 1. the path of the playbook is converted to absolute path.
+        #    The existence of the playbook file has been already checked during the configure stage
+        # 2. any variable is substituted with its value
         log.debug("playbook:%s", playbook)
+
         # get the file named in the conf.yaml from playbook_cmd
         # and append the full path within the repo folder
-        playbook_filename = os.path.join(base_project, 'ansible', 'playbooks', playbook_cmd[0])
-        ansible_cmd.append(playbook_filename)
-        for ply_cmd in playbook_cmd[1:]:
-            match = re.search(r'\${(.*)}', ply_cmd)
-            if match:
-                value = str(configure_data_ansible['variables'][match.group(1)])
-                log.debug("Replace value %s in %s", value, ply_cmd)
-                ansible_cmd.append(re.sub(r'\${(.*)}', value, ply_cmd))
-            else:
-                ansible_cmd.append(ply_cmd)
-        ansible_cmd_seq.append({'cmd': ansible_cmd, 'env': original_env})
+        playbook_filename = playbook.split()[0]
+        playbook_abs_filename = os.path.join(base_project, 'ansible', 'playbooks', playbook_filename)
+        playbook = re.sub(playbook_filename, playbook_abs_filename, playbook)
+
+        # look for variable in the form of `${SOMENAME}`
+        for match in re.findall(r'\${[A-Za-z0-9_\-]+}', playbook):
+            # 2 and -1 are to remove ${ and }
+            value = str(configure_data_ansible['variables'][match[2:-1]])
+            log.debug("Replace value %s in %s", value, playbook)
+            playbook = re.sub(rf'\${{{match[2:-1]}}}', value, playbook)
+
+        # Finally compose the command ansible-playbook using the resolved `playbook` string
+        ansible_cmd_seq.append({'cmd': f"{ansible_bin_paths['ansible-playbook']} {ansible_common} {playbook}", 'env': original_env})
     return True, ansible_cmd_seq
 
 
@@ -341,13 +349,13 @@ def ansible_export_output(command, out):
     - write to the file the content of the out variable. Each element of the out list to a new file line
 
     Args:
-        command (str list): one cmd element as prepared by ansible_command_sequence
+        command (str): one cmd element as prepared by ansible_command_sequence
         out (str list): as returned by subprocess_run
     """
     # log name has to be derived from the name of the playbook:
     # search the playbook name in all command words.
     playbook_path = None
-    for cmd_element in command:
+    for cmd_element in command.split():
         match = re.search(rf"{os.path.join('ansible', 'playbooks')}.*", cmd_element)
         if match:
             playbook_path = cmd_element
@@ -406,12 +414,12 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
 
     for command in ansible_cmd_seq:
         if dryrun:
-            print(' '.join(command['cmd']))
+            print(command['cmd'])
         else:
             ret, out = lib.process_manager.subprocess_run(**command)
             log.debug("Ansible process return ret:%d", ret)
             # only write separated files for ansible-playbook commands
-            if 'ansible-playbook' in command['cmd'][0]:
+            if 'ansible-playbook' in command['cmd']:
                 ansible_export_output(command['cmd'], out)
             if ret != 0:
                 log.error("command:%s returned non zero %d", command, ret)

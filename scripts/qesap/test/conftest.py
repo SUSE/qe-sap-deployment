@@ -201,16 +201,7 @@ ANSIBLEPB_EXE = FAKE_BIN_PATH + "ansible-playbook"
 @pytest.fixture()
 def ansible_exe_call():
     def _callback(inventory):
-        return [
-            ANSIBLE_EXE,
-            "-vv",
-            "-i",
-            inventory,
-            "all",
-            "-a",
-            "true",
-            '--ssh-extra-args=-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new',
-        ]
+        return f"{ANSIBLE_EXE} -vv -i {inventory} all -a true --ssh-extra-args=\"-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new\""
 
     return _callback
 
@@ -220,7 +211,7 @@ def mock_call_ansibleplaybook():
     """
     create a mock.call with some default elements
     ```
-    mock.call(['ansible-playbook', '-i', inventory, playbook], env={'ANSIBLE_PIPELINING', 'True'})
+    mock.call('ansible-playbook -i inventory, playbook', env={'ANSIBLE_PIPELINING', 'True'})
     ```
     """
 
@@ -233,7 +224,7 @@ def mock_call_ansibleplaybook():
             original_env["ANSIBLE_PIPELINING"] = "True"
         else:
             original_env = env
-        return mock.call(cmd=playbook_cmd, env=original_env)
+        return mock.call(cmd=' '.join(playbook_cmd), env=original_env)
 
     return _callback
 

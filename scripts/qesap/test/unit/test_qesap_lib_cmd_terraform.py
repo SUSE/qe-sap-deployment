@@ -176,16 +176,8 @@ terraform:
         ["This is the terraform output", "Two lines of that"],
     )
 
-    # Set expectation
-    calls = []
-    terraform_cmd = ["terraform", f"-chdir={provider_folder}"]
-    # Just test one of them
-    terraform_cmd.append("init")
-    terraform_cmd.append("-no-color")
-    calls.append(mock.call(terraform_cmd))
-
     ret = cmd_terraform(data, tmpdir, False)
 
     assert ret == 0
-
-    subprocess_run.assert_has_calls(calls)
+    # init just test one of them
+    subprocess_run.assert_has_calls([mock.call(f"terraform -chdir={provider_folder} init -no-color")])
