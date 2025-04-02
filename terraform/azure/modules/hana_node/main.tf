@@ -380,6 +380,9 @@ resource "azurerm_virtual_machine_data_disk_attachment" "hana_data_disk_attachme
   virtual_machine_id = azurerm_linux_virtual_machine.hana[floor(count.index / local.disks_number)].id
   lun                = count.index % local.disks_number
   caching            = element(local.disks_caching, count.index % local.disks_number)
+  timeouts {
+    read = "30m"
+  }
 }
 
 resource "azurerm_linux_virtual_machine" "hana" {
