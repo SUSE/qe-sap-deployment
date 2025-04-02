@@ -1,10 +1,10 @@
-flake8==6.*
-flake8-bugbear==23.5.*
+flake8==7.*
+flake8-bugbear==24.12.*
 hypothesis==6.*
-pylint==3.1.*
+pylint==3.3.*
 pytest==8.2.*
 pytest-subprocess
 pytest-find-dependencies
 detect-test-pollution
-yamllint==1.35.*
+yamllint==1.36.*
 ansible-lint

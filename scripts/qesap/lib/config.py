@@ -240,7 +240,7 @@ class CONF:
 
         for var in ['az_storage_account_name', 'az_container_name']:
             if var not in ansible_conf:
-                log.error("Missing '%s' in 'ansible' in the config", var)
+                log.error("Missing '%s' in 'ansible' in the config: %s", var, ansible_conf)
                 return False
 
         if 'az_sas_token' not in ansible_conf and 'az_key_name' not in ansible_conf:
