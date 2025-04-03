@@ -164,14 +164,16 @@ def main(command_line=None):  # pylint: disable=too-many-return-statements
         res = cmd_deploy(
             parsed_args.configdata,
             parsed_args.basedir,
-            parsed_args.dryrun
+            parsed_args.dryrun,
+            parsed_args.verbose
         )
     elif parsed_args.command == "destroy":
         log.info("Destroying...")
         res = cmd_destroy(
             parsed_args.configdata,
             parsed_args.basedir,
-            parsed_args.dryrun
+            parsed_args.dryrun,
+            parsed_args.verbose
         )
     elif parsed_args.command == "terraform":
         log.info("Running Terraform...")

@@ -103,7 +103,10 @@ def cmd_configure(configure_data, base_project, dryrun):
 
     if dryrun:
         print(f"Create {cfg_paths['tfvars_file']} with content {tfvar_content}")
-        print(f"Create {cfg_paths['hana_media_file']} with content {hanamedia_content}")
+        if config.has_ansible():
+            print(f"Create {cfg_paths['hana_media_file']} with content {hanamedia_content}")
+            if 'hana_vars' in configure_data['ansible'] and configure_data['apiver'] >= 2:
+                print(f"Create {cfg_paths['hana_vars_file']} with content {configure_data['ansible']['hana_vars']}")
     else:
         log.info("Write .tfvars %s", cfg_paths['tfvars_file'])
         with open(cfg_paths['tfvars_file'], 'w', encoding='utf-8') as file:
@@ -121,7 +124,7 @@ def cmd_configure(configure_data, base_project, dryrun):
     return Status('ok')
 
 
-def cmd_deploy(configure_data, base_project, dryrun):
+def cmd_deploy(configure_data, base_project, dryrun=False, verbose=False):
     """ Main executor for the deploy sub-command
 
     Args:
@@ -129,14 +132,21 @@ def cmd_deploy(configure_data, base_project, dryrun):
         base_project (str): base project path where to
                       look for the Terraform and Ansible files
         dryrun (bool): enable dryrun execution mode
+        verbose (bool): enable more verbosity
 
     Returns:
         int: execution result, 0 means OK. It is mind to be used as script exit code
     """
-    return Status('TBD')
+    res = cmd_configure(configure_data, base_project, dryrun)
+    if res != 0:
+        return res
+    res = cmd_terraform(configure_data, base_project, dryrun, workspace='default', destroy=False)
+    if res != 0:
+        return res
+    return cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False)
 
 
-def cmd_destroy(configure_data, base_project, dryrun):
+def cmd_destroy(configure_data, base_project, dryrun=False, verbose=False):
     """ Main executor for the deploy sub-command
 
     Args:
@@ -144,11 +154,15 @@ def cmd_destroy(configure_data, base_project, dryrun):
         base_project (str): base project path where to
                       look for the Terraform and Ansible files
         dryrun (bool): enable dryrun execution mode
+        verbose (bool): enable more verbosity
 
     Returns:
         int: execution result, 0 means OK. It is mind to be used as script exit code
     """
-    return Status('TBD')
+    res = cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=True)
+    if res != 0:
+        return res
+    return cmd_terraform(configure_data, base_project, dryrun, workspace='default', destroy=True)
 
 
 def cmd_terraform(configure_data, base_project, dryrun, workspace='default', destroy=False):

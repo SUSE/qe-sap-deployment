@@ -647,3 +647,71 @@ echo "Run the script again without dryrun"
 qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} ansible -d |& tee "${THIS_LOG}"
 [[ ! -f "${FILE_TOUCH_BY_ANSIBLE}" ]] || test_die "File ${FILE_TOUCH_BY_ANSIBLE} has to be deleted by ribes_nero.yaml"
 
+
+echo "#######################################################################"
+echo "###                                                                 ###"
+echo "###                           D E P L O Y                           ###"
+echo "###                                                                 ###"
+echo "#######################################################################"
+test_step "Deploy help"
+qesap.py deploy --help || test_die "qesap.py deploy help failure"
+
+#######################################################################
+QESAP_CFG=test_8.yaml
+test_step "[${QESAP_CFG}] Run deploy dryrun"
+THIS_LOG="${QESAPROOT}/deploy.log"
+rm "${THIS_LOG}" || echo "No ${THIS_LOG} to delete"
+reset_root
+cp goji.yaml "${QESAPROOT}/ansible/playbooks/"
+cp ribes_nero.yaml "${QESAPROOT}/ansible/playbooks/"
+cp inventory.yaml "${TEST_PROVIDER}/"
+
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun deploy || test_die "${QESAP_CFG} fail on deploy"
+
+test_split
+echo "Run the script again collecting the output"
+qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun deploy |& tee "${THIS_LOG}"
+
+set +e
+count=$(grep -cE "terraform " "${THIS_LOG}")
+[[ $count -eq 3 ]] || test_die "${THIS_LOG} there is not exactly 3 terraform lines but $count."
+
+count=$(grep -cE "ansible " "${THIS_LOG}")
+[[ $count -eq 1 ]] || test_die "${THIS_LOG} there is not exactly 1 ansible line but $count."
+
+count=$(grep -cE "ansible-playbook " "${THIS_LOG}")
+[[ $count -eq 1 ]] || test_die "${THIS_LOG} there is not exactly 1 ansible-playbook line but $count."
+set -e
+rm "${THIS_LOG}"
+
+#######################################################################
+QESAP_CFG=test_8.yaml
+test_step "[${QESAP_CFG}] Run deploy"
+rm "${THIS_LOG}" || echo "No ${THIS_LOG} to delete"
+reset_root
+
+cp main_local.tf "${TEST_PROVIDER}/main.tf"
+cp goji.yaml "${QESAPROOT}/ansible/playbooks/"
+cp ribes_nero.yaml "${QESAPROOT}/ansible/playbooks/"
+cp inventory.yaml "${TEST_PROVIDER}/"
+
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} deploy |& tee "${THIS_LOG}"
+test_file "${TEST_PROVIDER}/foo.bar"
+test_file "${FILE_TOUCH_BY_ANSIBLE}"
+
+
+echo "#######################################################################"
+echo "###                                                                 ###"
+echo "###                         D E S T R O Y                           ###"
+echo "###                                                                 ###"
+echo "#######################################################################"
+test_step "Deploy help"
+qesap.py destroy --help || test_die "qesap.py deploy help failure"
+
+#######################################################################
+qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun destroy |& tee -a "${THIS_LOG}"
+
+test_split
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} destroy |& tee -a "${THIS_LOG}"
+[[ ! -f "${TEST_PROVIDER}/foo.bar" ]] || test_die "File ${TEST_PROVIDER}/foo.bar has to be deleted by terraform"
+[[ ! -f "${FILE_TOUCH_BY_ANSIBLE}" ]] || test_die "File ${FILE_TOUCH_BY_ANSIBLE} has to be deleted by ribes_nero.yaml"
