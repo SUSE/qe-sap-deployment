@@ -17,6 +17,8 @@
         name: '*'
         state: latest
         type: patch
+      environment:
+        ZYPP_LOCK_TIMEOUT: 120
       notify: Reboot after patch
 
   handlers:
