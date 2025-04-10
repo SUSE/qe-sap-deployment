@@ -48,6 +48,7 @@ locals {
   shared_storage_anf = (var.hana_scale_out_shared_storage_type == "anf" || var.netweaver_shared_storage_type == "anf") ? 1 : 0
   anf_account_name   = local.shared_storage_anf == 1 ? (var.anf_account_name == "" ? azurerm_netapp_account.mynetapp-acc.0.name : var.anf_account_name) : ""
   anf_pool_name      = local.shared_storage_anf == 1 ? (var.anf_pool_name == "" ? azurerm_netapp_pool.mynetapp-pool.0.name : var.anf_pool_name) : ""
+  ibsm_count         = (var.ibsm_rg != "" && var.ibsm_vnet_name != "") ? 1 : 0
 }
 
 # Azure resource group and storage account resources. Create one here
@@ -316,15 +317,14 @@ resource "azurerm_network_security_group" "mysecgroup" {
 
 # IBSM
 data "azurerm_virtual_network" "ibsm_vnet" {
-  count               = (var.ibsm_rg != "" && var.ibsm_vnet_name != "") ? 1 : 0
+  count               = local.ibsm_count
   name                = var.ibsm_vnet_name
   resource_group_name = var.ibsm_rg
 }
 
 # Peering from the IBSM vnet to deployment vnet
 resource "azurerm_virtual_network_peering" "ibsm_to_target" {
-  count = (var.ibsm_rg != "" && var.ibsm_vnet_name != "") ? 1 : 0
-
+  count                     = local.ibsm_count
   name                      = "${var.ibsm_vnet_name}-${local.vnet_name}"
   resource_group_name       = var.ibsm_rg
   virtual_network_name      = data.azurerm_virtual_network.ibsm_vnet[0].name
@@ -335,8 +335,7 @@ resource "azurerm_virtual_network_peering" "ibsm_to_target" {
 
 # Peering from deployment vnet back to the IBSM vnet
 resource "azurerm_virtual_network_peering" "target_to_ibsm" {
-  count = (var.ibsm_rg != "" && var.ibsm_vnet_name != "") ? 1 : 0
-
+  count                     = local.ibsm_count
   name                      = "${local.vnet_name}-${var.ibsm_vnet_name}"
   resource_group_name       = local.resource_group_name
   virtual_network_name      = azurerm_virtual_network.mynet[0].name

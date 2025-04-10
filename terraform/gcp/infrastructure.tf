@@ -21,6 +21,7 @@ locals {
   subnet_address_range = var.subnet_name == "" ? var.ip_cidr_range : (var.ip_cidr_range == "" ? data.google_compute_subnetwork.current-subnet.0.ip_cidr_range : var.ip_cidr_range)
 
   create_firewall = var.create_firewall_rules ? 1 : 0
+  ibsm_count      = (var.ibsm_vpc_name != "" && var.ibsm_subnet_name != "" && var.ibsm_subnet_region != "") ? 1 : 0
 }
 
 # Network resources: Network, Subnet
@@ -87,12 +88,12 @@ resource "google_compute_firewall" "ha_firewall_allow_tcp" {
 # IBSM related network imports
 
 data "google_compute_network" "ibsm_vpc" {
-  count = var.enable_ibsm_peering
+  count = local.ibsm_count
   name  = var.ibsm_vpc_name
 }
 
 data "google_compute_subnetwork" "ibsm_subnet" {
-  count  = var.enable_ibsm_peering
+  count  = local.ibsm_count
   name   = var.ibsm_subnet_name
   region = var.ibsm_subnet_region
 }
@@ -101,7 +102,7 @@ data "google_compute_subnetwork" "ibsm_subnet" {
 
 # Peering from HANA VPC to ibsm VPC
 resource "google_compute_network_peering" "hana_to_ibsm" {
-  count = var.enable_ibsm_peering
+  count = local.ibsm_count
 
   name                 = "${local.deployment_name}-hana-to-ibsm"
   network              = local.network_link
@@ -112,7 +113,7 @@ resource "google_compute_network_peering" "hana_to_ibsm" {
 
 # Peering from ibsm VPC to HANA VPC
 resource "google_compute_network_peering" "ibsm_to_hana" {
-  count = var.enable_ibsm_peering
+  count = local.ibsm_count
 
   name                 = "ibsm-to-${local.deployment_name}-hana"
   network              = data.google_compute_network.ibsm_vpc[0].self_link
@@ -123,7 +124,7 @@ resource "google_compute_network_peering" "ibsm_to_hana" {
 
 # Allow internal traffic from HANA VPC to ibsm VPC
 resource "google_compute_firewall" "allow_internal_from_hana" {
-  count = var.enable_ibsm_peering
+  count = local.ibsm_count
 
   name    = "${local.deployment_name}-fw-allow-from-hana"
   network = data.google_compute_network.ibsm_vpc[0].name
@@ -143,7 +144,7 @@ resource "google_compute_firewall" "allow_internal_from_hana" {
 
 # Allow internal traffic from ibsm VPC to HANA VPC
 resource "google_compute_firewall" "allow_internal_from_ibsm" {
-  count = var.enable_ibsm_peering
+  count = local.ibsm_count
 
   name    = "${local.deployment_name}-fw-allow-from-ibsm"
   network = local.vpc_name

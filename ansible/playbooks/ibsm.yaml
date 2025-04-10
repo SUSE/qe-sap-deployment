@@ -17,7 +17,6 @@
       loop:
         - 'ibsm_ip'
         - 'download_hostname'
-        - 'repos'
 
     - name: Add mirror to hosts
       ansible.builtin.lineinfile:
@@ -34,6 +33,7 @@
       loop: "{{ repos.split(',') }}"
       loop_control:
         index_var: repo_id
+      when: repos | length > 0
 
     - name: Refresh all repos
       community.general.zypper_repository:
