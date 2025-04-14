@@ -165,15 +165,17 @@ def cmd_destroy(configure_data, base_project, dryrun=False, verbose=False):
     return cmd_terraform(configure_data, base_project, dryrun, workspace='default', destroy=True)
 
 
-def cmd_terraform(configure_data, base_project, dryrun, workspace='default', destroy=False):
+def cmd_terraform(configure_data, base_project, dryrun, workspace='default', destroy=False, parallel=None):
     """ Main executor for the deploy sub-command
 
     Args:
         configure_data (obj): configuration structure
         base_project (str): base project path where to
                       look for the Terraform files
-        destroy (bool): destroy
         dryrun (bool): enable dryrun execution mode
+        workspace (str): name of the workspace to activate before running the deployment
+        destroy (bool): destroy
+        parallel (int): value to use for argument --parallelism=n when call terraform plan and apply
 
     Returns:
         Status: execution result, 0 means OK. It is mind to be used as script exit code
@@ -199,8 +201,11 @@ def cmd_terraform(configure_data, base_project, dryrun, workspace='default', des
         cmds.append(f"{terraform_common_cmd} init")
         if workspace != 'default':
             cmds.append(f"{terraform_common_cmd} workspace new {workspace}")
-        cmds.append(f"{terraform_common_cmd} plan -out=plan.zip")
-        cmds.append(f"{terraform_common_cmd} apply -auto-approve plan.zip")
+        parallel_str = ''
+        if parallel:
+            parallel_str = f"-parallelism={parallel} "
+        cmds.append(f"{terraform_common_cmd} plan {parallel_str}-out=plan.zip")
+        cmds.append(f"{terraform_common_cmd} apply {parallel_str}-auto-approve plan.zip")
 
     for command in cmds:
         command += ' -no-color'

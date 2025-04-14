@@ -114,6 +114,11 @@ def cli(command_line=None):
                                   dest='workspace',
                                   default='default',
                                   help="""Workspace to use in terraform commands. Defaults to 'default'""")
+    parser_terraform.add_argument('-p',
+                                  '--parallel',
+                                  type=int,
+                                  dest='parallel',
+                                  help="""Set value for -parallelism for plan and apply""")
     parser_ansible = subparsers.add_parser('ansible', help="Run the Ansible part of the deployment")
     parser_ansible.add_argument('-d',
                                 '--destroy',
@@ -182,7 +187,8 @@ def main(command_line=None):  # pylint: disable=too-many-return-statements
             parsed_args.basedir,
             parsed_args.dryrun,
             workspace=parsed_args.workspace,
-            destroy=parsed_args.destroy
+            destroy=parsed_args.destroy,
+            parallel=parsed_args.parallel
         )
         if res != 0:
             print(res.msg)  # should we use file=sys.stderr here?
