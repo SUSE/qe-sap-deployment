@@ -252,3 +252,24 @@ def test_terraform_call_terraform_workspace_destroy(subprocess_run, args_helper,
     calls.append(mock.call(f"terraform -chdir={terraform_dir} workspace delete lucignolo -no-color"))
 
     subprocess_run.assert_has_calls(calls)
+
+
+@mock.patch("lib.process_manager.subprocess_run")
+def test_terraform_call_terraform_parallel(subprocess_run, args_helper, config_yaml_sample):
+    """
+    Command terraform calls 'terraform plan' and 'terraform apply' with -parallelism=n
+    """
+    provider = 'mangiafuoco'
+    conf = config_yaml_sample(provider)
+
+    args, terraform_dir, *_ = args_helper(provider, conf)
+    args.extend(['terraform', '-p', '5'])
+    subprocess_run.return_value = (0, [])
+    assert main(args) == 0
+    subprocess_run.assert_called()
+
+    calls = []
+    calls.append(mock.call(f"terraform -chdir={terraform_dir} plan -parallelism=5 -out=plan.zip -no-color"))
+    calls.append(mock.call(f"terraform -chdir={terraform_dir} apply -parallelism=5 -auto-approve plan.zip -no-color"))
+
+    subprocess_run.assert_has_calls(calls)
