@@ -20,8 +20,8 @@
       ansible.builtin.command: SUSEConnect -s
       register: repos
       until: repos.rc == 0
-      retries: 10
-      delay: 60
+      retries: 5
+      delay: 120
       failed_when: repos.rc != 0
       changed_when: false
 
