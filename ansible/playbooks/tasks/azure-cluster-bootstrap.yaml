@@ -30,40 +30,6 @@
       ansible_distribution_version is version('15.5', '==') or
       ansible_distribution_version is version('12.5', '==')
 
-- name: Get the status of all extensions
-  ansible.builtin.command:
-    cmd: SUSEConnect -s
-  register: sc_status
-  changed_when: false
-
-- name: Set public cloud extension fact
-  ansible.builtin.set_fact:
-    public_cloud_module: "{{ (sc_status.stdout | from_json | json_query(jmesquery))[0] }}"
-  vars:
-    jmesquery: "[? identifier==`sle-module-public-cloud`].status"
-
-- name: Debug
-  ansible.builtin.debug:
-    var: public_cloud_module
-
-- name: Activate public cloud module [SLES 12]
-  ansible.builtin.command:
-    cmd: SUSEConnect -p sle-module-public-cloud/12/x86_64  # Only works on x86_64 for now!
-  register: __suseconnect_sle_module_public_cloud_12
-  changed_when: __suseconnect_sle_module_public_cloud_12.rc == 0
-  when:
-    - ansible_distribution_major_version == '12'
-    - public_cloud_module != 'Registered'
-
-- name: Activate public cloud module [SLES 15]
-  ansible.builtin.command:
-    cmd: "SUSEConnect -p sle-module-public-cloud/{{ ansible_distribution_version }}/x86_64"  # Only works on x86_64 for now!
-  register: __suseconnect_sle_module_public_cloud_15
-  changed_when: __suseconnect_sle_module_public_cloud_15.rc == 0
-  when:
-    - ansible_distribution_major_version == '15'
-    - public_cloud_module != 'Registered'
-
 # For SLES 12 a we need to force a downgrade of python-azure-core see https://www.suse.com/support/kb/doc/?id=000020716
 - name: Ensure Azure Python SDK and Azure Identity python modules are installed [12sp5]
   community.general.zypper:
