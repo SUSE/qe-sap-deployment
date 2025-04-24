@@ -275,7 +275,7 @@ ansible:
 
 def test_configure_ansible_hana(configure_helper):
     """
-    Test that 'configure' fails if manadatory params are missing
+    Test that 'configure' fails if mandatory params are missing
     """
     provider = "pinocchio"
     conf = f"""---
