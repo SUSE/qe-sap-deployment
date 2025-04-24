@@ -20,13 +20,13 @@ def test_cli_help(capsys):
     assert "usage:" in result
 
 
-def test_cli_configure_noargs(check_manadatory_args):
+def test_cli_configure_noargs(check_mandatory_args):
     '''
     configure subcommand at least needs:
     -b to know where to write the terraform.tfvars
     -c to know what to write in the terraform.tfvars
     '''
-    assert check_manadatory_args(cli, 'configure')
+    assert check_mandatory_args(cli, 'configure')
 
 
 def test_cli_configure_b_notexist(capsys, tmpdir):
@@ -110,13 +110,13 @@ def test_cli_destroy(base_args):
     cli(args)
 
 
-def test_cli_terraform_noargs(check_manadatory_args):
+def test_cli_terraform_noargs(check_mandatory_args):
     '''
     terraform subcommand at least needs:
     -b to know where to look for the Terraform files to run
     -c to know the Cloud Provider subfolder to use
     '''
-    assert check_manadatory_args(cli, 'terraform')
+    assert check_mandatory_args(cli, 'terraform')
 
 
 def test_cli_terraform(base_args):
@@ -149,7 +149,7 @@ def test_cli_terraform_workspace(base_args):
     cli(args)
 
 
-def test_cli_ansible_noargs(check_manadatory_args):
+def test_cli_ansible_noargs(check_mandatory_args):
     '''
     ansible subcommand at least needs:
     -b to know where to look for the Ansible playbooks
@@ -157,7 +157,7 @@ def test_cli_ansible_noargs(check_manadatory_args):
     -c to know the list of Ansible Playbooks
        to play and other setting for them (like the SCC reg code)
     '''
-    assert check_manadatory_args(cli, 'ansible')
+    assert check_mandatory_args(cli, 'ansible')
 
 
 def test_cli_ansible(base_args):

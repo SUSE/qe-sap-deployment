@@ -373,7 +373,7 @@ def check_duplicate():
 
 
 @pytest.fixture
-def check_manadatory_args(capsys, tmpdir):
+def check_mandatory_args(capsys, tmpdir):
     """
     Given a cli to test and a subcommand string,
     check that both -c and -b are mandatory
