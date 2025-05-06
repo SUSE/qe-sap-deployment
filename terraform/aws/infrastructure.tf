@@ -236,3 +236,70 @@ resource "aws_security_group_rule" "grafana_server" {
 
   security_group_id = local.security_group_id
 }
+
+# IBSM imported resources
+
+locals {
+  ibsm_peering_count = var.ibsm_project_tag != "" ? 1 : 0
+
+  # The subnets defined in this file in the form of an
+  # AZ -> subnet map. If more than one subnets exist in the same AZ,
+  # only one is kept.
+  infra_subnets_by_az = {
+    for s in [aws_subnet.infra-subnet] :
+    s.availability_zone => s.id
+  }
+  # The subnets from the root and all modules, merged in the form of an
+  # AZ -> subnet map. The module maps are exported by the modules.
+  all_subnets_by_az = merge(
+    local.infra_subnets_by_az,
+    module.hana_node.subnets_by_az,
+    module.drbd_node.subnets_by_az,
+    module.netweaver_node.subnets_by_az,
+  )
+  one_per_az_subnet_ids = values(local.all_subnets_by_az)
+}
+
+data "aws_vpc" "ibsm" {
+  count = local.ibsm_peering_count
+
+  filter {
+    name   = "tag:Project"
+    values = [var.ibsm_project_tag]
+  }
+}
+
+
+data "aws_ec2_transit_gateway" "ibsm" {
+  count = local.ibsm_peering_count
+
+  filter {
+    name   = "tag:Project"
+    values = [var.ibsm_project_tag]
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+}
+
+resource "aws_ec2_transit_gateway_vpc_attachment" "ibsm" {
+  count = local.ibsm_peering_count
+
+  vpc_id             = local.vpc_id
+  transit_gateway_id = data.aws_ec2_transit_gateway.ibsm[0].id
+  subnet_ids         = local.one_per_az_subnet_ids # One subnet per AZ
+
+  tags = {
+    Name      = "${local.deployment_name}-tgw-attach"
+    workspace = local.deployment_name
+  }
+}
+
+resource "aws_route" "to_ibsm_via_tgw" {
+  count                  = local.ibsm_peering_count
+  route_table_id         = aws_route_table.route-table.id
+  destination_cidr_block = data.aws_vpc.ibsm[0].cidr_block
+  transit_gateway_id     = data.aws_ec2_transit_gateway.ibsm[0].id
+}

@@ -18,3 +18,10 @@ output "drbd_name" {
 output "drbd_public_name" {
   value = data.aws_instance.drbd.*.public_dns
 }
+
+output "subnets_by_az" {
+  value = {
+    for s in aws_subnet.drbd-subnet :
+    s.availability_zone => s.id
+  }
+}

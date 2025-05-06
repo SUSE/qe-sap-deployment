@@ -746,3 +746,8 @@ variable "iscsi_remote_python" {
   default     = "/usr/bin/python3"
 }
 
+variable "ibsm_project_tag" {
+  description = "IBSM tgw 'Project' tag - leave empty to disable terraform peering."
+  type        = string
+  default     = ""
+}
