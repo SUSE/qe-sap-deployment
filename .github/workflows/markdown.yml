@@ -3,15 +3,15 @@ name: 'Markdown'
 on:
   push:
     branches:
-      - "main"
+      - 'main'
   pull_request:
     paths:
-      - README.md
-      - CONTRIBUTING.md
-      - terraform/aws/README.md
-      - terraform/azure/README.md
-      - terraform/gcp/README.md
-      - .github/workflows/markdown.yml
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'terraform/aws/README.md'
+      - 'terraform/azure/README.md'
+      - 'terraform/gcp/README.md'
+      - '.github/workflows/markdown.yml'
 
 permissions:
   contents: read

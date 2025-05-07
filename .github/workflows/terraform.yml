@@ -1,48 +1,46 @@
-name: 'Terraform'
+name: Terraform
 
 on:
   push:
     branches:
-      - "main"
+      - 'main'
   pull_request:
     paths:
-      - terraform/**
-      - .github/workflows/terraform.yml
-
-permissions:
-  contents: read
+      - 'terraform/**'
+      - '.github/workflows/terraform.yml'
 
 env:
+  PYTEST_ADDOPTS: "--color=yes"
+  PYTHON_VERSION: 3.11
+  TF_PLUGIN_CACHE_DIR: "/home/runner/.terraform.d/plugin-cache"
   TF_VERSION: 1.5.7
+  TFTESTS_FOLDER: "terraform/tests"
 
 jobs:
   terraform:
-    name: 'Terraform'
     runs-on: ubuntu-latest
-    environment: production
     strategy:
       matrix:
         provider: ['azure', 'gcp', 'aws']
 
-    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
       run:
         shell: bash
         working-directory: terraform/${{ matrix.provider }}
 
     steps:
-    # Checkout the repository to the GitHub Actions runner
     - name: Checkout
       uses: actions/checkout@v3
 
-    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    # Install the specific version of Terraform that the project support and
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
       with:
         terraform_version: ${{ env.TF_VERSION }}
         terraform_wrapper: false
 
-    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    # Initialize each CSP Terraform working directory
+    # by creating initial files, downloading modules, etc.
     - name: Terraform Init
       run: terraform init
 
@@ -53,3 +51,23 @@ jobs:
     # Validate
     - name: Terraform Validate
       run: terraform validate
+
+  tftest:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Install the specific version of Terraform that the project support and
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+        terraform_wrapper: false
+
+    - name: Run tftests
+      run: |
+        mkdir -p ${{ env.TF_PLUGIN_CACHE_DIR }}
+        pip install -r ${{ env.TFTESTS_FOLDER }}/requirements.txt
+        pytest -vv -o log_cli=true -o log_cli_level=10 ${{ env.TFTESTS_FOLDER }}

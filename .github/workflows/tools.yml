@@ -1,16 +1,20 @@
 name: Tools environment
-
+# Purpose of this workflow is to check that all binary the project
+# is recommending are installable and usable on openSUSE TW.
+# This workflow refer to th eDockerfile in the root of the repo.
 on:
   push:
     branches:
-      - "main"
+      - 'main'
   pull_request:
     paths:
-      - Dockerfile
-      - requirements.txt
-      - requirements.yml
-      - .github/workflows/tools.yml
-
+      - 'Dockerfile'
+      - 'requirements.txt'
+      - 'requirements.yml'
+      - '.github/workflows/tools.yml'
+      - 'terraform/azure/version.tf'
+      - 'terraform/aws/version.tf'
+      - 'terraform/gcp/version.tf'
 env:
   REGISTRY: ghcr.io
 
