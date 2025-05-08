@@ -3,12 +3,12 @@ name: Ansible
 on:
   push:
     branches:
-      - "main"
+      - 'main'
   pull_request:
     paths:
-      - ansible/**
-      - requirements.txt
-      - .github/workflows/ansible.yml
+      - 'ansible/**'
+      - 'requirements.txt'
+      - '.github/workflows/ansible.yml'
 
 jobs:
   build:
