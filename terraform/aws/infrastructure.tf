@@ -236,3 +236,55 @@ resource "aws_security_group_rule" "grafana_server" {
 
   security_group_id = local.security_group_id
 }
+
+# IBSM Peering resources
+
+data "aws_vpc" "ibsm" {
+  count = var.ibsm_vpc_id != "" ? 1 : 0
+  id    = var.ibsm_vpc_id
+}
+
+data "aws_route_tables" "ibsm" {
+  count = var.ibsm_vpc_id != "" ? 1 : 0
+
+  filter {
+    name   = "vpc-id"
+    values = [var.ibsm_vpc_id]
+  }
+}
+
+resource "aws_vpc_peering_connection" "ibsm" {
+  # created only when ibsm_vpc_id is provided
+  count = var.ibsm_vpc_id != "" ? 1 : 0
+
+  vpc_id      = local.vpc_id
+  peer_vpc_id = var.ibsm_vpc_id
+
+  auto_accept = true
+
+  tags = {
+    Name      = "${local.deployment_name}-ibsm-peer"
+    workspace = local.deployment_name
+  }
+}
+
+# Route to IBSM
+resource "aws_route" "to_ibsm" {
+  count                     = var.ibsm_vpc_id != "" ? 1 : 0
+  route_table_id            = aws_route_table.route-table.id
+  destination_cidr_block    = data.aws_vpc.ibsm[0].cidr_block
+  vpc_peering_connection_id = aws_vpc_peering_connection.ibsm[0].id
+  depends_on                = [aws_vpc_peering_connection.ibsm]
+}
+
+resource "aws_route" "from_ibsm_" {
+  for_each = var.ibsm_vpc_id != "" ? toset(data.aws_route_tables.ibsm[0].ids) : toset([])
+
+  route_table_id            = each.value
+  destination_cidr_block    = local.vpc_address_range
+  vpc_peering_connection_id = aws_vpc_peering_connection.ibsm[0].id
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}

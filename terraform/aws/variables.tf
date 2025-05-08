@@ -746,3 +746,10 @@ variable "iscsi_remote_python" {
   default     = "/usr/bin/python3"
 }
 
+# IBSM peering (optional - leave empty to skip peering creation)
+
+variable "ibsm_vpc_id" {
+  description = "VPC-ID of the IBS Mirror."
+  type        = string
+  default     = ""
+}
