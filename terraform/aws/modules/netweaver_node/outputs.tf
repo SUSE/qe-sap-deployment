@@ -18,3 +18,10 @@ output "netweaver_name" {
 output "netweaver_public_name" {
   value = data.aws_instance.netweaver.*.public_dns
 }
+
+output "subnets_by_az" {
+  value = {
+    for s in aws_subnet.netweaver-subnet :
+    s.availability_zone => s.id
+  }
+}

@@ -23,3 +23,9 @@ output "stonith_tag" {
   value = local.hana_stonith_tag
 }
 
+output "subnets_by_az" {
+  value = {
+    for s in aws_subnet.hana-subnet :
+    s.availability_zone => s.id
+  }
+}
