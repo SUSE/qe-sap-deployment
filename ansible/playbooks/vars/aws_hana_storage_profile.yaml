@@ -5,7 +5,7 @@ sap_storage_dict:
     directory: '/hana/data'
     vg: 'hanadatavg'
     lv: 'hanadatalv'
-    pv: ["/dev/nvme1n1", "/dev/nvme2n1"]
+    pv: ["/dev/sdb", "/dev/sdc"]
     numluns: '1'
     stripesize: '256'
   # LVM striped partition
@@ -14,7 +14,7 @@ sap_storage_dict:
     directory: '/hana/log'
     vg: 'hanalogvg'
     lv: 'hanaloglv'
-    pv: ["/dev/nvme3n1", "/dev/nvme4n1"]
+    pv: ["/dev/sdd", "/dev/sde"]
     numluns: '2'
     stripesize: '32'
   hanashared:
@@ -22,7 +22,7 @@ sap_storage_dict:
     directory: '/hana/shared'
     vg: 'hanasharedvg'
     lv: 'hanasharedlv'
-    pv: ["/dev/nvme5n1"]
+    pv: ["/dev/sdf"]
     numluns: '1'
     stripesize: ''
   usrsap:
@@ -30,7 +30,7 @@ sap_storage_dict:
     directory: '/usr/sap'
     vg: 'usrsapvg'
     lv: 'usrsaplv'
-    pv: ["/dev/nvme6n1"]
+    pv: ["/dev/sdg"]
     numluns: '1'
     stripesize: ''
   backup:
@@ -38,6 +38,6 @@ sap_storage_dict:
     directory: '/backup'
     vg: 'backupvg'
     lv: 'backuplv'
-    pv: ["/dev/nvme7n1"]
+    pv: ["/dev/sdh"]
     numluns: '1'
     stripesize: ''
