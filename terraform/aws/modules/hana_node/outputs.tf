@@ -29,3 +29,13 @@ output "subnets_by_az" {
     s.availability_zone => s.id
   }
 }
+
+output "volume_id_to_device_name" {
+  value = [
+    for inst in aws_instance.hana :
+    { for bd in inst.ebs_block_device :
+      bd.volume_id => bd.device_name
+    }
+  ]
+  description = "EBS volume‑ID -> /dev/sdX"
+}
