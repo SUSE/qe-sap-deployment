@@ -4,28 +4,65 @@
   ansible.builtin.debug:
     msg: "{{ item }} "
 
-- name: Determine the root device
-  ansible.builtin.command: "findmnt -n -o SOURCE /"
-  register: root_device
-  changed_when: false
-
-# Cut any partition suffixes like p1, p2
-- name: Normalize root device name
-  ansible.builtin.set_fact:
-    root_device_name: "{{ root_device.stdout | regex_replace('p[0-9]+$', '') }}"
-
-# If root is not nvme0n1, and it also exists in pv, switch it with nvme0n1 in pv
-# This part of the code only runs if the root_device is not nvme0n1
-# It searches in the item.pv list for the root_device, and if it is found
-# it gets replaced with nvme0n1, which is free to use.
-# This is necessary because nvme1n1-nvme7n1 are given specific roles in aws_hana_storage_profile.yaml
-# and if one of them is root, it needs to be replaced with nvme0n1 (the original root, now free)
-- name: Adjust PV list for storage profile "{{ item.key }}"
-  ansible.builtin.set_fact:
-    adjusted_pv: "{{ item.value.pv | map('regex_replace', '^' ~ root_device_name ~ '$', '/dev/nvme0n1') | list }}"
+# Gather device info (needed to use ansible_facts.devices)
+- name: Gather blockdevice facts (nvmeXn1 sizes)
+  ansible.builtin.setup:
+    gather_subset:
+      - hardware
   when:
-    - root_device_name != '/dev/nvme0n1'
-    - root_device_name in item.value.pv
+    - cloud_platform_is_aws and not aws_machine_type_is_r4
+
+# Get a list of all nvme device names
+- name: Build list of nvme devices and their sizes
+  ansible.builtin.set_fact:
+    nvme_device_list: >-
+      {{
+        ansible_facts.devices |
+        dict2items |
+        selectattr('key', 'match', '^nvme[0-9]+n1$')|
+        list
+      }}
+  when:
+    - cloud_platform_is_aws and not aws_machine_type_is_r4
+
+- name: Convert ebs_id_to_device_name list to a dictionary
+  ansible.builtin.set_fact:
+    ebs_id_to_device_name_map: >-
+      {{
+        ebs_id_to_device_name
+        | map('dict2items')
+        | flatten
+        | items2dict
+      }}
+  when:
+    - cloud_platform_is_aws and not aws_machine_type_is_r4
+
+# Using data exported by terraform in ebs_id_to_device_name, create a
+# sdX -> nvmeXn1 map, based on the device serial
+- name: Build /dev/sdX to nvme device mapping for attached volumes
+  ansible.builtin.set_fact:
+    sd_to_nvme_map: "{{ sd_to_nvme_map | default({}) | combine({ device_name: '/dev/' ~ nvme_dev.key }) }}"
+  loop: "{{ nvme_device_list }}"
+  loop_control:
+    loop_var: nvme_dev
+  vars:
+    # terraform (aws) exports the serial as "vol-xxx" while the system sees it as "volxxx", so we need to omit the '-'
+    volume_id: "{{ nvme_dev.value.serial | regex_replace('^vol(?!-)', 'vol-') }}"
+    device_name: "{{ ebs_id_to_device_name_map.get(volume_id, '') }}"
+  when:
+    - cloud_platform_is_aws and not aws_machine_type_is_r4
+    - device_name != ''  # only map if the serial id exists in the exported serial ids from terraform
+
+- name: Adjust PV list for storage profile {{ item.key }}
+  ansible.builtin.set_fact:
+    adjusted_pv: >-
+      {{
+        item.value.pv
+        | map('extract', sd_to_nvme_map)
+        | list
+      }}
+  when:
+    - cloud_platform_is_aws and not aws_machine_type_is_r4
 
 - name: Physical Volume list that will be used
   ansible.builtin.debug:
