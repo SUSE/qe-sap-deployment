@@ -275,6 +275,7 @@
       pcmk_reboot_timeout=900
       pcmk_delay_max=15
       op monitor interval=3600 timeout=120
+  retries: 3  # Retry in case of transient issues on metadata endpoint
   register: __crm_cfg_fence_azure_arm_msi
   changed_when: __crm_cfg_fence_azure_arm_msi.rc == 0
   when:
@@ -299,6 +300,7 @@
       power_timeout=240
       pcmk_reboot_timeout=900
       op monitor interval=3600 timeout=120
+  retries: 3  # Retry in case of transient issues on metadata endpoint
   register: __crm_cfg_fence_azure_arm_spn
   changed_when: __crm_cfg_fence_azure_arm_spn.rc == 0
   when:
