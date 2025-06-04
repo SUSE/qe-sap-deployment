@@ -1,6 +1,5 @@
 from unittest import mock
 from qesap import main
-import pytest
 
 
 @mock.patch("lib.process_manager.subprocess_run")
@@ -56,4 +55,3 @@ def test_destroy(
     calls = subprocess_run.call_args_list
     assert "terraform" in str(calls)
     assert "ansible" in str(calls)
-

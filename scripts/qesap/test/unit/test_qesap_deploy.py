@@ -1,6 +1,7 @@
 from unittest import mock
 from qesap import main
 
+
 @mock.patch("lib.process_manager.subprocess_run")
 def test_deploy_no_ansible(
     subprocess_run, config_yaml_sample, args_helper, create_inventory
