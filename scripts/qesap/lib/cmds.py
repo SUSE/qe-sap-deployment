@@ -1,6 +1,7 @@
 """
 sub commands library
 """
+
 import os
 import shutil
 import re
@@ -11,11 +12,11 @@ from lib.config import CONF
 import lib.process_manager
 from lib.status import Status
 
-log = logging.getLogger('QESAP')
+log = logging.getLogger("QESAP")
 
 
 def create_tfvars(config, template):
-    """ Create the tfvars file content
+    """Create the tfvars file content
 
     Args:
         config (obj): CONF instance
@@ -40,7 +41,7 @@ def create_tfvars(config, template):
 
 
 def create_hana_media(config_ansible, apiver):
-    """ Create the hana_media file content
+    """Create the hana_media file content
 
     Args:
         apiver (int): value from apiver
@@ -54,18 +55,20 @@ def create_hana_media(config_ansible, apiver):
     if apiver < 3:
         log.error("Apiver:%d is no longer supported", apiver)
         return None, f"Problems in apiver: {apiver} data conversion"
-    hanamedia_content['az_storage_account_name'] = config_ansible['az_storage_account_name']
-    hanamedia_content['az_container_name'] = config_ansible['az_container_name']
-    if 'az_sas_token' in config_ansible:
-        hanamedia_content['az_sas_token'] = config_ansible['az_sas_token']
-    if 'az_key_name' in config_ansible:
-        hanamedia_content['az_key_name'] = config_ansible['az_key_name']
-    hanamedia_content['az_blobs'] = config_ansible['hana_media']
+    hanamedia_content["az_storage_account_name"] = config_ansible[
+        "az_storage_account_name"
+    ]
+    hanamedia_content["az_container_name"] = config_ansible["az_container_name"]
+    if "az_sas_token" in config_ansible:
+        hanamedia_content["az_sas_token"] = config_ansible["az_sas_token"]
+    if "az_key_name" in config_ansible:
+        hanamedia_content["az_key_name"] = config_ansible["az_key_name"]
+    hanamedia_content["az_blobs"] = config_ansible["hana_media"]
     return hanamedia_content, None
 
 
 def cmd_configure(configure_data, base_project, dryrun):
-    """ Main executor for the configure sub-command
+    """Main executor for the configure sub-command
 
     Args:
         configure_data (obj): configuration structure
@@ -96,36 +99,48 @@ def cmd_configure(configure_data, base_project, dryrun):
         return Status("Problems in the ansible part of the configuration")
 
     if config.has_ansible():
-        hanamedia_content, err = create_hana_media(configure_data['ansible'], configure_data['apiver'])
+        hanamedia_content, err = create_hana_media(
+            configure_data["ansible"], configure_data["apiver"]
+        )
         if err is not None:
             return Status(err)
-        log.debug("Hana media %s:\n%s", cfg_paths['hana_media_file'], hanamedia_content)
+        log.debug("Hana media %s:\n%s", cfg_paths["hana_media_file"], hanamedia_content)
 
     if dryrun:
         print(f"Create {cfg_paths['tfvars_file']} with content {tfvar_content}")
         if config.has_ansible():
-            print(f"Create {cfg_paths['hana_media_file']} with content {hanamedia_content}")
-            if 'hana_vars' in configure_data['ansible'] and configure_data['apiver'] >= 2:
-                print(f"Create {cfg_paths['hana_vars_file']} with content {configure_data['ansible']['hana_vars']}")
+            print(
+                f"Create {cfg_paths['hana_media_file']} with content {hanamedia_content}"
+            )
+            if (
+                "hana_vars" in configure_data["ansible"]
+                and configure_data["apiver"] >= 2
+            ):
+                print(
+                    f"Create {cfg_paths['hana_vars_file']} with content {configure_data['ansible']['hana_vars']}"
+                )
     else:
-        log.info("Write .tfvars %s", cfg_paths['tfvars_file'])
-        with open(cfg_paths['tfvars_file'], 'w', encoding='utf-8') as file:
-            file.write(''.join(tfvar_content))
+        log.info("Write .tfvars %s", cfg_paths["tfvars_file"])
+        with open(cfg_paths["tfvars_file"], "w", encoding="utf-8") as file:
+            file.write("".join(tfvar_content))
 
         if config.has_ansible():
-            log.info("Write hana_media %s", cfg_paths['hana_media_file'])
-            with open(cfg_paths['hana_media_file'], 'w', encoding='utf-8') as file:
+            log.info("Write hana_media %s", cfg_paths["hana_media_file"])
+            with open(cfg_paths["hana_media_file"], "w", encoding="utf-8") as file:
                 yaml.dump(hanamedia_content, file)
 
-            if 'hana_vars' in configure_data['ansible'] and configure_data['apiver'] >= 2:
-                log.info("Write hana_vars %s", cfg_paths['hana_vars_file'])
-                with open(cfg_paths['hana_vars_file'], 'w', encoding='utf-8') as file:
-                    yaml.dump(configure_data['ansible']['hana_vars'], file)
-    return Status('ok')
+            if (
+                "hana_vars" in configure_data["ansible"]
+                and configure_data["apiver"] >= 2
+            ):
+                log.info("Write hana_vars %s", cfg_paths["hana_vars_file"])
+                with open(cfg_paths["hana_vars_file"], "w", encoding="utf-8") as file:
+                    yaml.dump(configure_data["ansible"]["hana_vars"], file)
+    return Status("ok")
 
 
 def cmd_deploy(configure_data, base_project, dryrun=False, verbose=False):
-    """ Main executor for the deploy sub-command
+    """Main executor for the deploy sub-command
 
     Args:
         configure_data (obj): configuration structure
@@ -140,14 +155,16 @@ def cmd_deploy(configure_data, base_project, dryrun=False, verbose=False):
     res = cmd_configure(configure_data, base_project, dryrun)
     if res != 0:
         return res
-    res = cmd_terraform(configure_data, base_project, dryrun, workspace='default', destroy=False)
+    res = cmd_terraform(
+        configure_data, base_project, dryrun, workspace="default", destroy=False
+    )
     if res != 0:
         return res
     return cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False)
 
 
 def cmd_destroy(configure_data, base_project, dryrun=False, verbose=False):
-    """ Main executor for the deploy sub-command
+    """Main executor for the deploy sub-command
 
     Args:
         configure_data (obj): configuration structure
@@ -162,11 +179,20 @@ def cmd_destroy(configure_data, base_project, dryrun=False, verbose=False):
     res = cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=True)
     if res != 0:
         return res
-    return cmd_terraform(configure_data, base_project, dryrun, workspace='default', destroy=True)
+    return cmd_terraform(
+        configure_data, base_project, dryrun, workspace="default", destroy=True
+    )
 
 
-def cmd_terraform(configure_data, base_project, dryrun, workspace='default', destroy=False, parallel=None):
-    """ Main executor for the deploy sub-command
+def cmd_terraform(
+    configure_data,
+    base_project,
+    dryrun,
+    workspace="default",
+    destroy=False,
+    parallel=None,
+):
+    """Main executor for the deploy sub-command
 
     Args:
         configure_data (obj): configuration structure
@@ -189,26 +215,30 @@ def cmd_terraform(configure_data, base_project, dryrun, workspace='default', des
     if not cfg_paths:
         return Status(f"Invalid folder structure at {base_project}")
 
-    terraform_common_cmd = f"{config.get_terraform_bin()} -chdir={cfg_paths['provider']}"
+    terraform_common_cmd = (
+        f"{config.get_terraform_bin()} -chdir={cfg_paths['provider']}"
+    )
 
     cmds = []
     if destroy:
         cmds.append(f"{terraform_common_cmd} destroy -auto-approve")
-        if workspace != 'default':
+        if workspace != "default":
             cmds.append(f"{terraform_common_cmd} workspace select default")
             cmds.append(f"{terraform_common_cmd} workspace delete {workspace}")
     else:
         cmds.append(f"{terraform_common_cmd} init")
-        if workspace != 'default':
+        if workspace != "default":
             cmds.append(f"{terraform_common_cmd} workspace new {workspace}")
-        parallel_str = ''
+        parallel_str = ""
         if parallel:
             parallel_str = f"-parallelism={parallel} "
         cmds.append(f"{terraform_common_cmd} plan {parallel_str}-out=plan.zip")
-        cmds.append(f"{terraform_common_cmd} apply {parallel_str}-auto-approve plan.zip")
+        cmds.append(
+            f"{terraform_common_cmd} apply {parallel_str}-auto-approve plan.zip"
+        )
 
     for command in cmds:
-        command += ' -no-color'
+        command += " -no-color"
         if dryrun:
             print(command)
         else:
@@ -216,12 +246,12 @@ def cmd_terraform(configure_data, base_project, dryrun, workspace='default', des
             log.debug("Terraform process return ret:%d", ret)
             log_filename = f"terraform.{command.split()[2]}.log.txt"
             log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
-            with open(log_filename, 'w', encoding='utf-8') as log_file:
-                log_file.write('\n'.join(out))
+            with open(log_filename, "w", encoding="utf-8") as log_file:
+                log_file.write("\n".join(out))
             if ret != 0:
                 log.error("command:%s returned non zero %d", command, ret)
                 return Status(f"Error rc: {ret} at {command}")
-    return Status('ok')
+    return Status("ok")
 
 
 def ansible_validate(config, base_project, sequence, provider):
@@ -237,21 +267,28 @@ def ansible_validate(config, base_project, sequence, provider):
 
     if config.has_ansible_playbooks(sequence):
         if not config.validate_ansible_config(sequence):
-            return False, 'Invalid internal structure of the Ansible part of config.yaml'
+            return (
+                False,
+                "Invalid internal structure of the Ansible part of config.yaml",
+            )
         for playbook in config.get_playbooks(sequence):
-            playbook_filename = os.path.join(base_project, 'ansible', 'playbooks', playbook.split(' ')[0])
+            playbook_filename = os.path.join(
+                base_project, "ansible", "playbooks", playbook.split(" ")[0]
+            )
             if not os.path.isfile(playbook_filename):
                 log.error("Missing playbook at %s", playbook_filename)
                 return False, f"Missing playbook: {playbook_filename}"
-    inventory = os.path.join(base_project, 'terraform', provider, 'inventory.yaml')
+    inventory = os.path.join(base_project, "terraform", provider, "inventory.yaml")
     if not os.path.isfile(inventory):
         log.error("Missing inventory at %s", inventory)
         return False, "Missing inventory"
-    return True, ''
+    return True, ""
 
 
-def ansible_command_sequence(configure_data_ansible, base_project, sequence, verbose, inventory, profile, junit):
-    """ Compose the sequence of Ansible commands
+def ansible_command_sequence(
+    configure_data_ansible, base_project, sequence, verbose, inventory, profile, junit
+):
+    """Compose the sequence of Ansible commands
 
     Args:
         configure_data_ansible (obj): ansible part of the configure_data
@@ -270,21 +307,21 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     # 1. Create the environment variable set
     #    that will be used by any command
     original_env = dict(os.environ)
-    original_env['ANSIBLE_PIPELINING'] = 'True'
+    original_env["ANSIBLE_PIPELINING"] = "True"
     ansible_callbacks = []
     if profile:
-        ansible_callbacks.append('ansible.posix.profile_tasks')
+        ansible_callbacks.append("ansible.posix.profile_tasks")
     if junit:
-        ansible_callbacks.append('junit')
-        original_env['JUNIT_OUTPUT_DIR'] = junit
+        ansible_callbacks.append("junit")
+        original_env["JUNIT_OUTPUT_DIR"] = junit
     if len(ansible_callbacks) > 0:
-        original_env['ANSIBLE_CALLBACKS_ENABLED'] = ','.join(ansible_callbacks)
-    if 'roles_path' in configure_data_ansible:
-        original_env['ANSIBLE_ROLES_PATH'] = configure_data_ansible['roles_path']
+        original_env["ANSIBLE_CALLBACKS_ENABLED"] = ",".join(ansible_callbacks)
+    if "roles_path" in configure_data_ansible:
+        original_env["ANSIBLE_ROLES_PATH"] = configure_data_ansible["roles_path"]
 
     # 2. Verify that the two needed binaries are usable
     ansible_bin_paths = {}
-    for ansible_bin in ['ansible', 'ansible-playbook']:
+    for ansible_bin in ["ansible", "ansible-playbook"]:
         binpath = shutil.which(ansible_bin)
         if not binpath:
             log.error("Missing binary %s", ansible_bin)
@@ -294,10 +331,10 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     # 3. Compose common parts of all ansible commands
     #    so the set of generic arguments that apply both
     #    to ansible and ansible-playbook
-    ansible_common = '-vv'
+    ansible_common = "-vv"
     if verbose:
         # add two more 'v' without any space
-        ansible_common += 'vv'
+        ansible_common += "vv"
     ansible_common += f" -i {inventory}"
 
     # 4. Start composing and accumulating all needed commands in a list
@@ -310,7 +347,7 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
         # the folder is not created.
         # Create an empty folder in advance, if it is not already there
         # so that the glue script called can always suppose that at least the folder is present.
-        ansible_cmd_seq.append({'cmd': f"mkdir -p {junit}"})
+        ansible_cmd_seq.append({"cmd": f"mkdir -p {junit}"})
 
     # This is to avoid any manual intervention during first connection.
     # Without this code it is usually needed to interactively
@@ -326,7 +363,7 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
     # for avoiding the ansible ssh connection failure introduced by
     # https://github.com/ansible/ansible/pull/78826 in "ansible-core 2.15.0"
     ssh_share += ' --ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'
-    ansible_cmd_seq.append({'cmd': ssh_share})
+    ansible_cmd_seq.append({"cmd": ssh_share})
 
     for playbook in configure_data_ansible[sequence]:
         # playbook input is here from the conf.yaml
@@ -343,23 +380,30 @@ def ansible_command_sequence(configure_data_ansible, base_project, sequence, ver
         # get the file named in the conf.yaml from playbook_cmd
         # and append the full path within the repo folder
         playbook_filename = playbook.split()[0]
-        playbook_abs_filename = os.path.join(base_project, 'ansible', 'playbooks', playbook_filename)
+        playbook_abs_filename = os.path.join(
+            base_project, "ansible", "playbooks", playbook_filename
+        )
         playbook = re.sub(playbook_filename, playbook_abs_filename, playbook)
 
         # look for variable in the form of `${SOMENAME}`
-        for match in re.findall(r'\${[A-Za-z0-9_\-]+}', playbook):
+        for match in re.findall(r"\${[A-Za-z0-9_\-]+}", playbook):
             # 2 and -1 are to remove ${ and }
-            value = str(configure_data_ansible['variables'][match[2:-1]])
+            value = str(configure_data_ansible["variables"][match[2:-1]])
             log.debug("Replace value %s in %s", value, playbook)
-            playbook = re.sub(rf'\${{{match[2:-1]}}}', value, playbook)
+            playbook = re.sub(rf"\${{{match[2:-1]}}}", value, playbook)
 
         # Finally compose the command ansible-playbook using the resolved `playbook` string
-        ansible_cmd_seq.append({'cmd': f"{ansible_bin_paths['ansible-playbook']} {ansible_common} {playbook}", 'env': original_env})
+        ansible_cmd_seq.append(
+            {
+                "cmd": f"{ansible_bin_paths['ansible-playbook']} {ansible_common} {playbook}",
+                "env": original_env,
+            }
+        )
     return True, ansible_cmd_seq
 
 
 def ansible_export_output(command, out):
-    """ Write the Ansible (or ansible-playbook) stdout to file
+    """Write the Ansible (or ansible-playbook) stdout to file
 
     Function is in charge to:
     - get a cmd and calculate from it the log file name to write.
@@ -385,12 +429,12 @@ def ansible_export_output(command, out):
     playbook_name = os.path.splitext(os.path.basename(playbook_path))[0]
     log_filename = f"ansible.{playbook_name}.log.txt"
     log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
-    with open(log_filename, 'w', encoding='utf-8') as log_file:
-        log_file.write('\n'.join(out))
+    with open(log_filename, "w", encoding="utf-8") as log_file:
+        log_file.write("\n".join(out))
 
 
 def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, profile=False, junit=False):
-    """ Main executor for the deploy sub-command
+    """Main executor for the deploy sub-command
 
     Args:
         configure_data (obj): configuration structure
@@ -400,7 +444,7 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
         verbose (bool): enable more verbosity
         destroy (bool): select the playbook list
         profile (bool): enable task profile
-        profile (str): enable junit report and provide folder where to store it
+        junit (str): enable junit report and provide folder where to store it
 
     Returns:
         Status: execution result, 0 means OK. It is mind to be used as script exit code
