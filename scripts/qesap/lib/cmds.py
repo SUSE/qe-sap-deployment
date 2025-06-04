@@ -176,6 +176,9 @@ def cmd_destroy(configure_data, base_project, dryrun=False, verbose=False):
     Returns:
         int: execution result, 0 means OK. It is mind to be used as script exit code
     """
+    config = CONF(configure_data)
+    if not config.validate():
+        return Status(f"Invalid configuration file content in {configure_data}")
     res = cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=True)
     if res != 0:
         return res
