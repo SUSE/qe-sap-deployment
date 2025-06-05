@@ -135,6 +135,9 @@ ansible:
 
 @pytest.fixture
 def provider_dir(tmpdir):
+    '''
+       It also implicitly create the terraform folder if missing
+    '''
     def _callback(provider):
         provider_path = os.path.join(tmpdir, "terraform", provider)
         if not os.path.isdir(provider_path):
@@ -307,6 +310,9 @@ def args_helper(tmpdir, base_args, provider_dir):
 
 @pytest.fixture
 def configure_helper(args_helper):
+    '''
+       Only suitable for tests about the configure sub-command
+    '''
     def _callback(provider, conf, tfvar_template=None):
         args, _, tfvar_path, hana_media, hana_vars = args_helper(
             provider, conf, tfvar_template
