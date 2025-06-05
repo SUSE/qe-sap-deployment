@@ -30,6 +30,7 @@
         name: "TEST_{{ repo_id }}"
         disable_gpg_check: true
         autorefresh: true
+        priority: "{{ priority | default(omit) }}"
       loop: "{{ repos.split(',') }}"
       loop_control:
         index_var: repo_id
