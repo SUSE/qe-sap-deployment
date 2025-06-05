@@ -275,21 +275,33 @@ class CONF:
         Return True if the `sequence` has at least
         one playbook in it.
         """
-        if (
-            not self.has_ansible()
-            or not sequence
-            or sequence not in self.conf["ansible"]
-            or self.conf["ansible"][sequence] is None
-        ):
-            log.error("No Ansible playbooks to play for sequence:%s", sequence)
+        if not self.has_ansible() or not sequence:
+            log.error("No Ansible section, so no playbooks to play")
             return False
+        if self.conf["apiver"] < 4:
+            if (
+                sequence not in self.conf["ansible"]
+                or self.conf["ansible"][sequence] is None
+            ):
+                log.error("No Ansible playbooks to play for sequence:%s in %s", sequence, self.conf["ansible"])
+                return False
+        else:
+            if (
+                "sequences" not in self.conf["ansible"]
+                or sequence not in self.conf["ansible"]["sequences"]
+                or self.conf["ansible"]["sequences"][sequence] is None
+            ):
+                log.error("No Ansible playbooks to play for sequence:%s", sequence)
+                return False
         return True
 
     def get_playbooks(self, sequence):
         """
         Get list of playbooks
         """
-        return self.conf['ansible'][sequence]
+        if self.conf["apiver"] < 4:
+            return self.conf["ansible"][sequence]
+        return self.conf["ansible"]["sequences"][sequence]
 
     def validate_ansible_config(self, sequence):
         """
@@ -312,8 +324,17 @@ class CONF:
             return False
 
         if sequence:
-            if sequence not in self.conf['ansible'] or self.conf['ansible'][sequence] is None:
-                log.error('No Ansible playbooks to play in %s for sequence:%s', self.conf['ansible'], sequence)
+            selected_seq = None
+            if self.conf["apiver"] < 4:
+                selected_seq = self.conf["ansible"]
+            else:
+                selected_seq = self.conf["ansible"]["sequences"]
+            if sequence not in selected_seq or selected_seq[sequence] is None:
+                log.error(
+                    "No Ansible playbooks to play in %s for sequence:%s",
+                    self.conf["ansible"],
+                    sequence,
+                )
                 return False
 
         if "hana_vars" in self.conf["ansible"] and not validate_ansible_hana_var(

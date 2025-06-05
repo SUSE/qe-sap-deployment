@@ -175,9 +175,9 @@ def create_playbooks(playbooks_dir):
 
 @pytest.fixture
 def ansible_config():
-    def _callback(provider, playbooks):
+    def _callback(provider, playbooks, apiver=3):
         config_content = f"""---
-apiver: 3
+apiver: {apiver}
 provider: {provider}
 ansible:
     az_container_name: pippo
@@ -186,11 +186,17 @@ ansible:
     hana_media:
     - pippo"""
 
-        for seq in ["create", "destroy"]:
-            if seq in playbooks:
+        if apiver < 4:
+            for seq in playbooks:
                 config_content += f"\n    {seq}:"
                 for play in playbooks[seq]:
                     config_content += f"\n        - {play}.yaml"
+        else:
+            config_content += "\n    sequences:"
+            for seq in playbooks:
+                config_content += f"\n        {seq}:"
+                for play in playbooks[seq]:
+                    config_content += f"\n            - {play}.yaml"
         return config_content
 
     return _callback
