@@ -49,14 +49,6 @@ resource "google_compute_disk" "usr_sap" {
   zone  = element(var.compute_zones, count.index)
 }
 
-resource "google_compute_disk" "hana-software" {
-  count = var.hana_count
-  name  = "${var.common_variables["deployment_name"]}-hana-software"
-  type  = "pd-standard"
-  size  = "20"
-  zone  = element(var.compute_zones, count.index)
-}
-
 # Don't remove the routes! Even though the RA gcp-vpc-move-route creates them, if they are not created here, the terraform destroy cannot work as it will find new route names
 resource "google_compute_route" "hana-route" {
   name                   = "${var.common_variables["deployment_name"]}-hana-route"
@@ -178,12 +170,6 @@ resource "google_compute_instance" "clusternodes" {
   attached_disk {
     source      = element(google_compute_disk.usr_sap.*.self_link, count.index)
     device_name = element(google_compute_disk.usr_sap.*.name, count.index)
-    mode        = "READ_WRITE"
-  }
-
-  attached_disk {
-    source      = element(google_compute_disk.hana-software.*.self_link, count.index)
-    device_name = element(google_compute_disk.hana-software.*.name, count.index)
     mode        = "READ_WRITE"
   }
 
