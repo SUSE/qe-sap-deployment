@@ -5,24 +5,6 @@ variable "aws_region" {
   type        = string
 }
 
-variable "aws_access_key_id" {
-  description = "AWS access key id"
-  type        = string
-  default     = ""
-}
-
-variable "aws_secret_access_key" {
-  description = "AWS secret access key"
-  type        = string
-  default     = ""
-}
-
-variable "aws_credentials" {
-  description = "AWS credentials file path in local machine. This file will be used it `aws_access_key_id` and `aws_secret_access_key` are not provided"
-  type        = string
-  default     = "~/.aws/credentials"
-}
-
 variable "vpc_id" {
   description = "Id of a currently existing vpc to use in the deployment. It must have an internet gateway attached. If not provided a new one will be created."
   type        = string

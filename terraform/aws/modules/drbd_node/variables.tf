@@ -63,20 +63,6 @@ variable "route_table_id" {
   type        = string
 }
 
-variable "aws_credentials" {
-  description = "AWS credentials file path in local machine"
-  type        = string
-  default     = "~/.aws/credentials"
-}
-
-variable "aws_access_key_id" {
-  type = string
-}
-
-variable "aws_secret_access_key" {
-  type = string
-}
-
 variable "host_ips" {
   description = "ip addresses to set to the nodes"
   type        = list(string)
