@@ -18,7 +18,7 @@ logging.basicConfig(format="%(levelname)-8s %(message)s")
 log = logging.getLogger('QESAP')
 
 
-VERSION = '0.5'
+VERSION = '1.0'
 
 DESCRIBE = '''qe-sap-deployment helper script'''
 
@@ -123,7 +123,7 @@ def cli(command_line=None):
     parser_ansible.add_argument('-d',
                                 '--destroy',
                                 action='store_true',
-                                help='Play ansible deregister playoooks')
+                                help='Play ansible deregister playoooks. It is equivalent of ``-s deregister`')
 
     parser_ansible.add_argument('--profile',
                                 action='store_true',
@@ -131,6 +131,10 @@ def cli(command_line=None):
 
     parser_ansible.add_argument('--junit',
                                 help='Enable Ansible junit report and store it in provided folder')
+
+    parser_ansible.add_argument('-s',
+                                '--sequence',
+                                help='Only execute a playbook sequence from a specific Ansible `sequence` section')
 
     parsed_args = parser.parse_args(command_line)
     return parsed_args
@@ -202,7 +206,8 @@ def main(command_line=None):  # pylint: disable=too-many-return-statements
             parsed_args.verbose,
             destroy=parsed_args.destroy,
             profile=parsed_args.profile,
-            junit=parsed_args.junit
+            junit=parsed_args.junit,
+            sequence=parsed_args.sequence
         )
     else:
         res = Status(f"Unknown command: {parsed_args.command}")
