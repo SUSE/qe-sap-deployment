@@ -32,13 +32,6 @@ deployment_name = "mydeployment"
 # Add the "deployment_name" as a prefix to the hostname.
 #deployment_name_in_hostname = true
 
-# aws-cli credentials data
-# access keys parameters have preference over the credentials file (they are self exclusive)
-#aws_access_key_id = my-access-key-id
-#aws_secret_access_key = my-secret-access-key
-# aws-cli credentials file. Located on ~/.aws/credentials on Linux, MacOS or Unix or at C:\Users\USERNAME\.aws\credentials on Windows
-#aws_credentials = "~/.aws/credentials"
-
 # Default os_image and os_owner. These values are not used if the specific values are set (e.g.: hana_os_image)
 # BYOS example with sles4sap 15 sp3 (this value is a pattern, it will select the latest version that matches this name)
 #os_image = "suse-sles-sap-15-sp3-byos"
