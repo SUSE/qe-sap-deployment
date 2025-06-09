@@ -154,23 +154,31 @@ Refer to the qe-sap-deployment Ansible documentation or `ansible/playbooks/vars/
 
 ###### Playbooks sequence
 
-The `qesap.py ... ansible` sub-command calls a sequence of playbooks execution. The sequence has to be defined in the `ansible::create` section of the config.yaml. The `ansible::destroy` sequence is used by `qesap.py ... ansible -d`
+The `qesap.py ... ansible` sub-command calls a sequence of playbooks execution.
+By default the sequence is from the `ansible::sequences::create` section of the config.yaml.
+The `ansible::sequences::destroy` sequence is used by `qesap.py ... ansible -d`
+It is also possible to request the execution of a specific sequence using
+`qesap.py ... ansible -s somethingelse`.
 
 ```yaml
+apiver: 4
 ansible:
-  create:
-    - registration.yaml -e reg_code=******* -e email_address=your@email.some
-    - pre-cluster.yaml
-    - sap-hana-preconfigure.yaml -e use_sapconf=true
-    - cluster_sbd_prep.yaml
-    - sap-hana-storage.yaml
-    - sap-hana-download-media.yaml
-    - sap-hana-install.yaml
-    - sap-hana-system-replication.yaml
-    - sap-hana-system-replication-hooks.yaml
-    - sap-hana-cluster.yaml
-  destroy:
-    - deregister.yaml
+  sequences:
+    create:
+      - registration.yaml -e reg_code=******* -e email_address=your@email.some
+      - pre-cluster.yaml
+      - sap-hana-preconfigure.yaml -e use_sapconf=true
+      - cluster_sbd_prep.yaml
+      - sap-hana-storage.yaml
+      - sap-hana-download-media.yaml
+      - sap-hana-install.yaml
+      - sap-hana-system-replication.yaml
+      - sap-hana-system-replication-hooks.yaml
+      - sap-hana-cluster.yaml
+    somethingelse:
+      - some-other-playbook.yaml
+    destroy:
+      - deregister.yaml
 ```
 
 * In case of Azure deployment using native fencing, there are additional parameters to be added for `sap-hana-cluster.yaml` playbook.
@@ -181,9 +189,15 @@ ansible:
 Terraform and Ansible deployment steps can be executed like:
 
 ```shell
+(venv) python3 scripts/qesap/qesap.py --verbose -c config.yaml -b <FOLDER_OF_YOUR_CLONED_REPO> deploy
+````
+
+That is equivalent to
+
+```shell
 (venv) python3 scripts/qesap/qesap.py --verbose -c config.yaml -b <FOLDER_OF_YOUR_CLONED_REPO> terraform
 
-(venv) python3 scripts/qesap/qesap.py --verbose -c config.yaml -b <FOLDER_OF_YOUR_CLONED_REPO> ansible
+(venv) python3 scripts/qesap/qesap.py --verbose -c config.yaml -b <FOLDER_OF_YOUR_CLONED_REPO> ansible -s create
 ```
 
 The terraform sub command has a partial support for Terraform workspace
@@ -195,6 +209,12 @@ The terraform sub command has a partial support for Terraform workspace
 #### Destroy
 
 The destruction of the infrastructure, including the de-registration of SLES, can be conducted with:
+
+```shell
+(venv) python3 scripts/qesap/qesap.py --verbose -c config.yaml -b <FOLDER_OF_YOUR_CLONED_REPO> destroy
+```
+
+That is equivalent to
 
 ```shell
 (venv) python3 scripts/qesap/qesap.py --verbose -c config.yaml -b <FOLDER_OF_YOUR_CLONED_REPO> ansible -d
