@@ -1,5 +1,6 @@
 import os
 from unittest import mock
+import pytest
 import logging
 
 from qesap import main
@@ -43,6 +44,8 @@ def test_ansible_create(
     # the list of playbooks is used to create files on the disk, that qesap.py
     # will verify to be present and use as composing each ansible-playbooks cmd line
     playbook_files_list = create_playbooks(playbooks["create"])
+
+    # create_inventory implicitly create terraform folder
     inventory = create_inventory(provider)
 
     # define what the simulated subprocess_run has to return
@@ -809,3 +812,145 @@ def test_ansible_create_logs(
 
     assert os.path.isfile("ansible.get_cherry_wood.log.txt")
     assert os.path.isfile("ansible.made_pinocchio_head.log.txt")
+
+
+@pytest.mark.parametrize("seq", ["create", "destroy"])
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
+@mock.patch("lib.process_manager.subprocess_run")
+def test_ansible_sequence(
+    run,
+    _,
+    base_args,
+    tmpdir,
+    create_inventory,
+    create_playbooks,
+    ansible_config,
+    mock_call_ansibleplaybook,
+    seq
+):
+    """
+    Test that ansible subcommand, called with -s create/destroy,
+    call the expected list of playbooks
+    """
+    provider = "grilloparlante"
+    playbooks = {
+        "create": ["get_cherry_wood", "made_pinocchio_head"],
+        "destroy": ["plant_a_tree"],
+    }
+    config_content = ansible_config(provider, playbooks)
+
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
+        file.write(config_content)
+
+    args = base_args(None, config_file_name, False)
+    args += ["ansible", "-s", seq]
+    run.return_value = (0, [])
+
+    inventory = create_inventory(provider)
+
+    playbook_list = create_playbooks(playbooks[seq])
+    calls = []
+    for playbook in playbook_list:
+        calls.append(mock_call_ansibleplaybook(inventory, playbook))
+
+    assert main(args) == 0
+
+    run.assert_called()
+    run.assert_has_calls(calls)
+    calls = run.call_args_list
+    if seq == "create":
+        assert "get_cherry_wood" in str(calls)
+        assert "plant_a_tree" not in str(calls)
+    elif seq == "destroy":
+        assert "get_cherry_wood" not in str(calls)
+        assert "plant_a_tree" in str(calls)
+
+
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
+@mock.patch("lib.process_manager.subprocess_run")
+def test_ansible_sequence_custom(
+    run,
+    _,
+    base_args,
+    tmpdir,
+    create_inventory,
+    create_playbooks,
+    ansible_config,
+    mock_call_ansibleplaybook,
+):
+    """
+    Test that ansible subcommand, called with -s something,
+    call the list of playbooks in the sequence named something
+    It only works for apiver >= 4
+    """
+    provider = "grilloparlante"
+    playbooks = {
+        "create": ["get_cherry_wood", "made_pinocchio_head"],
+        "something": ["run_from_melampo"],
+        "destroy": ["plant_a_tree"],
+    }
+    config_content = ansible_config(provider, playbooks, apiver=4)
+
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
+        file.write(config_content)
+
+    args = base_args(None, config_file_name, False)
+    args += ["ansible", "-s", "something"]
+    run.return_value = (0, [])
+
+    inventory = create_inventory(provider)
+
+    playbook_list = create_playbooks(playbooks["something"])
+    calls = []
+    for playbook in playbook_list:
+        calls.append(mock_call_ansibleplaybook(inventory, playbook))
+
+    assert main(args) == 0
+
+    run.assert_called()
+    run.assert_has_calls(calls)
+    calls = run.call_args_list
+    assert "run_from_melampo" in str(calls)
+    assert "get_cherry_wood" not in str(calls)
+    assert "plant_a_tree" not in str(calls)
+
+
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
+@mock.patch("lib.process_manager.subprocess_run")
+def test_ansible_sequence_and_d(
+    run,
+    _,
+    base_args,
+    tmpdir,
+    create_inventory,
+    create_playbooks,
+    ansible_config,
+    mock_call_ansibleplaybook,
+):
+    """
+    Test that ansible subcommand fails if called both with -d and -s
+    """
+    provider = "grilloparlante"
+    playbooks = {
+        "create": ["get_cherry_wood", "made_pinocchio_head"],
+        "something": ["run_from_melampo"],
+        "destroy": ["plant_a_tree"],
+    }
+    config_content = ansible_config(provider, playbooks, apiver=4)
+
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
+        file.write(config_content)
+
+    args = base_args(None, config_file_name, False)
+    args += ["ansible", "-d", "-s", "something"]
+    run.return_value = (0, [])
+
+    create_inventory(provider)
+    create_playbooks(playbooks["something"])
+
+    assert main(args) == 1
+
+    run.assert_not_called()

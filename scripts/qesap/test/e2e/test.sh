@@ -33,7 +33,6 @@ test_file () {
   [[ -f "$1" ]] || test_die "Generated file '$1' not found!"
 }
 
-
 #######################################################################
 test_step "Initial folder structure cleanup and preparation"
 reset_root
@@ -630,7 +629,8 @@ QESAP_CFG=test_8.yaml
 test_step "[${QESAP_CFG}] Run Ansible with --profile"
 rm ansible.*.log.txt || echo "Nothing to delete"
 cp goji.yaml "${QESAPROOT}/ansible/playbooks/"
-qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible --profile || test_die "${QESAP_CFG} fail on ansible"
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible --profile \
+  || test_die "${QESAP_CFG} fail on ansible with --profile"
 set +e
 time_reports=$(grep -cE " -+ [0-9.]+s" ansible.goji.log.txt)
 echo "--> time_reports:${time_reports}"
@@ -642,7 +642,8 @@ rm ansible.*.log.txt
 test_step "[${QESAP_CFG}] Run Ansible with --profile and --junit"
 rm ansible.*.log.txt || echo "Nothing to delete"
 find . -type f -name "goji*.xml" -delete || echo "Nothing to delete"
-qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible --profile --junit . || test_die "test_8.yaml fail on ansible"
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible --profile --junit . \
+  || test_die "${QESAP_CFG} fail on ansible with --profile and --junit"
 junit_logs_number=$(find . -type f -name "goji*.xml" | wc -l)
 echo "--> junit_logs_number:${junit_logs_number}"
 [[ $junit_logs_number -eq 1 ]] || test_die "ansible JUNIT reports should be 1 files but are ${junit_logs_number}"
@@ -653,6 +654,82 @@ set -e
 [[ $time_reports -gt 1 ]] || test_die "ansible profile reports should be at least 1 but is ${time_reports}"
 rm ansible.*.log.txt
 find . -type f -name "goji*.xml" -delete
+
+#######################################################################
+test_step "[${QESAP_CFG}] Run Ansible with --sequence create/destroy and apiver:3"
+# --sequence option is also supported when using conf.yaml with apiver:3
+# but only create and destroy are supported as name
+rm ansible.*.log.txt || echo "Nothing to delete"
+find . -type f -name "goji*.xml" -delete || echo "Nothing to delete"
+find . -type f -name "ribes*.xml" -delete || echo "Nothing to delete"
+reset_root
+cp goji.yaml "${QESAPROOT}/ansible/playbooks/"
+cp ribes_nero.yaml "${QESAPROOT}/ansible/playbooks/"
+cp inventory.yaml "${TEST_PROVIDER}/"
+FILE_TOUCH_BY_ANSIBLE="${QESAPROOT}/ansible/playbooks/goji.bacche"
+
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible --sequence create \
+  || test_die "${QESAP_CFG} fail on ansible with --sequence create"
+
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible --sequence destroy \
+  || test_die "${QESAP_CFG} fail on ansible with --sequence destroy"
+
+junit_logs_number=$(find . -type f -name "goji*.xml" | wc -l)
+echo "--> junit_logs_number:${junit_logs_number}"
+[[ $junit_logs_number -eq 0 ]] || test_die "ansible JUNIT reports should not be generated but are ${junit_logs_number}"
+rm ansible.*.log.txt
+
+#######################################################################
+test_step "[${QESAP_CFG}] Fails running Ansible with --sequence other than create/destroy and apiver:3"
+# --sequence option is also supported when using conf.yaml with apiver:3
+# but only create and destroy are supported as name
+rm ansible.*.log.txt || echo "Nothing to delete"
+find . -type f -name "goji*.xml" -delete || echo "Nothing to delete"
+find . -type f -name "ribes*.xml" -delete || echo "Nothing to delete"
+reset_root
+cp goji.yaml "${QESAPROOT}/ansible/playbooks/"
+cp ribes_nero.yaml "${QESAPROOT}/ansible/playbooks/"
+cp inventory.yaml "${TEST_PROVIDER}/"
+FILE_TOUCH_BY_ANSIBLE="${QESAPROOT}/ansible/playbooks/goji.bacche"
+
+# This is expected to fail
+set +e
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible --sequence something
+rc=$?; [[ $rc -ne 0 ]] || test_die "rc:$rc script is expected to fails using conf.yaml with apiver:3 and --sequence other than create/destroy"
+set -e
+
+#######################################################################
+test_step "[${QESAP_CFG}] Fails running Ansible both -d and --sequence"
+# --sequence option is also supported when using conf.yaml with apiver:3
+# but only create and destroy are supported as name
+rm ansible.*.log.txt || echo "Nothing to delete"
+find . -type f -name "goji*.xml" -delete || echo "Nothing to delete"
+find . -type f -name "ribes*.xml" -delete || echo "Nothing to delete"
+reset_root
+cp goji.yaml "${QESAPROOT}/ansible/playbooks/"
+cp ribes_nero.yaml "${QESAPROOT}/ansible/playbooks/"
+cp inventory.yaml "${TEST_PROVIDER}/"
+FILE_TOUCH_BY_ANSIBLE="${QESAPROOT}/ansible/playbooks/goji.bacche"
+
+# This is expected to fail
+set +e
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible -d --sequence create
+rc=$?; [[ $rc -ne 0 ]] || test_die "rc:$rc script is expected to fails when using -d and --sequence at the same time"
+set -e
+
+#######################################################################
+test_step "[${QESAP_CFG}] Run Ansible with --sequence not in create/destroy and apiver:3"
+set +e
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible --sequence something
+rc=$?; [[ $rc -ne 0 ]] || test_die "${QESAP_CFG} fail on ansible with --sequence not in create/destroy"
+set -e
+
+#######################################################################
+test_step "[${QESAP_CFG}] Run Ansible with --sequence not in create/destroy and apiver:4"
+QESAP_CFG=test_9.yaml
+cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/test.yaml"
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible --sequence test \
+  || test_die "${QESAP_CFG} ansible with --sequence test"
 
 #######################################################################
 QESAP_CFG=test_8.yaml
@@ -738,7 +815,6 @@ cp inventory.yaml "${TEST_PROVIDER}/"
 qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} deploy |& tee "${THIS_LOG}"
 test_file "${TEST_PROVIDER}/foo.bar"
 test_file "${FILE_TOUCH_BY_ANSIBLE}"
-
 
 echo "#######################################################################"
 echo "###                                                                 ###"
