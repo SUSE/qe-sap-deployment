@@ -8,11 +8,6 @@ variable "drbd_cluster_vip_mechanism" {
   type        = string
 }
 
-variable "drbd_cluster_fencing_mechanism" {
-  description = "Select the DRBD cluster fencing mechanism. Options: sbd"
-  type        = string
-}
-
 variable "drbd_sbd_storage_type" {
   description = "Choose the SBD storage type. Options: iscsi, shared-disk(this option available in Libvirt only)"
   type        = string
