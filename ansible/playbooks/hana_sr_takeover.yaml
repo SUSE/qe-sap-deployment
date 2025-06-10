@@ -1,0 +1,25 @@
+---
+- name: SAP HANA takeover – disruptive node
+  hosts: "{{ node_name | default('no_host_provided')}}"
+  gather_facts: false
+  remote_user: cloudadmin
+  vars_files:
+    - "{{ playbook_dir }}/vars/test_vars.yaml"
+    - "{{ playbook_dir }}/vars/hana_vars.yaml"
+  vars:
+    peer_site: "{{ (groups['hana'] | difference([node_name]))[0] }}"
+  roles:
+    - hana_actions
+
+- name: SAP HANA takeover – cluster validation
+  hosts: hana
+  gather_facts: false
+  remote_user: cloudadmin
+  serial: 1
+  vars_files:
+    - "{{ playbook_dir }}/vars/test_vars.yaml"
+    - "{{ playbook_dir }}/vars/hana_vars.yaml"
+  vars:
+    peer_site: "{{ (groups['hana'] | difference([node_name]))[0] }}"
+  roles:
+    - hana_checks
