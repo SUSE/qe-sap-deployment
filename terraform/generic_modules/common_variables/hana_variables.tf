@@ -77,11 +77,6 @@ variable "hana_ignore_min_mem_check" {
   type        = bool
 }
 
-variable "hana_cluster_fencing_mechanism" {
-  description = "Select the HANA cluster fencing mechanism. Options: sbd"
-  type        = string
-}
-
 variable "hana_sbd_storage_type" {
   description = "Choose the SBD storage type. Options: iscsi, shared-disk(this option available in Libvirt only)"
   type        = string
