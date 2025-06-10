@@ -1,0 +1,164 @@
+---
+- name: Prepare HANA Action - Dump cluster status (crm status)
+  command: crm status
+  become: true
+  register: crm_initial
+  changed_when: false
+
+- name: Prepare HANA Action - Assert this node is currently MASTER
+  assert:
+    that:
+      - crm_initial.stdout is search('\* Masters:\s*\[\s*{{ inventory_hostname }}\s*\]')
+    fail_msg: "{{ inventory_hostname }} is NOT the master node – aborting test"
+    success_msg: "{{ inventory_hostname }} is the master node"
+
+- name: Prepare HANA Action - Wait cluster idle
+  command: cs_wait_for_idle --sleep 5
+  register: idle
+  retries: "{{ cs_wait_timeout // 5 }}"
+  delay: 5
+  become: true
+  until: idle.rc == 0
+
+# SBD related stuff
+- name: Prepare HANA Action - Configure SBD start-delay
+  become: true
+  lineinfile:
+    path: /etc/sysconfig/sbd
+    regexp: '^SBD_DELAY_START='
+    line: "SBD_DELAY_START={{ sbd_delay_start | default('yes') }}"
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+- name: Prepare HANA Action - Gather SBD-delay parameters
+  become: true
+  shell: "{{ item.cmd }}"
+  args:
+    warn: false
+  register: sbddelay
+  changed_when: false
+  failed_when: false
+  loop:
+    - name: corosync_token
+      cmd: "corosync-cmapctl | awk -F ' = ' '/totem.token/ {print int($2/1000)}'"
+    - name: corosync_consensus
+      cmd: "corosync-cmapctl | awk -F ' = ' '/totem.consensus/ {print int($2/1000)}'"
+    - name: pcmk_delay_max
+      cmd: "crm resource param stonith-sbd show pcmk_delay_max | sed 's/[^0-9]*//g'"
+    - name: sbd_watchdog_timeout
+      cmd: "grep -oP '(?<=^SBD_WATCHDOG_TIMEOUT=)[[:digit:]]+' /etc/sysconfig/sbd"
+    - name: sbd_delay_start
+      cmd: "grep -oP '(?<=^SBD_DELAY_START=)([[:digit:]]+|yes|no)+' /etc/sysconfig/sbd"
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+- name: Prepare HANA Action - Set SBD delay facts
+  set_fact:
+    corosync_token:       "{{ sbddelay.results | selectattr('item.name','==','corosync_token')       | map(attribute='stdout') | first | int }}"
+    corosync_consensus:   "{{ sbddelay.results | selectattr('item.name','==','corosync_consensus')   | map(attribute='stdout') | first | int }}"
+    pcmk_delay_max:       "{{ sbddelay.results | selectattr('item.name','==','pcmk_delay_max')       | map(attribute='stdout') | first | int }}"
+    sbd_watchdog_timeout: "{{ sbddelay.results | selectattr('item.name','==','sbd_watchdog_timeout') | map(attribute='stdout') | first | int }}"
+    sbd_delay_start:      "{{ sbddelay.results | selectattr('item.name','==','sbd_delay_start')      | map(attribute='stdout') | first | default('yes') }}"
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+- name: Prepare HANA Action - Configure SBD start-delay
+  become: true
+  lineinfile:
+    path: /etc/sysconfig/sbd
+    regexp: '^SBD_DELAY_START='
+    line: "SBD_DELAY_START={{ sbd_delay_start }}"
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+- name: Prepare HANA Action - Create systemd drop-in for SBD timeout
+  become: true
+  file:
+    path: /etc/systemd/system/sbd.service.d
+    state: directory
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+- name: Prepare HANA Action - Write SBD timeout.conf
+  become: true
+  copy:
+    dest: /etc/systemd/system/sbd.service.d/timeout.conf
+    content: |
+      [Service]
+      TimeoutSec={{ {
+        'corosync_token'      : corosync_token,
+        'corosync_consensus'  : corosync_consensus,
+        'pcmk_delay_max'      : pcmk_delay_max,
+        'sbd_watchdog_timeout': sbd_watchdog_timeout,
+        'sbd_delay_start'     : sbd_delay_start
+      } | calc_sbd_delay + 30 }}
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+# HANA action (stop/kill/crash)
+- name: HANA Action - Stop
+  shell: "sudo -iu {{ sap_sidadm }} HDB stop"
+  become: true
+  when: action == 'stop'
+
+- name: HANA Action - Kill
+  shell: "sudo -iu {{ sap_sidadm }} HDB kill -x"
+  become: true
+  when: action == 'kill'
+
+- name: HANA Action - Crash
+  become: true
+  shell: echo b > /proc/sysrq-trigger
+  async: 1
+  poll: 0
+  when: action == 'crash'
+
+# Post hana action
+- name: Post HANA Action - Wait SSH back (stop/crash)
+  wait_for_connection:
+    delay: 15
+    timeout: 900
+  when: action in ['crash','stop']
+
+- name: Post HANA Action - Pause for calculated SBD delay + 30s
+  pause:
+    seconds: "{{ {
+      'corosync_token'      : corosync_token,
+      'corosync_consensus'  : corosync_consensus,
+      'pcmk_delay_max'      : pcmk_delay_max,
+      'sbd_watchdog_timeout': sbd_watchdog_timeout,
+      'sbd_delay_start'     : sbd_delay_start
+    } | calc_sbd_delay + 30 }}"
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+- name: Post HANA Action - Wait for Pacemaker to be active
+  become: true
+  command: systemctl --no-pager is-active pacemaker
+  register: pm
+  retries: "{{ pacemaker_timeout // 15 }}"
+  delay: 15
+  until: pm.stdout == 'active'
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+- name: Post HANA Action - Re-enable system replication
+  shell: |
+    sudo -iu {{ sap_sidadm }} \
+      hdbnsutil -sr_register \
+      --online \
+      --name={{ site_name }} \
+      --remoteHost={{ peer_site }} \
+      --remoteInstance={{ sap_hana_install_instance_number }} \
+      --replicationMode=sync \
+      --operationMode=logreplay
+  register: reg
+  retries: 6
+  delay: 10
+  until: reg.rc == 0
+  failed_when: reg.rc != 0
+  become: false
+
+- name: Post HANA Action - crm cleanup (start resources)
+  become: true
+  command: crm resource cleanup
+
+- name: Post HANA Action - Wait cluster idle after cleanup
+  become: true
+  command: cs_wait_for_idle --sleep 5
+  register: settle
+  retries: "{{ cluster_settle_retries }}"
+  delay: "{{ cluster_settle_delay }}"
+  until: settle.rc == 0

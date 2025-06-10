@@ -1,0 +1,7 @@
+---
+- name: SAP HANA site failure test
+  hosts: "{{ node_name }}"
+  gather_facts: no
+  remote_user: cloudadmin
+  roles:
+    - hana_prevalidate
