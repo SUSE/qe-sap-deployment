@@ -5,7 +5,7 @@
   become_user: root
   pre_tasks:
     - name: Source hana install variables
-      include_vars: ./vars/hana_vars.yaml
+      ansible.builtin.include_vars: ./vars/hana_vars.yaml
   vars:
     install_path: /var/lib/qedep
     install_file: "{{ install_path }}/{{ sap_hana_install_sid }}_install"

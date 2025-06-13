@@ -19,9 +19,11 @@ required.
 
 ## Idempotency
 
-All playbooks are written to be idempotent. The playbooks are intended to be
-run on freshly created systems which have not been manually managed. If run
-against manually configured systems, then some plays may not act as expected.
+Ideally all playbooks in this project should be written to be idempotent,
+but not all of them are: sap-hana-install is not idempotent yet.
+The playbooks are intended to be run on freshly created systems
+which have not been manually managed.
+If run against manually configured systems, then some plays may not act as expected.
 
 ## registration
 
@@ -31,11 +33,12 @@ Target hosts:
 
 Variables:
 
+* use_suseconnect
 * reg_code
 * email_address
 * sles_modules
 
-Variable Source = ./variables.sh
+Variable Source = from the command line in the conf.yaml
 
 The 'registration' playbook registers the SLES for SAP installations with SCC.
 The playbook will check for the existence of repositories available to zypper.
@@ -90,8 +93,9 @@ Target hosts:
 Variables:
 
 * use_sapconf
+* use_sap_hana_sr_angi
 
-Variable Source = ./variables.sh
+Variable Source = ./vars/hana_vars.yaml that can be populated by ansible::hana_vars in the conf.yaml
 
 The 'sap-hana-preconfigure' playbook is used to tune the HANA nodes for
 SAP HANA. It will install any additionally required packages and then
@@ -340,7 +344,7 @@ below shows which are clouds are currently supported.
 
 Like the other playbooks that are directly connected to HANA operations,
 this playbook also sources `hana_vars.yaml` for consistency. By default,
-an SBD based cluster will be created.
+an SBD based cluster will not be created.
 
 ### Azure native fencing
 
@@ -352,7 +356,6 @@ To use Azure native fencing you must:
   * spn_application_id - SPN fencing app id
   * spn_application_password - Password used for SPN based fencing
 * **Variables below are provided by terraform output:**
-  * use_sbd - has to be set to 'no'
   * subscription_id
   * resource_group
   * tenant_id
