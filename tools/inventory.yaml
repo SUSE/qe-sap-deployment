@@ -1,6 +1,5 @@
 all:
   vars:
-    use_sbd: true
     resource_group_name: rg-name
     subscription_id: AAAAA-BBBBB-CCCCC-DDDDD
     tenant_id: EEEEE-FFFFF-GGGGG-HHHHH
