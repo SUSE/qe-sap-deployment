@@ -47,7 +47,7 @@
 - name: Set LUNs to automatic
   ansible.builtin.command:
     cmd: "iscsiadm -m node -p {{ item.item.stdout | split(':') | first }}:3260 -T {{ srv_iqn }} --op=update --name=node.startup --value=automatic"
-    register: iscsiadm_result
-    changed_when: iscsiadm_result.rc == 0
+  register: iscsiadm_result
+  changed_when: iscsiadm_result.rc == 0
   when: item.changed
   loop: "{{ login.results }}"
