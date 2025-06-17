@@ -219,10 +219,28 @@
 - name: Enable SBD [sbd]
   ansible.builtin.command:
     cmd: crm configure primitive rsc_iscsi_sbd stonith:external/sbd
+  register: reg_iscsi
+  changed_when: reg_iscsi.rc == 0
   when:
     - sbd_stonith | string | lower  == 'false'
     - use_sbd | default(false) | bool
     - is_primary
+
+- name: Collect fence_gce info (debug purpose)
+  ansible.builtin.command: "{{ item }}"
+  with_items:
+    - which fence_gce
+    - /usr/sbin/fence_gce --version
+    - "/usr/sbin/fence_gce -vvv -n {{ primary_hostname }} --zone {{ primary_zone }} -o status"
+    - "/usr/sbin/fence_gce -vvv -n {{ primary_hostname }} --zone {{ primary_zone }} -o list"
+    - "/usr/sbin/fence_gce -vvv -n {{ primary_hostname }} --zone {{ primary_zone }} -o list-status"
+    - "/usr/sbin/fence_gce -vvv -n {{ primary_hostname }} --zone {{ primary_zone }} -o metadata"
+    - "/usr/sbin/fence_gce -vvv -n {{ primary_hostname }} --zone {{ primary_zone }} -o manpage"
+    - "/usr/sbin/fence_gce -vvv -n {{ primary_hostname }} --zone {{ primary_zone }} -o monitor"
+  when:
+    - not (use_sbd | default(false) | bool)
+  changed_when: false
+  failed_when: false
 
 # The following STONITH commands for GCP have been adapted from
 # https://cloud.google.com/solutions/sap/docs/sap-hana-ha-config-sles#create_the_fencing_device_resources
@@ -236,6 +254,11 @@
     op monitor interval="300s" timeout="120s"
     op start interval="0" timeout="60s"
     meta target-role=Started
+  register: reg_fence_gce_prim
+  changed_when: reg_fence_gce_prim.rc == 0
+  until: reg_fence_gce_prim is successful
+  retries: 3
+  delay: 30
   when:
     - is_primary
     - not (use_sbd | default(false) | bool)
@@ -252,6 +275,11 @@
     op monitor interval="300s" timeout="120s"
     op start interval="0" timeout="60s"
     meta target-role=Started
+  register: reg_fence_gce_sec
+  changed_when: reg_fence_gce_sec.rc == 0
+  until: reg_fence_gce_sec is successful
+  retries: 3
+  delay: 30
   when:
     - is_primary
     - not (use_sbd | default(false) | bool)
@@ -260,6 +288,8 @@
   ansible.builtin.command: >
     crm configure location LOC_STONITH_{{ primary_hostname }} \
     rsc_gce_stonith_primary -inf: "{{ primary_hostname }}"
+  register: reg_loc_prim
+  changed_when: reg_loc_prim.rc == 0
   when:
     - is_primary
     - not (use_sbd | default(false) | bool)
@@ -268,6 +298,8 @@
   ansible.builtin.command: >
     crm configure location LOC_STONITH_{{ secondary_hostname }} \
     rsc_gce_stonith_secondary -inf: "{{ secondary_hostname }}"
+  register: reg_loc_sec
+  changed_when: reg_loc_sec.rc == 0
   when:
     - is_primary
     - not (use_sbd | default(false) | bool)
@@ -278,6 +310,8 @@
       crm configure property
       $id="cib-bootstrap-options"
       stonith-timeout=300s
+  register: reg_st
+  changed_when: reg_st.rc == 0
   when:
     - stonith_timeout != '300s'
     - is_primary
@@ -289,6 +323,8 @@
       crm configure property
       $id="cib-bootstrap-options"
       stonith-enabled=true
+  register: reg_se
+  changed_when: reg_se.rc == 0
   when:
     - stonith_enabled | string | lower != 'true'
     - is_primary
@@ -313,6 +349,8 @@
       crm configure rsc_defaults
       $id="rsc-options"
       migration-threshold=5000
+  register: reg_mig_t
+  changed_when: reg_mig_t.rc == 0
   when:
     - migration_threshold != '5000'
     - is_primary
@@ -320,6 +358,8 @@
 - name: Set op_defaults timeout
   ansible.builtin.command:
     cmd: crm configure op_defaults timeout=600
+  register: reg_op_tim
+  changed_when: reg_op_tim.rc == 0
   when:
     - op_default_timeout != '600'
     - is_primary
@@ -334,6 +374,8 @@
       cidr_netmask=32
       nic=eth0
       op monitor interval=3600s timeout=60s
+  register: reg_ip
+  changed_when: reg_ip.rc == 0
   when:
     - rsc_ip | length == 0
     - is_primary
@@ -383,6 +425,7 @@
     cmd: >-
       crm resource clear
       rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+  changed_when: true
   when:
     - is_primary
     - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
@@ -397,6 +440,8 @@
       binfile="/usr/bin/socat"
       cmdline_options="-U TCP-LISTEN:625{{ sap_hana_install_instance_number }},backlog=10,fork,reuseaddr /dev/null"
       op monitor timeout=20s interval=10s op_params depth=0
+  register: reg_hc_prim
+  changed_when: reg_hc_prim.rc == 0
   when:
     - is_primary
     - rsc_healthcheck_primary | length == 0
@@ -408,6 +453,8 @@
       grp_ip_hc
       rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       rsc_healthcheck_primary
+  register: reg_grp_ip_hc
+  changed_when: reg_grp_ip_hc.rc == 0
   when:
     - is_primary
     - grp_ip_hc | length == 0
