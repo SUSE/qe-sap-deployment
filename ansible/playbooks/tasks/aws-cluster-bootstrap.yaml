@@ -397,6 +397,7 @@
     cmd: >-
       crm resource clear
       rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+  changed_when: true
   when:
     - is_primary
     - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
