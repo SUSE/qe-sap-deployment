@@ -112,7 +112,6 @@ resource "local_file" "ansible_inventory" {
       iscsi_enabled       = local.iscsi_enabled,
       iscsi_remote_python = var.iscsi_remote_python,
       iscsi_machinetype   = var.iscsi_instancetype,
-      use_sbd             = local.use_sbd,
       routetable_id       = aws_route_table.route-table.id,
       cluster_ip          = local.hana_cluster_vip,
       stonith_tag         = module.hana_node.stonith_tag,
