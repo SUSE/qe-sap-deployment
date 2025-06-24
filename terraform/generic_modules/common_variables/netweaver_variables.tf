@@ -8,11 +8,6 @@ variable "netweaver_cluster_vip_mechanism" {
   type        = string
 }
 
-variable "netweaver_cluster_fencing_mechanism" {
-  description = "Choose the fencing mechanism for the cluster. Options: sbd, native"
-  type        = string
-}
-
 variable "netweaver_sbd_storage_type" {
   description = "Choose the SBD storage type. Options: iscsi"
   type        = string

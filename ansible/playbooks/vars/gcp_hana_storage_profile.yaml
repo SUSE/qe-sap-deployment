@@ -41,11 +41,3 @@ sap_storage_dict:
     pv: ["/dev/disk/by-id/google-{{ prefix }}-hana-backup"]
     numluns: '1'
     stripesize: ''
-  install:
-    name: 'install'
-    directory: '/hana/install'
-    vg: 'installvg'
-    lv: 'installlv'
-    pv: ["/dev/disk/by-id/google-{{ prefix }}-hana-software"]
-    numluns: '1'
-    stripesize: ''

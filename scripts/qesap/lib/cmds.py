@@ -289,7 +289,7 @@ def ansible_validate(config, base_project, sequence, provider):
 
 
 def ansible_command_sequence(
-    configure_data_ansible, base_project, sequence, verbose, inventory, profile, junit
+    configure_data_ansible, base_project, sequence, verbose, inventory, profile, junit, apiver
 ):
     """Compose the sequence of Ansible commands
 
@@ -302,6 +302,8 @@ def ansible_command_sequence(
         inventory (str): inventory.yaml file path
         profile (bool): enable task profile
         junit (str): enable junit report and provide folder where to store report
+        apiver (int): apiver of the conf.yaml. It is important to know if apiver >= 4,
+                      that means list of playbooks is within the new key sequences
 
     Returns:
         list of strings, each of them is an anslble or ansible-playbook command
@@ -368,7 +370,12 @@ def ansible_command_sequence(
     ssh_share += ' --ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'
     ansible_cmd_seq.append({"cmd": ssh_share})
 
-    for playbook in configure_data_ansible[sequence]:
+    selected_list_of_playbooks = []
+    if apiver < 4:
+        selected_list_of_playbooks = configure_data_ansible[sequence]
+    else:
+        selected_list_of_playbooks = configure_data_ansible["sequences"][sequence]
+    for playbook in selected_list_of_playbooks:
         # playbook input is here from the conf.yaml
         # 1. it could be a string only with one playbook file name, no path
         # 2. it could have some arguments, so single string with arguments separated by spaces
@@ -405,6 +412,30 @@ def ansible_command_sequence(
     return True, ansible_cmd_seq
 
 
+def execute_ansible_commands(commands, dryrun):
+    """Helper to execute a list of ansible commands.
+
+    Args:
+        commands (list): List of command dictionaries as prepared by ansible_command_sequence.
+        dryrun (bool): Enable dryrun execution mode.
+
+    Returns:
+        Status: Execution result, 0 means OK.
+    """
+    for command in commands:
+        if dryrun:
+            print(command["cmd"])
+        else:
+            ret, out = lib.process_manager.subprocess_run(**command)
+            log.debug("Ansible process return ret:%d", ret)
+            if "ansible-playbook" in command["cmd"]:
+                ansible_export_output(command["cmd"], out)
+            if ret != 0:
+                log.error("command:%s returned non zero %d", command, ret)
+                return Status(f"Error rc: {ret} at {command}")
+    return Status("ok")
+
+
 def ansible_export_output(command, out):
     """Write the Ansible (or ansible-playbook) stdout to file
 
@@ -436,7 +467,16 @@ def ansible_export_output(command, out):
         log_file.write("\n".join(out))
 
 
-def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, profile=False, junit=False):
+def cmd_ansible(
+    configure_data,
+    base_project,
+    dryrun,
+    verbose,
+    destroy=False,
+    profile=False,
+    junit=False,
+    sequence=None,
+):
     """Main executor for the deploy sub-command
 
     Args:
@@ -448,13 +488,24 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
         destroy (bool): select the playbook list
         profile (bool): enable task profile
         junit (str): enable junit report and provide folder where to store it
+        sequence (str): only run a named section from the ansible::sequence conf.yaml part.
+                       In case it is used with conf.yaml using apiver <4, only 'create' and 'destroy'
+                       values are supported.
 
     Returns:
         Status: execution result, 0 means OK. It is mind to be used as script exit code
     """
-    sequence = 'create'
-    if destroy:
-        sequence = 'destroy'
+    if sequence:
+        if (configure_data["apiver"] >= 4) or (sequence in ["create", "destroy"]):
+            selected_sequence = sequence
+        else:
+            err = f"Required section '{sequence}' is not supported by conf.yaml with apiver:{configure_data['apiver']}"
+            log.error(err)
+            return Status(err)
+    else:
+        selected_sequence = "create"
+        if destroy:
+            selected_sequence = "destroy"
 
     # Validations
     config = CONF(configure_data)
@@ -463,31 +514,32 @@ def cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False, pr
         log.error(err)
         return Status(err)
 
-    res, msg = ansible_validate(config, base_project, sequence, configure_data['provider'])
+    res, msg = ansible_validate(
+        config, base_project, selected_sequence, configure_data["provider"]
+    )
     if not res:
         log.error(msg)
         return Status(msg)
 
-    if not config.has_ansible_playbooks(sequence):
+    if not config.has_ansible_playbooks(selected_sequence):
         log.info("No playbooks to play")
         return Status("ok")
 
-    inventory = os.path.join(base_project, 'terraform', configure_data['provider'], 'inventory.yaml')
-    ret, ansible_cmd_seq = ansible_command_sequence(configure_data['ansible'], base_project, sequence, verbose, inventory, profile, junit)
+    inventory = os.path.join(
+        base_project, "terraform", configure_data["provider"], "inventory.yaml"
+    )
+    ret, ansible_cmd_seq = ansible_command_sequence(
+        configure_data["ansible"],
+        base_project,
+        selected_sequence,
+        verbose,
+        inventory,
+        profile,
+        junit,
+        configure_data["apiver"]
+    )
     if not ret:
         log.error("ansible_command_sequence ret:%d", ret)
         return Status(ansible_cmd_seq)
 
-    for command in ansible_cmd_seq:
-        if dryrun:
-            print(command['cmd'])
-        else:
-            ret, out = lib.process_manager.subprocess_run(**command)
-            log.debug("Ansible process return ret:%d", ret)
-            # only write separated files for ansible-playbook commands
-            if 'ansible-playbook' in command['cmd']:
-                ansible_export_output(command['cmd'], out)
-            if ret != 0:
-                log.error("command:%s returned non zero %d", command, ret)
-                return Status(f"Error rc: {ret} at {command}")
-    return Status("ok")
+    return execute_ansible_commands(ansible_cmd_seq, dryrun)

@@ -37,7 +37,6 @@ output "configuration" {
       cluster_vip_secondary          = var.hana_cluster_vip_secondary
       ha_enabled                     = var.hana_ha_enabled
       ignore_min_mem_check           = var.hana_ignore_min_mem_check
-      fencing_mechanism              = var.hana_cluster_fencing_mechanism
       sbd_storage_type               = var.hana_sbd_storage_type
       scale_out_enabled              = var.hana_scale_out_enabled
       scale_out_shared_storage_type  = var.hana_scale_out_shared_storage_type
@@ -47,7 +46,6 @@ output "configuration" {
     netweaver = {
       ha_enabled            = var.netweaver_ha_enabled
       cluster_vip_mechanism = var.netweaver_cluster_vip_mechanism
-      fencing_mechanism     = var.netweaver_cluster_fencing_mechanism
       sbd_storage_type      = var.netweaver_sbd_storage_type
       sid                   = var.netweaver_sid
       ascs_instance_number  = var.netweaver_ascs_instance_number
@@ -79,7 +77,6 @@ output "configuration" {
     drbd = {
       cluster_vip           = var.drbd_cluster_vip
       cluster_vip_mechanism = var.drbd_cluster_vip_mechanism
-      fencing_mechanism     = var.drbd_cluster_fencing_mechanism
       sbd_storage_type      = var.drbd_sbd_storage_type
     }
   }

@@ -46,7 +46,7 @@
   when:
     - is_primary
     - stonith_timeout | length == 0
-    - use_sbd | bool
+    - use_sbd | default(false) | bool
   register: result
   changed_when: result.rc == 0
 
@@ -56,7 +56,7 @@
   when:
     - is_primary
     - stonith_timeout | length == 0
-    - not use_sbd | bool
+    - not (use_sbd | default(false) | bool)
   register: result
   changed_when: result.rc == 0
 
@@ -75,7 +75,7 @@
     cmd: crm configure property concurrent-fencing=true
   when:
     - is_primary
-    - not use_sbd | bool
+    - not (use_sbd | default(false) | bool)
   register: result
   changed_when: result.rc == 0
 

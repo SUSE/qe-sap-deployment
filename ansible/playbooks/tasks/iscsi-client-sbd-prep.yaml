@@ -1,4 +1,6 @@
 ---
+# tasks sourced from
+# https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/high-availability-guide-suse-pacemaker
 - name: Enable required services
   ansible.builtin.systemd:
     name: "{{ item }}"
@@ -7,6 +9,7 @@
     - iscsid
     - iscsi
     - sbd
+
 # This loop ensures that each hana host has a unique iscsi initiator name.
 # The initiator names are composed from client0x_iqn_name_authority & client0x_meaningful_name and added to the
 # client_list.  They are then added to /etc/iscsi/initiatorname.iscsi in the order they appear in the client list
@@ -24,7 +27,7 @@
     - Restart iscsi
 
 - name: Flush handlers
-  meta: flush_handlers
+  ansible.builtin.meta: flush_handlers
 
 - name: Scan iscsi disks
   ansible.builtin.command:
@@ -44,5 +47,7 @@
 - name: Set LUNs to automatic
   ansible.builtin.command:
     cmd: "iscsiadm -m node -p {{ item.item.stdout | split(':') | first }}:3260 -T {{ srv_iqn }} --op=update --name=node.startup --value=automatic"
+  register: iscsiadm_result
+  changed_when: iscsiadm_result.rc == 0
   when: item.changed
   loop: "{{ login.results }}"

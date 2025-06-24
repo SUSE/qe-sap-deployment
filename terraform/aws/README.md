@@ -59,25 +59,9 @@ For detailed information and deployment options have a look at `terraform.tfvars
 
     * AWS credentials
 
-    There are 2 ways of using the AWS credentials. Using the access key id and
-    the secret access key or using an already existing credentials file,
-    being both options self exclusive (the first option has preference).
-
-    To use the first option basically set the values `aws_access_key_id` and
-    `aws_secret_access_key` in the `terraform.tfvars`.
-
-    To use the credentials file, configure the values for the access key and
-    the secret key in a credentials file located in `$HOME/.aws/credentials`.
-    The syntax of the file is:
-
-    ``` shell
-    [default]
-    aws_access_key_id = <HERE_GOES_THE_ACCESS_KEY>
-    aws_secret_access_key = <HERE_GOES_THE_SECRET_KEY>
-    ```
-
-    This file is also used by the `aws` command line tool, so it can be created
-    with the command: `aws configure`.
+    Refer to terraform AWS provider documentation.
+    Same configuration needed to use `aws` command line tool applies to terraform too.
+    So it can be created with the command: `aws configure`.
 
     **Note**: All tests so far with this configuration have been done with only the keys stored in the credentials files, and the region being passed as a variable.
 

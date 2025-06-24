@@ -50,8 +50,20 @@ locals {
   netweaver_virtual_ips         = var.netweaver_cluster_vip_mechanism == "load-balancer" ? concat(local.netweaver_virtual_ips_lb_xscs, local.netweaver_virtual_ips_lb_app) : local.netweaver_virtual_ips_route
 
   # Check if iscsi server has to be created
-  use_sbd       = var.hana_cluster_fencing_mechanism == "sbd" || var.drbd_cluster_fencing_mechanism == "sbd" || var.netweaver_cluster_fencing_mechanism == "sbd"
-  iscsi_enabled = var.sbd_storage_type == "iscsi" && ((var.hana_count > 1 && var.hana_ha_enabled) || var.drbd_enabled || (local.netweaver_count > 1 && var.netweaver_ha_enabled)) && local.use_sbd ? true : false
+  use_sbd = (
+    var.hana_cluster_fencing_mechanism == "sbd" ||
+    var.drbd_cluster_fencing_mechanism == "sbd" ||
+    var.netweaver_cluster_fencing_mechanism == "sbd"
+  )
+  iscsi_enabled = (
+    var.sbd_storage_type == "iscsi" &&
+    (
+      (var.hana_count > 1 && var.hana_ha_enabled) ||
+      var.drbd_enabled ||
+      (local.netweaver_count > 1 && var.netweaver_ha_enabled)
+    ) &&
+    local.use_sbd ? true : false
+  )
 
   # Obtain machines os_image value
   hana_os_image       = var.hana_os_image != "" ? var.hana_os_image : var.os_image
@@ -91,7 +103,6 @@ module "common_variables" {
   hana_cluster_vip_secondary          = var.hana_active_active ? local.hana_cluster_vip_secondary : ""
   hana_ha_enabled                     = var.hana_ha_enabled
   hana_ignore_min_mem_check           = var.hana_ignore_min_mem_check
-  hana_cluster_fencing_mechanism      = var.hana_cluster_fencing_mechanism
   hana_sbd_storage_type               = var.sbd_storage_type
   hana_scale_out_enabled              = var.hana_scale_out_enabled
   hana_scale_out_shared_storage_type  = var.hana_scale_out_shared_storage_type
@@ -112,7 +123,6 @@ module "common_variables" {
   netweaver_hana_instance_number      = var.hana_instance_number
   netweaver_ha_enabled                = var.netweaver_ha_enabled
   netweaver_cluster_vip_mechanism     = var.netweaver_cluster_vip_mechanism
-  netweaver_cluster_fencing_mechanism = var.netweaver_cluster_fencing_mechanism
   netweaver_sbd_storage_type          = var.sbd_storage_type
   netweaver_shared_storage_type       = var.netweaver_shared_storage_type
   monitoring_hana_targets             = local.hana_ips
@@ -126,7 +136,6 @@ module "common_variables" {
   monitoring_netweaver_targets_vip    = var.netweaver_enabled ? local.netweaver_virtual_ips : []
   drbd_cluster_vip                    = local.drbd_cluster_vip
   drbd_cluster_vip_mechanism          = var.drbd_cluster_vip_mechanism
-  drbd_cluster_fencing_mechanism      = var.drbd_cluster_fencing_mechanism
   drbd_sbd_storage_type               = var.sbd_storage_type
 }
 

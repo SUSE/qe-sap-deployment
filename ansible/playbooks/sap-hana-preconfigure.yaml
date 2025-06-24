@@ -7,6 +7,10 @@
   pre_tasks:
     - name: Source hana install variables
       include_vars: ./vars/hana_vars.yaml
+    - name: Detect cloud platform
+      ansible.builtin.include_tasks:
+        ./tasks/detect-cloud-platform.yaml
+
 
   vars:
     # SAPHahaSR-angi
@@ -18,7 +22,6 @@
     use_reboottimeout: 1200
     use_connecttimeout: 10
     saptune_solution: HANA
-    platform: azure
     cluster_node: true
 
   tasks:

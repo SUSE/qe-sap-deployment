@@ -59,7 +59,6 @@ module "common_variables" {
   hana_cluster_vip_secondary          = var.hana_active_active ? local.hana_cluster_vip_secondary : ""
   hana_ha_enabled                     = var.hana_ha_enabled
   hana_ignore_min_mem_check           = var.hana_ignore_min_mem_check
-  hana_cluster_fencing_mechanism      = var.hana_cluster_fencing_mechanism
   hana_sbd_storage_type               = var.sbd_storage_type
   hana_scale_out_enabled              = var.hana_scale_out_enabled
   hana_scale_out_shared_storage_type  = var.hana_scale_out_shared_storage_type
@@ -80,7 +79,6 @@ module "common_variables" {
   netweaver_hana_instance_number      = var.hana_instance_number
   netweaver_ha_enabled                = var.netweaver_ha_enabled
   netweaver_cluster_vip_mechanism     = "route"
-  netweaver_cluster_fencing_mechanism = var.netweaver_cluster_fencing_mechanism
   netweaver_sbd_storage_type          = var.sbd_storage_type
   netweaver_shared_storage_type       = var.netweaver_shared_storage_type
   monitoring_hana_targets             = local.hana_ips
@@ -94,84 +92,74 @@ module "common_variables" {
   monitoring_netweaver_targets_vip    = var.netweaver_enabled ? local.netweaver_virtual_ips : []
   drbd_cluster_vip                    = local.drbd_cluster_vip
   drbd_cluster_vip_mechanism          = "route"
-  drbd_cluster_fencing_mechanism      = var.drbd_cluster_fencing_mechanism
   drbd_sbd_storage_type               = var.sbd_storage_type
 }
 
 module "drbd_node" {
-  source                = "./modules/drbd_node"
-  common_variables      = module.common_variables.configuration
-  name                  = var.drbd_name
-  network_domain        = var.drbd_network_domain == "" ? var.network_domain : var.drbd_network_domain
-  drbd_count            = var.drbd_enabled == true ? 2 : 0
-  vm_size               = var.drbd_instancetype
-  availability_zones    = data.aws_availability_zones.available.names
-  os_image              = local.drbd_os_image
-  os_owner              = local.drbd_os_owner
-  vpc_id                = local.vpc_id
-  subnet_address_range  = local.drbd_subnet_address_range
-  key_name              = aws_key_pair.key-pair.key_name
-  security_group_id     = local.security_group_id
-  route_table_id        = aws_route_table.route-table.id
-  aws_credentials       = var.aws_credentials
-  aws_access_key_id     = var.aws_access_key_id
-  aws_secret_access_key = var.aws_secret_access_key
-  host_ips              = local.drbd_ips
-  drbd_data_disk_size   = var.drbd_data_disk_size
-  drbd_data_disk_type   = var.drbd_data_disk_type
-  iscsi_srv_ip          = join("", module.iscsi_server.iscsisrv_ip)
-  nfs_mounting_point    = var.drbd_nfs_mounting_point
-  nfs_export_name       = var.netweaver_sid
+  source               = "./modules/drbd_node"
+  common_variables     = module.common_variables.configuration
+  name                 = var.drbd_name
+  network_domain       = var.drbd_network_domain == "" ? var.network_domain : var.drbd_network_domain
+  drbd_count           = var.drbd_enabled == true ? 2 : 0
+  vm_size              = var.drbd_instancetype
+  availability_zones   = data.aws_availability_zones.available.names
+  os_image             = local.drbd_os_image
+  os_owner             = local.drbd_os_owner
+  vpc_id               = local.vpc_id
+  subnet_address_range = local.drbd_subnet_address_range
+  key_name             = aws_key_pair.key-pair.key_name
+  security_group_id    = local.security_group_id
+  route_table_id       = aws_route_table.route-table.id
+  host_ips             = local.drbd_ips
+  drbd_data_disk_size  = var.drbd_data_disk_size
+  drbd_data_disk_type  = var.drbd_data_disk_type
+  iscsi_srv_ip         = join("", module.iscsi_server.iscsisrv_ip)
+  nfs_mounting_point   = var.drbd_nfs_mounting_point
+  nfs_export_name      = var.netweaver_sid
 }
 
 module "netweaver_node" {
-  source                = "./modules/netweaver_node"
-  common_variables      = module.common_variables.configuration
-  name                  = var.netweaver_name
-  network_domain        = var.netweaver_network_domain == "" ? var.network_domain : var.netweaver_network_domain
-  xscs_server_count     = local.netweaver_xscs_server_count
-  app_server_count      = var.netweaver_enabled ? var.netweaver_app_server_count : 0
-  vm_size               = var.netweaver_instancetype
-  availability_zones    = data.aws_availability_zones.available.names
-  os_image              = local.netweaver_os_image
-  os_owner              = local.netweaver_os_owner
-  vpc_id                = local.vpc_id
-  subnet_address_range  = local.netweaver_subnet_address_range
-  key_name              = aws_key_pair.key-pair.key_name
-  security_group_id     = local.security_group_id
-  route_table_id        = aws_route_table.route-table.id
-  efs_performance_mode  = var.netweaver_efs_performance_mode
-  aws_credentials       = var.aws_credentials
-  aws_access_key_id     = var.aws_access_key_id
-  aws_secret_access_key = var.aws_secret_access_key
-  s3_bucket             = var.netweaver_s3_bucket
-  host_ips              = local.netweaver_ips
-  virtual_host_ips      = local.netweaver_virtual_ips
-  iscsi_srv_ip          = join("", module.iscsi_server.iscsisrv_ip)
+  source               = "./modules/netweaver_node"
+  common_variables     = module.common_variables.configuration
+  name                 = var.netweaver_name
+  network_domain       = var.netweaver_network_domain == "" ? var.network_domain : var.netweaver_network_domain
+  xscs_server_count    = local.netweaver_xscs_server_count
+  app_server_count     = var.netweaver_enabled ? var.netweaver_app_server_count : 0
+  vm_size              = var.netweaver_instancetype
+  availability_zones   = data.aws_availability_zones.available.names
+  os_image             = local.netweaver_os_image
+  os_owner             = local.netweaver_os_owner
+  vpc_id               = local.vpc_id
+  subnet_address_range = local.netweaver_subnet_address_range
+  key_name             = aws_key_pair.key-pair.key_name
+  security_group_id    = local.security_group_id
+  route_table_id       = aws_route_table.route-table.id
+  efs_performance_mode = var.netweaver_efs_performance_mode
+  s3_bucket            = var.netweaver_s3_bucket
+  host_ips             = local.netweaver_ips
+  virtual_host_ips     = local.netweaver_virtual_ips
+  iscsi_srv_ip         = join("", module.iscsi_server.iscsisrv_ip)
 }
 
 module "hana_node" {
-  source                = "./modules/hana_node"
-  common_variables      = module.common_variables.configuration
-  name                  = var.hana_name
-  network_domain        = var.hana_network_domain == "" ? var.network_domain : var.hana_network_domain
-  hana_count            = var.hana_count
-  vm_size               = var.hana_instancetype
-  availability_zones    = data.aws_availability_zones.available.names
-  os_image              = local.hana_os_image
-  os_owner              = local.hana_os_owner
-  vpc_id                = local.vpc_id
-  subnet_address_range  = local.hana_subnet_address_range
-  key_name              = aws_key_pair.key-pair.key_name
-  security_group_id     = local.security_group_id
-  route_table_id        = aws_route_table.route-table.id
-  aws_credentials       = var.aws_credentials
-  aws_access_key_id     = var.aws_access_key_id
-  aws_secret_access_key = var.aws_secret_access_key
-  host_ips              = local.hana_ips
-  hana_data_disk_type   = var.hana_data_disk_type
-  hana_data_disk_size   = var.hana_data_disk_size
-  iscsi_srv_ip          = join("", module.iscsi_server.iscsisrv_ip)
+  source               = "./modules/hana_node"
+  common_variables     = module.common_variables.configuration
+  name                 = var.hana_name
+  network_domain       = var.hana_network_domain == "" ? var.network_domain : var.hana_network_domain
+  hana_count           = var.hana_count
+  vm_size              = var.hana_instancetype
+  availability_zones   = data.aws_availability_zones.available.names
+  os_image             = local.hana_os_image
+  os_owner             = local.hana_os_owner
+  vpc_id               = local.vpc_id
+  subnet_address_range = local.hana_subnet_address_range
+  key_name             = aws_key_pair.key-pair.key_name
+  security_group_id    = local.security_group_id
+  route_table_id       = aws_route_table.route-table.id
+  host_ips             = local.hana_ips
+  hana_data_disk_type  = var.hana_data_disk_type
+  hana_data_disk_size  = var.hana_data_disk_size
+  iscsi_srv_ip         = join("", module.iscsi_server.iscsisrv_ip)
 }
 
 module "monitoring" {

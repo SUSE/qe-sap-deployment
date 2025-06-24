@@ -131,12 +131,12 @@
   ansible.builtin.slurp:
     src: /etc/sysconfig/sbd
   register: sbd_slurp
-  when: use_sbd | bool
+  when: use_sbd | default(false) | bool
 
 - name: Set SBD set_fact
   ansible.builtin.set_fact:
     sbd_paths: "{{ sbd_slurp['content'] | b64decode | regex_findall('SBD_DEVICE=(.+)') | last }}"
-  when: use_sbd | bool
+  when: use_sbd | default(false) | bool
 
 - name: Create the cluster on primary [sbd]
   ansible.builtin.command:
@@ -151,7 +151,7 @@
     creates: /etc/corosync/corosync.conf
   when:
     - is_primary
-    - use_sbd | bool
+    - use_sbd | default(false) | bool
 
 - name: Create the cluster on primary [azure fencing]
   ansible.builtin.command:
@@ -164,7 +164,7 @@
     creates: /etc/corosync/corosync.conf
   when:
     - is_primary
-    - not use_sbd | bool
+    - not (use_sbd | default(false) | bool)
 
 # check crm status
 - name: Check the cluster on primary
@@ -233,7 +233,7 @@
   when:
     - is_primary
     - sbd_tracer == 'absent'
-    - use_sbd | bool
+    - use_sbd | default(false) | bool
 
 - name: Get cluster status
   ansible.builtin.command:
@@ -281,7 +281,7 @@
   when:
     - is_primary
     - rsc_st_azure | length == 0
-    - not use_sbd | bool and azure_identity_management == 'msi'
+    - not (use_sbd | default(false) | bool) and azure_identity_management == 'msi'
 
 - name: Configure azure fencing [SPN (Service principal)]
   ansible.builtin.command:
@@ -306,7 +306,7 @@
   when:
     - is_primary
     - rsc_st_azure | length == 0
-    - not use_sbd | bool and azure_identity_management == 'spn'
+    - not (use_sbd | default(false) | bool) and azure_identity_management == 'spn'
 
 - name: Add Azure scheduled events to cluster
   ansible.builtin.command:

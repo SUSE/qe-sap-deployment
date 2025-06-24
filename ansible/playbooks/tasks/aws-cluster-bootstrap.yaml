@@ -38,7 +38,7 @@
 # This is a workaround for https://bugzilla.suse.com/show_bug.cgi?id=1231153
 # If it is fixed, this task will no longer be needed
 - name: Install python-httplib2 via zypper
-  zypper:
+  community.general.zypper:
     name: python-httplib2
     state: present
   when: ansible_distribution_major_version == '12'
@@ -141,7 +141,7 @@
         mode: '0600'
 
 - name: Flush handler
-  meta: flush_handlers
+  ansible.builtin.meta: flush_handlers
 
 - name: Get DefaultTasksMax value
   ansible.builtin.command:  # noqa command-instead-of-module
@@ -187,7 +187,7 @@
     - max_tasks_int | int < 4096
 
 - name: Flush handlers
-  meta: flush_handlers
+  ansible.builtin.meta: flush_handlers
 
 # check crm status and fail if not return code != 0
 - name: Check the cluster is up
@@ -233,7 +233,7 @@
     cmd: crm configure primitive rsc_iscsi_sbd stonith:external/sbd
   when:
     - sbd_stonith | string | lower  == 'false'
-    - use_sbd
+    - use_sbd | default(false) | bool
     - is_primary
 
 - name: Stonith command
@@ -244,13 +244,13 @@
       op stop interval=0 timeout=180 \
       op monitor interval=120 timeout=60 \
       meta target-role=Started \
-      params tag={{ aws_stonith_tag}} pcmk_delay_max=15
+      params tag={{ aws_stonith_tag }} pcmk_delay_max=15
 
 - name: Configure AWS EC2 STONITH for sle 12sp5
   ansible.builtin.command: "{{ aws_stonith_cmd }}"
   when:
     - is_primary
-    - not (use_sbd | bool)
+    - not (use_sbd | default(false) | bool)
     - ansible_distribution_major_version == '12'
   register: stonith_config_result
   failed_when: >
@@ -260,7 +260,7 @@
   ansible.builtin.command: "{{ aws_stonith_cmd }}"
   when:
     - is_primary
-    - not (use_sbd | bool)
+    - not (use_sbd | default(false) | bool)
     - ansible_distribution_major_version != '12'
   register: stonith_config_result
   failed_when: "'ERROR' in stonith_config_result.stderr"
@@ -270,7 +270,7 @@
     cmd: crm configure property stonith-timeout=144
   when:
     - stonith_timeout != '144'
-    - use_sbd | bool
+    - use_sbd | default(false) | bool
     - is_primary
 
 - name: Set stonith timeout [native - aws]
@@ -282,7 +282,7 @@
   when:
     - stonith_timeout != '600s'
     - is_primary
-    - not (use_sbd | bool)
+    - not (use_sbd | default(false) | bool)
 
 - name: Enable stonith
   ansible.builtin.command:
@@ -397,6 +397,7 @@
     cmd: >-
       crm resource clear
       rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
+  changed_when: true
   when:
     - is_primary
     - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname

@@ -1,0 +1,29 @@
+---
+apiver: 4
+provider: fragola
+terraform:
+  variables:
+    fruit: lampone
+ansible:
+  hana_media:
+    - mora
+    - corniolo
+  az_storage_account_name: ribes
+  az_container_name: uvaspina
+  az_key_name: '***'
+  hana_vars:
+    juice: mirtillo
+    sap_hana_install_software_directory: /a
+    sap_hana_install_master_password: ''
+    sap_hana_install_sid: 'ABC'
+    sap_hana_install_instance_number: '42'
+    sap_domain: 123
+    primary_site: 456
+    secondary_site: 789
+  sequences:
+    create:
+      - goji.yaml
+    test:
+      - test.yaml
+    destroy:
+      - ribes_nero.yaml
