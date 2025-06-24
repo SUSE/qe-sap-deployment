@@ -21,3 +21,4 @@ ansible/playbooks/vars/hana_vars.yaml
 *.log.txt
 settings.json
 variables.sh
+scripts/qesap/test/e2e/test_repo/

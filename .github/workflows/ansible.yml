@@ -21,9 +21,31 @@ jobs:
       - name: Install all requirements
         run: |
           python3 -m pip install --upgrade -r requirements.txt
+          python3 -m pip install ansible-lint==25.6.1
           ansible-galaxy install -r requirements.yml
 
       - name: Run ansible static tests
         run: |
            make -n static-ansible
            make SHELL='sh -x' static-ansible
+
+      - name: Run ansible-lint on changed files
+        run: |
+          git merge-base HEAD main || echo "marge-base failure"
+          git diff --name-only --diff-filter=b $(git merge-base HEAD main) || echo "diff failure"
+          [[ $(git diff --name-only --diff-filter=b $(git merge-base HEAD main) | grep ansible/) ]] || echo "No files to check"
+          # [[ $(git diff --name-only --diff-filter=b $(git merge-base HEAD main) | grep ansible/) ]] && ansible-lint --offline $(git diff --name-only --diff-filter=b $(git merge-base HEAD main) | grep ansible/)
+
+      - name: Get all changed Ansible files
+        id: changed-markdown-files
+        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46
+        with:
+          files: |
+            ansible/playbooks/
+
+      - name: Run ansible-lint only on changed files
+        if: steps.changed-markdown-files.outputs.any_changed == 'true'
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-markdown-files.outputs.all_changed_files }}
+        run: |
+          ansible-lint --offline ${ALL_CHANGED_FILES}
