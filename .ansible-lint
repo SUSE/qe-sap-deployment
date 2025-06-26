@@ -3,3 +3,5 @@ exclude_paths:
   - ansible/playbooks/registration_role.yaml
   - ansible/playbooks/vars/hana_media.yaml
   - ansible/playbooks/vars/hana_vars.yaml
+warn_list:
+  - role-name[path]
