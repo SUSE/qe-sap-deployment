@@ -21,15 +21,17 @@
         -o tsv
       delegate_to: 127.0.0.1
       no_log: true
-      run_once: true
+      run_once: true  # noqa: run-once[task] fine to ignore as not using strategy:free
       register: az_account_key
+      changed_when: az_account_key.rc == 0
       when: az_sas_token is not defined or az_sas_token == ""
 
     - name: "Set expiry"
       ansible.builtin.command: "date -u +'%Y-%m-%dT%H:%MZ' -d '+3 hours'"
       delegate_to: 127.0.0.1
-      run_once: true
+      run_once: true  # noqa: run-once[task] fine to ignore as not using strategy:free
       register: expiry
+      changed_when: true
       when: az_sas_token is not defined or az_sas_token == ""
 
     - name: Generate SAS token
@@ -44,7 +46,7 @@
       delegate_to: 127.0.0.1
       changed_when: false
       no_log: true
-      run_once: true
+      run_once: true  # noqa: run-once[task] fine to ignore as not using strategy:free
       register: az_sas_token_output
       when: az_sas_token is not defined or az_sas_token == ""
 
@@ -52,7 +54,7 @@
       ansible.builtin.set_fact:
         az_sas_token: "{{ az_sas_token_output.stdout }}"
       delegate_to: 127.0.0.1
-      run_once: true
+      run_once: true  # noqa: run-once[task] fine to ignore as not using strategy:free
       when: az_sas_token is not defined or az_sas_token == ""
 
     - name: Create software directory
@@ -61,7 +63,7 @@
         state: directory
         owner: root
         group: root
-        mode: 0755
+        mode: "0755"
       become: true
       become_user: root
 
@@ -71,7 +73,7 @@
         dest: "{{ hana_download_path + '/' + item | split('/') | last }}"
         owner: root
         group: root
-        mode: 0600
+        mode: "0600"
         timeout: "{{ url_timeout }}"
       register: result
       until: result is succeeded
