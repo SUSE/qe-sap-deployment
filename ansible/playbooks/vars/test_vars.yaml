@@ -1,0 +1,8 @@
+---
+cs_wait_timeout: 240
+hana_sync_timeout: 900
+pacemaker_timeout: 300
+cluster_settle_retries: 10
+cluster_settle_delay: 60
+crm_mon_cmd: "crm_mon -R -r -n -1"
+sap_sidadm: "{{ sap_hana_install_sid | lower }}adm"
