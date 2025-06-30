@@ -1,0 +1,47 @@
+---
+- name: HANA check - Wait pacemaker up # noqa: command-instead-of-module - we keep systemctl to mimic openqa behaviour
+  become: true
+  ansible.builtin.command: systemctl --no-pager is-active pacemaker
+  register: pm
+  retries: "{{ pacemaker_timeout // 15 }}"
+  delay: 15
+  until: pm.stdout == 'active'
+  changed_when: false
+
+- name: HANA check - Wait cluster idle again
+  become: true
+  ansible.builtin.command: cs_wait_for_idle --sleep 5
+  register: idle2
+  retries: "{{ cs_wait_timeout // 5 }}"
+  delay: 5
+  until: idle2.rc == 0
+  changed_when: false
+
+- name: HANA check - Gather topology JSON
+  become: true
+  ansible.builtin.command: SAPHanaSR-showAttr --format=script
+  register: topo_raw
+  changed_when: false
+  retries: 6
+  delay: 10
+  until: topo_raw.stdout != ''
+
+- name: HANA check - Parse PRIM / SOK counts
+  ansible.builtin.set_fact:
+    prim_count: "{{ topo_raw.stdout_lines | select('search', 'sync_state=\"PRIM\"') | list | length }}"
+    sok_count: "{{ topo_raw.stdout_lines | select('search', 'sync_state=\"SOK\"') | list | length }}"
+    host_total: "{{ topo_raw.stdout_lines | select('search', '^Hosts/') | map('regex_replace', '^Hosts/([^/]+)/.*', '\\1') | list | unique | length }}"
+
+- name: HANA check - Assert exactly 1 PRIM and the rest SOK
+  ansible.builtin.assert:
+    that:
+      - "{{ prim_count | int == 1 }}"
+      - "{{ sok_count | int == (host_total | int) - 1 }}"
+    fail_msg: "Topology does not show 1 PRIM and rest SOK — PRIM={{ prim_count }} SOK={{ sok_count }} HOSTS={{ host_total }}"
+    success_msg: "Topology shows 1 PRIM and the rest SOK"
+  changed_when: false
+
+- name: Post HANA check - crm cleanup
+  become: true
+  ansible.builtin.command: crm resource cleanup
+  changed_when: false

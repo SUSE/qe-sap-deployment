@@ -1,0 +1,12 @@
+---
+- name: SAP HANA secondary-site failure test
+  hosts: "{{ node_name | default('no_host_provided')}}"
+  gather_facts: false
+  remote_user: cloudadmin
+  vars_files:
+    - "{{ playbook_dir }}/vars/test_vars.yaml"
+    - "{{ playbook_dir }}/vars/hana_vars.yaml"
+  vars:
+    peer_site: "{{ (groups['hana'] | difference([node_name]))[0] }}"
+  roles:
+    - hana_secondary_actions

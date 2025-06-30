@@ -1,0 +1,39 @@
+---
+- name: Wait until SSH is reachable
+  ansible.builtin.wait_for_connection:
+    timeout: 300
+    delay: 5
+
+# Show SAPHanaSR-showAttr version and package
+- name: Locate SAPHanaSR-showAttr binary
+  ansible.builtin.command: which SAPHanaSR-showAttr
+  register: showattr_path
+  changed_when: false
+  become: true
+  failed_when: showattr_path.rc != 0
+
+- name: Query RPM owning SAPHanaSR-showAttr # noqa: command-instead-of-module - we keep rpm cli command to mimic openqa behaviour
+  ansible.builtin.command: rpm -qf {{ showattr_path.stdout }}
+  register: showattr_rpm
+  changed_when: false
+
+- name: Display SAPHanaSR-showAttr info
+  ansible.builtin.debug:
+    msg: "showAttr path={{ showattr_path.stdout }}  package={{ showattr_rpm.stdout }}"
+
+# Wait for sync and healthy cluster
+- name: Wait for cluster idle
+  ansible.builtin.command: cs_wait_for_idle --sleep 5
+  retries: 48
+  register: cs_idle
+  until: cs_idle.rc == 0
+  become: true
+  changed_when: false
+
+# No failed resources check
+- name: Check cluster for failed resources
+  ansible.builtin.command: crm status
+  register: crm_status
+  changed_when: false
+  failed_when: crm_status.stdout is search('Failed Resource Actions')
+  become: true

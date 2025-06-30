@@ -1,0 +1,174 @@
+---
+- name: Prepare HANA Action - Dump cluster status (crm status)
+  ansible.builtin.command: crm status
+  become: true
+  register: crm_initial
+  changed_when: false
+
+- name: Prepare HANA Action - Assert this node is currently MASTER
+  ansible.builtin.assert:
+    that:
+      - crm_initial.stdout is search('\* Masters:\s*\[\s*{{ inventory_hostname }}\s*\]')
+    fail_msg: "{{ inventory_hostname }} is NOT the master node – aborting test"
+    success_msg: "{{ inventory_hostname }} is the master node"
+
+- name: Prepare HANA Action - Wait cluster idle
+  ansible.builtin.command: cs_wait_for_idle --sleep 5
+  register: idle
+  retries: "{{ cs_wait_timeout // 5 }}"
+  delay: 5
+  become: true
+  changed_when: false
+  until: idle.rc == 0
+
+# SBD related stuff
+- name: Prepare HANA Action - Configure SBD start-delay
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/sysconfig/sbd
+    regexp: "^SBD_DELAY_START="
+    line: "SBD_DELAY_START={{ sbd_delay_start | default('yes') }}"
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+- name: Prepare HANA Action - Gather SBD-delay parameters # noqa: command-instead-of-shell the command variable actually reuires shell
+  become: true
+  ansible.builtin.shell: "{{ item.cmd }}"
+  args:
+    warn: false
+  register: sbddelay
+  changed_when: false
+  failed_when: false
+  loop:
+    - name: corosync_token
+      cmd: "corosync-cmapctl | awk -F ' = ' '/totem.token/ {print int($2/1000)}'"
+    - name: corosync_consensus
+      cmd: "corosync-cmapctl | awk -F ' = ' '/totem.consensus/ {print int($2/1000)}'"
+    - name: pcmk_delay_max
+      cmd: "crm resource param stonith-sbd show pcmk_delay_max | sed 's/[^0-9]*//g'"
+    - name: sbd_watchdog_timeout
+      cmd: "grep -oP '(?<=^SBD_WATCHDOG_TIMEOUT=)[[:digit:]]+' /etc/sysconfig/sbd"
+    - name: sbd_delay_start
+      cmd: "grep -oP '(?<=^SBD_DELAY_START=)([[:digit:]]+|yes|no)+' /etc/sysconfig/sbd"
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+- name: Prepare HANA Action - Set SBD delay facts
+  ansible.builtin.set_fact:
+    corosync_token: "{{ sbddelay.results | selectattr('item.name', '==', 'corosync_token') | map(attribute='stdout') | first | int }}"
+    corosync_consensus: "{{ sbddelay.results | selectattr('item.name', '==', 'corosync_consensus') | map(attribute='stdout') | first | int }}"
+    pcmk_delay_max: "{{ sbddelay.results | selectattr('item.name', '==', 'pcmk_delay_max') | map(attribute='stdout') | first | int }}"
+    sbd_watchdog_timeout: "{{ sbddelay.results | selectattr('item.name', '==', 'sbd_watchdog_timeout') | map(attribute='stdout') | first | int }}"
+    sbd_delay_start: "{{ sbddelay.results | selectattr('item.name', '==', 'sbd_delay_start') | map(attribute='stdout') | first | default('yes') }}"
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+- name: Prepare HANA Action - Configure SBD start-delay
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/sysconfig/sbd
+    regexp: "^SBD_DELAY_START="
+    line: "SBD_DELAY_START={{ sbd_delay_start }}"
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+- name: Prepare HANA Action - Create systemd drop-in for SBD timeout
+  become: true
+  ansible.builtin.file:
+    path: /etc/systemd/system/sbd.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+- name: Prepare HANA Action - Write SBD timeout.conf
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/sbd.service.d/timeout.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Service]
+      TimeoutSec={{ {
+        'corosync_token'      : corosync_token,
+        'corosync_consensus'  : corosync_consensus,
+        'pcmk_delay_max'      : pcmk_delay_max,
+        'sbd_watchdog_timeout': sbd_watchdog_timeout,
+        'sbd_delay_start'     : sbd_delay_start
+      } | calc_sbd_delay + 30 }}
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+# HANA action (stop/kill/crash)
+- name: HANA Action - Stop # noqa: command-instead-of-shell the command variable actually reuires shell
+  ansible.builtin.shell: "sudo -iu {{ sap_sidadm }} HDB stop"
+  become: true
+  when: action == 'stop'
+  changed_when: true
+
+- name: HANA Action - Kill # noqa: command-instead-of-shell the command variable actually reuires shell
+  ansible.builtin.shell: "sudo -iu {{ sap_sidadm }} HDB kill -x"
+  become: true
+  when: action == 'kill'
+  changed_when: true
+
+- name: HANA Action - Crash
+  become: true
+  ansible.builtin.shell: echo b > /proc/sysrq-trigger
+  async: 1
+  poll: 0
+  when: action == 'crash'
+  changed_when: true
+
+# Post hana action
+- name: Post HANA Action - Wait SSH back (stop/crash)
+  ansible.builtin.wait_for_connection:
+    delay: 15
+    timeout: 900
+  when: action in ['crash','stop']
+
+- name: Post HANA Action - Pause for calculated SBD delay + 30s
+  ansible.builtin.pause:
+    seconds: "{{ {'corosync_token': corosync_token, 'corosync_consensus': corosync_consensus, 'pcmk_delay_max': pcmk_delay_max, 'sbd_watchdog_timeout': sbd_watchdog_timeout,
+      'sbd_delay_start': sbd_delay_start} | calc_sbd_delay + 30 }}"
+  changed_when: false
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+- name: Post HANA Action - Wait for Pacemaker to be active # noqa: command-instead-of-module - we keep systemctl to mimic openqa behaviour
+  become: true
+  ansible.builtin.command: systemctl --no-pager is-active pacemaker
+  register: pm
+  retries: "{{ pacemaker_timeout // 15 }}"
+  delay: 15
+  until: pm.stdout == 'active'
+  changed_when: false
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
+- name: Post HANA Action - Re-enable system replication
+  ansible.builtin.shell: |
+    sudo -iu {{ sap_sidadm }} \
+      hdbnsutil -sr_register \
+      --online \
+      --name={{ site_name }} \
+      --remoteHost={{ peer_site }} \
+      --remoteInstance={{ sap_hana_install_instance_number }} \
+      --replicationMode=sync \
+      --operationMode=logreplay
+  register: reg
+  retries: 6
+  delay: 10
+  until: reg.rc == 0
+  failed_when: reg.rc != 0
+  changed_when: true
+  become: false
+
+- name: Post HANA Action - crm cleanup (start resources)
+  become: true
+  changed_when: true
+  ansible.builtin.command: crm resource cleanup
+
+- name: Post HANA Action - Wait cluster idle after cleanup
+  become: true
+  ansible.builtin.command: cs_wait_for_idle --sleep 5
+  register: settle
+  retries: "{{ cluster_settle_retries }}"
+  delay: "{{ cluster_settle_delay }}"
+  changed_when: false
+  until: settle.rc == 0
