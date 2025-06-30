@@ -1,5 +1,5 @@
 ---
-- name: HANA check - Wait pacemaker up    # noqa: command-instead-of-module - we keep systemctl to mimic openqa behaviour
+- name: HANA check - Wait pacemaker up # noqa: command-instead-of-module - we keep systemctl to mimic openqa behaviour
   become: true
   ansible.builtin.command: systemctl --no-pager is-active pacemaker
   register: pm
@@ -28,20 +28,17 @@
 
 - name: HANA check - Parse PRIM / SOK counts
   ansible.builtin.set_fact:
-      prim_count: "{{ topo_raw.stdout_lines | select('search','sync_state=\"PRIM\"') | list | length }}"
-      sok_count: "{{ topo_raw.stdout_lines | select('search','sync_state=\"SOK\"')  | list | length }}"
-      host_total: "{{ topo_raw.stdout_lines
-                    | select('search','^Hosts/')
-                    | map('regex_replace','^Hosts/([^/]+)/.*','\\1')
-                    | list | unique | length }}"
+    prim_count: "{{ topo_raw.stdout_lines | select('search', 'sync_state=\"PRIM\"') | list | length }}"
+    sok_count: "{{ topo_raw.stdout_lines | select('search', 'sync_state=\"SOK\"') | list | length }}"
+    host_total: "{{ topo_raw.stdout_lines | select('search', '^Hosts/') | map('regex_replace', '^Hosts/([^/]+)/.*', '\\1') | list | unique | length }}"
 
 - name: HANA check - Assert exactly 1 PRIM and the rest SOK
   ansible.builtin.assert:
-      that:
-          - "{{ prim_count | int == 1 }}"
-          - "{{ sok_count  | int == (host_total | int) - 1 }}"
-      fail_msg: "Topology does not show 1 PRIM and rest SOK — PRIM={{ prim_count }} SOK={{ sok_count }} HOSTS={{ host_total }}"
-      success_msg: "Topology shows 1 PRIM and the rest SOK"
+    that:
+      - "{{ prim_count | int == 1 }}"
+      - "{{ sok_count | int == (host_total | int) - 1 }}"
+    fail_msg: "Topology does not show 1 PRIM and rest SOK — PRIM={{ prim_count }} SOK={{ sok_count }} HOSTS={{ host_total }}"
+    success_msg: "Topology shows 1 PRIM and the rest SOK"
   changed_when: false
 
 - name: Post HANA check - crm cleanup

@@ -22,7 +22,7 @@
   changed_when: false
 
 # SBD-related stuff
-- name: Prepare secondary Action - Gather SBD-delay parameters    # noqa: command-instead-of-shell the command variable actually reuires shell
+- name: Prepare secondary Action - Gather SBD-delay parameters # noqa: command-instead-of-shell the command variable actually reuires shell
   become: true
   ansible.builtin.shell: "{{ item.cmd }}"
   args:
@@ -45,27 +45,17 @@
 
 - name: Prepare secondary Action - Set SBD delay facts
   ansible.builtin.set_fact:
-    corosync_token: "{{ sbddelay.results
-                        | selectattr('item.name','==','corosync_token')
-                        | map(attribute='stdout') | first | int }}"
-    corosync_consensus: "{{ sbddelay.results
-                            | selectattr('item.name','==','corosync_consensus')
-                            | map(attribute='stdout') | first | int }}"
-    pcmk_delay_max: "{{ sbddelay.results
-                        | selectattr('item.name','==','pcmk_delay_max')
-                        | map(attribute='stdout') | first | int }}"
-    sbd_watchdog_timeout: "{{ sbddelay.results
-                              | selectattr('item.name','==','sbd_watchdog_timeout')
-                              | map(attribute='stdout') | first | int }}"
-    sbd_delay_start: "{{ sbddelay.results
-                        | selectattr('item.name','==','sbd_delay_start')
-                        | map(attribute='stdout') | first | default('yes') }}"
+    corosync_token: "{{ sbddelay.results | selectattr('item.name', '==', 'corosync_token') | map(attribute='stdout') | first | int }}"
+    corosync_consensus: "{{ sbddelay.results | selectattr('item.name', '==', 'corosync_consensus') | map(attribute='stdout') | first | int }}"
+    pcmk_delay_max: "{{ sbddelay.results | selectattr('item.name', '==', 'pcmk_delay_max') | map(attribute='stdout') | first | int }}"
+    sbd_watchdog_timeout: "{{ sbddelay.results | selectattr('item.name', '==', 'sbd_watchdog_timeout') | map(attribute='stdout') | first | int }}"
+    sbd_delay_start: "{{ sbddelay.results | selectattr('item.name', '==', 'sbd_delay_start') | map(attribute='stdout') | first | default('yes') }}"
   when: action == 'crash'
 
 - name: Prepare secondary Action - Configure SBD start-delay
   ansible.builtin.lineinfile:
     path: /etc/sysconfig/sbd
-    regexp: '^SBD_DELAY_START='
+    regexp: "^SBD_DELAY_START="
     line: "SBD_DELAY_START={{ sbd_delay_start }}"
   become: true
   when: action == 'crash'
@@ -76,7 +66,7 @@
     state: directory
     owner: root
     group: root
-    mode: '0755'
+    mode: "0755"
   become: true
   when: action == 'crash'
 
@@ -85,7 +75,7 @@
     dest: /etc/systemd/system/sbd.service.d/timeout.conf
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
     content: |
       [Service]
       TimeoutSec={{ {
@@ -100,18 +90,13 @@
 
 - name: Prepare secondary Action - Pause for calculated SBD delay + 30s
   ansible.builtin.pause:
-    seconds: "{{ {
-      'corosync_token'      : corosync_token,
-      'corosync_consensus'  : corosync_consensus,
-      'pcmk_delay_max'      : pcmk_delay_max,
-      'sbd_watchdog_timeout': sbd_watchdog_timeout,
-      'sbd_delay_start'     : sbd_delay_start
-    } | calc_sbd_delay + 30 }}"
+    seconds: "{{ {'corosync_token': corosync_token, 'corosync_consensus': corosync_consensus, 'pcmk_delay_max': pcmk_delay_max, 'sbd_watchdog_timeout': sbd_watchdog_timeout,
+      'sbd_delay_start': sbd_delay_start} | calc_sbd_delay + 30 }}"
   become: true
   when: action == 'crash'
   changed_when: false
 
-- name: Prepare secondary Action - Wait for Pacemaker to be active    # noqa: command-instead-of-module - we keep systemctl to mimic openqa behaviour
+- name: Prepare secondary Action - Wait for Pacemaker to be active # noqa: command-instead-of-module - we keep systemctl to mimic openqa behaviour
   ansible.builtin.command: systemctl --no-pager is-active pacemaker
   register: pm_active
   retries: "{{ pacemaker_timeout // 15 }}"
@@ -123,13 +108,13 @@
 
 # Secondary action
 - name: Secondary Action – Stop HANA
-  ansible.builtin.shell: "sudo -iu {{ sap_sidadm }} HDB stop"   # noqa: command-instead-of-shell the command variable actually reuires shell
+  ansible.builtin.shell: "sudo -iu {{ sap_sidadm }} HDB stop" # noqa: command-instead-of-shell the command variable actually reuires shell
   become: true
   when: action == 'stop'
   changed_when: true
 
 - name: Secondary Action – Kill HANA
-  ansible.builtin.shell: "sudo -iu {{ sap_sidadm }} HDB kill -x"    # noqa: command-instead-of-shell the command variable actually reuires shell
+  ansible.builtin.shell: "sudo -iu {{ sap_sidadm }} HDB kill -x" # noqa: command-instead-of-shell the command variable actually reuires shell
   become: true
   when: action == 'kill'
   changed_when: true
@@ -162,7 +147,7 @@
 - name: Post secondary Action - Compute HANA resource prefix
   ansible.builtin.set_fact:
     use_angi: "{{ use_angi | default(false) | bool }}"
-    master_resource_type: "{{ use_angi | default(false) | bool | ternary('mst','msl') }}"
+    master_resource_type: "{{ use_angi | default(false) | bool | ternary('mst', 'msl') }}"
 
 - name: Post secondary Action - Compute HANA resource name
   ansible.builtin.set_fact:
@@ -177,7 +162,7 @@
   until: 'res_stat.stdout is search("is running on: " ~ inventory_hostname)'
   changed_when: false
 
-- name: Post secondary Action - Assert this node did not become MASTER    # noqa: command-instead-of-shell the command variable actually reuires shell
+- name: Post secondary Action - Assert this node did not become MASTER # noqa: command-instead-of-shell the command variable actually reuires shell
   become: true
   ansible.builtin.shell: crm resource status "{{ resource_name }}"
   register: master_out

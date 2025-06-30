@@ -26,11 +26,11 @@
   become: true
   ansible.builtin.lineinfile:
     path: /etc/sysconfig/sbd
-    regexp: '^SBD_DELAY_START='
+    regexp: "^SBD_DELAY_START="
     line: "SBD_DELAY_START={{ sbd_delay_start | default('yes') }}"
   when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
 
-- name: Prepare HANA Action - Gather SBD-delay parameters   # noqa: command-instead-of-shell the command variable actually reuires shell
+- name: Prepare HANA Action - Gather SBD-delay parameters # noqa: command-instead-of-shell the command variable actually reuires shell
   become: true
   ansible.builtin.shell: "{{ item.cmd }}"
   args:
@@ -53,18 +53,18 @@
 
 - name: Prepare HANA Action - Set SBD delay facts
   ansible.builtin.set_fact:
-    corosync_token: "{{ sbddelay.results | selectattr('item.name','==','corosync_token')       | map(attribute='stdout') | first | int }}"
-    corosync_consensus: "{{ sbddelay.results | selectattr('item.name','==','corosync_consensus')   | map(attribute='stdout') | first | int }}"
-    pcmk_delay_max: "{{ sbddelay.results | selectattr('item.name','==','pcmk_delay_max')       | map(attribute='stdout') | first | int }}"
-    sbd_watchdog_timeout: "{{ sbddelay.results | selectattr('item.name','==','sbd_watchdog_timeout') | map(attribute='stdout') | first | int }}"
-    sbd_delay_start: "{{ sbddelay.results | selectattr('item.name','==','sbd_delay_start')      | map(attribute='stdout') | first | default('yes') }}"
+    corosync_token: "{{ sbddelay.results | selectattr('item.name', '==', 'corosync_token') | map(attribute='stdout') | first | int }}"
+    corosync_consensus: "{{ sbddelay.results | selectattr('item.name', '==', 'corosync_consensus') | map(attribute='stdout') | first | int }}"
+    pcmk_delay_max: "{{ sbddelay.results | selectattr('item.name', '==', 'pcmk_delay_max') | map(attribute='stdout') | first | int }}"
+    sbd_watchdog_timeout: "{{ sbddelay.results | selectattr('item.name', '==', 'sbd_watchdog_timeout') | map(attribute='stdout') | first | int }}"
+    sbd_delay_start: "{{ sbddelay.results | selectattr('item.name', '==', 'sbd_delay_start') | map(attribute='stdout') | first | default('yes') }}"
   when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
 
 - name: Prepare HANA Action - Configure SBD start-delay
   become: true
   ansible.builtin.lineinfile:
     path: /etc/sysconfig/sbd
-    regexp: '^SBD_DELAY_START='
+    regexp: "^SBD_DELAY_START="
     line: "SBD_DELAY_START={{ sbd_delay_start }}"
   when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
 
@@ -75,7 +75,7 @@
     state: directory
     owner: root
     group: root
-    mode: '0755'
+    mode: "0755"
   when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
 
 - name: Prepare HANA Action - Write SBD timeout.conf
@@ -84,7 +84,7 @@
     dest: /etc/systemd/system/sbd.service.d/timeout.conf
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
     content: |
       [Service]
       TimeoutSec={{ {
@@ -97,13 +97,13 @@
   when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
 
 # HANA action (stop/kill/crash)
-- name: HANA Action - Stop    # noqa: command-instead-of-shell the command variable actually reuires shell
+- name: HANA Action - Stop # noqa: command-instead-of-shell the command variable actually reuires shell
   ansible.builtin.shell: "sudo -iu {{ sap_sidadm }} HDB stop"
   become: true
   when: action == 'stop'
   changed_when: true
 
-- name: HANA Action - Kill    # noqa: command-instead-of-shell the command variable actually reuires shell
+- name: HANA Action - Kill # noqa: command-instead-of-shell the command variable actually reuires shell
   ansible.builtin.shell: "sudo -iu {{ sap_sidadm }} HDB kill -x"
   become: true
   when: action == 'kill'
@@ -126,17 +126,12 @@
 
 - name: Post HANA Action - Pause for calculated SBD delay + 30s
   ansible.builtin.pause:
-    seconds: "{{ {
-      'corosync_token'      : corosync_token,
-      'corosync_consensus'  : corosync_consensus,
-      'pcmk_delay_max'      : pcmk_delay_max,
-      'sbd_watchdog_timeout': sbd_watchdog_timeout,
-      'sbd_delay_start'     : sbd_delay_start
-    } | calc_sbd_delay + 30 }}"
+    seconds: "{{ {'corosync_token': corosync_token, 'corosync_consensus': corosync_consensus, 'pcmk_delay_max': pcmk_delay_max, 'sbd_watchdog_timeout': sbd_watchdog_timeout,
+      'sbd_delay_start': sbd_delay_start} | calc_sbd_delay + 30 }}"
   changed_when: false
   when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
 
-- name: Post HANA Action - Wait for Pacemaker to be active    # noqa: command-instead-of-module - we keep systemctl to mimic openqa behaviour
+- name: Post HANA Action - Wait for Pacemaker to be active # noqa: command-instead-of-module - we keep systemctl to mimic openqa behaviour
   become: true
   ansible.builtin.command: systemctl --no-pager is-active pacemaker
   register: pm

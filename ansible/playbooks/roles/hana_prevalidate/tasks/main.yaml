@@ -12,7 +12,7 @@
   become: true
   failed_when: showattr_path.rc != 0
 
-- name: Query RPM owning SAPHanaSR-showAttr   # noqa: command-instead-of-module - we keep rpm cli command to mimic openqa behaviour
+- name: Query RPM owning SAPHanaSR-showAttr # noqa: command-instead-of-module - we keep rpm cli command to mimic openqa behaviour
   ansible.builtin.command: rpm -qf {{ showattr_path.stdout }}
   register: showattr_rpm
   changed_when: false
