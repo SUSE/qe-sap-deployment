@@ -2,3 +2,12 @@ extends: default
 
 rules:
   line-length: disable
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: false
+  braces:
+    max-spaces-inside: 1
+  octal-values:
+    forbid-implicit-octal: false
+    forbid-explicit-octal: true
+
