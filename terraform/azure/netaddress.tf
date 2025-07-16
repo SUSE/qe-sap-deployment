@@ -57,7 +57,7 @@ locals {
   ###################################################
   # INFRA
   monitor_ip_start = 4
-  monitoring_ip = (
+  monitoring_srv_ip = (
     var.monitoring_srv_ip != "" ?
     var.monitoring_srv_ip :
     cidrhost(local.subnet_address_range, local.monitor_ip_start)
