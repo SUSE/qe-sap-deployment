@@ -4,6 +4,8 @@
   remote_user: cloudadmin
   become: true
   become_user: root
+  environment:
+    ZYPP_LOCK_TIMEOUT: 30
 
   vars:
     use_suseconnect: false  # Set to false unless specified
