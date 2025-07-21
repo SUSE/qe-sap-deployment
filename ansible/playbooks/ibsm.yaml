@@ -1,5 +1,6 @@
 ---
-- hosts: all
+- name: IBSM
+  hosts: all
   remote_user: cloudadmin
   become: true
   become_user: root
@@ -35,6 +36,8 @@
       loop_control:
         index_var: repo_id
       when: repos | length > 0
+      environment:
+        ZYPP_LOCK_TIMEOUT: '120'
 
     - name: Refresh all repos
       community.general.zypper_repository:
