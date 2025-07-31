@@ -219,9 +219,6 @@ def ansible_exe_call():
 def mock_call_ansibleplaybook():
     """
     create a mock.call with some default elements
-    ```
-    mock.call('ansible-playbook -i inventory, playbook', env={'ANSIBLE_PIPELINING', 'True'})
-    ```
     """
 
     def _callback(inventory, playbook, verbosity="-vv", arguments=None, env=None):
@@ -230,7 +227,7 @@ def mock_call_ansibleplaybook():
             playbook_cmd += arguments
         if env is None:
             original_env = dict(os.environ)
-            original_env["ANSIBLE_PIPELINING"] = "True"
+            original_env["ANSIBLE_PIPELINING"] = "False"
         else:
             original_env = env
         return mock.call(cmd=' '.join(playbook_cmd), env=original_env)
