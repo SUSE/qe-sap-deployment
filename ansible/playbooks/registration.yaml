@@ -5,7 +5,7 @@
   become: true
   become_user: root
   environment:
-    ZYPP_LOCK_TIMEOUT: 30
+    ZYPP_LOCK_TIMEOUT: 120
 
   vars:
     use_suseconnect: false  # Set to false unless specified
