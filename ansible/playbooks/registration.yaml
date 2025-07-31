@@ -4,6 +4,8 @@
   remote_user: cloudadmin
   become: true
   become_user: root
+  environment:
+    ZYPP_LOCK_TIMEOUT: '120'
 
   vars:
     use_suseconnect: false  # Set to false unless specified
@@ -204,3 +206,4 @@
       ansible.builtin.command: zypper lr -u
       register: repos_after
       failed_when: repos_after.rc != 0
+      changed_when: false
