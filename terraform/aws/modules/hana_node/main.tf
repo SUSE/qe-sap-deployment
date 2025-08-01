@@ -84,6 +84,10 @@ resource "aws_instance" "hana" {
   #  auto_recovery = "disabled" # see https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-on-aws-cluster-configuration.html
   #}
 
+  timeouts {
+    delete = "60m"
+  }
+
   tags = {
     name                        = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
     workspace                   = var.common_variables["deployment_name"]
