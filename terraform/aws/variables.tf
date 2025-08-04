@@ -733,3 +733,9 @@ variable "ibsm_project_tag" {
   type        = string
   default     = ""
 }
+
+variable "hana_destroy_timeout" {
+  type        = number
+  description = "How long Terraform should wait (in minutes) before giving up on a resource deletion."
+  default     = 60
+}

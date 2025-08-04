@@ -160,6 +160,7 @@ module "hana_node" {
   hana_data_disk_type  = var.hana_data_disk_type
   hana_data_disk_size  = var.hana_data_disk_size
   iscsi_srv_ip         = join("", module.iscsi_server.iscsisrv_ip)
+  destroy_timeout      = var.hana_destroy_timeout
 }
 
 module "monitoring" {

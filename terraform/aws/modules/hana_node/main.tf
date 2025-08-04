@@ -85,7 +85,7 @@ resource "aws_instance" "hana" {
   #}
 
   timeouts {
-    delete = "60m"
+    delete = "${var.destroy_timeout}m"
   }
 
   tags = {
