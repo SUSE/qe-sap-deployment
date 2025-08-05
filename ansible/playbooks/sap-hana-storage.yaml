@@ -32,4 +32,4 @@
         sap_storage_sap_type: 'sap_hana'
         sap_storage_action: 'prepare'
       ansible.builtin.include_role:
-        name: ../roles/qe_sap_storage
+        name: qe_sap_storage
