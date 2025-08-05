@@ -134,3 +134,8 @@ variable "iscsi_srv_ip" {
   description = "iscsi server address"
   type        = string
 }
+
+variable "destroy_timeout" {
+  type        = number
+  description = "Delete-timeout in minutes."
+}

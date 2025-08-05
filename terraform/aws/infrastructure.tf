@@ -49,6 +49,10 @@ resource "aws_internet_gateway" "igw" {
   count  = var.vpc_id == "" ? 1 : 0
   vpc_id = local.vpc_id
 
+  timeouts {
+    delete = "${var.hana_destroy_timeout + 10}m"
+  }
+
   tags = {
     name      = "${local.deployment_name}-igw"
     workspace = local.deployment_name
