@@ -623,7 +623,7 @@ def test_ansible_env_config(
     # Keep it here just to be more explicit and due to the fact that here
     # the os.environ is mock.
     expected_env = {"MELAMPO": "cane"}
-    expected_env["ANSIBLE_PIPELINING"] = "True"
+    expected_env["ANSIBLE_PIPELINING"] = "False"
     for playbook in playbook_files_list:
         calls.append(mock_call_ansibleplaybook(inventory, playbook, env=expected_env))
 
@@ -668,7 +668,7 @@ def test_ansible_profile(
     playbook_files_list = create_playbooks(playbooks["create"])
     calls = []
     expected_env = {"MELAMPO": "cane"}
-    expected_env["ANSIBLE_PIPELINING"] = "True"
+    expected_env["ANSIBLE_PIPELINING"] = "False"
     expected_env["ANSIBLE_CALLBACKS_ENABLED"] = "ansible.posix.profile_tasks"
     for playbook in playbook_files_list:
         calls.append(mock_call_ansibleplaybook(inventory, playbook, env=expected_env))
@@ -717,7 +717,7 @@ def test_ansible_junit(
     playbook_files_list = create_playbooks(playbooks["create"])
     calls = []
     expected_env = {"MELAMPO": "cane"}
-    expected_env["ANSIBLE_PIPELINING"] = "True"
+    expected_env["ANSIBLE_PIPELINING"] = "False"
     expected_env["ANSIBLE_CALLBACKS_ENABLED"] = "junit"
     expected_env["JUNIT_OUTPUT_DIR"] = "/something/somewhere"
     for playbook in playbook_files_list:
@@ -772,7 +772,7 @@ ansible:
     playbook_files_list = create_playbooks(["get_cherry_wood"])
     calls = []
     expected_env = dict(os.environ)
-    expected_env["ANSIBLE_PIPELINING"] = "True"
+    expected_env["ANSIBLE_PIPELINING"] = "False"
     expected_env["ANSIBLE_ROLES_PATH"] = "somewhere"
     for playbook in playbook_files_list:
         calls.append(mock_call_ansibleplaybook(inventory, playbook, env=expected_env))
