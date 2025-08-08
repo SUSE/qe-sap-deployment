@@ -1,4 +1,7 @@
 ---
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
 - name: Ensure that saptune 3.0 or greater is installed
   community.general.zypper:
     name: 'saptune>=3.0'
@@ -14,8 +17,11 @@
     state: stopped
     enabled: false
   loop:
-    - sapconf
-    - tuned
+    - sapconf.service
+    - tuned.service
+  when:
+    - item in ansible_facts.services
+    - ansible_facts.services[item].status != 'not-found'
 
 - name: Ensure saptune is running and enabled
   ansible.builtin.systemd:
