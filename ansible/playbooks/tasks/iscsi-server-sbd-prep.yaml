@@ -57,10 +57,9 @@
 
 - name: Prepare iscsi disks
   vars:
-    sap_storage_cloud_type: 'generic'
-    sap_storage_sap_type: 'sap_hana'
-    sap_storage_action: 'prepare'
-  include_role:
+    qe_sap_storage_cloud_type: 'generic'
+    qe_sap_storage_action: 'prepare'
+  ansible.builtin.include_role:
     name: ../roles/qe_sap_storage
 
 - name: Configure HANA SBD target

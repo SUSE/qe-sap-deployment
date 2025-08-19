@@ -69,7 +69,7 @@
     msg: "Using PV list: {{ (adjusted_pv is defined and (adjusted_pv | length) > 0) | ternary(adjusted_pv, item.value.pv) }}"
 
 # Create Volume Group
-- name: SAP Storage Preparation - Volume Group One - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }}
+- name: SAP Storage Preparation - Volume Group One - {{ qe_sap_storage_cloud_type | upper }} - {{ item.value.name }}
   community.general.lvg:
     vg: "{{ item.value.vg }}"
     pvs: "{{ (adjusted_pv is defined and (adjusted_pv | length) > 0) | ternary(adjusted_pv, item.value.pv) }}"
@@ -85,7 +85,7 @@
   when: adjusted_pv is defined
 
 # Create Logical Group - One
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Logical Volume - One
+- name: SAP Storage Preparation - {{ qe_sap_storage_cloud_type | upper }} - {{ item.value.name }} Logical Volume - One
   community.general.lvol:
     vg: "{{ item.value.vg }}"
     lv: "{{ item.value.lv }}"
@@ -94,7 +94,7 @@
     - "item.value.numluns == '1'"
 
 # Create Logical Group - Striped
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Logical Volume - Striped
+- name: SAP Storage Preparation - {{ qe_sap_storage_cloud_type | upper }} - {{ item.value.name }} Logical Volume - Striped
   community.general.lvol:
     vg: "{{ item.value.vg }}"
     lv: "{{ item.value.lv }}"
@@ -104,13 +104,13 @@
     - "item.value.numluns != '1'"
 
 # Create Filesystem
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Filesystem
+- name: SAP Storage Preparation - {{ qe_sap_storage_cloud_type | upper }} - {{ item.value.name }} Filesystem
   community.general.filesystem:
     fstype: xfs
     dev: "/dev/{{ item.value.vg }}/{{ item.value.lv }}"
 
 # Mount Filesystem
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Mount
+- name: SAP Storage Preparation - {{ qe_sap_storage_cloud_type | upper }} - {{ item.value.name }} Mount
   ansible.posix.mount:
     path: "{{ item.value.directory }}"
     fstype: xfs

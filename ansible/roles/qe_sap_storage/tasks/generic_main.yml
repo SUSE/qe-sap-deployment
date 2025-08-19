@@ -5,5 +5,5 @@
 ################
 
 - name: SAP Storage Preparation - Generic Pretasks
-  debug:
+  ansible.builtin.debug:
     msg: "No pre task"
