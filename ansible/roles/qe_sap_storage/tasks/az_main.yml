@@ -6,33 +6,36 @@
 
 # Create json format of IMDS
 # Todo: Ansibilize this
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - Create json format of IMDS
-  shell: |
-    curl -H Metadata:true --noproxy "*" "{{ sap_storage_az_imds_url }}" | python3 -mjson.tool
-  register: az_imds_reg
+- name: SAP Storage Preparation - {{ qe_sap_storage_cloud_type | upper }} - Create json format of IMDS
+  ansible.builtin.shell: |
+    curl -H Metadata:true --noproxy "*" "{{ qe_sap_storage_az_imds_url }}" | python3 -mjson.tool
+  register: qe_sap_storage_az_imds_reg
   args:
      executable: /bin/bash
 # If this fails, that means this VM is not Azure?
 
-- set_fact:
-    sap_storage_az_imds_json: "{{ az_imds_reg.stdout }}"
+- name: Store imds json
+  ansible.builtin.set_fact:
+    qe_sap_storage_az_imds_json: "{{ qe_sap_storage_az_imds_reg.stdout }}"
 
 # Pull VMSize
 # Todo: Ansibilize this
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - Pull VMSize
-  shell: |
-    curl -H Metadata:true --noproxy "*" "{{ sap_storage_az_vmsize_url }}"
+- name: SAP Storage Preparation - {{ qe_sap_storage_cloud_type | upper }} - Pull VMSize
+  ansible.builtin.shell: |
+    curl -H Metadata:true --noproxy "*" "{{ qe_sap_storage_az_vmsize_url }}"
   register: az_vmsize_reg
   args:
      executable: /bin/bash
 
-- debug:
+- name: VM size output
+  ansible.builtin.debug:
     msg:
       - "{{ az_vmsize_reg.stdout }}"
 
-- set_fact:
-    sap_storage_az_vmsize: "{{ az_vmsize_reg.stdout }}"
+- name: "Calculate qe_sap_storage_az_vmsize"
+  ansible.builtin.set_fact:
+    qe_sap_storage_az_vmsize: "{{ az_vmsize_reg.stdout }}"
 
 # Include vars depending on VM Size
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - Load Variables for {{ sap_storage_az_vmsize }}
-  include_vars: "{{ sap_storage_cloud_type }}_tasks/vmsizes/{{ sap_storage_az_vmsize }}.yml"
+- name: SAP Storage Preparation - Load Variables for {{ qe_sap_storage_az_vmsize }}
+  ansible.builtin.include_vars: "{{ qe_sap_storage_cloud_type }}_tasks/vmsizes/{{ qe_sap_storage_az_vmsize }}.yml"
