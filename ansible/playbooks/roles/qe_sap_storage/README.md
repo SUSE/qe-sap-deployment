@@ -26,8 +26,8 @@ This can be used in 2 ways
 
 | **Variable**           | **Info**                 | **Default** | **Required** |
 | :--------------------- | :----------------------- | :---------- | :----------- |
-| sap_storage_cloud_type | 'generic' / 'az' / 'aws' | 'generic'   | yes          |
-| sap_storage_action     | 'prepare' / 'remove'     | 'prepare'   | yes          |
+| qe_sap_storage_cloud_type | 'generic' / 'az' / 'aws' | 'generic'   | yes          |
+| qe_sap_storage_action     | 'prepare' / 'remove'     | 'prepare'   | yes          |
 
 ### Input
 
