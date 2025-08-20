@@ -1,40 +1,43 @@
 ---
 
 # Striped volume
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ sap_storage_az_vmsize }} - {{ item.value.name }} - Striped
+- name: "SAP Storage Preparation - Striped: {{ [qe_sap_storage_cloud_type | upper, qe_sap_storage_az_vmsize, item.value.name] | join(' - ') }}"
   when:
     - "item.value.numluns != '1'"
   block:
     # Get LUNs from metadata
-    - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ sap_storage_az_vmsize }} - {{ item.value.name }} Get LUNs from metadata
+    - name: "SAP Storage Preparation - Get LUNs from metadata: {{ [qe_sap_storage_cloud_type | upper, qe_sap_storage_az_vmsize, item.value.name] | join(' - ') }}"
       ansible.builtin.shell: |
+        set -o pipefail
         for i in {1..{{ item.value.numluns }}}
         do
-          {{ item.value.vg }}${i}lun="{{ sap_storage_az_lun }} \
+          {{ item.value.vg }}${i}lun="{{ qe_sap_storage_az_lun }} \
             `awk '/caching/ { r=""; f=1 } f { r = (r ? r ORS : "") $0 } \
             /writeAcceleratorEnabled/ \
             { if (f && r ~ /{{ item.value.name }}${i}/) print r; f=0 }' \
-            {{ sap_storage_az_imds_json }} \
+            {{ qe_sap_storage_az_imds_json }} \
             | grep lun | sed 's/[^0-9]*//g'`"
           echo ${{ item.value.vg }}${i}lun
         done
       args:
         executable: /bin/bash
       register: pvs_reg
+      changed_when: false
+
 
     - name: Records pvs list
       ansible.builtin.set_fact:
         pvs_list: "{{ pvs_reg.stdout.split() }}"
 
     # Create Volume Group
-    - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ sap_storage_az_vmsize }} - {{ item.value.name }} Volume Group Striped
+    - name: "SAP Storage Preparation - Volume Group Striped: {{ [qe_sap_storage_cloud_type | upper, qe_sap_storage_az_vmsize, item.value.name] | join(' - ') }}"
       community.general.lvg:
         vg: "{{ item.value.vg }}"
         pvs: "{{ pvs_list | join(',') }}"
         force: true
 
     # Create Logical Group
-    - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ sap_storage_az_vmsize }} - {{ item.value.name }} Logical Volume - Striped
+    - name: "SAP Storage Preparation - Logical Volume - Striped: {{ [qe_sap_storage_cloud_type | upper, qe_sap_storage_az_vmsize, item.value.name] | join(' - ') }}"
       community.general.lvol:
         vg: "{{ item.value.vg }}"
         lv: "{{ item.value.lv }}"
@@ -43,38 +46,40 @@
 
 
 # Single volume
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ sap_storage_az_vmsize }} - {{ item.value.name }} - Single Volume
+- name: "SAP Storage Preparation - Single Volume: {{ [qe_sap_storage_cloud_type | upper, qe_sap_storage_az_vmsize, item.value.name] | join(' - ') }}"
   when:
     - "item.value.numluns == '1'"
   block:
 
     # Get LUNs from metadata
-    - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ sap_storage_az_vmsize }} - {{ item.value.name }} Get LUNs from metadata
+    - name: "SAP Storage Preparation - Get LUNs from metadata: {{ [qe_sap_storage_cloud_type | upper, qe_sap_storage_az_vmsize, item.value.name] | join(' - ') }}"
       ansible.builtin.shell: |
-        {{ item.value.vg }}lun="{{ sap_storage_az_lun }} \
+        set -o pipefail
+        {{ item.value.vg }}lun="{{ qe_sap_storage_az_lun }} \
           `awk '/caching/ { r=""; f=1 } f { r = (r ? r ORS : "") $0 } \
           /writeAcceleratorEnabled/ \
           { if (f && r ~ /{{ item.value.name }}/) print r; f=0 }' \
-          {{ sap_storage_az_imds_json }} \
+          {{ qe_sap_storage_az_imds_json }} \
           | grep lun | sed 's/[^0-9]*//g'`"
         echo ${{ item.value.vg }}lun
       args:
         executable: /bin/bash
       register: pvs_reg
+      changed_when: false
 
     - name: Records pvs
       ansible.builtin.set_fact:
         pvs_one: "{{ pvs_reg.stdout }}"
 
     # Create Volume Group
-    - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ sap_storage_az_vmsize }} - {{ item.value.name }} Volume Group One
+    - name: "SAP Storage Preparation - Volume Group One: {{ [qe_sap_storage_cloud_type | upper, qe_sap_storage_az_vmsize, item.value.name] | join(' - ') }}"
       community.general.lvg:
         vg: "{{ item.value.vg }}"
         pvs: "{{ pvs_one }}"
         force: true
 
     # Create Logical Group
-    - name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ sap_storage_az_vmsize }} - {{ item.value.name }} Logical Volume - One
+    - name: "SAP Storage Preparation - Logical Volume - One: {{ [qe_sap_storage_cloud_type | upper, qe_sap_storage_az_vmsize, item.value.name] | join(' - ') }}"
       community.general.lvol:
         vg: "{{ item.value.vg }}"
         lv: "{{ item.value.lv }}"
@@ -82,13 +87,13 @@
 
 
 # Create Filesystem
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ sap_storage_az_vmsize }} - {{ item.value.name }} Filesystem
+- name: "SAP Storage Preparation - Filesystem: {{ [qe_sap_storage_cloud_type | upper, qe_sap_storage_az_vmsize, item.value.name] | join(' - ') }}"
   community.general.filesystem:
     fstype: xfs
     dev: "/dev/{{ item.value.vg }}/{{ item.value.lv }}"
 
 # Mount Filesystem
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ sap_storage_az_vmsize }} - {{ item.value.name }} Mount
+- name: "SAP Storage Preparation - Mount: {{ [qe_sap_storage_cloud_type | upper, qe_sap_storage_az_vmsize, item.value.name] | join(' - ') }}"
   ansible.posix.mount:
     path: "{{ item.value.directory }}"
     fstype: xfs

@@ -1,27 +1,28 @@
 ---
 
 # Unmount Filesystem
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Unmount Filesystem
+- name: "SAP Storage Preparation - Unmount Filesystem: {{ [qe_sap_storage_cloud_type | upper, item.value.name] | join(' - ') }}"
   ansible.posix.mount:
     path: "{{ item.value.directory }}"
     state: absent
 
 # Remove Filesystem
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Remove Filesystem
+- name: "SAP Storage Preparation - Remove Filesystem: {{ [qe_sap_storage_cloud_type | upper, item.value.name] | join(' - ') }}"
   ansible.builtin.shell: |
     /sbin/wipefs --all -f /dev/mapper/{{ item.value.vg }}-{{ item.value.lv }}
+  changed_when: true
 
 # Remove Logical Volume
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Remove Logical Volume
+- name: "SAP Storage Preparation - Remove Logical Volume: {{ [qe_sap_storage_cloud_type | upper, item.value.name] | join(' - ') }}"
   community.general.lvol:
     lv: "{{ item.value.lv }}"
     vg: "{{ item.value.vg }}"
     state: absent
-    force: yes
+    force: true
 
 # Remove Volume Group
-- name: SAP Storage Preparation - {{ sap_storage_cloud_type | upper }} - {{ item.value.name }} Remove Volume Group
+- name: "SAP Storage Preparation - Remove Volume Group: {{ [qe_sap_storage_cloud_type | upper, item.value.name] | join(' - ') }}"
   community.general.lvg:
     vg: "{{ item.value.vg }}"
     state: absent
-    force: yes
+    force: true
