@@ -39,21 +39,28 @@
 
 # Using data exported by terraform in ebs_id_to_device_name, create a
 # sdX -> nvmeXn1 map, based on the device serial
+- name: Get serial number for each nvme device
+  ansible.builtin.command: cat /sys/class/block/{{ item.key }}/device/serial
+  register: nvme_serial_list
+  loop: "{{ nvme_device_list }}"
+  changed_when: false
+  when:
+    - cloud_platform_is_aws and not aws_machine_type_is_r4
+
 - name: Build /dev/sdX to nvme device mapping for attached volumes
   ansible.builtin.set_fact:
-    sd_to_nvme_map: "{{ sd_to_nvme_map | default({}) | combine({ device_name: '/dev/' ~ nvme_dev.key }) }}"
-  loop: "{{ nvme_device_list }}"
-  loop_control:
-    loop_var: nvme_dev
+    sd_to_nvme_map: "{{ sd_to_nvme_map | default({}) | combine({ device_name: '/dev/' ~ item.item.key }) }}"
+  loop: "{{ nvme_serial_list.results }}"
   vars:
-    # terraform (aws) exports the serial as "vol-xxx" while the system sees it as "volxxx", so we need to omit the '-'
-    volume_id: "{{ nvme_dev.value.serial | regex_replace('^vol(?!-)', 'vol-') }}"
+    # terraform (aws) exports the serial as "vol-xxx" while the system sees it as "volxxx", so we need to omit the '-'.
+    # The regex is constructed to not match on serials that already start with vol-
+    volume_id: "{{ item.stdout | regex_replace('^vol(?!-)', 'vol-') }}"
     device_name: "{{ ebs_id_to_device_name_map.get(volume_id, '') }}"
   when:
     - cloud_platform_is_aws and not aws_machine_type_is_r4
     - device_name != ''  # only map if the serial id exists in the exported serial ids from terraform
 
-- name: "Adjust PV list for storage profile {{ item.key }}"
+- name: Adjust PV list for storage profile {{ item.key }}
   ansible.builtin.set_fact:
     adjusted_pv: >-
       {{
@@ -69,7 +76,7 @@
     msg: "Using PV list: {{ (adjusted_pv is defined and (adjusted_pv | length) > 0) | ternary(adjusted_pv, item.value.pv) }}"
 
 # Create Volume Group
-- name: "SAP Storage Preparation - Volume Group One: {{ [qe_sap_storage_cloud_type | upper, item.value.name] | join(' - ') }}"
+- name: "SAP Storage Preparation - Volume Group One: {{ item.value.name + ' on ' + sap_storage_cloud_type }}"
   community.general.lvg:
     vg: "{{ item.value.vg }}"
     pvs: "{{ (adjusted_pv is defined and (adjusted_pv | length) > 0) | ternary(adjusted_pv, item.value.pv) }}"
@@ -85,7 +92,7 @@
   when: adjusted_pv is defined
 
 # Create Logical Group - One
-- name: "SAP Storage Preparation - Logical Volume - One: {{ [qe_sap_storage_cloud_type | upper, item.value.name] | join(' - ') }}"
+- name: "SAP Storage Preparation - Logical Volume One: {{ item.value.name + ' on ' + sap_storage_cloud_type }}"
   community.general.lvol:
     vg: "{{ item.value.vg }}"
     lv: "{{ item.value.lv }}"
@@ -94,7 +101,7 @@
     - "item.value.numluns == '1'"
 
 # Create Logical Group - Striped
-- name: "SAP Storage Preparation - Logical Volume - Striped: {{ [qe_sap_storage_cloud_type | upper, item.value.name] | join(' - ') }}"
+- name: "SAP Storage Preparation - Logical Volume Striped: {{ item.value.name + ' on ' + sap_storage_cloud_type }}"
   community.general.lvol:
     vg: "{{ item.value.vg }}"
     lv: "{{ item.value.lv }}"
@@ -104,13 +111,13 @@
     - "item.value.numluns != '1'"
 
 # Create Filesystem
-- name: "SAP Storage Preparation - Filesystem: {{ [qe_sap_storage_cloud_type | upper, item.value.name] | join(' - ') }}"
+- name: "SAP Storage Preparation - Filesystem: {{ item.value.name + ' on ' + sap_storage_cloud_type }}"
   community.general.filesystem:
     fstype: xfs
     dev: "/dev/{{ item.value.vg }}/{{ item.value.lv }}"
 
 # Mount Filesystem
-- name: "SAP Storage Preparation - Mount: {{ [qe_sap_storage_cloud_type | upper, item.value.name] | join(' - ') }}"
+- name: "SAP Storage Preparation - Mount: {{ item.value.name + ' on ' + sap_storage_cloud_type }}"
   ansible.posix.mount:
     path: "{{ item.value.directory }}"
     fstype: xfs
