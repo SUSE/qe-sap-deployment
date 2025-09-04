@@ -114,7 +114,6 @@ resource "local_file" "ansible_inventory" {
       gcp_project         = var.project,
       gcp_primary_zone    = element(local.compute_zones, 0),
       gcp_secondary_zone  = element(local.compute_zones, 1),
-      use_sbd             = local.use_sbd
       name_prefix         = local.deployment_name,
   })
   filename = "inventory.yaml"

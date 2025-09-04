@@ -111,7 +111,6 @@ resource "local_file" "ansible_inventory" {
       iscsi_pip           = module.iscsi_server.iscsisrv_public_ip,
       iscsi_enabled       = local.iscsi_enabled,
       iscsi_remote_python = var.iscsi_remote_python
-      use_sbd             = local.use_sbd
       resource_group_name = local.resource_group_name
       subscription_id     = data.azurerm_subscription.current.subscription_id
       tenant_id           = data.azurerm_subscription.current.tenant_id
