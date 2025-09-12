@@ -36,12 +36,14 @@ resource "google_compute_region_backend_service" "backend-service" {
   health_checks         = [google_compute_health_check.health-check.*.id[0]]
 
   backend {
-    group = var.primary_node_group
+    group          = var.primary_node_group
+    balancing_mode = "CONNECTION"
   }
 
   backend {
-    group    = var.secondary_node_group
-    failover = true
+    group          = var.secondary_node_group
+    failover       = true
+    balancing_mode = "CONNECTION"
   }
 
   failover_policy {

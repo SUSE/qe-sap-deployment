@@ -30,9 +30,7 @@ resource "google_compute_instance" "monitoring" {
     # Set public IP address. Only if the bastion is not used
     dynamic "access_config" {
       for_each = [1]
-      content {
-        nat_ip = ""
-      }
+      content {}
     }
   }
 

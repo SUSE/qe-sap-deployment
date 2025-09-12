@@ -123,9 +123,7 @@ resource "google_compute_instance" "clusternodes" {
     # Set public IP address.
     dynamic "access_config" {
       for_each = [1]
-      content {
-        nat_ip = ""
-      }
+      content {}
     }
   }
 
