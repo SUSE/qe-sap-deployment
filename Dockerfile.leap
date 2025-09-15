@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:experimental
 
-FROM opensuse/leap:15.
+FROM opensuse/leap:15.6
 
 ## AZURE
 # way suggested on https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-linux?pivots=zypper
@@ -14,11 +14,16 @@ RUN zypper ref && zypper up -y && \
 WORKDIR /root
 
 ## GCP
-RUN curl https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-387.0.0-linux-x86_64.tar.gz | \
-    tar zpxf - && \
+# Methods are described in:
+#  - https://cloud.google.com/sdk/docs/install
+#  - https://github.com/os-autoinst/os-autoinst-distri-opensuse/blob/3270ae9ac3a8b4e455fe2109cadb65b432b910a3/tests/publiccloud/prepare_tools.pm#L113
+#
+RUN curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-linux-x86_64.tar.gz && \
+    tar -xf google-cloud-cli-linux-x86_64.tar.gz && \
     google-cloud-sdk/install.sh --quiet --usage-reporting false --command-completion true && \
     echo 'source /root/google-cloud-sdk/completion.bash.inc' >> ~/.bashrc && \
-    echo 'source ~/google-cloud-sdk/path.bash.inc' >> ~/.bashrc
+    echo 'source ~/google-cloud-sdk/path.bash.inc' >> ~/.bashrc && \
+    rm google-cloud-cli-linux-x86_64.tar.gz
 
 ## Terraform
 RUN curl https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip -o terraform.zip && \
@@ -30,11 +35,10 @@ ENV VIRTUAL_ENV=/opt/venv
 RUN python3.12 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 COPY requirements.txt .
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
-
 COPY requirements.yml .
-RUN  ansible-galaxy install -r requirements.yml
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt && \
+    ansible-galaxy install -r requirements.yml
 
 RUN mkdir /src
 WORKDIR /src
