@@ -751,3 +751,8 @@ variable "ibsm_subnet_region" {
   default     = ""
 }
 
+variable "ibsm_hub_name" {
+  description = "NCC hub name. If empty, no edge spoke will be created."
+  type        = string
+  default     = ""
+}

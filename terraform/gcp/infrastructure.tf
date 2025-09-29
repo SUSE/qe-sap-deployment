@@ -22,6 +22,11 @@ locals {
 
   create_firewall = var.create_firewall_rules ? 1 : 0
   ibsm_count      = (var.ibsm_vpc_name != "" && var.ibsm_subnet_name != "" && var.ibsm_subnet_region != "") ? 1 : 0
+  hub_id = (
+    trimspace(var.ibsm_hub_name) != ""
+    ? "projects/${var.project}/locations/global/hubs/${var.ibsm_hub_name}"
+    : null
+  )
 }
 
 # Network resources: Network, Subnet
@@ -162,3 +167,18 @@ resource "google_compute_firewall" "allow_internal_from_ibsm" {
   description   = "Allow internal traffic from ibsm VPC to HANA VPC"
 }
 
+# NCC Peering resources
+
+# NCC edge spoke to connect to the IBSM hub
+resource "google_network_connectivity_spoke" "edge_to_ibsm" {
+  count = local.hub_id != null ? 1 : 0
+
+  name     = "edge-${local.deployment_name}"
+  location = "global"
+  hub      = local.hub_id
+  group    = "edge"
+
+  linked_vpc_network {
+    uri = local.network_link
+  }
+}
