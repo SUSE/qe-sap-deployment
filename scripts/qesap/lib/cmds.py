@@ -312,7 +312,7 @@ def ansible_command_sequence(
     # 1. Create the environment variable set
     #    that will be used by any command
     original_env = dict(os.environ)
-    original_env["ANSIBLE_PIPELINING"] = "True"
+    original_env["ANSIBLE_PIPELINING"] = "False"
     ansible_callbacks = []
     if profile:
         ansible_callbacks.append("ansible.posix.profile_tasks")
