@@ -13,11 +13,31 @@
   tasks:
 
     # Pre flight checks
+    - name: Check for instance-flavor-check presence
+      ansible.builtin.command: which instance-flavor-check
+      register: ifc_bin
+      changed_when: false
+      failed_when: false
+
     - name: Check for SUSEConnect binary presence
       ansible.builtin.command: which SUSEConnect
       changed_when: false
 
-    # Do we have repos?  If not, we need to register
+    - name: Check for image type with instance-flavor-check
+      ansible.builtin.command: instance-flavor-check
+      register: flavor
+      failed_when: flavor.rc not in [10, 11, 12]
+      changed_when: false
+      when: ifc_bin.rc == 0
+
+    - name: Set registration flag based on instance-flavor-check
+      ansible.builtin.set_fact:
+        to_be_registered: "{{ 'BYOS' in flavor.stdout }}"
+      when: ifc_bin.rc == 0
+
+    # If instance-flavor-check is not available
+    # try to figure it out if image is PAYG or BYOS looking
+    # for not registered repos
     - name: Check for registration
       ansible.builtin.command: SUSEConnect -s
       register: repos
@@ -26,11 +46,13 @@
       delay: 120
       failed_when: repos.rc != 0
       changed_when: false
+      when: ifc_bin.rc != 0
 
     # Check if there are instances of `Not Registered` in it
     - name: Check for 'Not Registered'
       ansible.builtin.set_fact:
-        not_registered_found: "{{ 'Not Registered' in repos.stdout }}"
+        to_be_registered: "{{ 'Not Registered' in repos.stdout }}"
+      when: ifc_bin.rc != 0
 
     # Is registercloudguest available?
     # only run it if:
@@ -71,7 +93,6 @@
         - ansible_facts.packages['cloud-regionsrv-client'][0].version is version('10.1.7', '<')
         - not use_suseconnect | bool
 
-    # Execute Section
     - name: Validate reg code
       ansible.builtin.assert:
         that:
@@ -80,20 +101,20 @@
         success_msg: "'reg_code' is OK"
       changed_when: false
       when:
-        - not_registered_found
+        - to_be_registered
         - is_registercloudguest_bin.rc == 0
         - not use_suseconnect | bool
 
     # Start by pre-cleaning all. Only run it if:
     #  - the registercloudguest binary is available
     #  - there's at least one 'Not Registered' module
-    #  - the user does not require only use SUSEConnect with 'use_suseconnect'
+    #  - the user does not force SUSEConnect usage with 'use_suseconnect'
     - name: Pre-run cleaning registercloudguest
       ansible.builtin.command: registercloudguest --clean
       register: cleanout
       changed_when: cleanout.rc == 0
       when:
-        - not_registered_found
+        - to_be_registered
         - is_registercloudguest_bin.rc == 0
         - not use_suseconnect | bool
 
@@ -106,7 +127,7 @@
       failed_when: result.rc != 0 or result.stderr != ""
       changed_when: result.rc == 0
       when:
-        - not_registered_found
+        - to_be_registered
         - is_registercloudguest_bin.rc == 0
         - not use_suseconnect | bool
 
@@ -122,7 +143,7 @@
       retries: 10
       delay: 60
       when:
-        - not_registered_found
+        - to_be_registered
         - "(is_registercloudguest_bin.rc != 0) or (use_suseconnect | bool)"
 
     # There are additional repos to add.
@@ -136,7 +157,7 @@
       delay: 60
       when:
         - ansible_facts['distribution_major_version'] == "12"
-        - not_registered_found
+        - to_be_registered
         - "(is_registercloudguest_bin.rc != 0) or (use_suseconnect | bool)"
 
     - name: Add SLES 12 public cloud module
@@ -148,7 +169,7 @@
       delay: 60
       when:
         - ansible_facts['distribution_major_version'] == "12"
-        - not_registered_found
+        - to_be_registered
         - "(is_registercloudguest_bin.rc != 0) or (use_suseconnect | bool)"
 
     - name: Add SLES 15 public cloud module
@@ -160,7 +181,7 @@
       delay: 60
       when:
         - ansible_facts['distribution_major_version'] == "15"
-        - not_registered_found
+        - to_be_registered
         - "(is_registercloudguest_bin.rc != 0) or (use_suseconnect | bool)"
 
     # Latest version of cloud-regionsrv-client is needed in PAYG, and image
