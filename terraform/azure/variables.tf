@@ -894,3 +894,8 @@ variable "ibsm_rg" {
   default     = ""
 }
 
+variable "allowed_ssh_cidr_csv" {
+  description = "Comma-separated CIDRs to allow for SSH. Leave empty to allow from anywhere."
+  type        = string
+  default     = ""
+}

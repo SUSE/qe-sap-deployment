@@ -49,6 +49,10 @@ locals {
   anf_account_name   = local.shared_storage_anf == 1 ? (var.anf_account_name == "" ? azurerm_netapp_account.mynetapp-acc.0.name : var.anf_account_name) : ""
   anf_pool_name      = local.shared_storage_anf == 1 ? (var.anf_pool_name == "" ? azurerm_netapp_pool.mynetapp-pool.0.name : var.anf_pool_name) : ""
   ibsm_count         = (var.ibsm_rg != "" && var.ibsm_vnet_name != "") ? 1 : 0
+  allowed_ssh_cidrs = var.allowed_ssh_cidr_csv == "" ? [] : [
+    for s in split(",", var.allowed_ssh_cidr_csv) : trimspace(s)
+    if trimspace(s) != ""
+  ]
 }
 
 # Azure resource group and storage account resources. Create one here
@@ -201,7 +205,8 @@ resource "azurerm_network_security_group" "mysecgroup" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "22"
-    source_address_prefix      = "*"
+    source_address_prefixes    = length(local.allowed_ssh_cidrs) > 0 ? local.allowed_ssh_cidrs : null
+    source_address_prefix      = length(local.allowed_ssh_cidrs) == 0 ? "*" : null
     destination_address_prefix = "*"
   }
 
