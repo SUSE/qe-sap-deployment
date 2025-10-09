@@ -123,6 +123,7 @@ def cmd_configure(configure_data, base_project, dryrun):
         log.info("Write .tfvars %s", cfg_paths["tfvars_file"])
         with open(cfg_paths["tfvars_file"], "w", encoding="utf-8") as file:
             file.write("".join(tfvar_content))
+            file.write("\n")
 
         if config.has_ansible():
             log.info("Write hana_media %s", cfg_paths["hana_media_file"])
