@@ -5,4 +5,4 @@ collections:
   - name: ansible.posix
     version: 1.5.4
   - name: community.general
-    version: 6.5.0
+    version: 9.5.12
