@@ -314,6 +314,7 @@ def ansible_command_sequence(
     #    that will be used by any command
     original_env = dict(os.environ)
     original_env["ANSIBLE_PIPELINING"] = "True"
+    original_env["ANSIBLE_TIMEOUT"] = "20"
     ansible_callbacks = []
     if profile:
         ansible_callbacks.append("ansible.posix.profile_tasks")

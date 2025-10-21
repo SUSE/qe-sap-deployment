@@ -231,6 +231,7 @@ def mock_call_ansibleplaybook():
         if env is None:
             original_env = dict(os.environ)
             original_env["ANSIBLE_PIPELINING"] = "True"
+            original_env["ANSIBLE_TIMEOUT"] = "20"
         else:
             original_env = env
         return mock.call(cmd=' '.join(playbook_cmd), env=original_env)
