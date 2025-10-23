@@ -10,6 +10,16 @@
         msg: "There are {{ ansible_play_hosts | length }} hosts in this play but this playbook supports two nodes hosts"
       when: ansible_play_hosts | length != 2
 
+    - name: Ensure required HANA firewall ports are open
+      ansible.posix.firewalld:
+        port: "{{ item }}/tcp"
+        permanent: true
+        state: enabled
+        immediate: true
+      loop:
+        - 40006
+      when: ansible_distribution_major_version == '16'
+
     - name: Load HANA vars
       include_vars: ./vars/hana_vars.yaml
 
