@@ -1,10 +1,15 @@
 provider: <PROVIDER>
 apiver: 3
 terraform:
+  # For use of different binary then 'terraform' uncomment and set the following 'bin' variable
+  # bin: < YOUR_FAVORIT_BINARY_WITH_FULL_PATH EG: /usr/bin/tofu>
   variables:
     az_region: <YOUR_REGION>
     deployment_name: <YOUR_NAME>
+    # On Azure the source of the OS image could be chosen from the catalog - default value
+    # or from the uploaded vhd, switch comments if you need to use the other option
     os_image: <YOUR_FAVORITE_SLE_IMAGE>
+    # os_image_uri: <URI_TO_YOUR_FAVORITE_UPLOADED_SLE_IMAGE>
     public_key: <YOUR_KEY_PATH>/id_rsa_cloud.pub
 
 ansible:
