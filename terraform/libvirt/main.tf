@@ -33,11 +33,6 @@ locals {
   netweaver_virtual_ips = length(var.netweaver_virtual_ips) != 0 ? var.netweaver_virtual_ips : [for ip_index in range(local.netweaver_ip_start, local.netweaver_ip_start + local.netweaver_virtual_ips_count) : cidrhost(local.iprange, ip_index + local.netweaver_virtual_ips_count)]
 
   # Check if iscsi server has to be created
-  use_sbd = (
-    var.hana_cluster_fencing_mechanism == "sbd" ||
-    var.drbd_cluster_fencing_mechanism == "sbd" ||
-    var.netweaver_cluster_fencing_mechanism == "sbd"
-  )
   iscsi_enabled = (
     var.sbd_storage_type == "iscsi" &&
     (
