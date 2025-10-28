@@ -1,5 +1,6 @@
 ---
-- hosts: hana
+- name: SAP HANA system replication
+  hosts: hana
   remote_user: cloudadmin
   become: true
   become_user: root
@@ -11,7 +12,7 @@
       when: ansible_play_hosts | length != 2
 
     - name: Load HANA vars
-      include_vars: ./vars/hana_vars.yaml
+      ansible.builtin.include_vars: ./vars/hana_vars.yaml
 
   vars:
     install_path: /var/lib/qedep
@@ -52,7 +53,7 @@
 
     - name: Execute hana system replication role
       ansible.builtin.include_role:
-        role: sap_ha_install_hana_hsr
+        name: sap_ha_install_hana_hsr
       when: hsr_configured == 'absent'
 
     - name: Write status file
