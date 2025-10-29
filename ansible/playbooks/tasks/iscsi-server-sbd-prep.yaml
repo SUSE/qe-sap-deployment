@@ -77,3 +77,12 @@
     cmd: "targetcli iscsi/{{ srv_iqn }}/tpg1/acls/ create {{ item }}"
     creates: '/sys/kernel/config/target/iscsi/{{ srv_iqn }}/tpgt_1/acls/{{ item }}'
   with_items: "{{ client_list }}"
+
+- name: Open iscsi port 3260/tcp
+  become: true
+  ansible.posix.firewalld:
+    port: 3260/tcp
+    state: enabled
+    permanent: true
+    immediate: true
+  when: ansible_distribution_major_version == '16'
