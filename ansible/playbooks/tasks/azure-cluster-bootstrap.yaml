@@ -85,7 +85,7 @@
     - 'python313-azure-mgmt-compute'
     - 'python313-azure-identity'
   when:
-    - ansible_distribution_major_version == '15'
+    - ansible_distribution_major_version == '16'
   register: result
   until: result is succeeded
   retries: 3
