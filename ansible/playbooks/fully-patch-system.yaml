@@ -18,7 +18,11 @@
         state: latest
         type: patch
       environment:
-        ZYPP_LOCK_TIMEOUT: 120
+        ZYPP_LOCK_TIMEOUT: '120'
+      register: zypper_patch
+      until: zypper_patch.rc == 0
+      retries: 5
+      delay: 30
       notify: Reboot after patch
 
   handlers:
