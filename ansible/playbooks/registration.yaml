@@ -4,6 +4,7 @@
   remote_user: cloudadmin
   become: true
   become_user: root
+  gather_facts: false
   environment:
     ZYPP_LOCK_TIMEOUT: '120'
 
@@ -13,6 +14,20 @@
   tasks:
 
     # Pre flight checks
+    - name: Wait until passwordless sudo works in GCP
+      become: false # This task is to check sudo is ready
+      ansible.builtin.command: sudo -n true
+      register: sudo_test
+      retries: 30
+      delay: 5
+      until: sudo_test.rc == 0
+      changed_when: false
+      failed_when: sudo_test.rc != 0
+
+    - name: Gather facts (manually, after sudo is ready)
+      ansible.builtin.setup:
+      changed_when: false
+
     - name: Check for instance-flavor-check presence
       ansible.builtin.command: which instance-flavor-check
       register: ifc_bin
