@@ -8,6 +8,13 @@
 ##
 # Use lsscsi to report all the disks.  Our new disks will not be in facts yet
 
+- name: Ensure lsscsi is installed (SLES16)
+  become: true
+  community.general.zypper:
+    name: lsscsi
+    state: present
+  when: ansible_distribution_major_version == '16'
+
 # Find all scsi devices
 - name: Discovery iscsi devices
   ansible.builtin.command: lsscsi -i
@@ -45,6 +52,7 @@
     - is_primary
     - item.rc != 0
   loop: "{{ sdb_safe.results }}"
+  changed_when: true
 
 - name: Ensure that sbd configuration file exits
   ansible.builtin.file:
