@@ -231,6 +231,8 @@
 - name: Enable SBD [sbd]
   ansible.builtin.command:
     cmd: crm configure primitive rsc_iscsi_sbd stonith:external/sbd
+  register: enable_sbd_result
+  changed_when: enable_sbd_result.rc == 0
   when:
     - sbd_stonith | string | lower  == 'false'
     - use_sbd | default(false) | bool
@@ -253,6 +255,7 @@
     - not (use_sbd | default(false) | bool)
     - ansible_distribution_major_version == '12'
   register: stonith_config_result
+  changed_when: stonith_config_result.rc == 0
   failed_when: >
     stonith_config_result.stderr_lines | select("match", "ERROR") | reject("match", "ERROR: warning") | list | length > 0
 
@@ -263,11 +266,14 @@
     - not (use_sbd | default(false) | bool)
     - ansible_distribution_major_version != '12'
   register: stonith_config_result
+  changed_when: stonith_config_result.rc == 0
   failed_when: "'ERROR' in stonith_config_result.stderr"
 
 - name: Set stonith-timeout [sdb]
   ansible.builtin.command:
     cmd: crm configure property stonith-timeout=144
+  register: set_stonith_timeout_sdb_result
+  changed_when: set_stonith_timeout_sdb_result.rc == 0
   when:
     - stonith_timeout != '144'
     - use_sbd | default(false) | bool
@@ -279,6 +285,8 @@
       crm configure property
       $id="cib-bootstrap-options"
       stonith-timeout=600s
+  register: set_stonith_timeout_aws_result
+  changed_when: set_stonith_timeout_aws_result.rc == 0
   when:
     - stonith_timeout != '600s'
     - is_primary
@@ -290,6 +298,8 @@
       crm configure property
       $id="cib-bootstrap-options"
       stonith-enabled=true
+  register: enable_stonith_result
+  changed_when: enable_stonith_result.rc == 0
   when:
     - stonith_enabled | string | lower != 'true'
     - is_primary
@@ -300,6 +310,8 @@
       crm configure property
       $id="cib-bootstrap-options"
       stonith-action=off
+  register: disable_stonith_action_result
+  changed_when: disable_stonith_action_result.rc == 0
   when:
     - stonith_action != 'off'
     - is_primary
@@ -314,6 +326,7 @@
     - resource_stickiness != '1000'
     - is_primary
   register: reg_rsc_defaults
+  changed_when: reg_rsc_defaults.rc == 0
   until: reg_rsc_defaults.rc == 0
   retries: 10
   delay: 10
@@ -324,6 +337,8 @@
       crm configure rsc_defaults
       $id="rsc-options"
       migration-threshold=5000
+  register: set_migration_threshold_result
+  changed_when: set_migration_threshold_result.rc == 0
   when:
     - migration_threshold != '5000'
     - is_primary
@@ -331,6 +346,8 @@
 - name: Set op_defaults timeout
   ansible.builtin.command:
     cmd: crm configure op_defaults timeout=600
+  register: set_op_defaults_timeout_result
+  changed_when: set_op_defaults_timeout_result.rc == 0
   when:
     - op_default_timeout != '600'
     - is_primary
@@ -348,6 +365,8 @@
       op start interval=0 timeout=180
       op stop interval=0 timeout=180
       op monitor interval=60 timeout=60
+  register: configure_cluster_ip_result
+  changed_when: configure_cluster_ip_result.rc == 0
   when:
     - rsc_ip | length == 0
     - is_primary
@@ -372,6 +391,7 @@
       rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       {{ primary_hostname }}
   register: reg_move_cmd
+  changed_when: reg_move_cmd.rc == 0
   when:
     - is_primary
     - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
@@ -385,6 +405,7 @@
       crm resource locate
       rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
   register: reg_vip_location2
+  changed_when: false
   when:
     - is_primary
     - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname

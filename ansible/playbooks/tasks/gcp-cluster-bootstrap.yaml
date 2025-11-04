@@ -339,6 +339,7 @@
     - resource_stickiness != '1000'
     - is_primary
   register: reg_rsc_defaults
+  changed_when: reg_rsc_defaults.rc == 0
   until: reg_rsc_defaults.rc == 0
   retries: 10
   delay: 10
@@ -400,6 +401,7 @@
       rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       {{ primary_hostname }}
   register: reg_move_cmd
+  changed_when: reg_move_cmd.rc == 0
   when:
     - is_primary
     - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
@@ -413,6 +415,7 @@
       crm resource locate
       rsc_ip_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
   register: reg_vip_location2
+  changed_when: false
   when:
     - is_primary
     - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
