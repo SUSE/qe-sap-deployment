@@ -20,11 +20,14 @@
   ansible.builtin.command:
     cmd: "crm resource stop {{ sbd_device_name }}"
   register: sbd_status
+  changed_when: true
   when: sbd_device_status == 'Started' or sbd_device_status == 'running'
 
 - name: Remove stonith device
   ansible.builtin.command:
     cmd: "crm configure delete {{ sbd_device_name }}"
+  register: remove_stonith_result
+  changed_when: remove_stonith_result.rc == 0
   when: sbd_device_name != 'NOresourcesconfigured'  # If no stonith was found 'NOresourcesconfigured' should be registered in {{ sbd_device_name }}
 
 - name: Create new SBD stonith device
@@ -38,16 +41,5 @@
       pcmk_delay_max="15"
       op monitor interval="600" timeout="15"
   register: create_stonith
-
-  # When the stonith device is changed the file /var/lib/sbd is changed
-- name: Write status file
-  ansible.builtin.file:
-    path: "{{ item.path }}"
-    state: "{{ item.state }}"
-    owner: root
-    group: root
-    mode: '0700'
-  when: create_stonith.changed
-  with_items:
-    - {'path': '/var/lib/qedep', 'state': 'directory'}
-    - {'path': '/var/lib/qedep/sbd', 'state': 'touch'}
+  changed_when: create_stonith.rc == 0
+  notify: Write stonith status file

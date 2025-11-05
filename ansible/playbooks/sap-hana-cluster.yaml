@@ -35,6 +35,18 @@
         state: started
         enabled: true
 
+    # When the stonith device is changed the file /var/lib/sbd is changed
+    - name: Write stonith status file
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        owner: root
+        group: root
+        mode: '0700'
+      with_items:
+        - {'path': '/var/lib/qedep', 'state': 'directory'}
+        - {'path': '/var/lib/qedep/sbd', 'state': 'touch'}
+
   pre_tasks:
     - name: Detect cloud platform
       ansible.builtin.include_tasks:
@@ -90,6 +102,8 @@
           crm resource
           refresh
           {{ ms_saphanactl }}
+      register: refresh_ms_result
+      changed_when: refresh_ms_result.rc == 0
       when: is_primary
 
     - name: MS Resource Maintenance off
@@ -99,9 +113,12 @@
           maintenance
           {{ ms_saphanactl }}
           off
+      register: maintenance_off_result
+      changed_when: maintenance_off_result.rc == 0
       when: is_primary
 
     - name: Wait for cluster to settle
       ansible.builtin.command:
         cmd: cs_wait_for_idle -s 5
+      changed_when: false
       when: is_primary
