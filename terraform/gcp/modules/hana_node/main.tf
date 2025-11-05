@@ -176,6 +176,8 @@ resource "google_compute_instance" "clusternodes" {
     sshKeys = "${var.common_variables["authorized_user"]}:${var.common_variables["public_key"]}"
   }
 
+  metadata_startup_script = "sudo -n true"
+
   service_account {
     scopes = ["compute-rw", "storage-rw", "logging-write", "monitoring-write", "service-control", "service-management"]
   }
