@@ -43,3 +43,10 @@
       community.general.zypper_repository:
         repo: '*'
         runrefresh: true
+      when: repos | length > 0
+      environment:
+        ZYPP_LOCK_TIMEOUT: '120'
+      register: ref_out
+      until: ref_out is succeeded
+      retries: 3
+      delay: 5
