@@ -1,12 +1,14 @@
 ---
-- hosts: hana
+- name: SAP Hana preconfigure
+  hosts: hana
   remote_user: cloudadmin
   become: true
   become_user: root
 
   pre_tasks:
     - name: Source hana install variables
-      include_vars: ./vars/hana_vars.yaml
+      ansible.builtin.include_vars: ./vars/hana_vars.yaml
+
     - name: Detect cloud platform
       ansible.builtin.include_tasks:
         ./tasks/detect-cloud-platform.yaml
@@ -39,18 +41,19 @@
       loop:
         - 'iscsiuio'
         - 'open-iscsi'
+      when: use_sbd | default(false) | bool
 
     - name: Update old SAPHanaSR on SLE 15-SP1
       community.general.zypper:
         name: SAPHanaSR=0.154.0
         state: present
         replacefiles: true
-      when:
-        - ansible_facts['distribution_version'] == '15.1' and not use_hana_sr_angi | bool
       register: result
       until: result is succeeded
       retries: 3
       delay: 60
+      when:
+        - ansible_facts['distribution_version'] == '15.1' and not use_hana_sr_angi | bool
 
       # 3018133 - Linux: Running SAP applications compiled with GCC 10.x
     - name: Ensure GCC10 is installed
