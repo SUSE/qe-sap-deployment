@@ -281,7 +281,7 @@ def test_ansible_no_bin(
 
 
 @mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
-@mock.patch("lib.process_manager.subprocess_run", side_effect=[(0, []), (1, [])])
+@mock.patch("lib.process_manager.subprocess_run", side_effect=[(0, []), (0, []), (1, [])])
 def test_ansible_stop(
     run,
     _,
@@ -538,6 +538,7 @@ def test_ansible_ssh(
     ansible_config,
     mock_call_ansibleplaybook,
     ansible_exe_call,
+    ansible_sudo_wait_call,
 ):
     """
     This first Ansible command has to be called before all the others
@@ -578,6 +579,7 @@ def test_ansible_ssh(
     calls = []
 
     calls.append(mock.call(cmd=ansible_exe_call(inventory)))
+    calls.append(mock.call(cmd=ansible_sudo_wait_call(inventory)))
     for playbook in playbook_list:
         calls.append(mock_call_ansibleplaybook(inventory, playbook))
 
