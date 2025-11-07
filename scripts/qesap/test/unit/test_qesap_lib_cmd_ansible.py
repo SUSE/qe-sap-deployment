@@ -2,7 +2,7 @@ from unittest import mock
 import logging
 import os
 import yaml
-
+import re
 
 from lib.cmds import ansible_export_output, cmd_ansible
 
@@ -44,9 +44,7 @@ def test_cmd_ansible(
     tmpdir,
     create_playbooks,
     create_inventory,
-    ansible_exe_call,
-    ansible_sudo_wait_call,
-    mock_call_ansibleplaybook,
+    ansible_regexp_calls,
 ):
     """
     This test coverage overlap with tests from
@@ -75,19 +73,21 @@ ansible:
 """
     data = yaml.load(conf_yaml, Loader=yaml.FullLoader)
     playbook = create_playbooks(["babo"])
-    inventory = create_inventory("lolo")
+    create_inventory("lolo")
 
     subprocess_run.return_value = (
         0,
         ["This is the ansible output", "Two lines of that"],
     )
 
-    calls = [mock.call(cmd=ansible_exe_call(inventory))]
-    calls.append(mock.call(cmd=ansible_sudo_wait_call(inventory)))
-    calls.append(mock_call_ansibleplaybook(inventory, playbook[0]))
-
     ret = cmd_ansible(data, tmpdir, False, False)
 
     assert ret == 0
 
-    subprocess_run.assert_has_calls(calls)
+    actual_calls = subprocess_run.call_args_list
+    expected_calls = ansible_regexp_calls(playbook[0])
+
+    assert len(actual_calls) == len(expected_calls)
+
+    for actual, expected in zip(actual_calls, expected_calls):
+        assert re.search(expected, str(actual))

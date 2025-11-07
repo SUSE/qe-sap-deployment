@@ -471,7 +471,9 @@ test_split
 echo "Run the script again collecting the output"
 qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun ansible |& tee "${THIS_LOG}"
 grep -E "ansible.*-i.*${PROVIDER}/inventory.yaml.*all.*ssh-extra-args=\".*\"" \
-    "${THIS_LOG}" || test_die "${QESAP_CFG} dryrun fails in ansible command"
+    "${THIS_LOG}" || test_die "${QESAP_CFG} dryrun fails in first ansible command"
+grep -E "ansible.*-i.*${PROVIDER}/inventory.yaml.*all.*sudo.*true" \
+    "${THIS_LOG}" || test_die "${QESAP_CFG} dryrun fails in second ansible command"
 grep -E "ansible-playbook.*-i.*${PROVIDER}/inventory.yaml.*ansible/playbooks/sambuconero.yaml" \
     "${THIS_LOG}" || test_die "${QESAP_CFG} dryrun fails in ansible-playbook command"
 ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)

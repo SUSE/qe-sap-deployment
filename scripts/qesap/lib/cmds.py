@@ -335,9 +335,7 @@ def ansible_command_sequence(
             return False, f"Missing binary {ansible_bin}"
         ansible_bin_paths[ansible_bin] = binpath
 
-    # 3. Compose common parts of all ansible commands
-    #    so the set of generic arguments that apply both
-    #    to ansible and ansible-playbook
+    # 3. Compose common arguments applicable to both 'ansible' and 'ansible-playbook'.
     ansible_common = "-vv"
     if verbose:
         # add two more 'v' without any space
@@ -348,13 +346,10 @@ def ansible_command_sequence(
     ansible_cmd_seq = []
 
     if junit and not os.path.isdir(junit):
+        # Create the JUnit output directory in advance.
         # This is the folder also used in the Ansible configuration JUNIT_OUTPUT_DIR.
-        # ansible-playbook is able to create it from its own but
-        # is a failure occur in the first sequence command, that is ansible and
-        # not ansible-playbook, the folder is not created.
-        # Create an empty folder in advance, if it is not already there
-        # so that the glue script called can always suppose that
-        # at least the folder is present.
+        # While 'ansible-playbook' can create this directory, the initial 'ansible' ad-hoc commands cannot.
+        # Pre-creating it ensures the path exists even if the sequence fails early.
         ansible_cmd_seq.append({"cmd": f"mkdir -p {junit}"})
 
     # This is to avoid any manual intervention during first connection.
@@ -365,15 +360,13 @@ def ansible_command_sequence(
     #  - option 'all' runs the same command on all hosts in the inventory
     #    (that comes from ansible_common)
     #  - '-a' is for running a single command remotely,
-    #  - 'true' is just the simplest possible command as the point
-    #     is not what we run but establishing a first connection
-    #     to have the fingerprint saved in the local known_host file.
+    #  - A simple 'true' command is used, as the goal is only to establish
+    #    the initial connection and having the fingerprint saved in the local known_host file.
     ssh_share = f"{ansible_bin_paths['ansible']} {ansible_common} all -a true"
     # Don't set '--ssh-extra-args="..."' but 'ssh-extra-args=...'
     # for avoiding the ansible ssh connection failure introduced by
     # https://github.com/ansible/ansible/pull/78826 in "ansible-core 2.15.0"
     ssh_share += ' --ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'
-    ansible_cmd_seq.append({"cmd": ssh_share})
     ansible_cmd_seq.append({"cmd": ssh_share})
 
     # This command is used to wait until user and sudo permissions are ready before running the playbooks
@@ -382,7 +375,6 @@ def ansible_command_sequence(
         f'{ansible_bin_paths["ansible"]} {ansible_common} all '
         '-m shell '
         "-a 'i=0; while [ $i -lt 35 ]; do sudo -n true && exit 0; sleep 5; i=$((i+1)); done; exit 1' "
-        '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'
     )
     ansible_cmd_seq.append({"cmd": sudo_wait})
 
