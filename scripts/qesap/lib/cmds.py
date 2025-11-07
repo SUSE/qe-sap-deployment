@@ -372,6 +372,16 @@ def ansible_command_sequence(
     ssh_share += ' --ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'
     ansible_cmd_seq.append({"cmd": ssh_share})
 
+    # This command is used to wait until user and sudo permissions are ready before running the playbooks
+    # this is needed due to GCP guest agent taking some time to set these up after VM creation
+    sudo_wait = (
+        f'{ansible_bin_paths["ansible"]} {ansible_common} all '
+        '-m shell '
+        "-a 'i=0; while [ $i -lt 35 ]; do sudo -n true && exit 0; sleep 5; i=$((i+1)); done; exit 1' "
+        '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'
+    )
+    ansible_cmd_seq.append({"cmd": sudo_wait})
+
     selected_list_of_playbooks = []
     if apiver < 4:
         selected_list_of_playbooks = configure_data_ansible[sequence]

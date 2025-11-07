@@ -215,6 +215,18 @@ def ansible_exe_call():
     return _callback
 
 
+@pytest.fixture()
+def ansible_sudo_wait_call():
+    def _callback(inventory):
+        return (
+            f"{ANSIBLE_EXE} -vv -i {inventory} all "
+            "-m shell "
+            "-a 'i=0; while [ $i -lt 35 ]; do sudo -n true && exit 0; sleep 5; i=$((i+1)); done; exit 1' "
+            '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'
+        )
+    return _callback
+
+
 @pytest.fixture
 def mock_call_ansibleplaybook():
     """

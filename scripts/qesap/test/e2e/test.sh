@@ -794,7 +794,7 @@ count=$(grep -cE "terraform " "${THIS_LOG}")
 [[ $count -eq 3 ]] || test_die "${THIS_LOG} there is not exactly 3 terraform lines but $count."
 
 count=$(grep -cE "ansible " "${THIS_LOG}")
-[[ $count -eq 1 ]] || test_die "${THIS_LOG} there is not exactly 1 ansible line but $count."
+[[ $count -eq 2 ]] || test_die "${THIS_LOG} there are not exactly 2 ansible lines but $count."
 
 count=$(grep -cE "ansible-playbook " "${THIS_LOG}")
 [[ $count -eq 1 ]] || test_die "${THIS_LOG} there is not exactly 1 ansible-playbook line but $count."

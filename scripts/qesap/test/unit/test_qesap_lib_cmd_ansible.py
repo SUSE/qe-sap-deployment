@@ -45,6 +45,7 @@ def test_cmd_ansible(
     create_playbooks,
     create_inventory,
     ansible_exe_call,
+    ansible_sudo_wait_call,
     mock_call_ansibleplaybook,
 ):
     """
@@ -82,6 +83,7 @@ ansible:
     )
 
     calls = [mock.call(cmd=ansible_exe_call(inventory))]
+    calls.append(mock.call(cmd=ansible_sudo_wait_call(inventory)))
     calls.append(mock_call_ansibleplaybook(inventory, playbook[0]))
 
     ret = cmd_ansible(data, tmpdir, False, False)
