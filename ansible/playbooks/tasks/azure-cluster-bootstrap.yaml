@@ -141,6 +141,29 @@
     regexp: '^CLOUD_NETCONFIG_MANAGE='
     line: 'CLOUD_NETCONFIG_MANAGE="no"'
     backup: true
+  when: ansible_distribution_major_version != '16'
+
+- name: Ensure 'CLOUD_NETCONFIG_MANAGE' is disabled for eth0 for SLES 16.0
+  ansible.builtin.lineinfile:
+    path: /usr/etc/default/cloud-netconfig
+    regexp: '^CLOUD_NETCONFIG_MANAGE='
+    line: 'CLOUD_NETCONFIG_MANAGE="no"'
+    backup: true
+  when: ansible_distribution_major_version == '16'
+
+# Workaround for bsc#1253223
+- name: Create symbolic between /usr/etc/default/cloud-netconfig and /etc/default/cloud-netconfig
+  ansible.builtin.file:
+    src: /usr/etc/default/cloud-netconfig
+    dest: /etc/default/cloud-netconfig
+    state: link
+  when: ansible_distribution_major_version == '16'
+
+- name: Softfail for old cloud-regionsrv-client in 15sp2
+  ansible.builtin.debug:
+    msg:
+      - "[OSADO][softfail] bsc#1253223 cloud-netconfig does not read /usr/etc/default/cloud-netconfig"
+  when: ansible_distribution_major_version == '16'
 
 - name: Slurp SBD config
   ansible.builtin.slurp:
