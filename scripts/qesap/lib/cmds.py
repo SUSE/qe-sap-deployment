@@ -335,9 +335,7 @@ def ansible_command_sequence(
             return False, f"Missing binary {ansible_bin}"
         ansible_bin_paths[ansible_bin] = binpath
 
-    # 3. Compose common parts of all ansible commands
-    #    so the set of generic arguments that apply both
-    #    to ansible and ansible-playbook
+    # 3. Compose common arguments applicable to both 'ansible' and 'ansible-playbook'.
     ansible_common = "-vv"
     if verbose:
         # add two more 'v' without any space
@@ -348,12 +346,10 @@ def ansible_command_sequence(
     ansible_cmd_seq = []
 
     if junit and not os.path.isdir(junit):
+        # Create the JUnit output directory in advance.
         # This is the folder also used in the Ansible configuration JUNIT_OUTPUT_DIR.
-        # ansible-playbook is able to create it from its own but
-        # is a failure occur in the first sequence command, that is ansible and not ansible-playbook,
-        # the folder is not created.
-        # Create an empty folder in advance, if it is not already there
-        # so that the glue script called can always suppose that at least the folder is present.
+        # While 'ansible-playbook' can create this directory, the initial 'ansible' ad-hoc commands cannot.
+        # Pre-creating it ensures the path exists even if the sequence fails early.
         ansible_cmd_seq.append({"cmd": f"mkdir -p {junit}"})
 
     # This is to avoid any manual intervention during first connection.
@@ -361,10 +357,11 @@ def ansible_command_sequence(
     # accept the ssh host fingerprint.
     # It is implemented using https://docs.ansible.com/ansible/latest/command_guide/intro_adhoc.html
     #  - the binary used is 'ansible' instead of 'ansible-playbook'
-    #  - option 'all' runs the same command on all hosts in the inventory (that comes from ansible_common)
+    #  - option 'all' runs the same command on all hosts in the inventory
+    #    (that comes from ansible_common)
     #  - '-a' is for running a single command remotely,
-    #  - 'true' is just the simplest possible command as the point is not what we run but establishing a first connection
-    # to have the fingerprint saved in the local known_host file.
+    #  - A simple 'true' command is used, as the goal is only to establish
+    #    the initial connection and having the fingerprint saved in the local known_host file.
     ssh_share = f"{ansible_bin_paths['ansible']} {ansible_common} all -a true"
     # Don't set '--ssh-extra-args="..."' but 'ssh-extra-args=...'
     # for avoiding the ansible ssh connection failure introduced by
@@ -378,7 +375,6 @@ def ansible_command_sequence(
         f'{ansible_bin_paths["ansible"]} {ansible_common} all '
         '-m shell '
         "-a 'i=0; while [ $i -lt 35 ]; do sudo -n true && exit 0; sleep 5; i=$((i+1)); done; exit 1' "
-        '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'
     )
     ansible_cmd_seq.append({"cmd": sudo_wait})
 
@@ -390,12 +386,15 @@ def ansible_command_sequence(
     for playbook in selected_list_of_playbooks:
         # playbook input is here from the conf.yaml
         # 1. it could be a string only with one playbook file name, no path
-        # 2. it could have some arguments, so single string with arguments separated by spaces
-        # 3. it could have variables to be resolved (variables are a custom internal string replacement concept)
+        # 2. it could have some arguments, so single string
+        #    with arguments separated by spaces
+        # 3. it could have variables to be resolved (variables are a
+        #    custom internal string replacement concept)
         #
         # Before to run compose the command line, apply some normalization:
         # 1. the path of the playbook is converted to absolute path.
-        #    The existence of the playbook file has been already checked during the configure stage
+        #    The existence of the playbook file has been already checked
+        #    during the configure stage
         # 2. any variable is substituted with its value
         log.debug("playbook:%s", playbook)
 
@@ -414,7 +413,8 @@ def ansible_command_sequence(
             log.debug("Replace value %s in %s", value, playbook)
             playbook = re.sub(rf"\${{{match[2:-1]}}}", value, playbook)
 
-        # Finally compose the command ansible-playbook using the resolved `playbook` string
+        # Finally compose the command ansible-playbook
+        # using the resolved `playbook` string
         ansible_cmd_seq.append(
             {
                 "cmd": f"{ansible_bin_paths['ansible-playbook']} {ansible_common} {playbook}",
@@ -453,9 +453,11 @@ def ansible_export_output(command, out):
 
     Function is in charge to:
     - get a cmd and calculate from it the log file name to write.
-      The filename is calculated, when available, from the playbook name: stripping '.yaml' and adding '.log.txt'
+      The filename is calculated, when available, from the playbook name:
+      stripping '.yaml' and adding '.log.txt'
     - open a file in write mode. Path for this file is the current directory
-    - write to the file the content of the out variable. Each element of the out list to a new file line
+    - write to the file the content of the out variable.
+      Each element of the out list to a new file line
 
     Args:
         command (str): one cmd element as prepared by ansible_command_sequence

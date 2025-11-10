@@ -222,7 +222,6 @@ def ansible_sudo_wait_call():
             f"{ANSIBLE_EXE} -vv -i {inventory} all "
             "-m shell "
             "-a 'i=0; while [ $i -lt 35 ]; do sudo -n true && exit 0; sleep 5; i=$((i+1)); done; exit 1' "
-            '--ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'
         )
     return _callback
 
@@ -247,6 +246,17 @@ def mock_call_ansibleplaybook():
         else:
             original_env = env
         return mock.call(cmd=' '.join(playbook_cmd), env=original_env)
+
+    return _callback
+
+
+@pytest.fixture()
+def ansible_regexp_calls():
+    def _callback(playbook):
+        return [
+            rf"{ANSIBLE_EXE}.*ssh-extra-args=.*StrictHostKeyChecking=accept-new",
+            rf"{ANSIBLE_EXE}.*sudo.*true",
+            rf"{ANSIBLEPB_EXE}.*{playbook}"]
 
     return _callback
 
