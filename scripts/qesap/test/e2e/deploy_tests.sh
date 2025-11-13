@@ -45,7 +45,8 @@ cp main_local.tf "${TEST_PROVIDER}/main.tf"
 cp goji.yaml ribes_nero.yaml "${QESAPROOT}/ansible/playbooks/"
 cp inventory.yaml "${TEST_PROVIDER}/"
 
-qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} deploy |& tee "${THIS_LOG}"
+# PATH trick is needed to use the local fake sudo shim
+PATH=$TROOT:$PATH qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} deploy |& tee "${THIS_LOG}"
 test_file "${TEST_PROVIDER}/foo.bar"
 test_file "${FILE_TOUCH_BY_ANSIBLE}"
 
@@ -55,7 +56,7 @@ echo "###                         D E S T R O Y                           ###"
 echo "###                                                                 ###"
 echo "#######################################################################"
 test_step "Destroy help"
-qesap.py destroy --help || test_die "qesap.py destroy help failure"
+PATH=$TROOT:$PATH qesap.py destroy --help || test_die "qesap.py destroy help failure"
 
 #######################################################################
 QESAP_CFG=test_8.yaml
@@ -63,6 +64,6 @@ test_step "[${QESAP_CFG}] Run destroy"
 qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun destroy |& tee -a "${THIS_LOG}"
 
 test_split
-qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} destroy |& tee -a "${THIS_LOG}"
+PATH=$TROOT:$PATH qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} destroy |& tee -a "${THIS_LOG}"
 [[ ! -f "${TEST_PROVIDER}/foo.bar" ]] || test_die "File ${TEST_PROVIDER}/foo.bar has to be deleted by terraform"
 [[ ! -f "${FILE_TOUCH_BY_ANSIBLE}" ]] || test_die "File ${FILE_TOUCH_BY_ANSIBLE} has to be deleted by ribes_nero.yaml"
