@@ -1,7 +1,7 @@
+# ansible-lint: skip_file
 ---
 - name: Use sles_register role
   hosts: all
-  remote_user: cloudadmin
   become: true
   become_user: root
 

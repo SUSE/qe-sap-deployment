@@ -1,7 +1,6 @@
 ---
 - name: SAP HANA download media
   hosts: hana
-  remote_user: cloudadmin
   vars:
     hana_download_path: /hana/shared/install
     url_timeout: 30
