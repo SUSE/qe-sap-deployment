@@ -118,6 +118,7 @@ resource "local_file" "ansible_inventory" {
       stonith_tag         = module.hana_node.stonith_tag,
       region              = var.aws_region
       ebs_map             = module.hana_node.volume_id_to_device_name
+      admin_user          = var.admin_user
   })
   filename = "inventory.yaml"
 }
