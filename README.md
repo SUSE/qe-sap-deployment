@@ -235,7 +235,7 @@ TF_LOG_PATH=terraform.apply.log TF_LOG=INFO terraform apply -auto-approve plan.z
 
 Terraform also generate the Ansible inventory file **inventory.yaml**
 
-Test the inventory by pinging all hosts
+Test the inventory by pinging all hosts (if using custom admin user, replace "cloudadmin")
 
 ```shell
 ansible -i inventory.yaml all -m ping --ssh-extra-args="-o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new -i <SECRET_FOLDER>/id_rsa_cloud" -u cloudadmin
