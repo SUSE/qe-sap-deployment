@@ -16,14 +16,20 @@
 
     - name: Deregister with registercloudguest
       ansible.builtin.command: registercloudguest --clean
+      register: rcleanout
+      changed_when: rcleanout.rc == 0
       when: rcg.rc == 0
 
     - name: Deregister with SUSEConnect
       ansible.builtin.command: SUSEConnect --de-register
+      register: dereg
+      changed_when: dereg.rc == 0
       when: rcg.rc != 0
 
     - name: SUSEConnect Cleanup
       ansible.builtin.command: SUSEConnect --cleanup
+      register: cleanout
+      changed_when: cleanout.rc == 0
       when: rcg.rc != 0
 
     - name: Search for old zypper files
