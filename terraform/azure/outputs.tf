@@ -115,6 +115,7 @@ resource "local_file" "ansible_inventory" {
       resource_group_name = local.resource_group_name
       subscription_id     = data.azurerm_subscription.current.subscription_id
       tenant_id           = data.azurerm_subscription.current.tenant_id
+      admin_user          = var.admin_user
   })
   filename = "inventory.yaml"
 }
