@@ -230,9 +230,6 @@ def ansible_sudo_wait_call():
 def mock_call_ansibleplaybook():
     """
     create a mock.call with some default elements
-    ```
-    mock.call('ansible-playbook -i inventory, playbook', env={'ANSIBLE_PIPELINING', 'True'})
-    ```
     """
 
     def _callback(inventory, playbook, verbosity="-vv", arguments=None, env=None):
@@ -241,7 +238,7 @@ def mock_call_ansibleplaybook():
             playbook_cmd += arguments
         if env is None:
             original_env = dict(os.environ)
-            original_env["ANSIBLE_PIPELINING"] = "True"
+            original_env["ANSIBLE_PIPELINING"] = "False"
             original_env["ANSIBLE_TIMEOUT"] = "20"
         else:
             original_env = env

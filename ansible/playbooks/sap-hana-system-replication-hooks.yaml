@@ -1,5 +1,5 @@
 ---
-- name: SAP Hana system replication hoks
+- name: SAP Hana system replication hooks
   hosts: hana
   remote_user: cloudadmin
   become: true

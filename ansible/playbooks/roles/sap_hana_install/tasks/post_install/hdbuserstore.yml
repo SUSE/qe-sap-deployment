@@ -1,6 +1,8 @@
 ---
 
 - name: SAP HANA Post Install - Create and Store Connection Info in hdbuserstore
+  vars:
+    ansible_pipelining: true
   ansible.builtin.shell: |
       /usr/sap/{{ sap_hana_install_sid }}/SYS/exe/hdb/hdbuserstore \
       SET {{ sap_hana_install_hdbuserstore_key }} \
