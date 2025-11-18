@@ -159,6 +159,14 @@
     state: link
   when: ansible_distribution_major_version == '16'
 
+- name: Gather crmsh package facts
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Set crmsh transport flag
+  ansible.builtin.set_fact:
+    crmsh_transport_flag: "{{ '--transport udpu' if ansible_facts.packages['crmsh'][0].version is version('5.0.0', '>=') else '-u' }}"
+
 - name: Softfail for old cloud-regionsrv-client in 15sp2
   ansible.builtin.debug:
     msg:
@@ -176,33 +184,21 @@
     sbd_paths: "{{ sbd_slurp['content'] | b64decode | regex_findall('SBD_DEVICE=(.+)') | last }}"
   when: use_sbd | default(false) | bool
 
-- name: Create the cluster on primary [sbd]
-  ansible.builtin.command:
-    cmd: >-
+- name: Set crm cluster init command
+  ansible.builtin.set_fact:
+    crm_cluster_init_cmd: >-
       crm cluster init
       -y
       -n qe-cluster
-      -s {{ sbd_paths }}
-      -w softdog
       -i eth0
-      -u
-    creates: /etc/corosync/corosync.conf
-  when:
-    - is_primary
-    - use_sbd | default(false) | bool
+      {{ crmsh_transport_flag }}
+      {{ '-s ' + sbd_paths + ' -w softdog' if use_sbd | default(false) | bool else '' }}
 
-- name: Create the cluster on primary [azure fencing]
+- name: Create the cluster on primary
   ansible.builtin.command:
-    cmd: >-
-      crm cluster init
-      -y
-      -n qe-cluster
-      -i eth0
-      -u
+    cmd: "{{ crm_cluster_init_cmd }}"
     creates: /etc/corosync/corosync.conf
-  when:
-    - is_primary
-    - not (use_sbd | default(false) | bool)
+  when: is_primary
 
 # check crm status
 - name: Check the cluster on primary
