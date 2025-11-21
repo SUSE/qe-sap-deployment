@@ -1,7 +1,6 @@
 ---
 - name: Cluster preparation
   hosts: all
-  remote_user: cloudadmin
   vars:
     crm_rootless: false
   pre_tasks:
@@ -32,7 +31,7 @@
         mode: '0700'
       when: inventory_hostname in groups.hana
 
-    - name: Ensure that /home/cloudadmin/.ssh exists on hana
+    - name: Ensure that /home/<admin_user>/.ssh exists on hana
       ansible.builtin.file:
         path: "{{ ansible_env.HOME }}/.ssh"
         state: directory
@@ -56,7 +55,7 @@
       register: ssh_root_keys
       when: inventory_hostname in groups.hana
 
-    - name: Generate public/private keys for cloudadmin on hana hosts
+    - name: Generate public/private keys for <admin_user> on hana hosts
       community.crypto.openssh_keypair:
         owner: "{{ ansible_user }}"
         group: users
@@ -81,7 +80,7 @@
         loop_var: idx
       when: inventory_hostname in groups.hana
 
-    - name: Apply cloudadmin pub key to other node cloudadmin Authorised Keys
+    - name: Apply <admin_user> pub key to other node <admin_user> Authorised Keys
       ansible.posix.authorized_key:
         user: "{{ ansible_user }}"
         state: present

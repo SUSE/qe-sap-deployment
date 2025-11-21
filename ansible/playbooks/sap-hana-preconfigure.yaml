@@ -1,7 +1,6 @@
 ---
 - name: SAP Hana preconfigure
   hosts: hana
-  remote_user: cloudadmin
   become: true
   become_user: root
 

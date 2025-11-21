@@ -1,7 +1,6 @@
 ---
 - name: Cluster SBD preparation
   hosts: iscsi, hana
-  remote_user: cloudadmin
   become: true
   become_user: root
   pre_tasks:
