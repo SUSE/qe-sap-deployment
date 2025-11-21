@@ -4,36 +4,202 @@
     timeout: 300
     delay: 5
 
+- name: Check if system is running # noqa: command-instead-of-module
+  ansible.builtin.command: systemctl is-system-running
+  register: hana_prevalidate_system_running_status
+  changed_when: false
+  become: true
+  failed_when: hana_prevalidate_system_running_status.stdout != 'running'
+
+- name: Display system running status
+  ansible.builtin.debug:
+    var: hana_prevalidate_system_running_status.stdout
+
+- name: Refresh zypper repositories
+  ansible.builtin.command: zypper --non-interactive ref
+  register: hana_prevalidate_zypper_ref
+  changed_when: false
+  failed_when: hana_prevalidate_zypper_ref.rc != 0
+  become: true
+
+- name: Validate zypper ref output
+  ansible.builtin.assert:
+    that:
+      - "'All repositories have been refreshed.' in hana_prevalidate_zypper_ref.stdout"
+    fail_msg: "Zypper refresh encountered issues or did not complete successfully."
+    success_msg: "Zypper repositories successfully refreshed and no errors reported."
+
 # Show SAPHanaSR-showAttr version and package
 - name: Locate SAPHanaSR-showAttr binary
   ansible.builtin.command: which SAPHanaSR-showAttr
-  register: showattr_path
+  register: hana_prevalidate_showattr_path
   changed_when: false
   become: true
-  failed_when: showattr_path.rc != 0
+  failed_when: hana_prevalidate_showattr_path.rc != 0
 
-- name: Query RPM owning SAPHanaSR-showAttr # noqa: command-instead-of-module - we keep rpm cli command to mimic openqa behaviour
-  ansible.builtin.command: rpm -qf {{ showattr_path.stdout }}
-  register: showattr_rpm
-  changed_when: false
+- name: Gather facts about all installed packages
+  ansible.builtin.package_facts:
+    manager: auto
 
-- name: Display SAPHanaSR-showAttr info
+- name: Check for SAPHanaSR and SAPHanaSR-angi packages
+  ansible.builtin.set_fact:
+    hana_prevalidate_angi_installed: "{{ 'SAPHanaSR-angi' in ansible_facts.packages }}"
+    hana_prevalidate_saphana_sr_installed: "{{ 'SAPHanaSR' in ansible_facts.packages.keys() }}"
+    hana_prevalidate_pacemaker_installed: "{{ 'pacemaker' in ansible_facts.packages }}"
+
+- name: Assert that only one of SAPHanaSR or SAPHanaSR-angi is installed
+  ansible.builtin.assert:
+    that:
+      - (hana_prevalidate_angi_installed | int) + (hana_prevalidate_saphana_sr_installed | int) == 1
+    fail_msg: >
+      Exactly one of SAPHanaSR or SAPHanaSR-angi must be installed.
+      Found: SAPHanaSR-angi={{ hana_prevalidate_angi_installed }},
+      SAPHanaSR={{ hana_prevalidate_saphana_sr_installed }}
+    success_msg: "Exactly one of SAPHanaSR or SAPHanaSR-angi is installed."
+
+- name: Assert that pacemaker is installed
+  ansible.builtin.assert:
+    that:
+      - hana_prevalidate_pacemaker_installed
+    fail_msg: "Pacemaker must be installed. Found: {{ hana_prevalidate_pacemaker_installed }}"
+    success_msg: "Pacemaker is installed."
+
+- name: Display SAPHanaSR version
   ansible.builtin.debug:
-    msg: "showAttr path={{ showattr_path.stdout }}  package={{ showattr_rpm.stdout }}"
+    msg: >
+      SAPHanaSR-showAttr path={{ hana_prevalidate_showattr_path.stdout }}
+      package={{
+        'SAPHanaSR-angi' if hana_prevalidate_angi_installed
+        else 'SAPHanaSR' if hana_prevalidate_saphana_sr_installed
+        else 'None'
+      }} version={{
+        ansible_facts.packages['SAPHanaSR-angi'][0].version if hana_prevalidate_angi_installed
+        else ansible_facts.packages['SAPHanaSR'][0].version if hana_prevalidate_saphana_sr_installed
+        else 'N/A'
+      }}
+  when: hana_prevalidate_angi_installed or hana_prevalidate_saphana_sr_installed
+
+- name: Set pacemaker version fact
+  ansible.builtin.set_fact:
+    hana_prevalidate_pacemaker_ge_2_1_7: "{{ ansible_facts.packages['pacemaker'][0].version is version('2.1.7', '>=') }}"
 
 # Wait for sync and healthy cluster
 - name: Wait for cluster idle
   ansible.builtin.command: cs_wait_for_idle --sleep 5
   retries: 48
-  register: cs_idle
-  until: cs_idle.rc == 0
+  register: hana_prevalidate_cs_idle
+  until: hana_prevalidate_cs_idle.rc == 0 and 'S_IDLE' in hana_prevalidate_cs_idle.stdout
   become: true
   changed_when: false
 
-# No failed resources check
+- name: Get SAPHanaSR-showAttr output
+  ansible.builtin.command: "{{ hana_prevalidate_showattr_path.stdout }}"
+  register: hana_prevalidate_showattr_output
+  changed_when: false
+  become: true
+
+- name: Display SAPHanaSR-showAttr output
+  ansible.builtin.debug:
+    var: hana_prevalidate_showattr_output.stdout
+
+- name: Sanitize SAPHanaSR-showAttr output for comparison
+  ansible.builtin.set_fact:
+    hana_prevalidate_sanitized_showattr_output: "{{ hana_prevalidate_showattr_output.stdout | regex_replace('(?m)^global.*$\\n?', '') }}"
+
+- name: "Tasks for when SAPHanaSR-angi is installed (JSON support)"
+  when: hana_prevalidate_angi_installed
+  block:
+    - name: Get SAPHanaSR-showAttr output in json format
+      ansible.builtin.command: "{{ hana_prevalidate_showattr_path.stdout }} --format=json"
+      register: hana_prevalidate_showattr_json
+      changed_when: false
+      become: true
+
+    - name: Parse SAPHanaSR-showAttr json output
+      ansible.builtin.set_fact:
+        hana_prevalidate_hana_sr_attrs: "{{ hana_prevalidate_showattr_json.stdout | from_json }}"
+
+    - name: Display parsed SAPHanaSR-showAttr json
+      ansible.builtin.debug:
+        var: hana_prevalidate_hana_sr_attrs
+
+- name: "Tasks for when SAPHanaSR-angi is not installed"
+  when: not hana_prevalidate_angi_installed
+  block:
+    - name: Get SAPHanaSR-showAttr output in script format
+      ansible.builtin.command: "{{ hana_prevalidate_showattr_path.stdout }} --format=script"
+      register: hana_prevalidate_showattr_script
+      changed_when: false
+      become: true
+
+    - name: Parse script output and build final topology
+      ansible.builtin.set_fact:
+        hana_prevalidate_hana_sr_attrs: "{{ hana_prevalidate_showattr_script.stdout_lines | create_final_topology_from_script }}"
+
+- name: Calculate and assert derived SAPHanaSR facts
+  block:
+    - name: Get site count
+      ansible.builtin.set_fact:
+        hana_prevalidate_site_count: "{{ hana_prevalidate_hana_sr_attrs.Site.keys() | list | length }}"
+
+    - name: Get legacy site lss status
+      ansible.builtin.set_fact:
+        hana_prevalidate_online_sites: "{{ hana_prevalidate_hana_sr_attrs.Site.values() | selectattr('lss', 'in', ['4', 'online']) | list }}"
+      when: not hana_prevalidate_pacemaker_ge_2_1_7
+
+    - name: Get modern site lss status
+      ansible.builtin.set_fact:
+        hana_prevalidate_online_sites: "{{ hana_prevalidate_hana_sr_attrs.Site.values() | selectattr('lss', 'regex', '^[0-9]+$') | list }}"
+      when: hana_prevalidate_pacemaker_ge_2_1_7
+
+    - name: Get site srPoll status
+      ansible.builtin.set_fact:
+        hana_prevalidate_prim_sites: "{{ hana_prevalidate_hana_sr_attrs.Site.values() | selectattr('srPoll', 'equalto', 'PRIM') | list }}"
+        hana_prevalidate_sok_sites: "{{ hana_prevalidate_hana_sr_attrs.Site.values() | selectattr('srPoll', 'equalto', 'SOK') | list }}"
+
+    - name: "Assert all HANA sites are online"
+      ansible.builtin.assert:
+        that:
+          - (hana_prevalidate_online_sites | length) | int == (hana_prevalidate_site_count) | int
+        fail_msg: "HANA site online check failed. Online sites: {{ hana_prevalidate_online_sites | length }}/{{ hana_prevalidate_site_count }}"
+        success_msg: "All HANA sites are online."
+
+    - name: "Assert exactly one PRIM site exists"
+      ansible.builtin.assert:
+        that:
+          - hana_prevalidate_prim_sites | length == 1
+        fail_msg: "HANA PRIM site check failed. PRIM sites: {{ hana_prevalidate_prim_sites | length }} (expected 1)"
+        success_msg: "Exactly one PRIM site exists."
+
+    - name: "Assert correct number of SOK sites exist"
+      ansible.builtin.assert:
+        that:
+          - hana_prevalidate_sok_sites | length == (hana_prevalidate_site_count | int) - 1
+        fail_msg: "HANA SOK site check failed. SOK sites: {{ hana_prevalidate_sok_sites | length }} (expected {{ (hana_prevalidate_site_count | int) - 1 }})"
+        success_msg: "Correct number of SOK sites exist."
+
+    - name: Gather sanitized outputs from all hosts
+      run_once: true
+      ansible.builtin.set_fact:
+        hana_prevalidate_host_outputs: "{{ ansible_play_hosts_all | map('extract', hostvars, 'hana_prevalidate_sanitized_showattr_output') | list }}"
+
+    - name: Compare SAPHanaSR-showAttr output across all hosts
+      run_once: true
+      ansible.builtin.assert:
+        that:
+          - (hana_prevalidate_host_outputs | unique | list | length) == 1
+        fail_msg: "SAPHanaSR-showAttr output is not consistent across all hosts. Outputs: {{ hana_prevalidate_host_outputs }}"
+        success_msg: "SAPHanaSR-showAttr output is consistent across all hosts."
+
 - name: Check cluster for failed resources
   ansible.builtin.command: crm status
-  register: crm_status
+  register: hana_prevalidate_crm_status
   changed_when: false
-  failed_when: crm_status.stdout is search('Failed Resource Actions')
+  failed_when: hana_prevalidate_crm_status.stdout is search('Failed Resource Actions')
+  become: true
+
+- name: Get crm_mon report
+  ansible.builtin.command: crm_mon -R -r -n -1
+  register: hana_prevalidate_crm_mon_report
+  changed_when: false
   become: true
