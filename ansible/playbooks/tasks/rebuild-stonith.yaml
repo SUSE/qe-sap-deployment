@@ -30,13 +30,29 @@
   changed_when: remove_stonith_result.rc == 0
   when: sbd_device_name != 'NOresourcesconfigured'  # If no stonith was found 'NOresourcesconfigured' should be registered in {{ sbd_device_name }}
 
+- name: Gather package facts
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Decide which SBD stonith agent to use
+  ansible.builtin.set_fact:
+    stonith_agent: >-
+      {{ 'stonith:fence_sbd'
+         if (
+              'pacemaker' in ansible_facts.packages
+              and ansible_facts.packages['pacemaker'][0].version is version('3.0.0', '>')
+              and 'fence-agents-sbd' in ansible_facts.packages
+            )
+         else 'stonith:external/sbd'
+      }}
+
 - name: Create new SBD stonith device
   ansible.builtin.command:
     cmd: >-
       sudo
       crm configure primitive
       stonith-sbd
-      stonith:external/sbd
+      {{ stonith_agent }}
       params
       pcmk_delay_max="15"
       op monitor interval="600" timeout="15"
