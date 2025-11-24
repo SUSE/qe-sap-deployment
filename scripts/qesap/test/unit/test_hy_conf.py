@@ -91,7 +91,7 @@ def config_maps_without_ansible(draw):
 @given(st.dictionaries(st.text(), st.text()).filter(lambda x: 'ansible' not in x))
 def test_conf_has_not_ansible(conf_dict):
     conf = CONF(conf_dict)
-    assert conf.has_ansible() is False
+    assert conf.has_section_or_variable(["ansible"]) is False
 
 
 @pytest.mark.skipif("FUZZYTEST" not in os.environ, reason="Fuzzy test disabled by default")
@@ -99,7 +99,7 @@ def test_conf_has_not_ansible(conf_dict):
 def test_conf_has_not_ansible_with_better_strategy(conf_dict):
     conf = CONF(conf_dict)
     log.error("conf:%s conf_dict:%s", conf, conf_dict)
-    assert conf.has_ansible() is False
+    assert conf.has_section_or_variable(["ansible"]) is False
 
 
 @pytest.mark.skipif("FUZZYTEST" not in os.environ, reason="Fuzzy test disabled by default")
@@ -108,7 +108,7 @@ def test_conf_has_ansible(conf_dict, conf_ansible):
     data = conf_dict
     data['ansible'] = conf_ansible
     conf = CONF(data)
-    assert conf.has_ansible() is True
+    assert conf.has_section_or_variable(["ansible"]) is True
 
 
 @pytest.mark.skipif("FUZZYTEST" not in os.environ, reason="Fuzzy test disabled by default")

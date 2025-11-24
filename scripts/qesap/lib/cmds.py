@@ -98,7 +98,7 @@ def cmd_configure(configure_data, base_project, dryrun):
     if not config.validate_ansible_config(None):
         return Status("Problems in the ansible part of the configuration")
 
-    if config.has_ansible():
+    if config.has_section_or_variable(["ansible"]):
         hanamedia_content, err = create_hana_media(
             configure_data["ansible"], configure_data["apiver"]
         )
@@ -108,7 +108,7 @@ def cmd_configure(configure_data, base_project, dryrun):
 
     if dryrun:
         print(f"Create {cfg_paths['tfvars_file']} with content {tfvar_content}")
-        if config.has_ansible():
+        if config.has_section_or_variable(["ansible"]):
             print(
                 f"Create {cfg_paths['hana_media_file']} with content {hanamedia_content}"
             )
@@ -125,7 +125,7 @@ def cmd_configure(configure_data, base_project, dryrun):
             file.write("".join(tfvar_content))
             file.write("\n")
 
-        if config.has_ansible():
+        if config.has_section_or_variable(["ansible"]):
             log.info("Write hana_media %s", cfg_paths["hana_media_file"])
             with open(cfg_paths["hana_media_file"], "w", encoding="utf-8") as file:
                 yaml.dump(hanamedia_content, file)
@@ -264,7 +264,7 @@ def ansible_validate(config, base_project, sequence, provider):
     Part of that is about the Ansible part of conf.yaml
     Part of that is about files generated at runtime from previous steps (like Terraform)
     """
-    if not config.has_ansible():
+    if not config.has_section_or_variable(["ansible"]):
         return False, "Deployment configured without Ansible."
     if not config.validate():
         return False, "Invalid configuration file content."
@@ -290,12 +290,13 @@ def ansible_validate(config, base_project, sequence, provider):
 
 
 def ansible_command_sequence(
-    configure_data_ansible, base_project, sequence, verbose, inventory, profile, junit, apiver
+    configure_data_ansible, admin_user, base_project, sequence, verbose, inventory, profile, junit, apiver
 ):
     """Compose the sequence of Ansible commands
 
     Args:
         configure_data_ansible (obj): ansible part of the configure_data
+        admin_user (str): name of the admin user
         base_project (str): base project path where to
                       look for the Ansible files
         sequence (str): 'create' or 'destroy'
@@ -366,7 +367,7 @@ def ansible_command_sequence(
     # Don't set '--ssh-extra-args="..."' but 'ssh-extra-args=...'
     # for avoiding the ansible ssh connection failure introduced by
     # https://github.com/ansible/ansible/pull/78826 in "ansible-core 2.15.0"
-    ssh_share += ' --ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'
+    ssh_share += f' --ssh-extra-args="-l {admin_user} -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'
     ansible_cmd_seq.append({"cmd": ssh_share})
 
     # This command is used to wait until user and sudo permissions are ready before running the playbooks
@@ -523,7 +524,7 @@ def cmd_ansible(
 
     # Validations
     config = CONF(configure_data)
-    if not config.has_ansible():
+    if not config.has_section_or_variable(["ansible"]):
         err = f"Deployment configured without Ansible in {configure_data}"
         log.error(err)
         return Status(err)
@@ -539,11 +540,16 @@ def cmd_ansible(
         log.info("No playbooks to play")
         return Status("ok")
 
+    admin_user = 'cloudadmin'
+    if config.has_section_or_variable(['terraform', 'variables', 'admin_user']):
+        admin_user = config.conf['terraform']['variables']['admin_user']
+
     inventory = os.path.join(
         base_project, "terraform", configure_data["provider"], "inventory.yaml"
     )
     ret, ansible_cmd_seq = ansible_command_sequence(
         configure_data["ansible"],
+        admin_user,
         base_project,
         selected_sequence,
         verbose,

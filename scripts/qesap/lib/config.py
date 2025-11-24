@@ -233,11 +233,23 @@ class CONF:
             return False
         return True
 
-    def has_ansible(self):
+    def has_section_or_variable(self, variable_path):
         """
-        Check if the ansible conf.yaml region is present
+        Check if a variable exists in the conf.yaml.
+
+        Args:
+            variable_path (list[str]): hierarchical path of keys,
+                for example ['ansible', 'hana_vars', 'sap_domain']
+
+        Returns:
+            bool: True if the full path exists, False otherwise.
         """
-        return "ansible" in self.conf
+        current = self.conf
+        for key in variable_path:
+            if not isinstance(current, dict) or key not in current:
+                return False
+            current = current[key]
+        return True
 
     @staticmethod
     def validate_ansible_media_config(ansible_conf, apiver):
@@ -275,7 +287,7 @@ class CONF:
         Return True if the `sequence` has at least
         one playbook in it.
         """
-        if not self.has_ansible() or not sequence:
+        if not self.has_section_or_variable(["ansible"]) or not sequence:
             log.error("No Ansible section, so no playbooks to play")
             return False
         if self.conf["apiver"] < 4:
@@ -307,7 +319,7 @@ class CONF:
         """
         Validate the ansible part of the internal structure of the config.yaml
         """
-        if not self.has_ansible():
+        if not self.has_section_or_variable(["ansible"]):
             log.info("No Ansible section in the conf.yaml. Nothing to validate.")
             return True
 
@@ -353,7 +365,7 @@ class CONF:
             "provider": None,
             "tfvars_file": None,
         }
-        if self.has_ansible():
+        if self.has_section_or_variable(["ansible"]):
             result["hana_media_file"] = None
             result["hana_vars_file"] = None
 
@@ -365,14 +377,14 @@ class CONF:
             log.error("Missing %s", result["provider"])
             return False
 
-        if self.has_ansible():
+        if self.has_section_or_variable(["ansible"]):
             ansible_pl_vars_dir = os.path.join(basedir, "ansible", "playbooks", "vars")
             if not os.path.isdir(ansible_pl_vars_dir):
                 log.error("Missing %s", ansible_pl_vars_dir)
                 return False
 
         result["tfvars_file"] = os.path.join(result["provider"], "terraform.tfvars")
-        if self.has_ansible():
+        if self.has_section_or_variable(["ansible"]):
             result["hana_media_file"] = os.path.join(
                 ansible_pl_vars_dir, "hana_media.yaml"
             )
