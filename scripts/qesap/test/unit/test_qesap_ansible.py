@@ -960,3 +960,86 @@ def test_ansible_sequence_and_d(
     assert main(args) == 1
 
     run.assert_not_called()
+
+
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
+@mock.patch("lib.process_manager.subprocess_run")
+def test_ansible_user_first_ansible_ssh_default(
+    run,
+    _,
+    base_args,
+    tmpdir,
+    ansible_config,
+    create_playbooks,
+    create_inventory
+):
+    """
+    Check that if terraform does not specify any admin_user
+    ansible is silently fall back to cloudadmin
+    """
+    provider = "grilloparlante"
+    playbooks = {
+        "create": ["get_cherry_wood"],
+    }
+    config_content = ansible_config(provider, playbooks, apiver=4)
+
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
+        file.write(config_content)
+
+    create_inventory(provider)
+    create_playbooks(playbooks["create"])
+
+    args = base_args(None, config_file_name, False)
+    args += ["ansible"]
+    run.return_value = (0, [])
+    assert main(args) == 0
+
+    calls = run.call_args_list
+    for c in calls:
+        if "ssh-extra-args" in str(c[1]['cmd']):
+            assert "cloudadmin" in str(c[1]['cmd'])
+
+
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
+@mock.patch("lib.process_manager.subprocess_run")
+def test_ansible_user_first_ansible_ssh(
+    run,
+    _,
+    base_args,
+    tmpdir,
+    ansible_config,
+    create_playbooks,
+    create_inventory
+):
+    """
+    Check that remote user is the one specified in the terraform
+    section of the config.yaml, if any.
+    """
+
+    provider = "grilloparlante"
+    playbooks = {
+        "create": ["get_cherry_wood"],
+    }
+    config_content = ansible_config(provider, playbooks, apiver=4)
+    config_content += """
+terraform:
+    variables:
+        admin_user: 'donalduck'
+"""
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
+        file.write(config_content)
+
+    create_inventory(provider)
+    create_playbooks(playbooks["create"])
+
+    args = base_args(None, config_file_name, False)
+    args += ["ansible"]
+    run.return_value = (0, [])
+    assert main(args) == 0
+
+    calls = run.call_args_list
+    for c in calls:
+        if "ssh-extra-args" in str(c[1]['cmd']):
+            assert "donalduck" in str(c[1]['cmd'])
