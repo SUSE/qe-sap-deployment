@@ -139,7 +139,7 @@ resource "azurerm_lb_probe" "netweaver-ers-health-probe" {
 #  backend_address_pool_id        = azurerm_lb_backend_address_pool.netweaver-backend-pool[0].id
 #  probe_id                       = azurerm_lb_probe.netweaver-health-probe[0].id
 #  idle_timeout_in_minutes        = 30
-#  enable_floating_ip             = "true"
+#  floating_ip_enabled             = "true"
 #}
 
 #resource "azurerm_lb_rule" "netweaver-lb-ha-ers" {
@@ -154,7 +154,7 @@ resource "azurerm_lb_probe" "netweaver-ers-health-probe" {
 #  backend_address_pool_id        = azurerm_lb_backend_address_pool.netweaver-backend-pool[1].id
 #  probe_id                       = azurerm_lb_probe.netweaver-health-probe[1].id
 #  idle_timeout_in_minutes        = 30
-#  enable_floating_ip             = "true"
+#  floating_ip_enabled             = "true"
 #}
 
 resource "azurerm_lb_rule" "ascs-lb-rules" {
@@ -169,7 +169,7 @@ resource "azurerm_lb_rule" "ascs-lb-rules" {
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.netweaver-backend-pool[0].id]
   probe_id                       = azurerm_lb_probe.netweaver-ascs-health-probe[0].id
   idle_timeout_in_minutes        = 30
-  enable_floating_ip             = "true"
+  floating_ip_enabled            = "true"
 }
 
 resource "azurerm_lb_rule" "ers-lb-rules" {
@@ -184,7 +184,7 @@ resource "azurerm_lb_rule" "ers-lb-rules" {
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.netweaver-backend-pool[0].id]
   probe_id                       = azurerm_lb_probe.netweaver-ers-health-probe[0].id
   idle_timeout_in_minutes        = 30
-  enable_floating_ip             = "true"
+  floating_ip_enabled            = "true"
 }
 
 # netweaver network configuration
@@ -300,7 +300,7 @@ resource "azurerm_netapp_volume" "netweaver-netapp-volume-sapmnt" {
 
   export_policy_rule {
     rule_index          = 1
-    protocols_enabled   = ["NFSv4.1"]
+    protocol            = ["NFSv4.1"]
     allowed_clients     = ["0.0.0.0/0"]
     unix_read_write     = true
     root_access_enabled = true

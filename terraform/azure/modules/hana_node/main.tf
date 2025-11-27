@@ -116,7 +116,7 @@ resource "azurerm_lb_rule" "hana-lb-rules" {
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.hana-load-balancer[0].id]
   probe_id                       = azurerm_lb_probe.hana-load-balancer[0].id
   idle_timeout_in_minutes        = 30
-  enable_floating_ip             = "true"
+  floating_ip_enabled            = "true"
 }
 
 # Load balancing rules for the Active/Active setup
@@ -132,7 +132,7 @@ resource "azurerm_lb_rule" "hana-lb-rules-secondary" {
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.hana-load-balancer[0].id]
   probe_id                       = azurerm_lb_probe.hana-load-balancer-secondary[0].id
   idle_timeout_in_minutes        = 30
-  enable_floating_ip             = "true"
+  floating_ip_enabled            = "true"
 }
 
 resource "azurerm_lb_rule" "hanadb_exporter" {
@@ -147,7 +147,7 @@ resource "azurerm_lb_rule" "hanadb_exporter" {
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.hana-load-balancer[0].id]
   probe_id                       = azurerm_lb_probe.hana-load-balancer[0].id
   idle_timeout_in_minutes        = 30
-  enable_floating_ip             = "true"
+  floating_ip_enabled            = "true"
 }
 
 # hana network configuration
@@ -225,7 +225,7 @@ resource "azurerm_netapp_volume" "hana-netapp-volume-data" {
 
   export_policy_rule {
     rule_index          = 1
-    protocols_enabled   = ["NFSv4.1"]
+    protocol            = ["NFSv4.1"]
     allowed_clients     = ["0.0.0.0/0"]
     unix_read_write     = true
     root_access_enabled = true
@@ -261,7 +261,7 @@ resource "azurerm_netapp_volume" "hana-netapp-volume-log" {
 
   export_policy_rule {
     rule_index          = 1
-    protocols_enabled   = ["NFSv4.1"]
+    protocol            = ["NFSv4.1"]
     allowed_clients     = ["0.0.0.0/0"]
     unix_read_write     = true
     root_access_enabled = true
@@ -297,7 +297,7 @@ resource "azurerm_netapp_volume" "hana-netapp-volume-backup" {
 
   export_policy_rule {
     rule_index          = 1
-    protocols_enabled   = ["NFSv4.1"]
+    protocol            = ["NFSv4.1"]
     allowed_clients     = ["0.0.0.0/0"]
     unix_read_write     = true
     root_access_enabled = true
@@ -333,7 +333,7 @@ resource "azurerm_netapp_volume" "hana-netapp-volume-shared" {
 
   export_policy_rule {
     rule_index          = 1
-    protocols_enabled   = ["NFSv4.1"]
+    protocol            = ["NFSv4.1"]
     allowed_clients     = ["0.0.0.0/0"]
     unix_read_write     = true
     root_access_enabled = true
