@@ -6,11 +6,11 @@ locals {
 # majority maker network configuration
 
 resource "azurerm_network_interface" "majority_maker" {
-  count                         = var.node_count
-  name                          = "nic-${var.name}majority_maker"
-  location                      = var.az_region
-  resource_group_name           = var.resource_group_name
-  enable_accelerated_networking = var.enable_accelerated_networking
+  count                          = var.node_count
+  name                           = "nic-${var.name}majority_maker"
+  location                       = var.az_region
+  resource_group_name            = var.resource_group_name
+  accelerated_networking_enabled = var.enable_accelerated_networking
 
   ip_configuration {
     name                          = "ipconf-primary"
@@ -30,7 +30,7 @@ resource "azurerm_public_ip" "majority_maker" {
   name                    = "pip-${var.name}majority_maker"
   location                = var.az_region
   resource_group_name     = var.resource_group_name
-  allocation_method       = "Dynamic"
+  allocation_method       = "Static"
   idle_timeout_in_minutes = 30
 
   tags = {
@@ -47,10 +47,11 @@ resource "azurerm_image" "sles4sap" {
   resource_group_name = var.resource_group_name
 
   os_disk {
-    os_type  = "Linux"
-    os_state = "Generalized"
-    blob_uri = var.sles4sap_uri
-    size_gb  = "32"
+    os_type      = "Linux"
+    os_state     = "Generalized"
+    blob_uri     = var.sles4sap_uri
+    size_gb      = "32"
+    storage_type = "Premium_LRS"
   }
 
   tags = {

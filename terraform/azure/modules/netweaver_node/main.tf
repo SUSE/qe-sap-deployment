@@ -194,7 +194,7 @@ resource "azurerm_public_ip" "netweaver" {
   name                    = "pip-netweaver${format("%02d", count.index + 1)}"
   location                = var.az_region
   resource_group_name     = var.resource_group_name
-  allocation_method       = "Dynamic"
+  allocation_method       = "Static"
   idle_timeout_in_minutes = 30
 
   tags = {
@@ -203,11 +203,11 @@ resource "azurerm_public_ip" "netweaver" {
 }
 
 resource "azurerm_network_interface" "netweaver" {
-  count                         = local.vm_count
-  name                          = "nic-netweaver${format("%02d", count.index + 1)}"
-  location                      = var.az_region
-  resource_group_name           = var.resource_group_name
-  enable_accelerated_networking = count.index < var.xscs_server_count ? var.xscs_accelerated_networking : var.app_accelerated_networking
+  count                          = local.vm_count
+  name                           = "nic-netweaver${format("%02d", count.index + 1)}"
+  location                       = var.az_region
+  resource_group_name            = var.resource_group_name
+  accelerated_networking_enabled = count.index < var.xscs_server_count ? var.xscs_accelerated_networking : var.app_accelerated_networking
 
   ip_configuration {
     name                          = "ipconf-primary"
@@ -267,10 +267,11 @@ resource "azurerm_image" "netweaver-image" {
   resource_group_name = var.resource_group_name
 
   os_disk {
-    os_type  = "Linux"
-    os_state = "Generalized"
-    blob_uri = var.netweaver_image_uri
-    size_gb  = "32"
+    os_type      = "Linux"
+    os_state     = "Generalized"
+    blob_uri     = var.netweaver_image_uri
+    size_gb      = "32"
+    storage_type = "Premium_LRS"
   }
 
   tags = {

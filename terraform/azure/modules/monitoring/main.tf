@@ -29,7 +29,7 @@ resource "azurerm_public_ip" "monitoring" {
   count                   = var.monitoring_enabled ? 1 : 0
   location                = var.az_region
   resource_group_name     = var.resource_group_name
-  allocation_method       = "Dynamic"
+  allocation_method       = "Static"
   idle_timeout_in_minutes = 30
 
   tags = {
@@ -46,10 +46,11 @@ resource "azurerm_image" "monitoring" {
   resource_group_name = var.resource_group_name
 
   os_disk {
-    os_type  = "Linux"
-    os_state = "Generalized"
-    blob_uri = var.monitoring_uri
-    size_gb  = "32"
+    os_type      = "Linux"
+    os_state     = "Generalized"
+    blob_uri     = var.monitoring_uri
+    size_gb      = "32"
+    storage_type = "Premium_LRS"
   }
 
   tags = {
