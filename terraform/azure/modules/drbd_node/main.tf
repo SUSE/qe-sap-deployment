@@ -117,7 +117,7 @@ resource "azurerm_public_ip" "drbd" {
   name                    = "pip-drbd${format("%02d", count.index + 1)}"
   location                = var.az_region
   resource_group_name     = var.resource_group_name
-  allocation_method       = "Dynamic"
+  allocation_method       = "Static"
   idle_timeout_in_minutes = 30
 
   tags = {
@@ -153,10 +153,11 @@ resource "azurerm_image" "drbd-image" {
   resource_group_name = var.resource_group_name
 
   os_disk {
-    os_type  = "Linux"
-    os_state = "Generalized"
-    blob_uri = var.drbd_image_uri
-    size_gb  = "32"
+    os_type      = "Linux"
+    os_state     = "Generalized"
+    blob_uri     = var.drbd_image_uri
+    size_gb      = "32"
+    storage_type = "Premium_LRS"
   }
 
   tags = {
