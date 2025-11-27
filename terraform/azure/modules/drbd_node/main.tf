@@ -77,7 +77,7 @@ resource "azurerm_lb_probe" "drbd-health-probe" {
 #  backend_address_pool_id        = azurerm_lb_backend_address_pool.drbd-backend-pool[0].id
 #  probe_id                       = azurerm_lb_probe.drbd-health-probe.id
 #  idle_timeout_in_minutes        = 30
-#  enable_floating_ip             = "true"
+#  floating_ip_enabled             = "true"
 #}
 
 resource "azurerm_lb_rule" "drbd-lb-tcp-2049" {
@@ -92,7 +92,7 @@ resource "azurerm_lb_rule" "drbd-lb-tcp-2049" {
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.drbd-backend-pool[count.index].id]
   probe_id                       = azurerm_lb_probe.drbd-health-probe[count.index].id
   idle_timeout_in_minutes        = 30
-  enable_floating_ip             = "true"
+  floating_ip_enabled            = "true"
 }
 
 resource "azurerm_lb_rule" "drbd-lb-udp-2049" {
@@ -107,7 +107,7 @@ resource "azurerm_lb_rule" "drbd-lb-udp-2049" {
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.drbd-backend-pool[count.index].id]
   probe_id                       = azurerm_lb_probe.drbd-health-probe[count.index].id
   idle_timeout_in_minutes        = 30
-  enable_floating_ip             = "true"
+  floating_ip_enabled            = "true"
 }
 
 # drbd network configuration

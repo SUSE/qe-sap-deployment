@@ -62,6 +62,13 @@ For detailed information and deployment options have a look at `terraform.tfvars
     az account set --subscription "SUSE R&D General"
     ```
 
+    **Note:** With versions 4 of the 'azurerm' Terraform provider, it is now mandatory to specify the subscription ID.
+    If you are authenticating using the Azure CLI interactively, you must export the `ARM_SUBSCRIPTION_ID` environment variable. You can do this with the following command:
+
+    ``` shell
+    export ARM_SUBSCRIPTION_ID=00000000-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    ```
+
     You should be able to deploy now.
 
     To verify which subscription is the active one, use the command `az account show`.

@@ -53,7 +53,7 @@ For detailed information and deployment options have a look at `terraform.tfvars
 
     * Log in with `gcloud init`.
 
-      Note: You must run this command to use the Gcloud SDK and to apply this Terraform configuration:
+      **Note**: You must run this command to use the Gcloud SDK and to apply this Terraform configuration:
 
       ``` shell
       export GOOGLE_APPLICATION_CREDENTIALS=/path/to/<PROJECT-ID>-xxxxxxxxx.json
