@@ -1,6 +1,16 @@
 ---
 - name: SAP HANA site failure test
   hosts: "{{ node_name | default('no_host_provided')}}"
-  gather_facts: false
+  gather_facts: true
+  remote_user: cloudadmin
+  pre_tasks:
+    - name: Include HANA variables
+      ansible.builtin.include_vars: ./vars/hana_vars.yaml
+  vars:
+    sap_sid: "{{ sap_hana_install_sid }}"
+    instance_num: "{{ sap_hana_install_instance_number }}"
+    # Determine if the current host is the primary based on inventory order
+    is_primary: "{{ ansible_play_hosts[0] == inventory_hostname }}"
+    primary_hostname: "{{ ansible_play_hosts[0] }}"
   roles:
     - hana_prevalidate
