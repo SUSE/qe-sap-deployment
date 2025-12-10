@@ -83,7 +83,6 @@
   ansible.builtin.set_fact:
     hana_prevalidate_pacemaker_ge_2_1_7: "{{ ansible_facts.packages['pacemaker'][0].version is version('2.1.7', '>=') }}"
 
-# Wait for sync and healthy cluster
 - name: Wait for cluster idle
   ansible.builtin.command: cs_wait_for_idle --sleep 5
   retries: 48
@@ -203,3 +202,68 @@
   register: hana_prevalidate_crm_mon_report
   changed_when: false
   become: true
+
+- name: Run HDBSettings.sh landscapeHostConfiguration.py for HANA landscape validation
+  ansible.builtin.command: "su - {{ sap_sid | lower }}adm -c 'HDBSettings.sh landscapeHostConfiguration.py'"
+  register: hana_landscape_config
+  changed_when: false
+  failed_when: "'overall host status: ok' not in hana_landscape_config.stdout"
+  become: true
+  environment:
+    HANA_HOME: "/usr/sap/{{ sap_sid | default('HA0') }}/HDB{{ instance_num | default('00') }}"
+  tags:
+    - hana_config_validation
+
+- name: Check for inconsistencies in HANA landscapeHostConfiguration output
+  ansible.builtin.assert:
+    that:
+      - hana_landscape_config.stdout is not search('inconsistent')
+      - hana_landscape_config.stdout is not search('ERROR')
+    fail_msg: "HANA landscapeHostConfiguration.py reported inconsistencies or errors. Output:\n{{ hana_landscape_config.stdout }}"
+    success_msg: "HANA landscapeHostConfiguration.py reported a consistent landscape configuration."
+  when: hana_landscape_config.rc == 0
+  tags:
+    - hana_config_validation
+
+- name: Run hdbnsutil -sr_stateConfiguration for HSR control plane validation
+  ansible.builtin.command: "su - {{ sap_sid | lower }}adm -c '/usr/sap/{{ sap_sid | default('HA0') }}/HDB{{ instance_num | default('00') }}/exe/hdbnsutil -sr_stateConfiguration'"
+  register: hdbnsutil_sr_state_configuration_output
+  changed_when: false
+  become: true
+  environment:
+    HANA_HOME: "/usr/sap/{{ sap_sid | default('HA0') }}/HDB{{ instance_num | default('00') }}"
+  tags:
+    - hana_config_validation
+
+- name: Check hdbnsutil -sr_stateConfiguration output for primary master / mode
+  ansible.builtin.assert:
+    that:
+      - >-
+        (is_primary and hdbnsutil_sr_state_configuration_output.stdout is search('mode: primary')) or
+        (not is_primary and hdbnsutil_sr_state_configuration_output.stdout is search('primary masters: {{ primary_hostname }}'))
+    fail_msg: "hdbnsutil -sr_stateConfiguration output does not show expected configuration for {{ ansible_hostname }}. Output:\n{{ hdbnsutil_sr_state_configuration_output.stdout }}"
+    success_msg: "hdbnsutil -sr_stateConfiguration output confirms expected configuration for {{ ansible_hostname }}."
+  when: hdbnsutil_sr_state_configuration_output.rc == 0
+  tags:
+    - hana_config_validation
+
+- name: Run HDBSettings.sh systemReplicationStatus.py for replication data path validation
+  ansible.builtin.command: "su - {{ sap_sid | lower }}adm -c 'HDBSettings.sh systemReplicationStatus.py'"
+  register: system_replication_status_output
+  changed_when: false
+  failed_when: "system_replication_status_output.stderr | length > 0" # Fail only if stderr is not empty
+  become: true
+  environment:
+    HANA_HOME: "/usr/sap/{{ sap_sid | default('HA0') }}/HDB{{ instance_num | default('00') }}"
+  tags:
+    - hana_config_validation
+
+- name: Check HDBSettings.sh systemReplicationStatus.py output for overall active status
+  ansible.builtin.assert:
+    that:
+      - system_replication_status_output.stdout is search('status system replication site "\\d+": ACTIVE') # Checks for ACTIVE status of any site
+      - system_replication_status_output.stdout is search('overall system replication status: ACTIVE')
+    fail_msg: "HDBSettings.sh systemReplicationStatus.py reported inactive or non-synced status. Output:\n{{ system_replication_status_output.stdout }}"
+    success_msg: "HDBSettings.sh systemReplicationStatus.py reported ACTIVE system replication status."
+  tags:
+    - hana_config_validation
