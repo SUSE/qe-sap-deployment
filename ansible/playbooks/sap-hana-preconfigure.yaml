@@ -24,6 +24,7 @@
     use_connecttimeout: 10
     saptune_solution: HANA
     cluster_node: true
+    firewall_cfg: 'ignore'
 
   tasks:
     # Ensure required installation of required packages
@@ -74,6 +75,37 @@
         name: ClusterTools2
         state: present
       when: cluster_node | bool
+
+    - name: Validate firewall_cfg
+      ansible.builtin.assert:
+        that:
+          - firewall_cfg is defined
+          - firewall_cfg in ['ignore', 'enable', 'disable']
+        fail_msg: "Variable 'firewall_cfg' must be 'ignore', 'enable' or 'disable'. Found '{{ firewall_cfg }}'"
+
+    - name: Get service facts
+      ansible.builtin.service_facts:
+
+    - name: Debug firewall status on specific OS version
+      ansible.builtin.debug:
+        msg:
+          - "[OSADO][softfail] bsc#1254356"
+          - "The firewalld service is not stopped and disabled on this system."
+      when:
+        - ansible_distribution_major_version == '16'
+        - firewall_cfg != 'ignore'  # avoid to hide the bug by forcing the firewall state
+
+    - name: Set firewall service state and enabled status
+      ansible.builtin.set_fact:
+        firewall_service_state: "{{ 'started' if firewall_cfg == 'enable' else 'stopped' }}"
+        firewall_service_enabled: "{{ 'yes' if firewall_cfg == 'enable' else 'no' }}"
+
+    - name: Configure the firewall service state
+      ansible.builtin.systemd:
+        name: firewalld
+        state: "{{ firewall_service_state }}"
+        enabled: "{{ firewall_service_enabled }}"
+      when: firewall_cfg != 'ignore'
 
     - name: Configure sapconf based systems
       ansible.builtin.include_tasks: ./tasks/sapconf.yaml
