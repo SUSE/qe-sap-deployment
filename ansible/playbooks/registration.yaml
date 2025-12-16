@@ -104,6 +104,54 @@
         - is_registercloudguest_bin.rc == 0
         - not use_suseconnect | bool
 
+    - name: Wait for cloud guest registration to finish in PAYG
+      ansible.builtin.command: systemctl show guestregister.service --property=ActiveState --property=Result  # noqa: command-instead-of-module
+      register: guestregister_service_state
+      until:
+        - guestregister_service_state.rc == 0
+        - '"ActiveState=inactive" in guestregister_service_state.stdout'
+        - '"Result=success" in guestregister_service_state.stdout'
+      retries: 60
+      delay: 10
+      changed_when: false
+      ignore_errors: true  # so that we can collect logs on failure
+      when: not to_be_registered
+
+    - name: Collect logs if guestregister.service is not in the expected state
+      when:
+        - not to_be_registered
+        - guestregister_service_state is defined
+        - guestregister_service_state.failed | default(false)
+      block:
+        - name: Show message
+          ansible.builtin.debug:
+            msg: "guestregister.service is not in the expected state (inactive/success). Collecting logs."
+
+        - name: Get guestregister.service status
+          ansible.builtin.command: systemctl status guestregister.service
+          register: guestregister_systemctl_status
+          changed_when: false
+          failed_when: false
+
+        - name: Show guestregister.service status
+          ansible.builtin.debug:
+            var: guestregister_systemctl_status.stdout_lines
+
+        - name: Get journalctl for guestregister.service
+          ansible.builtin.command: journalctl -u guestregister.service --no-pager
+          register: guestregister_logs
+          changed_when: false
+          failed_when: false
+
+        - name: Show guestregister.service logs
+          ansible.builtin.debug:
+            var: guestregister_logs.stdout_lines
+
+        - name: Fail if guestregister.service is not in the expected state
+          ansible.builtin.assert:
+            that: false
+            fail_msg: "FATAL: guestregister.service is not in the expected state (inactive/success) after retries. Check logs above for details."
+
     # Start by pre-cleaning all. Only run it if:
     #  - the registercloudguest binary is available
     #  - there's at least one 'Not Registered' module
