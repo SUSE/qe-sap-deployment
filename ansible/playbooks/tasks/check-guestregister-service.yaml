@@ -1,0 +1,137 @@
+---
+- name: Show message
+  ansible.builtin.debug:
+    msg: "guestregister.service is not in the expected state (inactive/success). Collecting logs."
+
+- name: Get guestregister.service status
+  ansible.builtin.command: systemctl status guestregister.service  # noqa command-instead-of-module
+  register: guestregister_systemctl_status
+  changed_when: false
+  failed_when: false
+
+- name: Show guestregister.service status
+  ansible.builtin.debug:
+    var: guestregister_systemctl_status.stdout_lines
+
+- name: Get journalctl for guestregister.service
+  ansible.builtin.command: journalctl -u guestregister.service --no-pager
+  register: guestregister_logs
+  changed_when: false
+  failed_when: false
+
+- name: Show guestregister.service logs
+  ansible.builtin.debug:
+    var: guestregister_logs.stdout_lines
+
+- name: Get guestregister.service definition
+  ansible.builtin.command: systemctl cat guestregister.service # noqa command-instead-of-module
+  register: guestregister_service_definition
+  changed_when: false
+  failed_when: false
+  when: guestregister_systemctl_status.failed | default(false)
+
+- name: Handle guestregister.service failure with status 67
+  when: '"code=exited, status=67" in guestregister_systemctl_status.stdout'
+  block:
+    - name: Set guestregister service user
+      ansible.builtin.set_fact:
+        guestregister_user: "{{ guestregister_service_definition.stdout | regex_search('^User=(.*)$', '\\1') | first | trim }}"
+      when: guestregister_service_definition.stdout is defined
+
+    - name: Check if guestregister user exists
+      ansible.builtin.command: "id {{ guestregister_user }}"
+      register: guestregister_user_exists
+      changed_when: false
+      failed_when: false
+      when: guestregister_user is defined and guestregister_user | length > 0
+
+    - name: Fail if guestregister user does not exist
+      ansible.builtin.fail:
+        msg: "FATAL: guestregister.service failed with status 67 because user '{{ guestregister_user }}' does not exist."
+      when:
+        - guestregister_user is defined
+        - guestregister_user | length > 0
+        - guestregister_user_exists is defined
+        - guestregister_user_exists.rc != 0
+
+    - name: Check for corrupted registration file
+      ansible.builtin.stat:
+        path: /etc/zypp/credentials.d/SCCcredentials
+      register: scc_credentials_stat
+
+    - name: Check SCCcredentials file
+      when:
+        - scc_credentials_stat.stat is defined
+        - scc_credentials_stat.stat.exists
+      block:
+        - name: Fail if SCCcredentials is empty
+          ansible.builtin.fail:
+            msg: "FATAL: /etc/zypp/credentials.d/SCCcredentials is empty. Please delete the file and re-run registration."
+          when: scc_credentials_stat.stat.size == 0
+
+        - name: Fail if SCCcredentials has wrong permissions or owner
+          ansible.builtin.fail:
+            msg: "FATAL: /etc/zypp/credentials.d/SCCcredentials has wrong permissions or owner. Expected root:root and 0640, got {{ scc_credentials_stat.stat.pw_name }}:{{ scc_credentials_stat.stat.gr_name }} and {{ scc_credentials_stat.stat.mode }}. Please correct permissions."
+          when: >
+            scc_credentials_stat.stat.pw_name != 'root' or
+            scc_credentials_stat.stat.gr_name != 'root' or
+            scc_credentials_stat.stat.mode != '0640'
+
+- name: HAndle guestregister.service failure with status 1
+  when: '"code=exited, status=1" in guestregister_systemctl_status.stdout'
+  block:
+    - name: Set guestregister ExecStart command fact
+      ansible.builtin.set_fact:
+        guestregister_exec_start: "{{ guestregister_service_definition.stdout | regex_search('^ExecStart=(.*)$', '\\1') | first | trim }}"
+      when: guestregister_service_definition.stdout is defined
+
+    - name: Analyze guestregister service dependencies
+      ansible.builtin.command: systemd-analyze critical-chain guestregister.service
+      register: guestregister_deps
+      changed_when: false
+      failed_when: false
+
+    - name: Show dependency analysis
+      ansible.builtin.debug:
+        var: guestregister_deps.stdout_lines
+
+    - name: Get guestregister version
+      ansible.builtin.command: /usr/sbin/guestregister --version
+      register: guestregister_version
+      changed_when: false
+      failed_when: false
+
+    - name: Show guestregister version
+      ansible.builtin.debug:
+        var: guestregister_version.stdout_lines
+
+    - name: Get guestregister package
+      ansible.builtin.command: rpm -qf /usr/sbin/guestregister  # noqa command-instead-of-module
+      register: guestregister_package
+      changed_when: false
+      failed_when: false
+
+    - name: Show guestregister package
+      ansible.builtin.debug:
+        var: guestregister_package.stdout_lines
+
+    - name: Simulate guestregister execution
+      ansible.builtin.command: "{{ guestregister_exec_start }}"
+      register: guestregister_manual_run
+      changed_when: false
+      failed_when: false
+      when: guestregister_exec_start is defined and guestregister_exec_start | length > 0
+
+    - name: Show simulated execution output
+      ansible.builtin.debug:
+        msg:
+          - "Simulated execution of '{{ guestregister_exec_start }}' as root:"
+          - "rc: {{ guestregister_manual_run.rc }}"
+          - "stdout: {{ guestregister_manual_run.stdout }}"
+          - "stderr: {{ guestregister_manual_run.stderr }}"
+      when: guestregister_manual_run is defined and not guestregister_manual_run.skipped
+
+- name: Fail if guestregister.service is not in the expected state
+  ansible.builtin.assert:
+    that: false
+    fail_msg: "FATAL: guestregister.service is not in the expected state (inactive/success) after retries. Check logs above for details."
