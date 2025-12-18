@@ -1,10 +1,18 @@
 ---
 
-- name: SAP HANA Post Install - Enable and start the firewalld service
-  ansible.builtin.systemd:
-    name: firewalld
-    state: started
-    enabled: yes
+# Controlled by sap-hana-preconfigure.yaml playbook
+#- name: SAP HANA Post Install - Enable and start the firewalld service
+#  ansible.builtin.systemd:
+#    name: firewalld
+#    state: started
+#    enabled: yes
+#  tags: sap_hana_install_configure_firewall
+
+- name: SAP HANA Post Install - Set LogDenied to all in firewalld.conf
+  ansible.builtin.lineinfile:
+    path: /etc/firewalld/firewalld.conf
+    regexp: '^LogDenied=off'
+    line: 'LogDenied=all'
   tags: sap_hana_install_configure_firewall
 
 - name: SAP HANA Post Install - Construct the argument list for 'firewall-cmd --add-port'
@@ -68,4 +76,17 @@
 - name: SAP HANA Post Install - Display the permanent firewall configuration of the default zone
   ansible.builtin.debug:
     var: __sap_hana_install_register_permanent_firewall_ports.stdout_lines
+  tags: sap_hana_install_configure_firewall
+
+- name: SAP HANA Post Install - Add SELinux port labels
+  # Note: The 'semanage port' command uses a dash '-' to define port ranges,
+  #       e.g., 'semanage port -a -t sap_port_t -p tcp 30000-30010'
+  ansible.builtin.command: "semanage port -a -t sap_port_t -p {{ item.split('/')[1] }} {{ item.split('/')[0] }}"
+  loop: "{{ sap_hana_install_firewall[0].port }}"
+  when: sap_hana_install_firewall[0].state == 'enabled'
+  register: __sap_hana_install_register_semanage_ports
+  changed_when: __sap_hana_install_register_semanage_ports.rc == 0
+  failed_when:
+    - __sap_hana_install_register_semanage_ports.rc != 0
+    - "'Port is already defined' not in __sap_hana_install_register_semanage_ports.stderr"
   tags: sap_hana_install_configure_firewall
