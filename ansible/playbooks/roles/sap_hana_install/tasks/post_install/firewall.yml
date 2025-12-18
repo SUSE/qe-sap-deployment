@@ -1,11 +1,11 @@
 ---
 
-- name: SAP HANA Post Install - Enable and start the firewalld service
-  ansible.builtin.systemd:
-    name: firewalld
-    state: started
-    enabled: true
-  tags: sap_hana_install_configure_firewall
+# - name: SAP HANA Post Install - Enable and start the firewalld service
+#   ansible.builtin.systemd:
+#     name: firewalld
+#     state: started
+#     enabled: true
+#   tags: sap_hana_install_configure_firewall
 
 - name: SAP HANA Post Install - Construct the argument list for 'firewall-cmd --add-port'
   ansible.builtin.set_fact:
