@@ -54,8 +54,8 @@
       when: ifc_bin.rc != 0
 
     # Is registercloudguest available?
-    # only run it if:
-    #  - there's at least one 'Not Registered' module
+    # Only check about it if there any chance that it needs to be used
+    # so only if it is at least one 'Not Registered' module
     - name: Check for registercloudguest
       ansible.builtin.command: which registercloudguest
       register: is_registercloudguest_bin
@@ -118,39 +118,11 @@
       when: not to_be_registered
 
     - name: Collect logs if guestregister.service is not in the expected state
+      ansible.builtin.include_tasks: tasks/check-guestregister-service.yaml
       when:
         - not to_be_registered
         - guestregister_service_state is defined
         - guestregister_service_state.failed | default(false)
-      block:
-        - name: Show message
-          ansible.builtin.debug:
-            msg: "guestregister.service is not in the expected state (inactive/success). Collecting logs."
-
-        - name: Get guestregister.service status
-          ansible.builtin.command: systemctl status guestregister.service
-          register: guestregister_systemctl_status
-          changed_when: false
-          failed_when: false
-
-        - name: Show guestregister.service status
-          ansible.builtin.debug:
-            var: guestregister_systemctl_status.stdout_lines
-
-        - name: Get journalctl for guestregister.service
-          ansible.builtin.command: journalctl -u guestregister.service --no-pager
-          register: guestregister_logs
-          changed_when: false
-          failed_when: false
-
-        - name: Show guestregister.service logs
-          ansible.builtin.debug:
-            var: guestregister_logs.stdout_lines
-
-        - name: Fail if guestregister.service is not in the expected state
-          ansible.builtin.assert:
-            that: false
-            fail_msg: "FATAL: guestregister.service is not in the expected state (inactive/success) after retries. Check logs above for details."
 
     # Start by pre-cleaning all. Only run it if:
     #  - the registercloudguest binary is available
