@@ -8,7 +8,7 @@
       -i '{{ sap_hana_install_number }}' \
       -d SYSTEMDB \
       -u SYSTEM \
-      -p '{{ sap_hana_install_db_system_password|d(sap_hana_install_master_password) }}' \
+      -p '{{ sap_hana_install_db_system_password | d(sap_hana_install_master_password) }}' \
       -m <<EOF
       ALTER SYSTEM ALTER CONFIGURATION ('global.ini', 'SYSTEM') SET ('persistence', 'log_mode') = 'overwrite' WITH RECONFIGURE;
       ALTER SYSTEM ALTER CONFIGURATION('global.ini','HOST','{{ ansible_hostname }}') SET ('persistence','log_mode') = 'overwrite' WITH RECONFIGURE;
@@ -18,10 +18,10 @@
     executable: /bin/bash
   become: true
   become_user: "{{ sap_hana_install_sid | lower }}adm"
-  when: 
+  when:
     - not ansible_check_mode
-    - sap_hana_set_log_mode_overwrite
-  changed_when: no
+    - sap_hana_install_set_log_mode_overwrite
+  changed_when: false
   register: __sap_hana_install_hdbsql_logmode
   tags: sap_hana_install_set_log_mode
 
@@ -29,4 +29,4 @@
   ansible.builtin.debug:
     var: __sap_hana_install_hdbsql_logmode.stdout_lines
   tags: sap_hana_install_set_log_mode
-  when: sap_hana_set_log_mode_overwrite
+  when: sap_hana_install_set_log_mode_overwrite
