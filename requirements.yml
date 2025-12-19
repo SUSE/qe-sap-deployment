@@ -6,3 +6,5 @@ collections:
     version: 1.5.4
   - name: community.general
     version: 9.5.12
+  - name: community.sap_install
+    version: 1.7.1

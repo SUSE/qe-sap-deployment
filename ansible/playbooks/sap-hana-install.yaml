@@ -26,7 +26,7 @@
 
     - name: Execute hana install role
       ansible.builtin.include_role:
-        name: sap_hana_install
+        name: community.sap_install.sap_hana_install
       when: hana_installed == 'absent'
 
     - name: Write status file
