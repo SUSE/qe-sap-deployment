@@ -2,6 +2,13 @@
 
 Ansible role for SAP HANA Installation
 
+## NOTICE
+
+This role is derived from the sap_hana_install role
+from the community.sap_install collection
+(https://github.com/sap-linuxlab/community.sap_install/tree/main/roles/sap_hana_install),
+originally licensed under Apache License 2.0.
+
 ## Prerequisites
 
 ### Configure your system for the installation of SAP HANA
