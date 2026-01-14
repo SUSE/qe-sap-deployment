@@ -9,6 +9,7 @@
   vars:
     install_path: /var/lib/qedep
     install_file: "{{ install_path }}/{{ sap_hana_install_sid }}_install"
+    use_community_roles: "{{ enable_community_sap_roles | default(false) | bool }}"
 
   tasks:
     - name: Check for previous installation of HANA SID
@@ -24,10 +25,19 @@
       ansible.builtin.set_fact:
         hana_installed: "{{ sid_file_check.state }}"
 
-    - name: Execute hana install role
+    - name: Execute hana install role (upstream)
+      ansible.builtin.include_role:
+        name: community.sap_install.sap_hana_install
+      when:
+        - hana_installed == 'absent'
+        - use_community_roles | bool
+
+    - name: Execute hana install role (local)
       ansible.builtin.include_role:
         name: sap_hana_install
-      when: hana_installed == 'absent'
+      when:
+        - hana_installed == 'absent'
+        - not use_community_roles | bool
 
     - name: Write status file
       ansible.builtin.file:
