@@ -19,6 +19,7 @@
     is_primary: "{{ ansible_play_hosts[0] == inventory_hostname }}"
     primary_hostname: "{{ ansible_play_hosts[0] }}"
     secondary_hostname: "{{ ansible_play_hosts[1] }}"
+    use_community_roles: "{{ enable_community_sap_roles | default(false) | bool }}"
 
   tasks:
     - name: Set SAP HANA System replication host facts
@@ -50,10 +51,19 @@
       ansible.builtin.debug:
         var: sap_hana_cluster_nodes
 
-    - name: Execute hana system replication role
+    - name: Execute hana system replication role (upstream)
+      ansible.builtin.include_role:
+        name: community.sap_install.sap_ha_install_hana_hsr
+      when:
+        - hsr_configured == 'absent'
+        - use_community_roles | bool
+
+    - name: Execute hana system replication role (local)
       ansible.builtin.include_role:
         name: sap_ha_install_hana_hsr
-      when: hsr_configured == 'absent'
+      when:
+        - hsr_configured == 'absent'
+        - not use_community_roles | bool
 
     - name: Write status file
       ansible.builtin.file:
