@@ -104,25 +104,10 @@
         - is_registercloudguest_bin.rc == 0
         - not use_suseconnect | bool
 
-    - name: Wait for cloud guest registration to finish in PAYG
-      ansible.builtin.command: systemctl show guestregister.service --property=ActiveState --property=Result  # noqa: command-instead-of-module
-      register: guestregister_service_state
-      until:
-        - guestregister_service_state.rc == 0
-        - '"ActiveState=inactive" in guestregister_service_state.stdout'
-        - '"Result=success" in guestregister_service_state.stdout'
-      retries: 60
-      delay: 10
-      changed_when: false
-      ignore_errors: true  # so that we can collect logs on failure
-      when: not to_be_registered
-
-    - name: Collect logs if guestregister.service is not in the expected state
+    - name: Check status of guestregister.service
       ansible.builtin.include_tasks: tasks/check-guestregister-service.yaml
       when:
         - not to_be_registered
-        - guestregister_service_state is defined
-        - guestregister_service_state.failed | default(false)
 
     # Start by pre-cleaning all. Only run it if:
     #  - the registercloudguest binary is available
