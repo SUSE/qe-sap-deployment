@@ -16,6 +16,7 @@
         name: '*'
         state: latest
         type: patch
+        extra_args: '--with-interactive'
       environment:
         ZYPP_LOCK_TIMEOUT: '120'
       register: zypper_patch
