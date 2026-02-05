@@ -16,9 +16,8 @@ locals {
 
   network_link = var.vpc_name == "" ? google_compute_network.ha_network.0.self_link : format(
   "https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", var.project, var.vpc_name)
-  vpc_name             = var.vpc_name == "" ? google_compute_network.ha_network.0.name : var.vpc_name
-  subnet_name          = var.subnet_name == "" ? google_compute_subnetwork.ha_subnet.0.name : var.subnet_name
-  subnet_address_range = var.subnet_name == "" ? var.ip_cidr_range : (var.ip_cidr_range == "" ? data.google_compute_subnetwork.current-subnet.0.ip_cidr_range : var.ip_cidr_range)
+  vpc_name    = var.vpc_name == "" ? google_compute_network.ha_network.0.name : var.vpc_name
+  subnet_name = var.subnet_name == "" ? google_compute_subnetwork.ha_subnet.0.name : var.subnet_name
 
   create_firewall = var.create_firewall_rules ? 1 : 0
   ibsm_count      = (var.ibsm_vpc_name != "" && var.ibsm_subnet_name != "" && var.ibsm_subnet_region != "") ? 1 : 0
