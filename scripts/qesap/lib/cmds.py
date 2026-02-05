@@ -314,7 +314,7 @@ def ansible_command_sequence(
     # 1. Create the environment variable set
     #    that will be used by any command
     original_env = dict(os.environ)
-    original_env["ANSIBLE_PIPELINING"] = "True"
+    original_env["ANSIBLE_PIPELINING"] = "False"
     original_env["ANSIBLE_TIMEOUT"] = "20"
     ansible_callbacks = []
     if profile:
