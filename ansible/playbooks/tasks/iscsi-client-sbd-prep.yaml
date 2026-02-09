@@ -40,8 +40,7 @@
   ansible.builtin.command:
     cmd: "iscsiadm -m node -T {{ srv_iqn }} --login --portal={{ item.stdout | split(':') | first }}"
     creates: "/dev/disk/by-path/ip-{{ item.stdout | split(':') | first }}:3260-iscsi-{{ srv_iqn }}-lun-0"
-  when: item.changed
-  loop: "{{ discovered_iscsi.results }}"
+  loop: "{{ discovered_iscsi.results | selectattr('changed') | list }}"
   register: login
 
 - name: Set LUNs to automatic
@@ -49,5 +48,4 @@
     cmd: "iscsiadm -m node -p {{ item.item.stdout | split(':') | first }}:3260 -T {{ srv_iqn }} --op=update --name=node.startup --value=automatic"
   register: iscsiadm_result
   changed_when: iscsiadm_result.rc == 0
-  when: item.changed
-  loop: "{{ login.results }}"
+  loop: "{{ login.results | selectattr('changed') | list }}"

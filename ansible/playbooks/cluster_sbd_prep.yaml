@@ -11,6 +11,9 @@
     - name: Include sdb vars
       ansible.builtin.include_vars: ./vars/sbd_parameters.yaml
 
+    - name: Include HANA vars
+      ansible.builtin.include_vars: ./vars/hana_vars.yaml
+
   vars:
     iscsi_prefix: /dev/disk/by-id/scsi-
     is_primary: "{{ groups.hana[0] == inventory_hostname }}"

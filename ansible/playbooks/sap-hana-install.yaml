@@ -28,6 +28,8 @@
     - name: Execute hana install role (upstream)
       ansible.builtin.include_role:
         name: community.sap_install.sap_hana_install
+      vars:
+        sap_hana_install_update_firewall: "{{ firewall_cfg | default('ignore') == 'enable' }}"
       when:
         - hana_installed == 'absent'
         - use_community_roles | bool
@@ -35,6 +37,8 @@
     - name: Execute hana install role (local)
       ansible.builtin.include_role:
         name: sap_hana_install
+      vars:
+        sap_hana_install_update_firewall: "{{ firewall_cfg | default('ignore') == 'enable' }}"
       when:
         - hana_installed == 'absent'
         - not use_community_roles | bool

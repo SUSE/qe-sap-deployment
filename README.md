@@ -129,6 +129,7 @@ ansible:
     sap_domain: "qe-test.example.com"
     primary_site: 'goofy'
     secondary_site: 'miky'
+    firewall_cfg: 'ignore'
 ```
 
 Required fields in this section are documented in the qe-sap-deployment ansible documentation.
