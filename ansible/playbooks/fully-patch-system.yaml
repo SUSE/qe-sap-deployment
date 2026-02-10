@@ -35,6 +35,36 @@
       changed_when: zypper_patch.rc == 102 or zypper_patch.changed
       notify: Reboot after patch
 
+    - name: Flush handlers
+      ansible.builtin.meta: flush_handlers
+
+    - name: Check if purge-kernels unit exists
+      ansible.builtin.command: systemctl list-unit-files purge-kernels.service --no-legend
+      register: purge_unit
+      changed_when: false
+      failed_when: false
+
+    - name: Wait for purge-kernels.service to finish (if present)
+      ansible.builtin.command: systemctl is-active purge-kernels.service
+      register: purge_active
+      changed_when: false
+      failed_when: false
+      until: purge_active.stdout.strip() not in ['active', 'activating']
+      retries: "{{ zypp_wait_retries }}"
+      delay: "{{ zypp_wait_delay }}"
+      when: purge_unit.rc == 0 and purge_unit.stdout is search('purge-kernels.service')
+
+    - name: Wait until zypper is available (lock released)
+      ansible.builtin.command: zypper -n --gpg-auto-import-keys refresh
+      register: zypper_ready
+      changed_when: false
+      until: zypper_ready.rc == 0
+      retries: "{{ zypp_wait_retries }}"
+      delay: "{{ zypp_wait_delay }}"
+      environment:
+        ZYPP_LOCK_TIMEOUT: "-1"
+
+
   handlers:
     - name: Reboot after patch
       ansible.builtin.reboot:
