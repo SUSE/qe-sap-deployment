@@ -85,4 +85,5 @@
     state: enabled
     permanent: true
     immediate: true
-  when: ansible_distribution_major_version == '16'
+  when:
+    - firewall_cfg | default('ignore') == 'enable'

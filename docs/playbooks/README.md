@@ -94,6 +94,7 @@ Variables:
 
 * use_sapconf
 * use_sap_hana_sr_angi
+* firewall_cfg
 
 Variable Source = ./vars/hana_vars.yaml that can be populated by ansible::hana_vars in the conf.yaml
 
@@ -103,6 +104,12 @@ attempt to tune the OS for HANA. If the variable `use_sapconf` is true, then
 sapconf will be used to tune the installation. If `use_sapconf` is not set or
 is set to false, not tuning will take place. In the future the system will
 be tuned by saptune by default.
+
+The `firewall_cfg` variable is used as a centralized source of truth for firewall
+management across all playbooks. Possible values are:
+* `enable`: The firewalld service is started/enabled and required ports (HANA, iSCSI, cluster) are opened.
+* `disable`: The firewalld service is stopped/disabled.
+* `ignore` (Default): The firewall configuration is not touched by Ansible.
 
 ## cluster_sbd_prep
 

@@ -23,3 +23,6 @@ sap_domain: "qe-test.example.com"
 
 # Pass some extra arguments to the hdblcm cli, e.g.  --ignore=<check1>[,<check2>]...
 # sap_hana_install_hdblcm_extraargs:
+
+# Firewall configuration (ignore, enable, disable)
+firewall_cfg: 'ignore'
