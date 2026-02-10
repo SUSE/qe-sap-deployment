@@ -41,6 +41,14 @@
       loop:
         - 'iscsiuio'
         - 'open-iscsi'
+      environment:
+        ZYPP_LOCK_TIMEOUT: '120'
+      register: zypper_res
+        until: zypper_res.rc in [0, 102]
+        retries: 5
+        delay: 30
+        failed_when: zypper_res.rc not in [0, 102, 103]
+        changed_when: zypper_res.rc == 102 or zypper_res.changed
       when: use_sbd | default(false) | bool
 
     - name: Update old SAPHanaSR on SLE 15-SP1
