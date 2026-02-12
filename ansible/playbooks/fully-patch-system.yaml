@@ -8,6 +8,8 @@
     # as for AWS 'r5b.metal' instance type the reboot elapses at least 800 seconds
     use_reboottimeout: 1200
     use_connecttimeout: 10
+    zypp_wait_retries: 60
+    zypp_wait_delay: 10
 
   tasks:
     - name: List configured repositories
@@ -28,16 +30,52 @@
       environment:
         ZYPP_LOCK_TIMEOUT: '120'
       register: zypper_patch
-      until: zypper_patch.rc in [0, 102]
+      until: zypper_patch.rc in [0, 102, 103]
       retries: 5
       delay: 30
       failed_when: zypper_patch.rc not in [0, 102, 103]
       changed_when: zypper_patch.rc == 102 or zypper_patch.changed
+
+    - name: Trigger reboot+zypp_wait handler if zypper exit code requires it
+      ansible.builtin.debug:
+        msg: "Patches applied (zypper rc={{ zypper_patch.rc }}), triggering reboot"
+      changed_when: true
       notify: Reboot after patch
+      when: zypper_patch.rc in [102, 103]
 
   handlers:
-    - name: Reboot after patch
+    - name: Reboot the machine
+      listen: Reboot after patch
       ansible.builtin.reboot:
         msg: "Reboot initiated by Ansible - Zypper RC: {{ zypper_patch.rc | default('N/A') }}"
         reboot_timeout: "{{ use_reboottimeout | int }}"
         connect_timeout: "{{ use_connecttimeout | int }}"
+
+    - name: Check if purge-kernels unit exists # noqa: command-instead-of-module
+      listen: Reboot after patch
+      ansible.builtin.command: systemctl list-unit-files purge-kernels.service --no-legend
+      register: purge_unit
+      changed_when: false
+      failed_when: false
+
+    - name: Wait for purge-kernels.service to finish (if present) # noqa: command-instead-of-module
+      listen: Reboot after patch
+      ansible.builtin.command: systemctl is-active purge-kernels.service
+      register: purge_active
+      changed_when: false
+      failed_when: false
+      until: purge_active.stdout.strip() not in ['active', 'activating']
+      retries: "{{ zypp_wait_retries }}"
+      delay: "{{ zypp_wait_delay }}"
+      when: purge_unit.rc == 0 and purge_unit.stdout is search('purge-kernels.service')
+
+    - name: Wait until zypper is available (lock released)
+      listen: Reboot after patch
+      ansible.builtin.command: zypper -n --gpg-auto-import-keys refresh
+      register: zypper_ready
+      changed_when: false
+      until: zypper_ready.rc == 0
+      retries: "{{ zypp_wait_retries }}"
+      delay: "{{ zypp_wait_delay }}"
+      environment:
+        ZYPP_LOCK_TIMEOUT: "120"
