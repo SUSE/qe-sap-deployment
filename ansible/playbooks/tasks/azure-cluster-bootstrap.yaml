@@ -151,14 +151,6 @@
     backup: true
   when: ansible_distribution_major_version == '16'
 
-# Workaround for bsc#1253223
-- name: Create symbolic between /usr/etc/default/cloud-netconfig and /etc/default/cloud-netconfig
-  ansible.builtin.file:
-    src: /usr/etc/default/cloud-netconfig
-    dest: /etc/default/cloud-netconfig
-    state: link
-  when: ansible_distribution_major_version == '16'
-
 - name: Gather crmsh package facts
   ansible.builtin.package_facts:
     manager: auto
@@ -166,12 +158,6 @@
 - name: Set crmsh transport flag
   ansible.builtin.set_fact:
     crmsh_transport_flag: "{{ '--transport udpu' if ansible_facts.packages['crmsh'][0].version is version('5.0.0', '>=') else '-u' }}"
-
-- name: Softfail for old cloud-regionsrv-client in 15sp2
-  ansible.builtin.debug:
-    msg:
-      - "[OSADO][softfail] bsc#1253223 cloud-netconfig does not read /usr/etc/default/cloud-netconfig"
-  when: ansible_distribution_major_version == '16'
 
 - name: Slurp SBD config
   ansible.builtin.slurp:
