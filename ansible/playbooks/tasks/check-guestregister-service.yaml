@@ -1,20 +1,55 @@
 ---
 - name: "Pre-registration: Handle Cloud Guest Register Race Condition"
+  # FORCE ISOLATION:
+  # Set any_errors_fatal: false to ensure that if one host fails registration,
+  # only that host enters the rescue block for diagnostics. This prevents
+  # healthy nodes from being pulled into the rescue phase (and potentially
+  # restarting the service) if a global any_errors_fatal setting is active.
+  any_errors_fatal: false
   block:
 
+    # FAIL-FAST LOGIC:
+    # This loop polls guestregister.service until it reaches a terminal state (either inactive or failed).
+    #
+    # Scenario A: Success
+    #   stdout: "ActiveState=inactive\nResult=success"
+    #   Action: 'until' is satisfied, 'failed_when' is false -> Task proceeds.
+    #
+    # Scenario B: Failure (e.g., SMT 422 error or 401 Unauthorized)
+    #   stdout: "ActiveState=failed\nResult=exit-code"
+    #   Action: 'until' is satisfied (stops retrying immediately), 'failed_when' is true -> Triggers rescue block for THIS host only.
+    #
+    # Scenario C: Still Running
+    #   stdout: "ActiveState=activating"
+    #   Action: 'until' is NOT satisfied -> Retries until timeout (10 minutes).
     - name: Wait for cloud guest registration to finish in PAYG
       ansible.builtin.command: systemctl show guestregister.service --property=ActiveState --property=Result  # noqa: command-instead-of-module
       register: guestregister_service_state
       until:
         - guestregister_service_state.rc == 0
-        - '"ActiveState=inactive" in guestregister_service_state.stdout'
-        - '"Result=success" in guestregister_service_state.stdout'
+        - "'ActiveState=inactive' in guestregister_service_state.stdout_lines or 'ActiveState=failed' in guestregister_service_state.stdout_lines"
       retries: 60
       delay: 10
       changed_when: false
+      failed_when:
+        - >
+          guestregister_service_state.rc != 0 or
+          'ActiveState=failed' in guestregister_service_state.stdout_lines or
+          ('ActiveState=inactive' in guestregister_service_state.stdout_lines and 'Result=success' not in guestregister_service_state.stdout_lines)
       when: not to_be_registered
 
   rescue:
+    # [DIAGNOSTIC] Investigation of why this host entered the rescue block
+    - name: "[DEBUG] Investigation: Why did this host enter rescue?"
+      ansible.builtin.debug:
+        msg:
+          - "--- Rescue Block Entry Diagnosis for {{ inventory_hostname }} ---"
+          - "Task 'Wait for cloud guest registration' result for this host: {{ guestregister_service_state | default('VARIABLE NOT DEFINED') }}"
+          - "Individual host failure detected: {{ (guestregister_service_state.failed | default(false)) | ternary('YES', 'NO') }}"
+          - "Current any_errors_fatal setting: {{ any_errors_fatal | default('NOT SET (default is False)') }}"
+          - "Active hosts remaining in play: {{ ansible_play_hosts_all }}"
+
+    # [DIAGNOSTIC] Initial service status and logs collection
     - name: Get guestregister.service status
       ansible.builtin.command: systemctl status guestregister.service  # noqa command-instead-of-module
       register: guestregister_systemctl_status
@@ -26,7 +61,7 @@
       register: guestregister_service_definition
       changed_when: false
       failed_when: false
-      when: guestregister_systemctl_status.failed | default(false)
+      when: guestregister_systemctl_status.rc | default(0) != 0
 
     - name: Get journalctl for guestregister.service
       ansible.builtin.command: journalctl -u guestregister.service --no-pager
@@ -34,12 +69,77 @@
       changed_when: false
       failed_when: false
 
+    - name: Extract specific errors from cloudregister log
+      ansible.builtin.shell: |
+        set -o pipefail
+        grep -E "ERROR:|WARNING:|401 Unauthorized|422|Removing (repository artifacts|credentials|repo|service):" /var/log/cloudregister | tail -n 20
+      register: tailored_cloudregister_errors
+      failed_when: false
+      changed_when: false
+
+    - name: Search for Zypper lock in zypper.log
+      ansible.builtin.shell: |
+        set -o pipefail
+        grep "System management is locked by the application with pid" /var/log/zypper.log | tail -n 5
+      register: zypper_log_lock_error
+      failed_when: false
+      changed_when: false
+
+    - name: Check repository state after failure
+      ansible.builtin.command: zypper lr -u
+      register: zypper_repos_after_fail
+      failed_when: false
+      changed_when: false
+
+    - name: Check /etc/hosts for SMT entries
+      ansible.builtin.command: grep "susecloud.net" /etc/hosts
+      register: hosts_smt_entries
+      failed_when: false
+      changed_when: false
+
+    - name: Test Metadata Service connectivity
+      ansible.builtin.uri:
+        url: http://169.254.169.254/metadata/instance?api-version=2021-02-01
+        headers:
+          Metadata: "true"
+        timeout: 2
+      register: metadata_check
+      failed_when: false
+      changed_when: false
+
+    - name: Identify racing Zypper PIDs from log
+      ansible.builtin.shell: |
+        set -o pipefail
+        # Extract PIDs involved in lock contention
+        PIDS=$(grep "System management is locked by" /var/log/zypper.log | sed -r 's/.*locked by the application with pid ([0-9]+).*/\1/; s/.* \(([0-9]+)\) .*/\1/' | tr ' ' '\n' | sort -u)
+        for pid in $PIDS; do
+          echo "PID $pid command:"
+          grep "($pid) \[zypper\] main.cc(main):143" /var/log/zypper.log | sed -r 's/.*===== (.*) =====/\1/' | head -n 1
+        done
+      register: racing_pids_discovery
+      failed_when: false
+      changed_when: false
+
+    - name: Summary of tailored diagnostics
+      ansible.builtin.debug:
+        msg:
+          - "--- Tailored Diagnostics for guestregister.service failure ---"
+          - "Cloudregister Errors Summary: {{ tailored_cloudregister_errors.stdout_lines | default('None found') }}"
+          - "Zypper Log Lock Errors: {{ zypper_log_lock_error.stdout_lines | default('None found') }}"
+          - "Racing PIDs and Commands: {{ racing_pids_discovery.stdout_lines | default('No racing PIDs identified') }}"
+          - "Clean-up/Reset detected: {{ 'Removing' in (tailored_cloudregister_errors.stdout | default('')) }}"
+          - "SMT entries in /etc/hosts: {{ hosts_smt_entries.stdout_lines | default('Not found') }}"
+          - "Metadata Service Reachable: {{ (metadata_check.status | default(0) == 200) | ternary('YES', 'NO') }}"
+          - "Zypper Repos State: {{ zypper_repos_after_fail.stdout_lines | default('None') }}"
+
+    # [DIAGNOSTIC] Deep dive analysis based on specific exit codes
     - name: Handle guestregister.service failure with status 1
       when: '"code=exited, status=1" in guestregister_systemctl_status.stdout'
       block:
+
         - name: Set guestregister ExecStart command fact
           ansible.builtin.set_fact:
-            guestregister_exec_start: "{{ guestregister_service_definition.stdout | regex_search('^ExecStart=(.*)$', '\\1') | first | trim }}"
+            guestregister_exec_start: "{{ (guestregister_service_definition.stdout | regex_search('^ExecStart=(.*)$', '\\1', multiline=True) or ['']) | first | trim }}"
           when: guestregister_service_definition.stdout is defined
 
         - name: Analyze guestregister service dependencies
@@ -65,7 +165,7 @@
       block:
         - name: Set guestregister service user
           ansible.builtin.set_fact:
-            guestregister_user: "{{ guestregister_service_definition.stdout | regex_search('^User=(.*)$', '\\1') | first | trim }}"
+            guestregister_user: "{{ (guestregister_service_definition.stdout | regex_search('^User=(.*)$', '\\1', multiline=True) or ['']) | first | trim }}"
           when: guestregister_service_definition.stdout is defined
 
         - name: Check if guestregister user exists
@@ -75,6 +175,7 @@
           failed_when: false
           when: guestregister_user is defined and guestregister_user | length > 0
 
+    # [DIAGNOSTIC] Integrity checks for registration credentials
     - name: Check for corrupted registration file
       ansible.builtin.stat:
         path: /etc/zypp/credentials.d/SCCcredentials
@@ -98,20 +199,23 @@
             scc_credentials_stat.stat.gr_name != 'root' or
             scc_credentials_stat.stat.mode != '0640'
 
+    # [DIAGNOSTIC] Root cause analysis for Zypper locks
     - name: "Scan logs for Zypper Lock Error"
       ansible.builtin.set_fact:
         lock_error_log_line: "{{ guestregister_logs.stdout_lines | select('search', 'System management is locked by the application with pid') | list | last | default('') }}"
 
     - name: "Extract PID from error log"
       ansible.builtin.set_fact:
-        locking_pid: "{{ lock_error_log_line | regex_search('pid ([0-9]+)', '\\1') | first }}"
+        locking_pid: "{{ (lock_error_log_line | regex_search('pid ([0-9]+)', '\\1') or ['']) | first }}"
       when: lock_error_log_line | length > 0
 
     - name: "Get history of the locking PID"
       ansible.builtin.shell: |
         journalctl _PID={{ locking_pid }} --no-pager --lines=50
       register: pid_history
-      when: locking_pid is defined
+      when:
+        - locking_pid is defined
+        - locking_pid | length > 0
       changed_when: false
 
     - name: "Report Findings about locked PID"
@@ -124,3 +228,39 @@
       ansible.builtin.assert:
         that: false
         fail_msg: "FATAL: guestregister.service is not in the expected state (inactive/success) after retries. Check logs above for details."
+
+    # [RECOVERY] Attempting to fix the transient failure (e.g. race condition)
+    - name: Attempt proactive restart for recovery verification
+      ansible.builtin.systemd:
+        name: guestregister.service
+        state: restarted
+      register: restart_attempt
+      failed_when: false
+
+    - name: Wait for restart result
+      ansible.builtin.command: systemctl show guestregister.service --property=ActiveState --property=Result  # noqa: command-instead-of-module no-changed-when
+      register: restart_state
+      until: '"ActiveState=inactive" in restart_state.stdout or "ActiveState=failed" in restart_state.stdout'
+      retries: 30
+      delay: 5
+      failed_when: false
+
+    - name: Check for registration
+      ansible.builtin.command: SUSEConnect -s
+      register: recovery_reg_stat
+      until: recovery_reg_stats.rc == 0
+      retries: 5
+      delay: 120
+      failed_when: recovery_reg_stat.rc != 0
+      changed_when: false
+
+    - name: Check for 'Not Registered'
+      ansible.builtin.set_fact:
+        to_be_registered: "{{ 'Not Registered' in recovery_reg_stat.stdout }}"
+      when:
+        - recovery_reg_stat.stdout is defined
+
+    - name: Softfail for bcs#1254984
+      ansible.builtin.debug:
+        msg:
+          - "[OSADO][softfail] bsc#1254984"
