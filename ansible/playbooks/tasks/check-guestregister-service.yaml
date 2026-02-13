@@ -12,6 +12,8 @@
       retries: 60
       delay: 10
       changed_when: false
+      failed_when:
+        - guestregister_service_state.rc != 0 or '"ActiveState=failed" in guestregister_service_state.stdout'
       when: not to_be_registered
 
   rescue:
@@ -34,9 +36,88 @@
       changed_when: false
       failed_when: false
 
+    - name: Extract specific errors from cloudregister log
+      ansible.builtin.shell: |
+        set -o pipefail
+        grep -E "ERROR:|WARNING:|401 Unauthorized|422|Removing (repository artifacts|credentials|repo|service):" /var/log/cloudregister | tail -n 20
+      register: tailored_cloudregister_errors
+      failed_when: false
+      changed_when: false
+
+    - name: Search for Zypper lock in zypper.log
+      ansible.builtin.shell: |
+        set -o pipefail
+        grep "System management is locked by the application with pid" /var/log/zypper.log | tail -n 5
+      register: zypper_log_lock_error
+      failed_when: false
+      changed_when: false
+
+    - name: Check repository state after failure
+      ansible.builtin.command: zypper lr -u
+      register: zypper_repos_after_fail
+      failed_when: false
+      changed_when: false
+
+    - name: Check /etc/hosts for SMT entries
+      ansible.builtin.command: grep "susecloud.net" /etc/hosts
+      register: hosts_smt_entries
+      failed_when: false
+      changed_when: false
+
+    - name: Test Metadata Service connectivity
+      ansible.builtin.uri:
+        url: http://169.254.169.254/metadata/instance?api-version=2021-02-01
+        headers:
+          Metadata: "true"
+        timeout: 2
+      register: metadata_check
+      failed_when: false
+      changed_when: false
+
+    - name: Identify racing Zypper PIDs from log
+      ansible.builtin.shell: |
+        set -o pipefail
+        # Extract PIDs involved in lock contention
+        PIDS=$(grep "System management is locked by" /var/log/zypper.log | sed -r 's/.*locked by the application with pid ([0-9]+).*/\1/; s/.* \(([0-9]+)\) .*/\1/' | tr ' ' '\n' | sort -u)
+        for pid in $PIDS; do
+          echo "PID $pid command:"
+          grep "($pid) \[zypper\] main.cc(main):143" /var/log/zypper.log | sed -r 's/.*===== (.*) =====/\1/' | head -n 1
+        done
+      register: racing_pids_discovery
+      failed_when: false
+      changed_when: false
+
+    - name: Summary of tailored diagnostics
+      ansible.builtin.debug:
+        msg:
+          - "--- Tailored Diagnostics for guestregister.service failure ---"
+          - "Cloudregister Errors Summary: {{ tailored_cloudregister_errors.stdout_lines | default('None found') }}"
+          - "Zypper Log Lock Errors: {{ zypper_log_lock_error.stdout_lines | default('None found') }}"
+          - "Racing PIDs and Commands: {{ racing_pids_discovery.stdout_lines | default('No racing PIDs identified') }}"
+          - "Clean-up/Reset detected: {{ 'Removing' in (tailored_cloudregister_errors.stdout | default('')) }}"
+          - "SMT entries in /etc/hosts: {{ hosts_smt_entries.stdout_lines | default('Not found') }}"
+          - "Metadata Service Reachable: {{ (metadata_check.status == 200) | ternary('YES', 'NO') }}"
+          - "Zypper Repos State: {{ zypper_repos_after_fail.stdout_lines | default('None') }}"
+
+    - name: Attempt proactive restart for recovery verification
+      ansible.builtin.systemd:
+        name: guestregister.service
+        state: restarted
+      register: restart_attempt
+      failed_when: false
+
+    - name: Wait for restart result
+      ansible.builtin.command: systemctl show guestregister.service --property=ActiveState --property=Result  # noqa: command-instead-of-module no-changed-when
+      register: restart_state
+      until: '"ActiveState=inactive" in restart_state.stdout or "ActiveState=failed" in restart_state.stdout'
+      retries: 30
+      delay: 5
+      failed_when: false
+
     - name: Handle guestregister.service failure with status 1
       when: '"code=exited, status=1" in guestregister_systemctl_status.stdout'
       block:
+
         - name: Set guestregister ExecStart command fact
           ansible.builtin.set_fact:
             guestregister_exec_start: "{{ guestregister_service_definition.stdout | regex_search('^ExecStart=(.*)$', '\\1') | first | trim }}"
