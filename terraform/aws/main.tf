@@ -47,7 +47,7 @@ module "common_variables" {
   authorized_keys                     = var.authorized_keys
   authorized_user                     = var.admin_user
   monitoring_enabled                  = var.monitoring_enabled
-  monitoring_srv_ip                   = var.monitoring_enabled ? local.monitoring_ip : ""
+  monitoring_srv_ip                   = var.monitoring_enabled ? local.monitoring_srv_ip : ""
   hana_instance_number                = var.hana_instance_number
   hana_cost_optimized_instance_number = var.hana_cost_optimized_instance_number
   hana_primary_site                   = var.hana_primary_site
@@ -172,7 +172,7 @@ module "monitoring" {
   vm_size            = var.monitor_instancetype
   key_name           = aws_key_pair.key-pair.key_name
   security_group_id  = local.security_group_id
-  monitoring_srv_ip  = local.monitoring_ip
+  monitoring_srv_ip  = local.monitoring_srv_ip
   availability_zones = data.aws_availability_zones.available.names
   os_image           = local.monitoring_os_image
   os_owner           = local.monitoring_os_owner
