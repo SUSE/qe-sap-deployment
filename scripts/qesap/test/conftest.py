@@ -176,7 +176,7 @@ def create_playbooks(playbooks_dir):
 
 @pytest.fixture
 def ansible_config():
-    def _callback(provider, playbooks, apiver=3):
+    def _callback(provider, playbooks, apiver=3, verbosity=None):
         config_content = f"""---
 apiver: {apiver}
 provider: {provider}
@@ -186,6 +186,9 @@ ansible:
     az_sas_token: SECRET
     hana_media:
     - pippo"""
+
+        if verbosity is not None:
+            config_content += f"\n    verbosity: {verbosity}"
 
         if apiver < 4:
             for seq in playbooks:

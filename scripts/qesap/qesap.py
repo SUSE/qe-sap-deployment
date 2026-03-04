@@ -18,7 +18,7 @@ logging.basicConfig(format="%(levelname)-8s %(message)s")
 log = logging.getLogger("QESAP")
 
 
-VERSION = "1.0"
+VERSION = "2.7"
 
 DESCRIBE = """qe-sap-deployment helper script"""
 
@@ -180,10 +180,10 @@ def run_subcommand(args):
         return cmd_configure(args.configdata, args.basedir, args.dryrun)
     if args.command == "deploy":
         log.info("Deploying...")
-        return cmd_deploy(args.configdata, args.basedir, args.dryrun, args.verbose)
+        return cmd_deploy(args.configdata, args.basedir, args.dryrun)
     if args.command == "destroy":
         log.info("Destroying...")
-        return cmd_destroy(args.configdata, args.basedir, args.dryrun, args.verbose)
+        return cmd_destroy(args.configdata, args.basedir, args.dryrun)
     if args.command == "terraform":
         log.info("Running Terraform...")
         return cmd_terraform(
@@ -200,7 +200,6 @@ def run_subcommand(args):
             args.configdata,
             args.basedir,
             args.dryrun,
-            args.verbose,
             destroy=args.destroy,
             profile=args.profile,
             junit=args.junit,

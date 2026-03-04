@@ -80,7 +80,7 @@ ansible:
         ["This is the ansible output", "Two lines of that"],
     )
 
-    ret = cmd_ansible(data, tmpdir, False, False)
+    ret = cmd_ansible(data, tmpdir, False)
 
     assert ret == 0
 

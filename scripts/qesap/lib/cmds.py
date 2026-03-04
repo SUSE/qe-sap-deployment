@@ -140,7 +140,7 @@ def cmd_configure(configure_data, base_project, dryrun):
     return Status("ok")
 
 
-def cmd_deploy(configure_data, base_project, dryrun=False, verbose=False):
+def cmd_deploy(configure_data, base_project, dryrun=False):
     """Main executor for the deploy sub-command
 
     Args:
@@ -148,7 +148,6 @@ def cmd_deploy(configure_data, base_project, dryrun=False, verbose=False):
         base_project (str): base project path where to
                       look for the Terraform and Ansible files
         dryrun (bool): enable dryrun execution mode
-        verbose (bool): enable more verbosity
 
     Returns:
         int: execution result, 0 means OK. It is mind to be used as script exit code
@@ -161,10 +160,10 @@ def cmd_deploy(configure_data, base_project, dryrun=False, verbose=False):
     )
     if res != 0:
         return res
-    return cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=False)
+    return cmd_ansible(configure_data, base_project, dryrun, destroy=False)
 
 
-def cmd_destroy(configure_data, base_project, dryrun=False, verbose=False):
+def cmd_destroy(configure_data, base_project, dryrun=False):
     """Main executor for the deploy sub-command
 
     Args:
@@ -172,7 +171,6 @@ def cmd_destroy(configure_data, base_project, dryrun=False, verbose=False):
         base_project (str): base project path where to
                       look for the Terraform and Ansible files
         dryrun (bool): enable dryrun execution mode
-        verbose (bool): enable more verbosity
 
     Returns:
         int: execution result, 0 means OK. It is mind to be used as script exit code
@@ -180,7 +178,7 @@ def cmd_destroy(configure_data, base_project, dryrun=False, verbose=False):
     config = CONF(configure_data)
     if not config.validate():
         return Status(f"Invalid configuration file content in {configure_data}")
-    res = cmd_ansible(configure_data, base_project, dryrun, verbose, destroy=True)
+    res = cmd_ansible(configure_data, base_project, dryrun, destroy=True)
     if res != 0:
         return res
     return cmd_terraform(
@@ -294,7 +292,6 @@ def ansible_command_sequence(
     admin_user,
     base_project,
     sequence,
-    verbose,
     inventory,
     profile,
     junit,
@@ -308,7 +305,6 @@ def ansible_command_sequence(
         base_project (str): base project path where to
                       look for the Ansible files
         sequence (str): 'create' or 'destroy'
-        verbose (bool): enable more verbosity
         inventory (str): inventory.yaml file path
         profile (bool): enable task profile
         junit (str): enable junit report and provide folder where to store report
@@ -319,8 +315,7 @@ def ansible_command_sequence(
         list of strings, each of them is an anslble or ansible-playbook command
     """
 
-    # 1. Create the environment variable set
-    #    that will be used by any command
+    # Create the environment variable set that will be used by any command
     original_env = dict(os.environ)
     original_env["ANSIBLE_PIPELINING"] = "True"
     original_env["ANSIBLE_TIMEOUT"] = "20"
@@ -335,7 +330,7 @@ def ansible_command_sequence(
     if "roles_path" in configure_data_ansible:
         original_env["ANSIBLE_ROLES_PATH"] = configure_data_ansible["roles_path"]
 
-    # 2. Verify that the two needed binaries are usable
+    # Verify that the two needed binaries are usable
     ansible_bin_paths = {}
     for ansible_bin in ["ansible", "ansible-playbook"]:
         binpath = shutil.which(ansible_bin)
@@ -344,14 +339,13 @@ def ansible_command_sequence(
             return False, f"Missing binary {ansible_bin}"
         ansible_bin_paths[ansible_bin] = binpath
 
-    # 3. Compose common arguments applicable to both 'ansible' and 'ansible-playbook'.
+    # Compose common arguments applicable to both 'ansible' and 'ansible-playbook'.
     ansible_common = "-vv"
-    if verbose:
-        # add two more 'v' without any space
-        ansible_common += "vv"
+    if "verbosity" in configure_data_ansible:
+        ansible_common = "-" + "v" * int(configure_data_ansible["verbosity"])
     ansible_common += f" -i {inventory}"
 
-    # 4. Start composing and accumulating all needed commands in a list
+    # Start composing and accumulating all needed commands in a list
     ansible_cmd_seq = []
 
     if junit and not os.path.isdir(junit):
@@ -494,7 +488,6 @@ def cmd_ansible(
     configure_data,
     base_project,
     dryrun,
-    verbose,
     destroy=False,
     profile=False,
     junit=False,
@@ -507,7 +500,6 @@ def cmd_ansible(
         base_project (str): base project path where to
                       look for the Ansible files
         dryrun (bool): enable dryrun execution mode
-        verbose (bool): enable more verbosity
         destroy (bool): select the playbook list
         profile (bool): enable task profile
         junit (str): enable junit report and provide folder where to store it
@@ -560,7 +552,6 @@ def cmd_ansible(
         admin_user,
         base_project,
         selected_sequence,
-        verbose,
         inventory,
         profile,
         junit,

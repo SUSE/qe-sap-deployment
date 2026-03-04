@@ -365,3 +365,28 @@ test_split
 echo "Run the script again without dryrun"
 PATH=$TROOT:$PATH qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} ansible -d |& tee "${THIS_LOG}"
 [[ ! -f "${FILE_TOUCH_BY_ANSIBLE}" ]] || test_die "File ${FILE_TOUCH_BY_ANSIBLE} has to be deleted by ribes_nero.yaml"
+
+#######################################################################
+QESAP_CFG=test_11.yaml
+test_step "[${QESAP_CFG}] Run Ansible with verbosity 0"
+THIS_LOG="${QESAPROOT}/ansible_v0.log"
+reset_root
+cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/"
+cp inventory.yaml "${TEST_PROVIDER}/"
+qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun ansible |& tee "${THIS_LOG}"
+set +e
+grep -E "ansible.*-v" "${THIS_LOG}"
+rc=$?; [[ $rc -ne 0 ]] || test_die "${QESAP_CFG} should not have -v in ansible commands"
+set -e
+rm "${THIS_LOG}"
+
+#######################################################################
+QESAP_CFG=test_12.yaml
+test_step "[${QESAP_CFG}] Run Ansible with verbosity 4"
+THIS_LOG="${QESAPROOT}/ansible_v4.log"
+reset_root
+cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/"
+cp inventory.yaml "${TEST_PROVIDER}/"
+qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun ansible |& tee "${THIS_LOG}"
+grep -E "ansible.*-vvvv" "${THIS_LOG}" || test_die "${QESAP_CFG} should have -vvvv in ansible commands"
+rm "${THIS_LOG}"
