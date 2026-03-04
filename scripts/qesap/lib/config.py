@@ -36,7 +36,7 @@ def yaml_to_tfvars_entry(key, value):
         param_value = ""
         for dict_key, dict_value in value.items():
             param_value = f'{param_value}\t{dict_key} = "{dict_value}"\n'
-        entry = f"{key} = {{\n" f"{param_value}" f"}}"
+        entry = f"{key} = {{\n{param_value}}}"
     else:
         log.error("Unrecognized value type in yaml file: %s = %s", key, value)
         return None
@@ -295,7 +295,11 @@ class CONF:
                 sequence not in self.conf["ansible"]
                 or self.conf["ansible"][sequence] is None
             ):
-                log.error("No Ansible playbooks to play for sequence:%s in %s", sequence, self.conf["ansible"])
+                log.error(
+                    "No Ansible playbooks to play for sequence:%s in %s",
+                    sequence,
+                    self.conf["ansible"],
+                )
                 return False
         else:
             if (

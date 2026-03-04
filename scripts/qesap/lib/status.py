@@ -1,6 +1,6 @@
-'''
+"""
 Status class to manage returns
-'''
+"""
 
 
 class Status(int):
@@ -16,6 +16,7 @@ class Status(int):
     >>> print(e, e.msg)
     777 777
     """
+
     msg = ""
 
     def __new__(cls, str_or_int):

@@ -1,12 +1,12 @@
-'''
+"""
 All tools needed to manage external executable and processes
-'''
+"""
 
 import subprocess
 import shlex
 import logging
 
-log = logging.getLogger('QESAP')
+log = logging.getLogger("QESAP")
 
 
 def subprocess_run(cmd, env=None):
@@ -25,14 +25,20 @@ def subprocess_run(cmd, env=None):
     if env is not None:
         log.info("with env %s", env)
 
-    proc = subprocess.run(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False, env=env)
+    proc = subprocess.run(
+        shlex.split(cmd),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+        env=env,
+    )
 
-    ret_stdout = list(proc.stdout.decode('UTF-8').splitlines())
+    ret_stdout = list(proc.stdout.decode("UTF-8").splitlines())
     if proc.returncode != 0:
-        log.error("ERROR %d in %s", proc.returncode, ' '.join(cmd[0:1]))
+        log.error("ERROR %d in %s", proc.returncode, " ".join(cmd[0:1]))
     for line in ret_stdout:
         if proc.returncode != 0:
             log.error("OUTPUT: %s", line)
         else:
-            log.debug('OUTPUT: %s', line)
+            log.debug("OUTPUT: %s", line)
     return (proc.returncode, ret_stdout)

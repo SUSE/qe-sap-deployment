@@ -8,3 +8,4 @@ pytest-find-dependencies
 detect-test-pollution
 yamllint==1.36.*
 ansible-lint
+ruff==0.15.*

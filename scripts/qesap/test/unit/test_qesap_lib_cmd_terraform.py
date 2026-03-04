@@ -42,7 +42,7 @@ terraform:
     tfvar_content, err = create_tfvars(config, None)
 
     assert err is None, "Unexpected err from create_tfvars:" + str(err)
-    assert tfvar_content == '\nsandwiches = 5'
+    assert tfvar_content == "\nsandwiches = 5"
 
 
 def test_create_tfvars_list():
@@ -180,4 +180,6 @@ terraform:
 
     assert ret == 0
     # init just test one of them
-    subprocess_run.assert_has_calls([mock.call(f"terraform -chdir={provider_folder} init -no-color")])
+    subprocess_run.assert_has_calls(
+        [mock.call(f"terraform -chdir={provider_folder} init -no-color")]
+    )

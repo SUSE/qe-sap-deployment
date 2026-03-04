@@ -135,9 +135,10 @@ ansible:
 
 @pytest.fixture
 def provider_dir(tmpdir):
-    '''
-       It also implicitly create the terraform folder if missing
-    '''
+    """
+    It also implicitly create the terraform folder if missing
+    """
+
     def _callback(provider):
         provider_path = os.path.join(tmpdir, "terraform", provider)
         if not os.path.isdir(provider_path):
@@ -210,7 +211,7 @@ ANSIBLEPB_EXE = FAKE_BIN_PATH + "ansible-playbook"
 @pytest.fixture()
 def ansible_exe_call():
     def _callback(inventory):
-        return f"{ANSIBLE_EXE} -vv -i {inventory} all -a true --ssh-extra-args=\"-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new\""
+        return f'{ANSIBLE_EXE} -vv -i {inventory} all -a true --ssh-extra-args="-l cloudadmin -o UpdateHostKeys=yes -o StrictHostKeyChecking=accept-new"'
 
     return _callback
 
@@ -223,6 +224,7 @@ def ansible_sudo_wait_call():
             "-m shell "
             "-a 'i=0; while [ $i -lt 35 ]; do sudo -n true && exit 0; sleep 5; i=$((i+1)); done; exit 1' "
         )
+
     return _callback
 
 
@@ -245,7 +247,7 @@ def mock_call_ansibleplaybook():
             original_env["ANSIBLE_TIMEOUT"] = "20"
         else:
             original_env = env
-        return mock.call(cmd=' '.join(playbook_cmd), env=original_env)
+        return mock.call(cmd=" ".join(playbook_cmd), env=original_env)
 
     return _callback
 
@@ -256,7 +258,8 @@ def ansible_regexp_calls():
         return [
             rf"{ANSIBLE_EXE}.*ssh-extra-args=.*StrictHostKeyChecking=accept-new",
             rf"{ANSIBLE_EXE}.*sudo.*true",
-            rf"{ANSIBLEPB_EXE}.*{playbook}"]
+            rf"{ANSIBLEPB_EXE}.*{playbook}",
+        ]
 
     return _callback
 
@@ -339,9 +342,10 @@ def args_helper(tmpdir, base_args, provider_dir):
 
 @pytest.fixture
 def configure_helper(args_helper):
-    '''
-       Only suitable for tests about the configure sub-command
-    '''
+    """
+    Only suitable for tests about the configure sub-command
+    """
+
     def _callback(provider, conf, tfvar_template=None):
         args, _, tfvar_path, hana_media, hana_vars = args_helper(
             provider, conf, tfvar_template

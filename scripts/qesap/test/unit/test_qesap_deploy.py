@@ -26,11 +26,7 @@ def test_deploy_no_ansible(
 
 @mock.patch("lib.process_manager.subprocess_run")
 def test_deploy(
-    subprocess_run,
-    config_yaml_sample,
-    args_helper,
-    create_inventory,
-    create_playbooks
+    subprocess_run, config_yaml_sample, args_helper, create_inventory, create_playbooks
 ):
     """
     Test the most common and simple execution of deploy:

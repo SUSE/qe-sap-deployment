@@ -290,7 +290,15 @@ def ansible_validate(config, base_project, sequence, provider):
 
 
 def ansible_command_sequence(
-    configure_data_ansible, admin_user, base_project, sequence, verbose, inventory, profile, junit, apiver
+    configure_data_ansible,
+    admin_user,
+    base_project,
+    sequence,
+    verbose,
+    inventory,
+    profile,
+    junit,
+    apiver,
 ):
     """Compose the sequence of Ansible commands
 
@@ -373,8 +381,8 @@ def ansible_command_sequence(
     # This command is used to wait until user and sudo permissions are ready before running the playbooks
     # this is needed due to GCP guest agent taking some time to set these up after VM creation
     sudo_wait = (
-        f'{ansible_bin_paths["ansible"]} {ansible_common} all '
-        '-m shell '
+        f"{ansible_bin_paths['ansible']} {ansible_common} all "
+        "-m shell "
         "-a 'i=0; while [ $i -lt 35 ]; do sudo -n true && exit 0; sleep 5; i=$((i+1)); done; exit 1' "
     )
     ansible_cmd_seq.append({"cmd": sudo_wait})
@@ -540,9 +548,9 @@ def cmd_ansible(
         log.info("No playbooks to play")
         return Status("ok")
 
-    admin_user = 'cloudadmin'
-    if config.has_section_or_variable(['terraform', 'variables', 'admin_user']):
-        admin_user = config.conf['terraform']['variables']['admin_user']
+    admin_user = "cloudadmin"
+    if config.has_section_or_variable(["terraform", "variables", "admin_user"]):
+        admin_user = config.conf["terraform"]["variables"]["admin_user"]
 
     inventory = os.path.join(
         base_project, "terraform", configure_data["provider"], "inventory.yaml"
@@ -556,7 +564,7 @@ def cmd_ansible(
         inventory,
         profile,
         junit,
-        configure_data["apiver"]
+        configure_data["apiver"],
     )
     if not ret:
         log.error("ansible_command_sequence ret:%d", ret)
