@@ -3,7 +3,9 @@ from qesap import main
 
 
 @mock.patch("lib.process_manager.subprocess_run")
-def test_destroy_no_ansible(subprocess_run, config_yaml_sample, args_helper, create_inventory):
+def test_destroy_no_ansible(
+    subprocess_run, config_yaml_sample, args_helper, create_inventory
+):
     """
     Test the most common and simple execution of destroy:
      - ...
@@ -13,7 +15,7 @@ def test_destroy_no_ansible(subprocess_run, config_yaml_sample, args_helper, cre
     create_inventory(provider)
     conf = config_yaml_sample(provider)
     args, terraform_dir, *_ = args_helper(provider, conf)
-    args.append('destroy')
+    args.append("destroy")
     subprocess_run.return_value = (0, [])
 
     assert main(args) == 0
@@ -24,11 +26,7 @@ def test_destroy_no_ansible(subprocess_run, config_yaml_sample, args_helper, cre
 
 @mock.patch("lib.process_manager.subprocess_run")
 def test_destroy(
-    subprocess_run,
-    config_yaml_sample,
-    args_helper,
-    create_inventory,
-    create_playbooks
+    subprocess_run, config_yaml_sample, args_helper, create_inventory, create_playbooks
 ):
     """
     Test the most common and simple execution of destroy:

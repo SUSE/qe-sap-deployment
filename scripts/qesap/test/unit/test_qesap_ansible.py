@@ -281,7 +281,9 @@ def test_ansible_no_bin(
 
 
 @mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
-@mock.patch("lib.process_manager.subprocess_run", side_effect=[(0, []), (0, []), (1, [])])
+@mock.patch(
+    "lib.process_manager.subprocess_run", side_effect=[(0, []), (0, []), (1, [])]
+)
 def test_ansible_stop(
     run,
     _,
@@ -832,7 +834,7 @@ def test_ansible_sequence(
     create_playbooks,
     ansible_config,
     mock_call_ansibleplaybook,
-    seq
+    seq,
 ):
     """
     Test that ansible subcommand, called with -s create/destroy,
@@ -965,13 +967,7 @@ def test_ansible_sequence_and_d(
 @mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_user_first_ansible_ssh_default(
-    run,
-    _,
-    base_args,
-    tmpdir,
-    ansible_config,
-    create_playbooks,
-    create_inventory
+    run, _, base_args, tmpdir, ansible_config, create_playbooks, create_inventory
 ):
     """
     Check that if terraform does not specify any admin_user
@@ -997,20 +993,14 @@ def test_ansible_user_first_ansible_ssh_default(
 
     calls = run.call_args_list
     for c in calls:
-        if "ssh-extra-args" in str(c[1]['cmd']):
-            assert "cloudadmin" in str(c[1]['cmd'])
+        if "ssh-extra-args" in str(c[1]["cmd"]):
+            assert "cloudadmin" in str(c[1]["cmd"])
 
 
 @mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_user_first_ansible_ssh(
-    run,
-    _,
-    base_args,
-    tmpdir,
-    ansible_config,
-    create_playbooks,
-    create_inventory
+    run, _, base_args, tmpdir, ansible_config, create_playbooks, create_inventory
 ):
     """
     Check that remote user is the one specified in the terraform
@@ -1041,5 +1031,5 @@ terraform:
 
     calls = run.call_args_list
     for c in calls:
-        if "ssh-extra-args" in str(c[1]['cmd']):
-            assert "donalduck" in str(c[1]['cmd'])
+        if "ssh-extra-args" in str(c[1]["cmd"]):
+            assert "donalduck" in str(c[1]["cmd"])

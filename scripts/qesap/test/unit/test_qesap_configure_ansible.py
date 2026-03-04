@@ -248,9 +248,9 @@ ansible:
     args, _, _, hana_vars = configure_helper(
         provider, conf.format(provider, "ccc", "UT0", "00")
     )
-    assert (
-        main(args) != 0
-    ), "Wrong 'sap_hana_install_software_directory'='ccc' not detected."
+    assert main(args) != 0, (
+        "Wrong 'sap_hana_install_software_directory'='ccc' not detected."
+    )
     args, _, _, hana_vars = configure_helper(
         provider, conf.format(provider, "/aaa/bbb/ccc", "HD", "00")
     )
@@ -262,15 +262,15 @@ ansible:
     args, _, _, hana_vars = configure_helper(
         provider, conf.format(provider, "/aaa/bbb/ccc", "UT0", "AA")
     )
-    assert (
-        main(args) != 0
-    ), "Wrong 'sap_hana_install_instance_number'='AA' not detected."
+    assert main(args) != 0, (
+        "Wrong 'sap_hana_install_instance_number'='AA' not detected."
+    )
     args, _, _, hana_vars = configure_helper(
         provider, conf.format(provider, "/aaa/bbb/ccc", "UT0", "000")
     )
-    assert (
-        main(args) != 0
-    ), "Wrong 'sap_hana_install_instance_number'='000' not detected."
+    assert main(args) != 0, (
+        "Wrong 'sap_hana_install_instance_number'='000' not detected."
+    )
 
 
 def test_configure_ansible_hana(configure_helper):

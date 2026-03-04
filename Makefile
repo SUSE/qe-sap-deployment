@@ -8,7 +8,7 @@ all: static test
 
 static: static-py static-terraform static-ansible
 
-static-py: static-pylint static-flake8
+static-py: static-pylint static-flake8 static-py-format-check
 
 static-terraform: static-terraform-fmt static-terraform-validate
 
@@ -25,6 +25,12 @@ static-pylint:
 
 static-flake8:
 	@cd scripts/qesap/ ; tox -e flake8
+
+static-py-format-check:
+	@cd scripts/qesap/ ; tox -e format
+
+static-py-format-apply:
+	@cd scripts/qesap/ ; ruff format qesap.py lib/ test/conftest.py test/unit/
 
 static-terraform-fmt: static-terraform-fmt-azure static-terraform-fmt-aws static-terraform-fmt-gcp
 

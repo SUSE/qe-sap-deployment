@@ -8,11 +8,11 @@ log = logging.getLogger(__name__)
 
 
 def test_cli_help(capsys):
-    '''
+    """
     Check that --help prints an help message
-    '''
+    """
     try:
-        cli(['--help'])
+        cli(["--help"])
     except SystemExit:
         pass
     captured = capsys.readouterr()
@@ -21,180 +21,180 @@ def test_cli_help(capsys):
 
 
 def test_cli_configure_noargs(check_mandatory_args):
-    '''
+    """
     configure subcommand at least needs:
     -b to know where to write the terraform.tfvars
     -c to know what to write in the terraform.tfvars
-    '''
-    assert check_mandatory_args(cli, 'configure')
+    """
+    assert check_mandatory_args(cli, "configure")
 
 
 def test_cli_configure_b_notexist(capsys, tmpdir):
-    '''
+    """
     -b has to be an existing folder. The script
     user is in charge to create it in advance
-    '''
+    """
 
     # Provide a valid config.yaml
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         yaml.dump({}, file)
 
     try:
         # Run with a not existing -b folder
-        ret = cli(['-b', '/paperinik', '-c', config_file_name, 'configure'])
+        ret = cli(["-b", "/paperinik", "-c", config_file_name, "configure"])
         assert ret
     except SystemExit:
         pass
     captured = capsys.readouterr()
-    assert 'is not a folder' in captured.err
+    assert "is not a folder" in captured.err
 
 
 def test_cli_configure_c_notexist(capsys, tmpdir):
-    '''
+    """
     -c has to be an existing file.
-    '''
+    """
     try:
-        cli(['-b', str(tmpdir), '-c', str(tmpdir / 'config.yml'), 'configure'])
+        cli(["-b", str(tmpdir), "-c", str(tmpdir / "config.yml"), "configure"])
     except SystemExit:
         pass
     captured = capsys.readouterr()
-    assert 'is not a file' in captured.err
+    assert "is not a file" in captured.err
 
 
 def test_cli_configure_c_notyaml(capsys, tmpdir):
-    '''
+    """
     -c has to be valid YAML
-    '''
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    """
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         file.write("this: is: invalid")
     try:
-        cli(['-b', str(tmpdir), '-c', config_file_name, 'configure'])
+        cli(["-b", str(tmpdir), "-c", config_file_name, "configure"])
     except SystemExit:
         pass
     captured = capsys.readouterr()
-    assert 'is not a valid YAML file' in captured.err
+    assert "is not a valid YAML file" in captured.err
 
 
 def test_cli_configure(base_args, tmpdir):
-    '''
+    """
     Test configure with minimal amount of arguments
-    '''
-    data = {'cane': 'pane'}
-    config_file_name = str(tmpdir / 'config.yaml')
-    with open(config_file_name, 'w', encoding='utf-8') as file:
+    """
+    data = {"cane": "pane"}
+    config_file_name = str(tmpdir / "config.yaml")
+    with open(config_file_name, "w", encoding="utf-8") as file:
         yaml.dump(data, file)
     args = base_args(base_dir=tmpdir, config_file=config_file_name)
-    args.append('configure')
+    args.append("configure")
     cli_args = cli(args)
     assert cli_args.basedir == str(tmpdir)
     assert cli_args.configdata == data
 
 
 def test_cli_deploy(base_args):
-    '''
+    """
     Test deploy with minimal amount of arguments
-    '''
+    """
     args = base_args()
-    args.append('deploy')
+    args.append("deploy")
     cli(args)
 
 
 def test_cli_destroy(base_args):
-    '''
+    """
     Test destroy with minimal amount of arguments
-    '''
+    """
     args = base_args()
-    args.append('destroy')
+    args.append("destroy")
     cli(args)
 
 
 def test_cli_terraform_noargs(check_mandatory_args):
-    '''
+    """
     terraform subcommand at least needs:
     -b to know where to look for the Terraform files to run
     -c to know the Cloud Provider subfolder to use
-    '''
-    assert check_mandatory_args(cli, 'terraform')
+    """
+    assert check_mandatory_args(cli, "terraform")
 
 
 def test_cli_terraform(base_args):
-    '''
+    """
     Test terraform with minimal amount of arguments
-    '''
+    """
     args = base_args()
-    args.append('terraform')
+    args.append("terraform")
     cli(args)
 
 
 def test_cli_terraform_destroy(base_args):
-    '''
+    """
     Test terraform with -d to run destroy mode
-    '''
+    """
     args = base_args()
-    args.append('terraform')
-    args.append('-d')
+    args.append("terraform")
+    args.append("-d")
     cli(args)
 
 
 def test_cli_terraform_workspace(base_args):
-    '''
+    """
     Test terraform with -w to create a Terraform named workspace
-    '''
+    """
     args = base_args()
-    args.append('terraform')
-    args.append('-w')
-    args.append('PAPEROGA')
+    args.append("terraform")
+    args.append("-w")
+    args.append("PAPEROGA")
     cli(args)
 
 
 def test_cli_ansible_noargs(check_mandatory_args):
-    '''
+    """
     ansible subcommand at least needs:
     -b to know where to look for the Ansible playbooks
        to be played (and maybe the inventory).
     -c to know the list of Ansible Playbooks
        to play and other setting for them (like the SCC reg code)
-    '''
-    assert check_mandatory_args(cli, 'ansible')
+    """
+    assert check_mandatory_args(cli, "ansible")
 
 
 def test_cli_ansible(base_args):
-    '''
+    """
     Test ansible with minimal amount of arguments
-    '''
+    """
     args = base_args()
-    args.append('ansible')
+    args.append("ansible")
     cli(args)
 
 
 def test_cli_ansible_destroy(base_args):
-    '''
+    """
     Test ansible with -d to run destroy mode
-    '''
+    """
     args = base_args()
-    args.append('ansible')
-    args.append('-d')
+    args.append("ansible")
+    args.append("-d")
     cli(args)
 
 
 def test_cli_ansible_profile(base_args):
-    '''
+    """
     Test ansible with --profile mode
-    '''
+    """
     args = base_args()
-    args.append('ansible')
-    args.append('--profile')
+    args.append("ansible")
+    args.append("--profile")
     cli(args)
 
 
 def test_cli_ansible_junit(base_args):
-    '''
+    """
     Test ansible with --junit mode
-    '''
+    """
     args = base_args()
-    args.append('ansible')
-    args.append('--junit')
-    args.append('/somefolder/')
+    args.append("ansible")
+    args.append("--junit")
+    args.append("/somefolder/")
     cli(args)

@@ -138,7 +138,7 @@ def test_configure_tfvars_novariables(
     # define terraform section in the conf.yaml
     # add parameter to point to the template file
     terraform_section = f"""terraform:
-    tfvars_template: {tfvar_template['file']}
+    tfvars_template: {tfvar_template["file"]}
 """
     conf = config_yaml_sample_for_terraform(terraform_section, provider)
     args, tfvar_path, *_ = configure_helper(provider, conf, tfvar_template)
@@ -168,7 +168,7 @@ def test_configure_tfvars_with_variables(
         "ip_range = 10.0.4.0/24",
     ]
     terraform_section = f"""terraform:
-  tfvars_template: {tfvar_template['file']}
+  tfvars_template: {tfvar_template["file"]}
   variables:
     region : eu1
     deployment_name : "rocket"
@@ -205,7 +205,7 @@ def test_configure_tfvars_template_spaces(
         "extra_space_both    =     bimbumbam",
     ]
     terraform_section = f"""terraform:
-  tfvars_template: {tfvar_template['file']}
+  tfvars_template: {tfvar_template["file"]}
   variables:
     region : eu1
     deployment_name : "rocket"
@@ -238,7 +238,7 @@ def test_configure_tfvars_string_commas(
     tfvar_template["data"] = ["something = static"]
     terraform_section = f"""
 terraform:
-  tfvars_template: {tfvar_template['file']}
+  tfvars_template: {tfvar_template["file"]}
   variables:
     region : eu1
     deployment_name : "rocket"
@@ -280,7 +280,7 @@ def test_configure_tfvars_overwrite_variables(
 
     terraform_section = f"""
 terraform:
-  tfvars_template: {tfvar_template['file']}
+  tfvars_template: {tfvar_template["file"]}
   variables:
     something : yamlrulez"""
     conf = config_yaml_sample_for_terraform(terraform_section, provider)

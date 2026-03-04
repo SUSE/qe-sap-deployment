@@ -30,9 +30,9 @@ def test_export_ansible_output():
 
     ansible_export_output(command_to_sent, ansible_output)
 
-    assert os.path.isfile(
-        test_file
-    ), f"Ansible output file {test_file} was not created."
+    assert os.path.isfile(test_file), (
+        f"Ansible output file {test_file} was not created."
+    )
     os.remove(test_file)
 
 
