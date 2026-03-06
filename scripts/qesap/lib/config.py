@@ -319,6 +319,45 @@ class CONF:
             return self.conf["ansible"][sequence]
         return self.conf["ansible"]["sequences"][sequence]
 
+    def _validate_ansible_sequence(self, sequence):
+        """
+        Validate the sequence part of the ansible configure.yaml
+        """
+        if not sequence:
+            return True
+        selected_seq = (
+            self.conf["ansible"]
+            if self.conf["apiver"] < 4
+            else self.conf["ansible"].get("sequences", {})
+        )
+        if sequence not in selected_seq or selected_seq[sequence] is None:
+            log.error(
+                "No Ansible playbooks to play in %s for sequence:%s",
+                self.conf["ansible"],
+                sequence,
+            )
+            return False
+        return True
+
+    @staticmethod
+    def validate_ansible_verbosity(ansible_conf):
+        """
+        Validate the verbosity part of the ansible configure.yaml
+        """
+        if "verbosity" in ansible_conf:
+            verbosity = ansible_conf["verbosity"]
+            try:
+                verbosity = int(verbosity)
+            except (ValueError, TypeError):
+                log.error("ansible verbosity must be an integer, got: %r", verbosity)
+                return False
+            if not 1 <= verbosity <= 6:
+                log.error(
+                    "ansible verbosity must be between 1 and 6, got: %d", verbosity
+                )
+                return False
+        return True
+
     def validate_ansible_config(self, sequence):
         """
         Validate the ansible part of the internal structure of the config.yaml
@@ -339,25 +378,15 @@ class CONF:
             log.error("Ansible media configuration")
             return False
 
-        if sequence:
-            selected_seq = None
-            if self.conf["apiver"] < 4:
-                selected_seq = self.conf["ansible"]
-            else:
-                selected_seq = self.conf["ansible"]["sequences"]
-            if sequence not in selected_seq or selected_seq[sequence] is None:
-                log.error(
-                    "No Ansible playbooks to play in %s for sequence:%s",
-                    self.conf["ansible"],
-                    sequence,
-                )
-                return False
+        if not self._validate_ansible_sequence(sequence):
+            return False
 
         if "hana_vars" in self.conf["ansible"] and not validate_ansible_hana_var(
             self.conf["ansible"]["hana_vars"]
         ):
             return False
-        return True
+
+        return self.validate_ansible_verbosity(self.conf["ansible"])
 
     def validate_basedir(self, basedir):
         """

@@ -2,6 +2,10 @@ from unittest import mock
 from qesap import main
 
 
+def fake_ansible_path(x):
+    return "/paese/della/cuccagna/" + x
+
+
 @mock.patch("lib.process_manager.subprocess_run")
 def test_destroy_no_ansible(
     subprocess_run, config_yaml_sample, args_helper, create_inventory
@@ -24,9 +28,15 @@ def test_destroy_no_ansible(
     assert "terraform" in str(calls)
 
 
+@mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
 def test_destroy(
-    subprocess_run, config_yaml_sample, args_helper, create_inventory, create_playbooks
+    subprocess_run,
+    _,
+    config_yaml_sample,
+    args_helper,
+    create_inventory,
+    create_playbooks,
 ):
     """
     Test the most common and simple execution of destroy:

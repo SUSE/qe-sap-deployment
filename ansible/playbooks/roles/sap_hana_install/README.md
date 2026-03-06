@@ -147,8 +147,9 @@ or if it will add further hosts to an existing SAP HANA system as specified by v
 `sap_hana_install_addhosts`. Default is `yes` for a fresh SAP HANA installation.
 
 The role can be configured to also set the required firewall ports for SAP HANA. If this is desired, set
-the variable `sap_hana_install_update_firewall` to `true` (default is `false` that means the role will not touch
-any firewall related system settings, leaving whatever the system has unchanged). The firewall ports are defined
+the variable `sap_hana_install_update_firewall` to `true` (default is `false`). Note that in this project,
+this variable is automatically influenced by the global `firewall_cfg` variable defined in `hana_vars.yaml`.
+If `firewall_cfg` is set to `enable`, the firewall ports will be managed. The firewall ports are defined
 in a variable which is compatible with the variable structure used by Linux System Role `firewall`.
 The firewall ports for SAP HANA are defined in member `port` of the first field of variable
 `sap_hana_install_firewall` (`sap_hana_install_firewall[0].port`), see file `defaults/main.yml`. If the

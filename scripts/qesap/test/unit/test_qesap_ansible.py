@@ -83,18 +83,17 @@ def test_ansible_verbose(
     mock_call_ansibleplaybook,
 ):
     """
-    run with -vvvv if qesap ansible --verbose
-    (probably not supported in qesap deploy/destroy)
+    run with -vvvv if config.yaml has verbosity: 4
     """
     provider = "grilloparlante"
     playbooks = {"create": ["get_cherry_wood"]}
 
-    config_content = ansible_config(provider, playbooks)
+    config_content = ansible_config(provider, playbooks, verbosity=4)
     config_file_name = str(tmpdir / "config.yaml")
     with open(config_file_name, "w", encoding="utf-8") as file:
         file.write(config_content)
 
-    args = base_args(None, config_file_name, True)
+    args = base_args(None, config_file_name, False)
     args.append("ansible")
     run.return_value = (0, [])
 

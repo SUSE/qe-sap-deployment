@@ -155,6 +155,17 @@ Refer to the qe-sap-deployment Ansible documentation or `ansible/playbooks/vars/
 
 The `qesap.py ... ansible` sub-command calls a sequence of playbooks execution.
 By default the sequence is from the `ansible::sequences::create` section of the config.yaml.
+
+###### Verbosity
+
+The `ansible::verbosity` setting controls the verbosity of the Ansible commands execution.
+It is an integer between 1 and 6, and it is equivalent to providing from `-v` to `-vvvvvv` to the `ansible` command.
+
+```yaml
+ansible:
+  verbosity: 4
+```
+
 The `ansible::sequences::destroy` sequence is used by `qesap.py ... ansible -d`
 It is also possible to request the execution of a specific sequence using
 `qesap.py ... ansible -s somethingelse`.

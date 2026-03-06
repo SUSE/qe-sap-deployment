@@ -5,6 +5,7 @@ terraform:
   variables:
     fruit: lampone
 ansible:
+  verbosity: 4
   hana_media:
     - mora
     - corniolo
