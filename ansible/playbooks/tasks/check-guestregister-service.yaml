@@ -224,11 +224,6 @@
           - "Lock Error Found: {{ lock_error_log_line | default('None found') }}"
           - "Culprit PID History: {{ pid_history.stdout_lines | default('No history found') }}"
 
-    - name: Fail if guestregister.service is not in the expected state
-      ansible.builtin.assert:
-        that: false
-        fail_msg: "FATAL: guestregister.service is not in the expected state (inactive/success) after retries. Check logs above for details."
-
     # [RECOVERY] Attempting to fix the transient failure (e.g. race condition)
     - name: Attempt proactive restart for recovery verification
       ansible.builtin.systemd:
@@ -248,7 +243,7 @@
     - name: Check for registration
       ansible.builtin.command: SUSEConnect -s
       register: recovery_reg_stat
-      until: recovery_reg_stats.rc == 0
+      until: recovery_reg_stat.rc == 0
       retries: 5
       delay: 120
       failed_when: recovery_reg_stat.rc != 0
@@ -264,3 +259,8 @@
       ansible.builtin.debug:
         msg:
           - "[OSADO][softfail] bsc#1254984"
+
+    - name: Fail if guestregister.service is not in the expected state
+      ansible.builtin.assert:
+        that: false
+        fail_msg: "FATAL: guestregister.service is not in the expected state (inactive/success) after retries. Check logs above for details."
