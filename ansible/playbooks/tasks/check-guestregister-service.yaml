@@ -44,10 +44,9 @@
       ansible.builtin.debug:
         msg:
           - "--- Rescue Block Entry Diagnosis for {{ inventory_hostname }} ---"
-          - "Task 'Wait for cloud guest registration' result for this host: {{ guestregister_service_state | default('VARIABLE NOT DEFINED') }}"
-          - "Individual host failure detected: {{ (guestregister_service_state.failed | default(false)) | ternary('YES', 'NO') }}"
-          - "Current any_errors_fatal setting: {{ any_errors_fatal | default('NOT SET (default is False)') }}"
-          - "Active hosts remaining in play: {{ ansible_play_hosts_all }}"
+          - "Task 'Wait for cloud guest registration' result for this host:"
+          - "           rc: {{ guestregister_service_state.rc | default('UNKNOWN') }}"
+          - "           stdout: {{ guestregister_service_state.stdout_lines | default('UNKNOWN') }}"
 
     # [DIAGNOSTIC] Initial service status and logs collection
     - name: Get guestregister.service status
@@ -72,7 +71,7 @@
     - name: Extract specific errors from cloudregister log
       ansible.builtin.shell: |
         set -o pipefail
-        grep -E "ERROR:|WARNING:|401 Unauthorized|422|Removing (repository artifacts|credentials|repo|service):" /var/log/cloudregister | tail -n 20
+        grep -E "ERROR:|WARNING:|401 (None|Unauthorized)|422|failed|(Deleting|Removing).*(repository artifacts|credentials|repo|service)|registration complete|No credentials entry" /var/log/cloudregister
       register: tailored_cloudregister_errors
       failed_when: false
       changed_when: false
@@ -80,8 +79,16 @@
     - name: Search for Zypper lock in zypper.log
       ansible.builtin.shell: |
         set -o pipefail
-        grep "System management is locked by the application with pid" /var/log/zypper.log | tail -n 5
+        grep "System management is locked by the application with pid" /var/log/zypper.log
       register: zypper_log_lock_error
+      failed_when: false
+      changed_when: false
+
+    - name: Search for Zypper THROW in zypper.log
+      ansible.builtin.shell: |
+        set -o pipefail
+        grep "THROW" /var/log/zypper.log
+      register: zypper_log_throw
       failed_when: false
       changed_when: false
 
@@ -126,6 +133,7 @@
           - "--- Tailored Diagnostics for guestregister.service failure ---"
           - "Cloudregister Errors Summary: {{ tailored_cloudregister_errors.stdout_lines | default('None found') }}"
           - "Zypper Log Lock Errors: {{ zypper_log_lock_error.stdout_lines | default('None found') }}"
+          - "Zypper Log throws: {{ zypper_log_throw.stdout_lines | default('None found') }}"
           - "Racing PIDs and Commands: {{ racing_pids_discovery.stdout_lines | default('No racing PIDs identified') }}"
           - "Clean-up/Reset detected: {{ 'Removing' in (tailored_cloudregister_errors.stdout | default('')) }}"
           - "SMT entries in /etc/hosts: {{ hosts_smt_entries.stdout_lines | default('Not found') }}"
@@ -262,5 +270,8 @@
 
     - name: Fail if guestregister.service is not in the expected state
       ansible.builtin.assert:
-        that: false
+        that:
+          - "'ActiveState=inactive' in restart_state.stdout"
+          - "'Result=success' in restart_state.stdout"
+          - "not to_be_registered"
         fail_msg: "FATAL: guestregister.service is not in the expected state (inactive/success) after retries. Check logs above for details."
