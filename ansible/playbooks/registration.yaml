@@ -188,6 +188,18 @@
         - to_be_registered
         - "(is_registercloudguest_bin.rc != 0) or (use_suseconnect | bool)"
 
+    - name: Add python3 module in 15_SP4
+      ansible.builtin.command: SUSEConnect -p sle-module-python3/{{ ansible_facts['distribution_version'] }}/{{ ansible_facts['architecture'] }}
+      register: result
+      changed_when: result.rc == 0
+      until: result is succeeded
+      retries: 10
+      delay: 60
+      when:
+        - ansible_facts['distribution_version'] == '15.4'
+        - to_be_registered
+        - "(is_registercloudguest_bin.rc != 0) or (use_suseconnect | bool)"
+
     # Latest version of cloud-regionsrv-client is needed in PAYG, and image
     # needs to be registered in order for zypper up to work.
     # see https://www.suse.com/c/long-term-service-pack-support-for-payg-instances-simplified/
