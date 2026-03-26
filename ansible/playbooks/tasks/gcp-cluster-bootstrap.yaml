@@ -9,7 +9,7 @@
 
 - name: Ensure cluster dependencies are installed
   community.general.zypper:
-    name: ['corosync', 'crmsh', 'fence-agents', 'ha-cluster-bootstrap', 'pacemaker', 'patterns-ha-ha_sles', 'resource-agents', 'rsyslog', 'socat']  # Caution, no version control here (yet)
+    name: ['corosync', 'crmsh', 'fence-agents', 'ha-cluster-bootstrap', 'pacemaker', 'patterns-ha-ha_sles', 'resource-agents', 'cluster-glue', 'rsyslog', 'socat']  # Caution, no version control here (yet)
     state: present
   register: result
   until: result is succeeded
