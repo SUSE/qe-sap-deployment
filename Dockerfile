@@ -5,7 +5,7 @@ FROM opensuse/tumbleweed:latest
 ## AZURE
 # way suggested on https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-linux?pivots=zypper
 RUN zypper ref && zypper up -y && \
-    zypper install -y tar gzip unzip curl python312-pip openssh && \
+    zypper install -y tar gzip unzip curl python3-pip openssh && \
     rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
     zypper addrepo --name 'Azure CLI' --check https://packages.microsoft.com/yumrepos/azure-cli azure-cli && \
     zypper install --from azure-cli -y azure-cli && \
@@ -31,8 +31,9 @@ RUN curl https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_am
     terraform -install-autocomplete && \
     rm terraform.zip
 
+RUN python3 --version
 ENV VIRTUAL_ENV=/opt/venv
-RUN python3.12 -m venv $VIRTUAL_ENV
+RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 COPY requirements.txt .
 COPY requirements.yml .
