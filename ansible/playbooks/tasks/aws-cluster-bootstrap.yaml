@@ -26,18 +26,9 @@
     - credentials
     - config
 
-- name: Define base package dependencies list
-  ansible.builtin.set_fact:
-    pkg_dependencies: ['corosync', 'crmsh', 'fence-agents', 'pacemaker', 'patterns-ha-ha_sles', 'resource-agents', 'rsyslog', 'socat']
-
-- name: Add extra packages for SLES versions below 16
-  ansible.builtin.set_fact:
-    pkg_dependencies: "{{ pkg_dependencies + ['ha-cluster-bootstrap'] }}"
-  when: ansible_distribution_major_version != '16'
-
 - name: Ensure cluster dependencies are installed
-  community.general.zypper:
-    name: "{{ pkg_dependencies }}"
+  ansible.builtin.package:
+    name: ['corosync', 'crmsh', 'fence-agents', 'pacemaker', 'patterns-ha-ha_sles', 'resource-agents', 'rsyslog', 'socat']
     state: present
   register: result
   until: result is succeeded
