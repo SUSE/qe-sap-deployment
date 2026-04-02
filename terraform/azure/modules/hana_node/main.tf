@@ -376,11 +376,19 @@ resource "azurerm_managed_disk" "hana_data_disk" {
 }
 
 resource "azurerm_virtual_machine_data_disk_attachment" "hana_data_disk_attachment" {
-  count              = var.hana_count * local.disks_number
-  managed_disk_id    = azurerm_managed_disk.hana_data_disk[count.index].id
-  virtual_machine_id = azurerm_linux_virtual_machine.hana[floor(count.index / local.disks_number)].id
-  lun                = count.index % local.disks_number
-  caching            = element(local.disks_caching, count.index % local.disks_number)
+  count           = var.hana_count * local.disks_number
+  managed_disk_id = azurerm_managed_disk.hana_data_disk[count.index].id
+  # Chain attachments per-VM: each disk attachment (except the first for each VM) depends
+  # on the previous one via virtual_machine_id. This forces Terraform to serialize disk
+  # attach operations on the same VM, preventing Azure 409 ConflictingConcurrentWriteNotAllowed
+  # errors even when -parallelism=1 is not reliably enforced. See TEAM-11065.md.
+  virtual_machine_id = (
+    count.index % local.disks_number == 0
+    ? azurerm_linux_virtual_machine.hana[floor(count.index / local.disks_number)].id
+    : azurerm_virtual_machine_data_disk_attachment.hana_data_disk_attachment[count.index - 1].virtual_machine_id
+  )
+  lun     = count.index % local.disks_number
+  caching = element(local.disks_caching, count.index % local.disks_number)
   timeouts {
     read = "30m"
   }
