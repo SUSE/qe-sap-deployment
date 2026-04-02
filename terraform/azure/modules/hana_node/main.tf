@@ -382,7 +382,10 @@ resource "azurerm_virtual_machine_data_disk_attachment" "hana_data_disk_attachme
   lun                = count.index % local.disks_number
   caching            = element(local.disks_caching, count.index % local.disks_number)
   timeouts {
-    read = "30m"
+    read   = "30m"
+    create = "30m"
+    update = "30m"
+    delete = "30m"
   }
 }
 
