@@ -101,7 +101,7 @@ module "drbd_node" {
   name                 = var.drbd_name
   network_domain       = var.drbd_network_domain == "" ? var.network_domain : var.drbd_network_domain
   drbd_count           = var.drbd_enabled == true ? 2 : 0
-  vm_size              = var.drbd_instancetype
+  vm_size              = var.drbd_vm_size
   availability_zones   = data.aws_availability_zones.available.names
   os_image             = local.drbd_os_image
   os_owner             = local.drbd_os_owner
@@ -125,7 +125,7 @@ module "netweaver_node" {
   network_domain       = var.netweaver_network_domain == "" ? var.network_domain : var.netweaver_network_domain
   xscs_server_count    = local.netweaver_xscs_server_count
   app_server_count     = var.netweaver_enabled ? var.netweaver_app_server_count : 0
-  vm_size              = var.netweaver_instancetype
+  vm_size              = var.netweaver_vm_size
   availability_zones   = data.aws_availability_zones.available.names
   os_image             = local.netweaver_os_image
   os_owner             = local.netweaver_os_owner
@@ -147,7 +147,7 @@ module "hana_node" {
   name                 = var.hana_name
   network_domain       = var.hana_network_domain == "" ? var.network_domain : var.hana_network_domain
   hana_count           = var.hana_count
-  vm_size              = var.hana_instancetype
+  vm_size              = var.hana_vm_size
   availability_zones   = data.aws_availability_zones.available.names
   os_image             = local.hana_os_image
   os_owner             = local.hana_os_owner
@@ -169,7 +169,7 @@ module "monitoring" {
   name               = var.monitoring_name
   network_domain     = var.monitoring_network_domain == "" ? var.network_domain : var.monitoring_network_domain
   monitoring_enabled = var.monitoring_enabled
-  vm_size            = var.monitor_instancetype
+  vm_size            = var.monitoring_vm_size
   key_name           = aws_key_pair.key-pair.key_name
   security_group_id  = local.security_group_id
   monitoring_srv_ip  = local.monitoring_ip
@@ -190,7 +190,7 @@ module "iscsi_server" {
   subnet_ids         = aws_subnet.infra-subnet.*.id
   os_image           = local.iscsi_os_image
   os_owner           = local.iscsi_os_owner
-  vm_size            = var.iscsi_instancetype
+  vm_size            = var.iscsi_vm_size
   key_name           = aws_key_pair.key-pair.key_name
   security_group_id  = local.security_group_id
   host_ips           = local.iscsi_ips

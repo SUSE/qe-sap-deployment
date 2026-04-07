@@ -128,7 +128,7 @@ variable "hana_os_image" {
   default     = ""
 }
 
-variable "machine_type" {
+variable "hana_vm_size" {
   description = "The instance type of the hana nodes"
   type        = string
   default     = "n1-highmem-32"
@@ -322,7 +322,7 @@ variable "monitoring_name" {
   default     = "vmmonitoring"
 }
 
-variable "machine_type_monitor_server" {
+variable "monitoring_vm_size" {
   description = "VM size for the monitor server machine"
   type        = string
   default     = "custom-1-2048"
@@ -407,7 +407,7 @@ variable "iscsi_os_image" {
   default     = ""
 }
 
-variable "machine_type_iscsi_server" {
+variable "iscsi_vm_size" {
   description = "VM size for the iscsi server machine"
   type        = string
   default     = "custom-1-2048"
@@ -456,7 +456,7 @@ variable "drbd_enabled" {
   default     = false
 }
 
-variable "drbd_machine_type" {
+variable "drbd_vm_size" {
   description = "VM size for the DRBD machine"
   type        = string
   default     = "n1-standard-4"
@@ -566,7 +566,7 @@ variable "netweaver_os_image" {
   default     = ""
 }
 
-variable "netweaver_machine_type" {
+variable "netweaver_vm_size" {
   description = "The instance type of the netweaver nodes"
   type        = string
   default     = "n1-highmem-8"

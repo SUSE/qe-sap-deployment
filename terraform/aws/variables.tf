@@ -136,7 +136,7 @@ variable "hana_os_owner" {
   default     = ""
 }
 
-variable "hana_instancetype" {
+variable "hana_vm_size" {
   description = "The instance type of the hana nodes"
   type        = string
   default     = "r6i.xlarge"
@@ -325,7 +325,7 @@ variable "drbd_os_owner" {
   default     = ""
 }
 
-variable "drbd_instancetype" {
+variable "drbd_vm_size" {
   description = "The instance type of the drbd node"
   type        = string
   default     = "t3.medium"
@@ -449,7 +449,7 @@ variable "iscsi_os_owner" {
   default     = ""
 }
 
-variable "iscsi_instancetype" {
+variable "iscsi_vm_size" {
   description = "The instance type of the iscsi server node."
   type        = string
   default     = "t3.small"
@@ -505,7 +505,7 @@ variable "monitoring_os_owner" {
   default     = ""
 }
 
-variable "monitor_instancetype" {
+variable "monitoring_vm_size" {
   description = "The instance type of the monitoring node."
   type        = string
   default     = "t3.micro"
@@ -567,7 +567,7 @@ variable "netweaver_os_owner" {
   default     = ""
 }
 
-variable "netweaver_instancetype" {
+variable "netweaver_vm_size" {
   description = "Instance type for the Netweaver machines"
   type        = string
   default     = "r5.large"

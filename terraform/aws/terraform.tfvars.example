@@ -75,7 +75,7 @@ hana_name = "vmhana"
 # Instance type to use for the hana cluster nodes
 # SAP certified instances types can be found at https://aws.amazon.com/sap/instance-types/
 # and example sizing at https://aws.amazon.com/sap/solutions/s4hana/ .
-#hana_instancetype = "r6i.xlarge"
+#hana_vm_size = "r6i.xlarge"
 
 # Disk type for HANA
 #hana_data_disk_type = "gp2"
@@ -183,7 +183,7 @@ hana_count = "2"
 # Hostname, without the domain part
 #drbd_name = "vmdrbd"
 
-#drbd_instancetype = "t3.medium"
+#drbd_vm_size = "t3.medium"
 
 # DRBD machines image. By default, PAYG image is used. The usage is the same as the HANA images
 #drbd_os_image = "suse-sles-sap-15-sp3-byos"
@@ -222,7 +222,7 @@ hana_count = "2"
 # Instance type to use for the Netweaver nodes
 # SAP certified instances types can be found at https://aws.amazon.com/sap/instance-types/
 # and example sizing at https://aws.amazon.com/sap/solutions/s4hana/ .
-#netweaver_instancetype = "r5.large"
+#netweaver_vm_size = "r5.large"
 
 # Netweaver machines image. By default, PAYG image is used. The usage is the same as the HANA images
 #netweaver_os_image = "suse-sles-sap-15-sp3-byos"
