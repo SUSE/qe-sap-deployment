@@ -82,7 +82,7 @@ hana_name = "vmhana"
 
 # HANA machine type
 # VM size to use for the cluster nodes
-machine_type = "n1-highmem-32"
+hana_vm_size = "n1-highmem-32"
 
 # Custom sles4sap image
 # HANA machines image. By default, PAYG image is used (it will select the latest version that matches this name)
@@ -176,7 +176,7 @@ machine_type = "n1-highmem-32"
 #iscsi_disk_size = 10
 
 # Type of VM (vCPUs and RAM)
-#machine_type_iscsi_server = "custom-1-2048"
+#iscsi_vm_size = "custom-1-2048"
 
 ##############################
 # Monitoring related variables
@@ -204,7 +204,7 @@ machine_type = "n1-highmem-32"
 # Hostname, without the domain part
 #drbd_name = "vmdrbd"
 
-#drbd_machine_type = "n1-standard-4"
+#drbd_vm_size = "n1-standard-4"
 
 # DRBD machines image. By default, PAYG image is used. The usage is the same as the HANA images
 #drbd_os_image = "suse-byos-cloud/sles-15-sp3-sap-byos"
@@ -248,7 +248,7 @@ machine_type = "n1-highmem-32"
 # Set to 2 or higher to deploy additional AAS instances in new machines
 #netweaver_app_server_count = 2
 
-#netweaver_machine_type = "n1-standard-8"
+#netweaver_vm_size = "n1-standard-8"
 
 # Netweaver machines image. By default, PAYG image is used. The usage is the same as the HANA images
 #netweaver_os_image = "suse-byos-cloud/sles-15-sp3-sap-byos"
