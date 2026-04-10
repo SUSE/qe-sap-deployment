@@ -365,22 +365,197 @@ locals {
   disks_writeaccelerator = [for writeaccelerator in split(",", var.hana_data_disks_configuration["writeaccelerator"]) : tobool(trimspace(writeaccelerator))]
 }
 
-resource "azurerm_managed_disk" "hana_data_disk" {
-  count                = var.hana_count * local.disks_number
-  name                 = "disk-${var.name}${format("%02d", floor(count.index / local.disks_number) + 1)}-Data${format("%02d", count.index % local.disks_number + 1)}"
+resource "azurerm_managed_disk" "hana_data_disk_01" {
+  count                = var.hana_count
+  name                 = "disk-${var.name}${format("%02d", count.index + 1)}-Data01"
   location             = var.az_region
   resource_group_name  = var.resource_group_name
-  storage_account_type = element(local.disks_type, count.index % local.disks_number)
+  storage_account_type = element(local.disks_type, 0)
   create_option        = "Empty"
-  disk_size_gb         = element(local.disks_size, count.index % local.disks_number)
+  disk_size_gb         = element(local.disks_size, 0)
 }
 
-resource "azurerm_virtual_machine_data_disk_attachment" "hana_data_disk_attachment" {
-  count              = var.hana_count * local.disks_number
-  managed_disk_id    = azurerm_managed_disk.hana_data_disk[count.index].id
-  virtual_machine_id = azurerm_linux_virtual_machine.hana[floor(count.index / local.disks_number)].id
-  lun                = count.index % local.disks_number
-  caching            = element(local.disks_caching, count.index % local.disks_number)
+resource "azurerm_managed_disk" "hana_data_disk_02" {
+  count                = var.hana_count
+  name                 = "disk-${var.name}${format("%02d", count.index + 1)}-Data02"
+  location             = var.az_region
+  resource_group_name  = var.resource_group_name
+  storage_account_type = element(local.disks_type, 1)
+  create_option        = "Empty"
+  disk_size_gb         = element(local.disks_size, 1)
+}
+
+resource "azurerm_managed_disk" "hana_data_disk_03" {
+  count                = var.hana_count
+  name                 = "disk-${var.name}${format("%02d", count.index + 1)}-Data03"
+  location             = var.az_region
+  resource_group_name  = var.resource_group_name
+  storage_account_type = element(local.disks_type, 2)
+  create_option        = "Empty"
+  disk_size_gb         = element(local.disks_size, 2)
+}
+
+resource "azurerm_managed_disk" "hana_data_disk_04" {
+  count                = var.hana_count
+  name                 = "disk-${var.name}${format("%02d", count.index + 1)}-Data04"
+  location             = var.az_region
+  resource_group_name  = var.resource_group_name
+  storage_account_type = element(local.disks_type, 3)
+  create_option        = "Empty"
+  disk_size_gb         = element(local.disks_size, 3)
+}
+
+resource "azurerm_managed_disk" "hana_data_disk_05" {
+  count                = var.hana_count
+  name                 = "disk-${var.name}${format("%02d", count.index + 1)}-Data05"
+  location             = var.az_region
+  resource_group_name  = var.resource_group_name
+  storage_account_type = element(local.disks_type, 4)
+  create_option        = "Empty"
+  disk_size_gb         = element(local.disks_size, 4)
+}
+
+resource "azurerm_managed_disk" "hana_data_disk_06" {
+  count                = var.hana_count
+  name                 = "disk-${var.name}${format("%02d", count.index + 1)}-Data06"
+  location             = var.az_region
+  resource_group_name  = var.resource_group_name
+  storage_account_type = element(local.disks_type, 5)
+  create_option        = "Empty"
+  disk_size_gb         = element(local.disks_size, 5)
+}
+
+resource "azurerm_managed_disk" "hana_data_disk_07" {
+  count                = var.hana_count
+  name                 = "disk-${var.name}${format("%02d", count.index + 1)}-Data07"
+  location             = var.az_region
+  resource_group_name  = var.resource_group_name
+  storage_account_type = element(local.disks_type, 6)
+  create_option        = "Empty"
+  disk_size_gb         = element(local.disks_size, 6)
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "hana_data_disk_attachment_01" {
+  count              = var.hana_count
+  managed_disk_id    = azurerm_managed_disk.hana_data_disk_01[count.index].id
+  virtual_machine_id = azurerm_linux_virtual_machine.hana[count.index].id
+  lun                = 0
+  caching            = element(local.disks_caching, 0)
+
+  timeouts {
+    read   = "30m"
+    create = "30m"
+    update = "30m"
+    delete = "30m"
+  }
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "hana_data_disk_attachment_02" {
+  count              = var.hana_count
+  managed_disk_id    = azurerm_managed_disk.hana_data_disk_02[count.index].id
+  virtual_machine_id = azurerm_linux_virtual_machine.hana[count.index].id
+  lun                = 1
+  caching            = element(local.disks_caching, 1)
+
+  depends_on = [
+    azurerm_virtual_machine_data_disk_attachment.hana_data_disk_attachment_01
+  ]
+
+  timeouts {
+    read   = "30m"
+    create = "30m"
+    update = "30m"
+    delete = "30m"
+  }
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "hana_data_disk_attachment_03" {
+  count              = var.hana_count
+  managed_disk_id    = azurerm_managed_disk.hana_data_disk_03[count.index].id
+  virtual_machine_id = azurerm_linux_virtual_machine.hana[count.index].id
+  lun                = 2
+  caching            = element(local.disks_caching, 2)
+
+  depends_on = [
+    azurerm_virtual_machine_data_disk_attachment.hana_data_disk_attachment_02
+  ]
+
+  timeouts {
+    read   = "30m"
+    create = "30m"
+    update = "30m"
+    delete = "30m"
+  }
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "hana_data_disk_attachment_04" {
+  count              = var.hana_count
+  managed_disk_id    = azurerm_managed_disk.hana_data_disk_04[count.index].id
+  virtual_machine_id = azurerm_linux_virtual_machine.hana[count.index].id
+  lun                = 3
+  caching            = element(local.disks_caching, 3)
+
+  depends_on = [
+    azurerm_virtual_machine_data_disk_attachment.hana_data_disk_attachment_03
+  ]
+
+  timeouts {
+    read   = "30m"
+    create = "30m"
+    update = "30m"
+    delete = "30m"
+  }
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "hana_data_disk_attachment_05" {
+  count              = var.hana_count
+  managed_disk_id    = azurerm_managed_disk.hana_data_disk_05[count.index].id
+  virtual_machine_id = azurerm_linux_virtual_machine.hana[count.index].id
+  lun                = 4
+  caching            = element(local.disks_caching, 4)
+
+  depends_on = [
+    azurerm_virtual_machine_data_disk_attachment.hana_data_disk_attachment_04
+  ]
+
+  timeouts {
+    read   = "30m"
+    create = "30m"
+    update = "30m"
+    delete = "30m"
+  }
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "hana_data_disk_attachment_06" {
+  count              = var.hana_count
+  managed_disk_id    = azurerm_managed_disk.hana_data_disk_06[count.index].id
+  virtual_machine_id = azurerm_linux_virtual_machine.hana[count.index].id
+  lun                = 5
+  caching            = element(local.disks_caching, 5)
+
+  depends_on = [
+    azurerm_virtual_machine_data_disk_attachment.hana_data_disk_attachment_05
+  ]
+
+  timeouts {
+    read   = "30m"
+    create = "30m"
+    update = "30m"
+    delete = "30m"
+  }
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "hana_data_disk_attachment_07" {
+  count              = var.hana_count
+  managed_disk_id    = azurerm_managed_disk.hana_data_disk_07[count.index].id
+  virtual_machine_id = azurerm_linux_virtual_machine.hana[count.index].id
+  lun                = 6
+  caching            = element(local.disks_caching, 6)
+
+  depends_on = [
+    azurerm_virtual_machine_data_disk_attachment.hana_data_disk_attachment_06
+  ]
+
   timeouts {
     read   = "30m"
     create = "30m"
