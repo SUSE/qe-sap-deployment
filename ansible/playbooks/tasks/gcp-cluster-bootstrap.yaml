@@ -139,22 +139,30 @@
   ansible.builtin.set_fact:
     pacemaker_is_running: "{{ ansible_facts.services['pacemaker.service'].state | default('') == 'running' }}"
 
-- name: Collect pacemaker diagnostics on failure
-  ansible.builtin.command: "{{ item }}"  # noqa command-instead-of-module
-  loop:
-    - systemctl status pacemaker.service --no-pager -l
-    - journalctl --no-pager -u pacemaker --lines=50
-  register: pacemaker_diag
+- name: Collect cluster diagnostics on failure
+  ansible.builtin.command: "{{ item.1 | format(item.0) }}"  # noqa command-instead-of-module
+  loop: "{{ services | product(diag_commands) | list }}"
+  loop_control:
+    label: "{{ item.1 | format(item.0) }}"
+  vars:
+    services:
+      - pacemaker
+      - corosync
+    diag_commands:
+      - "systemctl status %s.service --no-pager -l"
+      - "systemctl list-dependencies %s.service"
+      - "journalctl --no-pager -u %s --lines=50"
+  register: cluster_diag
   failed_when: false
   changed_when: false
   when: not pacemaker_is_running | bool
 
-- name: Display pacemaker diagnostics
+- name: Display cluster diagnostics
   ansible.builtin.debug:
-    msg: "{{ item.item }}:\n{{ item.stdout }}"
-  loop: "{{ pacemaker_diag.results }}"
+    msg: "{{ item.item.1 | format(item.item.0) }}:\n{{ item.stdout }}"
+  loop: "{{ cluster_diag.results }}"
   loop_control:
-    label: "{{ item.item }}"
+    label: "{{ item.item.1 | format(item.item.0) }}"
   when: not pacemaker_is_running | bool
 
 - name: Fail if pacemaker is not running
@@ -247,6 +255,10 @@
     migration_threshold: "{{ (crm_rsc_options_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] | default('false') }}"
     op_default_timeout: "{{ (crm_op_options_show.stdout | regex_search('timeout=([0-9]*)', '\\1'))[0] | default('false') }}"
 
+# GCP native fencing requires per-node stonith primitives (fence_gce),
+# each referencing a specific hostname and zone.
+# AWS uses a single tag-based stonith resource (external/ec2) that
+# discovers instances automatically, so it does not need these variables.
 - name: Set primary and secondary hostnames
   ansible.builtin.set_fact:
     primary_hostname: "{{ groups['hana'][0] }}"
@@ -257,8 +269,8 @@
 - name: Enable SBD [sbd]
   ansible.builtin.command:
     cmd: crm configure primitive rsc_iscsi_sbd stonith:external/sbd
-  register: reg_iscsi
-  changed_when: reg_iscsi.rc == 0
+  register: enable_sbd_result
+  changed_when: enable_sbd_result.rc == 0
   when:
     - sbd_stonith | string | lower  == 'false'
     - use_sbd | default(false) | bool
@@ -348,8 +360,8 @@
       crm configure property
       $id="cib-bootstrap-options"
       stonith-timeout=300s
-  register: reg_st
-  changed_when: reg_st.rc == 0
+  register: set_stonith_timeout_native_result
+  changed_when: set_stonith_timeout_native_result.rc == 0
   when:
     - stonith_timeout != '300s'
     - is_primary
@@ -361,8 +373,8 @@
       crm configure property
       $id="cib-bootstrap-options"
       stonith-enabled=true
-  register: reg_se
-  changed_when: reg_se.rc == 0
+  register: enable_stonith_result
+  changed_when: enable_stonith_result.rc == 0
   when:
     - stonith_enabled | string | lower != 'true'
     - is_primary
@@ -388,8 +400,8 @@
       crm configure rsc_defaults
       $id="rsc-options"
       migration-threshold=5000
-  register: reg_mig_t
-  changed_when: reg_mig_t.rc == 0
+  register: set_migration_threshold_result
+  changed_when: set_migration_threshold_result.rc == 0
   when:
     - migration_threshold != '5000'
     - is_primary
@@ -397,8 +409,8 @@
 - name: Set op_defaults timeout
   ansible.builtin.command:
     cmd: crm configure op_defaults timeout=600
-  register: reg_op_tim
-  changed_when: reg_op_tim.rc == 0
+  register: set_op_defaults_timeout_result
+  changed_when: set_op_defaults_timeout_result.rc == 0
   when:
     - op_default_timeout != '600'
     - is_primary
