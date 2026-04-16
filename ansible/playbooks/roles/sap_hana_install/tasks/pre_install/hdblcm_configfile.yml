@@ -35,6 +35,13 @@
       register: __sap_hana_install_register_hdblcm_output
       changed_when: no
 
+    - name: SAP HANA Pre Install - Copy the hdbclm configfile for later extraction
+      ansible.builtin.copy:
+        src: "{{ sap_hana_install_configfile_directory }}/{{ sap_hana_install_configfile_template_prefix }}.cfg"
+        dest: "/tmp/hdblcm_before_jinja.cfg"
+        remote_src: true
+        mode: preserve
+
     - name: SAP HANA Pre Install - Display the output of the hdblcm command
       ansible.builtin.debug:
         msg: "Output of hdblcm command: {{ __sap_hana_install_register_hdblcm_output.stdout_lines }}"
@@ -58,6 +65,13 @@
         dest: "{{ sap_hana_install_local_configfile_directory }}"
       register: __sap_hana_install_register_fetch_hdblcm_configfile_jinja2_template
 
+    - name: SAP HANA Pre Install - Copy the Jinja2 template for later extraction
+      ansible.builtin.copy:
+        src: "{{ sap_hana_install_configfile_directory }}/{{ sap_hana_install_configfile_template_prefix }}.j2"
+        dest: "/tmp/hdblcm_template.j2"
+        remote_src: true
+        mode: preserve
+
     - name: SAP HANA Pre Install - Display the location of the local Jinja2 template
       ansible.builtin.debug:
         msg: "The Jinja2 template has been downloaded to '{{ __sap_hana_install_register_fetch_hdblcm_configfile_jinja2_template.dest }}'."
@@ -69,6 +83,14 @@
         dest: "{{ __sap_hana_install_register_tmpdir.path }}/configfile.cfg"
         mode: '0644'
       register: __sap_hana_install_register_cftemplate
+      when: not ansible_check_mode
+
+    - name: SAP HANA Pre Install - Process the Jinja2 template to create the hdblcm configfile
+      ansible.builtin.copy:
+        src: "{{ __sap_hana_install_register_tmpdir.path }}/configfile.cfg"
+        dest: "/tmp/hdblcm_processed_configfile.cfg"
+        remote_src: true
+        mode: preserve
       when: not ansible_check_mode
 
   when: not __sap_hana_install_register_stat_hdblcm_configfile.stat.exists
