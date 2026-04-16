@@ -35,16 +35,6 @@
   retries: 3
   delay: 60
 
-# This is a workaround for https://bugzilla.suse.com/show_bug.cgi?id=1231153
-# If it is fixed, this task will no longer be needed
-- name: Install python-httplib2 via zypper
-  community.general.zypper:
-    name: python-httplib2
-    state: present
-  when: ansible_distribution_major_version == '12'
-  register: httplib2_zypper
-  ignore_errors: true
-
 # The following tasks check that the file /etc/corosync/authkey exists on each node and that all nodes have an identical copy
 # if either of the the above conditions are false the back `Create authkeys` is run.
 # It will shutdown pacemaker on all nodes, write the authfile to the primary node and then copy it the other nodes.
