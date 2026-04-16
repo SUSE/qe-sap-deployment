@@ -30,11 +30,19 @@
 # if either of the the above conditions are false the back `Create authkeys` is run.
 # It will shutdown pacemaker on all nodes, write the authfile to the primary node and then copy it the other nodes.
 # Finally, it will notify a handler to start corosync.
+- name: Gather package facts
+  ansible.builtin.package_facts:
+    manager: auto
+
+# ha_logd (logd) is provided by cluster-glue, which has been dropped in SLE 16.
+# Pacemaker >= 2.0.0 no longer uses ha_logd (adopted libqb logging instead),
+# so this is only needed for SLE 12 SP5 with Pacemaker 1.x.
 - name: Ensure logd is enabled and started
   ansible.builtin.systemd:
     name: logd
     state: started
     enabled: true
+  when: ansible_facts.packages['pacemaker'][0].version is version('2.0.0', '<')
 
 - name: Register authkey status
   ansible.builtin.stat:
@@ -123,6 +131,36 @@
 
 - name: Flush handler
   ansible.builtin.meta: flush_handlers
+
+- name: Check pacemaker service status
+  ansible.builtin.service_facts:
+
+- name: Set pacemaker running status
+  ansible.builtin.set_fact:
+    pacemaker_is_running: "{{ ansible_facts.services['pacemaker.service'].state | default('') == 'running' }}"
+
+- name: Collect pacemaker diagnostics on failure
+  ansible.builtin.command: "{{ item }}"  # noqa command-instead-of-module
+  loop:
+    - systemctl status pacemaker.service --no-pager -l
+    - journalctl --no-pager -u pacemaker --lines=50
+  register: pacemaker_diag
+  failed_when: false
+  changed_when: false
+  when: not pacemaker_is_running | bool
+
+- name: Display pacemaker diagnostics
+  ansible.builtin.debug:
+    msg: "{{ item.item }}:\n{{ item.stdout }}"
+  loop: "{{ pacemaker_diag.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: not pacemaker_is_running | bool
+
+- name: Fail if pacemaker is not running
+  ansible.builtin.fail:
+    msg: "Pacemaker is not running after bootstrap. See diagnostics above."
+  when: not pacemaker_is_running | bool
 
 - name: Get DefaultTasksMax value
   ansible.builtin.command:  # noqa command-instead-of-module
