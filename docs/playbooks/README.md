@@ -341,17 +341,42 @@ Variable Sources:
 The sap-hana-cluster playbook is a complicated one.
 The playbook can currently create clusters using either of
 two fencing types: SBD or native fencing. The table
-below shows which are clouds are currently supported.
+below shows what is currently supported and which STONITH
+agent is used for native fencing on each cloud.
 
-| Type | SBD Fencing | Native Fencing |
-|---|---|---|
-| AWS | Yes | No |
-| Azure | Yes | Yes |
-| GCP | Yes | No |
+| Type  | SBD Fencing | Native Fencing | Native STONITH agent                |
+|-------|-------------|----------------|-------------------------------------|
+| AWS   | Yes         | Yes            | `stonith:external/ec2`              |
+| Azure | Yes         | Yes            | `stonith:fence_azure_arm` (MSI/SPN) |
+| GCP   | Yes         | Yes            | `stonith:fence_gce`                 |
 
 Like the other playbooks that are directly connected to HANA operations,
 this playbook also sources `hana_vars.yaml` for consistency. By default,
 an SBD based cluster will not be created.
+
+### AWS native fencing
+
+AWS uses the `stonith:external/ec2` agent. Following the SUSE/AWS
+reference architecture for SAP HANA HA on SLES, the playbook sets the
+cluster property `stonith-action=off`, which forces the EC2 STONITH
+agent to **stop** the fenced instance via the EC2 API rather than
+reboot it. This prevents a fenced node from automatically rejoining
+the cluster — which on AWS could otherwise lead to split brain — and
+forces an operator to deliberately reintroduce the node. See the
+[AWS guide](https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-on-aws-stonith-device.html)
+for details. The corresponding `stonith-timeout` is `600s`.
+
+### GCP native fencing
+
+GCP uses the `stonith:fence_gce` agent. Per Google's
+[SAP HANA HA SLES guide](https://cloud.google.com/solutions/sap/docs/sap-hana-ha-config-sles#create_the_fencing_device_resources),
+fencing is configured with one `fence_gce` primitive per node and a
+`LOC_STONITH_<hostname>` location constraint that pins each agent
+away from the node it would fence (preventing self-fencing). The
+cluster property `stonith-action` is left at Pacemaker's default
+(`reboot`); the fenced GCE instance is rebooted via the GCP API and
+rejoins the cluster automatically. The corresponding `stonith-timeout`
+is `300s`.
 
 ### Azure native fencing
 

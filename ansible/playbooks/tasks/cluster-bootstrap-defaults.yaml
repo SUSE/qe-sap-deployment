@@ -1,0 +1,116 @@
+---
+# Common cluster property configuration shared by AWS and GCP.
+#
+# This file encodes a deliberate asymmetry between cloud providers:
+#
+#   AWS - uses the stonith:external/ec2 agent and follows the SUSE/AWS
+#         reference architecture, which recommends setting
+#         `stonith-action=off` so the EC2 agent stops instead of reboots
+#         the fenced instance. This avoids split-brain on AWS by keeping
+#         a fenced node down until it is reintroduced manually.
+#         See: https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-on-aws-stonith-device.html
+#
+#   GCP - uses the stonith:fence_gce agent and follows Google's SAP HANA
+#         HA guide, which leaves `stonith-action` at the Pacemaker default
+#         (`reboot`); the fenced GCE instance is rebooted via the GCP API
+#         and rejoins the cluster automatically.
+#         See: https://cloud.google.com/solutions/sap/docs/sap-hana-ha-config-sles
+#
+# Required variables:
+#   stonith_timeout_native  - e.g. "600s" (AWS) or "300s" (GCP)
+#
+# Optional variables:
+#   disable_stonith_action    - set to true on AWS to apply
+#                               `stonith-action=off`. Default: false.
+#   set_sbd_stonith_timeout   - integer stonith-timeout value (in seconds,
+#                               no suffix) to apply for SBD fencing, e.g.
+#                               144. When defined, writes
+#                               `stonith-timeout=<value>`; when omitted the
+#                               task is skipped and the existing CIB value
+#                               (or Pacemaker default) is left in place.
+
+- name: Set stonith-timeout [sbd]
+  ansible.builtin.command:
+    cmd: crm configure property stonith-timeout={{ set_sbd_stonith_timeout }}
+  register: set_stonith_timeout_sbd_result
+  changed_when: set_stonith_timeout_sbd_result.rc == 0
+  when:
+    - set_sbd_stonith_timeout is defined
+    - stonith_timeout != set_sbd_stonith_timeout | string
+    - use_sbd | default(false) | bool
+    - is_primary
+
+- name: Set stonith timeout [native]
+  ansible.builtin.command:
+    cmd: >-
+      crm configure property
+      $id="cib-bootstrap-options"
+      stonith-timeout={{ stonith_timeout_native }}
+  register: set_stonith_timeout_native_result
+  changed_when: set_stonith_timeout_native_result.rc == 0
+  when:
+    - stonith_timeout != stonith_timeout_native
+    - is_primary
+    - not (use_sbd | default(false) | bool)
+
+- name: Enable stonith
+  ansible.builtin.command:
+    cmd: >-
+      crm configure property
+      $id="cib-bootstrap-options"
+      stonith-enabled=true
+  register: enable_stonith_result
+  changed_when: enable_stonith_result.rc == 0
+  when:
+    - stonith_enabled | string | lower != 'true'
+    - is_primary
+
+# AWS-only by default: see file header for the SUSE/AWS rationale.
+- name: Disable stonith action
+  ansible.builtin.command:
+    cmd: >-
+      crm configure property
+      $id="cib-bootstrap-options"
+      stonith-action=off
+  register: disable_stonith_action_result
+  changed_when: disable_stonith_action_result.rc == 0
+  when:
+    - disable_stonith_action | default(false) | bool
+    - stonith_action != 'off'
+    - is_primary
+
+- name: Set rsc_defaults resource stickiness
+  ansible.builtin.command:
+    cmd: >-
+      crm configure rsc_defaults
+      $id="rsc-options"
+      resource-stickiness=1000
+  when:
+    - resource_stickiness != '1000'
+    - is_primary
+  register: reg_rsc_defaults
+  changed_when: reg_rsc_defaults.rc == 0
+  until: reg_rsc_defaults.rc == 0
+  retries: 10
+  delay: 10
+
+- name: Set rsc_defaults migration threshold
+  ansible.builtin.command:
+    cmd: >-
+      crm configure rsc_defaults
+      $id="rsc-options"
+      migration-threshold=5000
+  register: set_migration_threshold_result
+  changed_when: set_migration_threshold_result.rc == 0
+  when:
+    - migration_threshold != '5000'
+    - is_primary
+
+- name: Set op_defaults timeout
+  ansible.builtin.command:
+    cmd: crm configure op_defaults timeout=600
+  register: set_op_defaults_timeout_result
+  changed_when: set_op_defaults_timeout_result.rc == 0
+  when:
+    - op_default_timeout != '600'
+    - is_primary

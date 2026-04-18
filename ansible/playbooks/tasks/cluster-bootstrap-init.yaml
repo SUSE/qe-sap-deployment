@@ -1,0 +1,251 @@
+---
+# Common cluster initialization tasks shared by AWS and GCP.
+# Assumes the calling wrapper has already set `corosync_template`.
+
+- name: Ensure cluster dependencies are installed
+  ansible.builtin.package:
+    name: ['corosync', 'crmsh', 'fence-agents', 'pacemaker', 'patterns-ha-ha_sles', 'resource-agents', 'rsyslog', 'socat']
+    state: present
+  register: result
+  until: result is succeeded
+  retries: 3
+  delay: 60
+
+# The following tasks check that the file /etc/corosync/authkey exists on each node and that all nodes have an identical copy
+# if either of the the above conditions are false the back `Create authkeys` is run.
+# It will shutdown pacemaker on all nodes, write the authfile to the primary node and then copy it the other nodes.
+# Finally, it will notify a handler to start corosync.
+- name: Gather package facts
+  ansible.builtin.package_facts:
+    manager: auto
+
+# ha_logd (logd) is provided by cluster-glue, which has been dropped in SLE 16.
+# Pacemaker >= 2.0.0 no longer uses ha_logd (adopted libqb logging instead),
+# so this is only needed for SLE 12 SP5 with Pacemaker 1.x.
+- name: Ensure logd is enabled and started
+  ansible.builtin.systemd:
+    name: logd
+    state: started
+    enabled: true
+  when: ansible_facts.packages['pacemaker'][0].version is version('2.0.0', '<')
+
+- name: Register authkey status
+  ansible.builtin.stat:
+    path: /etc/corosync/authkey
+  register: authkey_reg
+
+- name: Set authkey facts
+  ansible.builtin.set_fact:
+    sum: "{{ authkey_reg.stat.checksum | default('nosum') }}"
+    reg: "{{ authkey_reg.stat.isreg | default('false') }}"
+
+- name: Set authkey json data
+  ansible.builtin.set_fact:
+    authkey_data: "{{ groups.hana | map('extract', hostvars) | list | json_query('[].{host: ansible_hostname,isreg: reg,cryptosum: sum }') }}"
+  run_once: true
+
+# The following 3 tasks determine if any of nodes will be changed by writing the the corosync file (either the file changing or not currently existing)
+# If any of the nodes will change, the `Write corosync` block will run.  It will shutdown pacemaker on all nodes, write corosync and then notify a handler to
+# start corosync.
+- name: Check if template write will make changes
+  ansible.builtin.template:  # noqa no-relative-paths
+    src: "{{ corosync_template }}"
+    dest: /etc/corosync/corosync.conf
+    owner: root
+    group: root
+    mode: '0600'
+  check_mode: true
+  register: temp_check
+
+- name: Set corosync facts
+  ansible.builtin.set_fact:
+    write_corosync: "{{ temp_check.changed }}"
+
+- name: Set corosync json data
+  ansible.builtin.set_fact:
+    corosync_data: "{{ groups.hana | map('extract', hostvars) | list | json_query('[].{host: ansible_hostname,write_corosync: write_corosync}') }}"
+  run_once: true
+
+- name: Create authkeys
+  when: authkey_data|json_query('[].cryptosum')|unique|length != 1 or authkey_data|json_query('[?isreg==`false`]')|count > 0
+  notify: Start pacemaker
+  block:
+    - name: Stop pacemaker
+      ansible.builtin.systemd:
+        name: pacemaker
+        state: stopped
+
+    - name: Create cluster secret
+      ansible.builtin.command:
+        cmd: corosync-keygen
+        creates: /etc/corosync/authkey
+      when: is_primary
+
+    - name: Fetch authkey
+      ansible.builtin.fetch:
+        src: /etc/corosync/authkey
+        dest: /tmp/authkey_tmp
+        flat: true
+      when: is_primary
+
+    - name: Copy authkey
+      ansible.builtin.copy:
+        src: /tmp/authkey_tmp
+        dest: /etc/corosync/authkey
+        owner: root
+        group: root
+        mode: '0400'
+      when: not is_primary
+
+- name: Write corosync.conf
+  when: corosync_data|json_query('[?write_corosync==`true`]')|count > 0
+  notify: Start pacemaker
+  block:
+    - name: Stop pacemaker
+      ansible.builtin.systemd:
+        name: pacemaker
+        state: stopped
+
+    - name: Write the corosync.conf template
+      ansible.builtin.template:  # noqa no-relative-paths
+        src: "{{ corosync_template }}"
+        dest: /etc/corosync/corosync.conf
+        owner: root
+        group: root
+        mode: '0600'
+
+- name: Flush handler
+  ansible.builtin.meta: flush_handlers
+
+- name: Check pacemaker service status
+  ansible.builtin.service_facts:
+
+- name: Set pacemaker running status
+  ansible.builtin.set_fact:
+    pacemaker_is_running: "{{ ansible_facts.services['pacemaker.service'].state | default('') == 'running' }}"
+
+- name: Collect cluster diagnostics on failure
+  ansible.builtin.command: "{{ item.1 | format(item.0) }}"  # noqa command-instead-of-module
+  loop: "{{ services | product(diag_commands) | list }}"
+  loop_control:
+    label: "{{ item.1 | format(item.0) }}"
+  vars:
+    services:
+      - pacemaker
+      - corosync
+    diag_commands:
+      - "systemctl status %s.service --no-pager -l"
+      - "systemctl list-dependencies %s.service"
+      - "journalctl --no-pager -u %s --lines=50"
+  register: cluster_diag
+  failed_when: false
+  changed_when: false
+  when: not pacemaker_is_running | bool
+
+- name: Display cluster diagnostics
+  ansible.builtin.debug:
+    msg: "{{ item.item.1 | format(item.item.0) }}:\n{{ item.stdout }}"
+  loop: "{{ cluster_diag.results }}"
+  loop_control:
+    label: "{{ item.item.1 | format(item.item.0) }}"
+  when: not pacemaker_is_running | bool
+
+- name: Fail if pacemaker is not running
+  ansible.builtin.fail:
+    msg: "Pacemaker is not running after bootstrap. See diagnostics above."
+  when: not pacemaker_is_running | bool
+
+- name: Get DefaultTasksMax value
+  ansible.builtin.command:  # noqa command-instead-of-module
+    cmd: systemctl --no-pager show
+  register: systemd_result
+  changed_when: false
+
+- name: Check max tasks infinity
+  ansible.builtin.set_fact:
+    max_tasks: infinity
+  loop: "{{ systemd_result.stdout_lines }}"
+  when: item is search("DefaultTasksMax=infinity")
+
+- name: Check max tasks integer
+  ansible.builtin.set_fact:
+    max_tasks_int: "{{ item | split('=') | last }}"
+  loop: "{{ systemd_result.stdout_lines }}"
+  when:
+    - item is search("DefaultTasksMax=")
+    - item is not search("DefaultTasksMax=infinity")
+
+- name: Set DefaultTasksMax
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: '^DefaultTasksMax='
+    line: 'DefaultTasksMax=4096'
+    state: present
+    backup: true
+  when:
+    - max_tasks is defined
+    - max_tasks is not match('infinity')
+
+- name: Set DefaultTasksMax
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: '^DefaultTasksMax='
+    line: 'DefaultTasksMax=4096'
+    state: present
+    backup: true
+  when:
+    - max_tasks is defined
+    - max_tasks_int is defined
+    - max_tasks_int | int < 4096
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+# check crm status and fail if not return code != 0
+- name: Check the cluster is up
+  ansible.builtin.command:
+    cmd: crm status
+  changed_when: false
+
+- name: Get general cluster configuration
+  ansible.builtin.command:
+    cmd: crm configure show
+  register: crm_conf_show
+  changed_when: false
+
+- name: Get rsc-options cluster configuration
+  ansible.builtin.command:
+    cmd: crm configure show rsc-options
+  register: crm_rsc_options_show
+  changed_when: false
+  failed_when: false
+
+- name: Get op_defaults cluster configuration
+  ansible.builtin.command:
+    cmd: crm configure show op_defaults
+  register: crm_op_options_show
+  changed_when: false
+  failed_when: false
+
+- name: Set cluster facts
+  ansible.builtin.set_fact:
+    sbd_stonith: "{{ (crm_conf_show.stdout | regex_search('(rsc_iscsi_sbd)', '\\1'))[0] | default('false') }}"
+    stonith_enabled: "{{ (crm_conf_show.stdout | regex_search('stonith-enabled=([a-z]*)', '\\1'))[0] | default('false') }}"
+    stonith_action: "{{ (crm_conf_show.stdout | regex_search('stonith-action=([a-z]*)', '\\1'))[0] | default('false') }}"
+    stonith_timeout: "{{ (crm_conf_show.stdout | regex_search('stonith-timeout=([a-z0-9]*)', '\\1'))[0] | default('false') }}"
+    rsc_ip: "{{ crm_conf_show.stdout | regex_search('(rsc_ip_)') }}"
+    rsc_healthcheck_primary: "{{ crm_conf_show.stdout | regex_search('(rsc_healthcheck_primary)') }}"
+    grp_ip_hc: "{{ crm_conf_show.stdout | regex_search('(grp_ip_hc)') }}"
+    resource_stickiness: "{{ (crm_rsc_options_show.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1'))[0] | default('false') }}"
+    migration_threshold: "{{ (crm_rsc_options_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] | default('false') }}"
+    op_default_timeout: "{{ (crm_op_options_show.stdout | regex_search('timeout=([0-9]*)', '\\1'))[0] | default('false') }}"
+
+- name: Enable SBD [sbd]
+  ansible.builtin.command:
+    cmd: crm configure primitive rsc_iscsi_sbd stonith:external/sbd
+  register: enable_sbd_result
+  changed_when: enable_sbd_result.rc == 0
+  when:
+    - sbd_stonith | string | lower  == 'false'
+    - use_sbd | default(false) | bool
+    - is_primary
