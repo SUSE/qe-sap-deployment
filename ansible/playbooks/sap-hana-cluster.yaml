@@ -33,6 +33,8 @@
         name: pacemaker
         state: started
         enabled: true
+      register: pacemaker_start_result
+      ignore_errors: true
 
     # When the stonith device is changed the file /var/lib/sbd is changed
     - name: Write stonith status file

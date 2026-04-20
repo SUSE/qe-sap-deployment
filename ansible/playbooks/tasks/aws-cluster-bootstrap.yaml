@@ -158,22 +158,30 @@
   ansible.builtin.set_fact:
     pacemaker_is_running: "{{ ansible_facts.services['pacemaker.service'].state | default('') == 'running' }}"
 
-- name: Collect pacemaker diagnostics on failure
-  ansible.builtin.command: "{{ item }}"  # noqa command-instead-of-module
-  loop:
-    - systemctl status pacemaker.service --no-pager -l
-    - journalctl --no-pager -u pacemaker --lines=50
-  register: pacemaker_diag
+- name: Collect cluster diagnostics on failure
+  ansible.builtin.command: "{{ item.1 | format(item.0) }}"  # noqa command-instead-of-module
+  loop: "{{ services | product(diag_commands) | list }}"
+  loop_control:
+    label: "{{ item.1 | format(item.0) }}"
+  vars:
+    services:
+      - pacemaker
+      - corosync
+    diag_commands:
+      - "systemctl status %s.service --no-pager -l"
+      - "systemctl list-dependencies %s.service"
+      - "journalctl --no-pager -u %s --lines=50"
+  register: cluster_diag
   failed_when: false
   changed_when: false
   when: not pacemaker_is_running | bool
 
-- name: Display pacemaker diagnostics
+- name: Display cluster diagnostics
   ansible.builtin.debug:
-    msg: "{{ item.item }}:\n{{ item.stdout }}"
-  loop: "{{ pacemaker_diag.results }}"
+    msg: "{{ item.item.1 | format(item.item.0) }}:\n{{ item.stdout }}"
+  loop: "{{ cluster_diag.results }}"
   loop_control:
-    label: "{{ item.item }}"
+    label: "{{ item.item.1 | format(item.item.0) }}"
   when: not pacemaker_is_running | bool
 
 - name: Fail if pacemaker is not running
@@ -323,8 +331,8 @@
       crm configure property
       $id="cib-bootstrap-options"
       stonith-timeout=600s
-  register: set_stonith_timeout_aws_result
-  changed_when: set_stonith_timeout_aws_result.rc == 0
+  register: set_stonith_timeout_native_result
+  changed_when: set_stonith_timeout_native_result.rc == 0
   when:
     - stonith_timeout != '600s'
     - is_primary
