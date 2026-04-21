@@ -1,0 +1,94 @@
+---
+# Common VIP (cluster IP) management tasks shared by AWS and GCP.
+# Assumes the cluster IP resource has already been created by the
+# provider-specific task file.
+#
+# Required variables (must be passed by the caller via vars:):
+#   vip_resource     - The Pacemaker resource identifier to target in move/clear.
+#                      On AWS: the standalone primitive name, e.g.
+#                        rsc_ip_<SID>_HDB<NN>
+#                      On GCP: the group name that wraps rsc_ip and the
+#                        healthcheck probe, i.e. grp_ip_hc
+#                      Using the group name on GCP follows Pacemaker's
+#                      documented best practice: constraints should reference
+#                      the group rather than a member primitive. Move and clear
+#                      MUST target the same identifier; mixing them would leave
+#                      a stale INFINITY cli-prefer-* constraint in the CIB that
+#                      blocks automatic failover until manually cleared.
+#
+# Inherited variables (set upstream, not passed via vars:):
+#   sap_hana_install_sid             - SAP HANA SID (used only in locate/wait
+#                                      commands to verify the resource name)
+#   sap_hana_install_instance_number - SAP HANA instance number (same as above)
+#   primary_hostname  - Hostname of the primary HANA node.
+#                       On GCP with SBD this variable is NOT set (the SBD and
+#                       native-fencing branches are mutually exclusive); the
+#                       move/clear tasks are gated on the locate result so they
+#                       only execute when primary_hostname is defined.
+#   is_primary        - Boolean; all tasks in this file are gated on is_primary.
+
+- name: Validate required variable vip_resource
+  ansible.builtin.assert:
+    that:
+      - vip_resource is defined
+      - vip_resource | length > 0
+    fail_msg: >-
+      vip_resource must be passed by the caller (e.g. the group name grp_ip_hc
+      on GCP or the primitive name rsc_ip_<SID>_HDB<NN> on AWS).
+
+- name: Locate cluster IP
+  ansible.builtin.command:
+    cmd: >-
+      crm resource locate
+      {{ vip_resource }}
+  register: reg_vip_location
+  changed_when: false
+  when: is_primary
+  until: reg_vip_location.stderr == ''
+  retries: 10
+  delay: 6
+
+- name: Move cluster IP to primary HANA node
+  ansible.builtin.command:
+    cmd: >-
+      crm resource move
+      {{ vip_resource }}
+      {{ primary_hostname }}
+  register: reg_move_cmd
+  changed_when: reg_move_cmd.rc == 0
+  when:
+    - is_primary
+    - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
+  until: reg_move_cmd.rc == 0
+  retries: 10
+  delay: 6
+
+- name: Wait for move IP move to complete
+  ansible.builtin.command:
+    cmd: >-
+      crm resource locate
+      {{ vip_resource }}
+  register: reg_vip_location2
+  changed_when: false
+  when:
+    - is_primary
+    - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
+  until: reg_vip_location2.stdout_lines | length > 0 and reg_vip_location2.stdout_lines[0] | trim | split(' ') | last == primary_hostname
+  retries: 10
+  delay: 6
+
+- name: Clear the move constraint
+  ansible.builtin.command:
+    cmd: >-
+      crm resource clear
+      {{ vip_resource }}
+  changed_when: true
+  when:
+    - is_primary
+    - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
+
+# For debug purpose only
+- name: Get cluster status at the end
+  ansible.builtin.command:
+    cmd: crm configure show
+  changed_when: false
