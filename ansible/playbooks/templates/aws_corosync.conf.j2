@@ -3,10 +3,14 @@ totem {
         token: 30000
         consensus: 36000
         token_retransmits_before_loss_const: 6
+{% if ansible_facts.packages['corosync'][0].version is version('3.0.0', '<') %}
         crypto_cipher: {{ crypto_cipher }}
         crypto_hash: {{ crypto_hash }}
+{% endif %}
         clear_node_high_bit: yes
+{% if ansible_facts.packages['corosync'][0].version is version('3.0.0', '<') %}
         rrp_mode: passive
+{% endif %}
 
         interface {
                 ringnumber: 0
