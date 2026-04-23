@@ -48,7 +48,7 @@ module "common_variables" {
   authorized_keys                     = var.authorized_keys
   authorized_user                     = var.admin_user
   monitoring_enabled                  = var.monitoring_enabled
-  monitoring_srv_ip                   = var.monitoring_enabled ? local.monitoring_ip : ""
+  monitoring_srv_ip                   = var.monitoring_enabled ? local.monitoring_srv_ip : ""
   hana_hwcct                          = var.hwcct
   hana_instance_number                = var.hana_instance_number
   hana_cost_optimized_instance_number = var.hana_cost_optimized_instance_number
@@ -209,7 +209,7 @@ module "monitoring" {
   storage_account     = azurerm_storage_account.mytfstorageacc.primary_blob_endpoint
   monitoring_uri      = local.monitoring_os_image_uri
   os_image            = local.monitoring_os_image
-  monitoring_srv_ip   = local.monitoring_ip
+  monitoring_srv_ip   = local.monitoring_srv_ip
 }
 
 module "iscsi_server" {
