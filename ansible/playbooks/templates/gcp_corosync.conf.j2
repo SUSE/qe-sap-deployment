@@ -1,8 +1,10 @@
 totem {
         version: 2
+{% if ansible_facts.packages['corosync'][0].version is version('3.0.0', '<') %}
         secauth: off
         crypto_hash: sha1
         crypto_cipher: aes256
+{% endif %}
         cluster_name: hacluster
         clear_node_high_bit: yes
         token: 20000
