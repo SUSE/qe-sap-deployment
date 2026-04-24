@@ -11,6 +11,14 @@
   retries: 3
   delay: 60
 
+- name: Install saptune dependency
+  community.general.zypper:
+    name: 'patterns-cockpit'
+    state: present
+  when:
+    - "'saptune' in ansible_facts.packages"
+    - ansible_facts.packages['saptune'][0].version is version('3.2.3', '>=')
+
 - name: Ensure conflicting services are stopped and disabled
   ansible.builtin.systemd:
     name: "{{ item }}"
