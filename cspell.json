@@ -28,11 +28,15 @@
         "isreg",
         "keygen",
         "logd",
+        "netweaver",
         "noqa",
         "nosum",
         "numluns",
         "nvme",
         "publickey",
+        "pytest",
+        "PYTHONPATH",
+        "qesap",
         "Quickstart",
         "reuseaddr",
         "rsyslog",
@@ -45,10 +49,7 @@
         "usrsaplv",
         "usrsapvg",
         "venv",
-        "yast",
-        "qesap",
-        "PYTHONPATH",
-        "pytest"
+        "yast"
     ],
     "languageSettings": [
         {

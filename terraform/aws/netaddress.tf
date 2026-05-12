@@ -1,8 +1,7 @@
-# This file is used to calculate and store in some local variables
+# This file is used to calculate and store in some locals (local variables)
 # the IP addresses of all the machines.
 
 locals {
-
   ###################################################
   ###################################################
   # R A N G E s
@@ -104,7 +103,7 @@ locals {
 
   ###################################################
   # INFRA
-  monitoring_ip = (
+  monitoring_srv_ip = (
     var.monitoring_srv_ip != "" ?
     var.monitoring_srv_ip :
     cidrhost(local.infra_subnet_address_range, local.ip_start)
