@@ -1,0 +1,32 @@
+---
+sap_storage_setup_definition:
+  - name: 'hanadata'
+    mountpoint: '/hana/data'
+    lvm_vg_name: 'hanadatavg'
+    lvm_lv_name: 'hanadatalv'
+    lvm_lv_stripes: 4
+    lvm_lv_stripe_size: "128k"
+    disk_size: 512
+    filesystem_type: "xfs"
+
+  - name: 'hanalog'
+    mountpoint: '/hana/log'
+    lvm_vg_name: 'hanalogvg'
+    lvm_lv_name: 'hanaloglv'
+    lvm_lv_stripe_size: "64k"
+    disk_size: 256
+    filesystem_type: "xfs"
+
+  - name: 'hanashared'
+    mountpoint: '/hana/shared'
+    lvm_vg_name: 'hanasharedvg'
+    lvm_lv_name: 'hanasharedlv'
+    disk_size: 512
+    filesystem_type: "xfs"
+
+  - name: 'usrsap'
+    mountpoint: '/usr/sap'
+    lvm_vg_name: 'usrsapvg'
+    lvm_lv_name: 'usrsaplv'
+    disk_size: 50
+    filesystem_type: "xfs"

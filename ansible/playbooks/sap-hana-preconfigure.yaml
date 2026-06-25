@@ -38,6 +38,10 @@
       community.general.zypper:
         name: "{{ item }}"
         state: present
+      environment:
+        ZYPP_LOCK_TIMEOUT: '120'
+      retries: 5
+      delay: 30
       loop:
         - 'iscsiuio'
         - 'open-iscsi'

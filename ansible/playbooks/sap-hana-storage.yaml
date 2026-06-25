@@ -25,9 +25,26 @@
       ansible.builtin.include_vars: ./vars/gcp_hana_storage_profile.yaml
       when: cloud_platform_is_gcp
 
+    - name: Load HANA vars
+      ansible.builtin.include_vars: ./vars/hana_vars.yaml
+
+    - name: Load HANA storage vars
+      ansible.builtin.include_vars: ./vars/azure_hana_storage_setup_profile.yaml
+
+    - name: Set host type
+      ansible.builtin.set_fact:
+        sap_storage_setup_host_type: >-
+          {% if 'hana01' in inventory_hostname %} ["hana_primary"]
+          {% elif 'hana02' in inventory_hostname %} ["hana_secondary"]
+          {% else %} ["hana_primary"]
+          {% endif %}
+
     - name: HANA storage preparation
       vars:
         qe_sap_storage_cloud_type: 'generic'
         qe_sap_storage_action: 'prepare'
+        sap_storage_setup_sid: "{{ sap_hana_install_sid }}"
+
       ansible.builtin.include_role:
-        name: qe_sap_storage
+        # name: qe_sap_storage
+        name: community.sap_install.sap_storage_setup
