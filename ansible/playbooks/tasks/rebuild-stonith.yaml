@@ -1,7 +1,11 @@
 ---
+- name: Set SBD resource name fact
+  ansible.builtin.set_fact:
+    sbd_resource_name: "{{ 'fencing-sbd' if ansible_distribution_version is version('16.1', '>=') else 'stonith-sbd' }}"
+
 - name: Check for stonith device
   ansible.builtin.command:
-    cmd: crm resource status stonith-sbd
+    cmd: crm resource status {{ sbd_resource_name }}
   register: sbd_status
   changed_when: false
 
@@ -51,7 +55,7 @@
     cmd: >-
       sudo
       crm configure primitive
-      stonith-sbd
+      {{ sbd_resource_name }}
       {{ stonith_agent }}
       params
       pcmk_delay_max="15"

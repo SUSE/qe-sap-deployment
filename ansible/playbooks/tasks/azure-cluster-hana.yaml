@@ -9,8 +9,8 @@
 - name: Set hana crm facts
   ansible.builtin.set_fact:
     crm_maintenance_mode: "{{ (crm_conf_hana_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
-    stonith_enabled: "{{ (crm_conf_hana_show.stdout | regex_search('stonith-enabled=([a-z]*)', '\\1'))[0] | default('false') }}"
-    stonith_timeout: "{{ crm_conf_hana_show.stdout | regex_search('stonith-timeout') }}"  # this should be variable!
+    stonith_enabled: "{{ (crm_conf_hana_show.stdout | regex_search('fencing-enabled=([a-z]*)' if ansible_distribution_version is version('16.1', '>=') else 'stonith-enabled=([a-z]*)', '\\1'))[0] | default('false') }}"
+    stonith_timeout: "{{ crm_conf_hana_show.stdout | regex_search('fencing-timeout' if ansible_distribution_version is version('16.1', '>=') else 'stonith-timeout') }}"  # this should be variable!
     hana_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaCtl_') }}"
     hana_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms ms(.)_SAPHanaCtl_') }}"
     hana_topology_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaTpg') }}"
@@ -42,7 +42,7 @@
 
 - name: Set stonith-timeout [sbd]
   ansible.builtin.command:
-    cmd: crm configure property stonith-timeout=144
+    cmd: "crm configure property {{ 'fencing-timeout' if ansible_distribution_version is version('16.1', '>=') else 'stonith-timeout' }}=144"
   when:
     - is_primary
     - stonith_timeout | length == 0
@@ -52,7 +52,7 @@
 
 - name: Set stonith-timeout [azure fencing]
   ansible.builtin.command:
-    cmd: crm configure property stonith-timeout=900
+    cmd: "crm configure property {{ 'fencing-timeout' if ansible_distribution_version is version('16.1', '>=') else 'stonith-timeout' }}=900"
   when:
     - is_primary
     - stonith_timeout | length == 0
@@ -62,7 +62,7 @@
 
 - name: Enable stonith
   ansible.builtin.command:
-    cmd: crm configure property stonith-enabled=true
+    cmd: "crm configure property {{ 'fencing-enabled' if ansible_distribution_version is version('16.1', '>=') else 'stonith-enabled' }}=true"
   when:
     - is_primary
     - stonith_enabled != 'true'

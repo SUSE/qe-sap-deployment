@@ -22,6 +22,11 @@
   until: idle.rc == 0
 
 # SBD related stuff
+- name: Prepare HANA Action - Set SBD resource name fact
+  ansible.builtin.set_fact:
+    sbd_resource_name: "{{ 'fencing-sbd' if ansible_distribution_version is version('16.1', '>=') else 'stonith-sbd' }}"
+  when: action == 'crash' or (action == 'stop' and cloud_platform_name == 'EC2')
+
 - name: Prepare HANA Action - Configure SBD start-delay
   become: true
   ansible.builtin.lineinfile:
@@ -44,7 +49,7 @@
     - name: corosync_consensus
       cmd: "corosync-cmapctl | awk -F ' = ' '/totem.consensus/ {print int($2/1000)}'"
     - name: pcmk_delay_max
-      cmd: "crm resource param stonith-sbd show pcmk_delay_max | sed 's/[^0-9]*//g'"
+      cmd: "crm resource param {{ sbd_resource_name }} show pcmk_delay_max | sed 's/[^0-9]*//g'"
     - name: sbd_watchdog_timeout
       cmd: "grep -oP '(?<=^SBD_WATCHDOG_TIMEOUT=)[[:digit:]]+' /etc/sysconfig/sbd"
     - name: sbd_delay_start
