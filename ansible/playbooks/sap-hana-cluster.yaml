@@ -62,6 +62,12 @@
       when:
         - use_hana_sr_angi | bool
 
+    - name: Set CRM fencing property facts based on OS version
+      ansible.builtin.set_fact:
+        crm_prop_fencing_enabled: "{{ 'fencing-enabled' if ansible_distribution_version is version('16.1', '>=') else 'stonith-enabled' }}"
+        crm_prop_fencing_timeout: "{{ 'fencing-timeout' if ansible_distribution_version is version('16.1', '>=') else 'stonith-timeout' }}"
+        crm_prop_fencing_action: "{{ 'fencing-action' if ansible_distribution_version is version('16.1', '>=') else 'stonith-action' }}"
+
   tasks:
     - name: Base Cluster Configuration [azure]
       ansible.builtin.include_tasks: ./tasks/azure-cluster-bootstrap.yaml

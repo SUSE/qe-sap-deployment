@@ -230,9 +230,9 @@
 - name: Set cluster facts
   ansible.builtin.set_fact:
     sbd_stonith: "{{ (crm_conf_show.stdout | regex_search('(rsc_iscsi_sbd)', '\\1'))[0] | default('false') }}"
-    stonith_enabled: "{{ (crm_conf_show.stdout | regex_search('fencing-enabled=([a-z]*)' if ansible_distribution_version is version('16.1', '>=') else 'stonith-enabled=([a-z]*)', '\\1'))[0] | default('false') }}"
-    stonith_action: "{{ (crm_conf_show.stdout | regex_search('fencing-action=([a-z]*)' if ansible_distribution_version is version('16.1', '>=') else 'stonith-action=([a-z]*)', '\\1'))[0] | default('false') }}"
-    stonith_timeout: "{{ (crm_conf_show.stdout | regex_search('fencing-timeout=([a-z0-9]*)' if ansible_distribution_version is version('16.1', '>=') else 'stonith-timeout=([a-z0-9]*)', '\\1'))[0] | default('false') }}"
+    stonith_enabled: "{{ (crm_conf_show.stdout | regex_search(crm_prop_fencing_enabled ~ '=([a-z]*)', '\\1'))[0] | default('false') }}"
+    stonith_action: "{{ (crm_conf_show.stdout | regex_search(crm_prop_fencing_action ~ '=([a-z]*)', '\\1'))[0] | default('false') }}"
+    stonith_timeout: "{{ (crm_conf_show.stdout | regex_search(crm_prop_fencing_timeout ~ '=([a-z0-9]*)', '\\1'))[0] | default('false') }}"
     rsc_ip: "{{ crm_conf_show.stdout | regex_search('(rsc_ip_)') }}"
     rsc_healthcheck_primary: "{{ crm_conf_show.stdout | regex_search('(rsc_healthcheck_primary)') }}"
     grp_ip_hc: "{{ crm_conf_show.stdout | regex_search('(grp_ip_hc)') }}"
