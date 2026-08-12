@@ -9,7 +9,7 @@
 - name: Set hana crm facts
   ansible.builtin.set_fact:
     crm_maintenance_mode: "{{ (crm_conf_hana_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
-    stonith_timeout: "{{ crm_conf_hana_show.stdout | regex_search('stonith-timeout') }}"  # this should be variable!
+    stonith_timeout: "{{ crm_conf_hana_show.stdout | regex_search(crm_prop_fencing_timeout) }}"  # this should be variable!
     hana_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaCtl_') }}"
     hana_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms ms(.)_SAPHanaCtl_') }}"
     hana_topology_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaTpg') }}"

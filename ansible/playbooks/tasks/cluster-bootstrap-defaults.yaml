@@ -31,7 +31,7 @@
 
 - name: Set stonith-timeout [sbd]
   ansible.builtin.command:
-    cmd: crm configure property stonith-timeout={{ set_sbd_stonith_timeout }}
+    cmd: "crm configure property {{ crm_prop_fencing_timeout }}={{ set_sbd_stonith_timeout }}"
   register: set_stonith_timeout_sbd_result
   changed_when: set_stonith_timeout_sbd_result.rc == 0
   when:
@@ -45,7 +45,7 @@
     cmd: >-
       crm configure property
       $id="cib-bootstrap-options"
-      stonith-timeout={{ stonith_timeout_native }}
+      {{ crm_prop_fencing_timeout }}={{ stonith_timeout_native }}
   register: set_stonith_timeout_native_result
   changed_when: set_stonith_timeout_native_result.rc == 0
   when:
@@ -58,7 +58,7 @@
     cmd: >-
       crm configure property
       $id="cib-bootstrap-options"
-      stonith-enabled=true
+      {{ crm_prop_fencing_enabled }}=true
   register: enable_stonith_result
   changed_when: enable_stonith_result.rc == 0
   when:
@@ -71,7 +71,7 @@
     cmd: >-
       crm configure property
       $id="cib-bootstrap-options"
-      stonith-action=off
+      {{ crm_prop_fencing_action }}=off
   register: disable_stonith_action_result
   changed_when: disable_stonith_action_result.rc == 0
   when:
