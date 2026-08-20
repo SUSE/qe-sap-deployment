@@ -261,7 +261,9 @@
   changed_when: __crm_maintenance_true.rc == 0
   when:
     - is_primary
-    - crm_maintenance_mode is false or crm_maintenance_mode == 'unknown'
+    # set_fact coerces 'true'/'false' to bool on ansible-core < 2.19 but not on
+    # >= 2.19, so normalise before comparing.
+    - crm_maintenance_mode | string | lower in ['false', 'unknown']
 
 - name: Configure azure fencing [MSI (Managed identity)]
   ansible.builtin.command:
@@ -359,4 +361,6 @@
   changed_when: __crm_maintenance_false.rc == 0
   when:
     - is_primary
-    - crm_maintenance_mode is true or crm_maintenance_mode == 'unknown'
+    # set_fact coerces 'true'/'false' to bool on ansible-core < 2.19 but not on
+    # >= 2.19, so normalise before comparing.
+    - crm_maintenance_mode | string | lower in ['true', 'unknown']

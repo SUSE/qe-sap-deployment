@@ -14,8 +14,8 @@
     hana_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms ms(.)_SAPHanaCtl_') }}"
     hana_topology_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaTpg') }}"
     hana_topology_clone: "{{ crm_conf_hana_show.stdout | regex_search('clone cln_SAPHanaTpg') }}"
-    hana_filesystem_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHanaFil_') }}"
-    hana_filesystem_clone: "{{ crm_conf_show.stdout | regex_search('primitive cln_SAPHanaFil_') }}"
+    hana_filesystem_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaFil_') }}"
+    hana_filesystem_clone: "{{ crm_conf_hana_show.stdout | regex_search('clone cln_SAPHanaFil_') }}"
     ip_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_ip_') }}"
     ip_nc: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_socat_') }}"
     ip_grp: "{{ crm_conf_hana_show.stdout | regex_search('group g_ip_') }}"
@@ -27,7 +27,7 @@
 - name: Ensure maintenance mode is active
   ansible.builtin.command:
     cmd: crm maintenance on
-  when: crm_maintenance_mode is false or crm_maintenance_mode == 'unknown'
+  when: crm_maintenance_mode | string | lower in ['false', 'unknown']
   changed_when: true
 
 - name: Create HANA topology resource
@@ -206,7 +206,7 @@
 - name: Ensure maintenance mode is disabled
   ansible.builtin.command:
     cmd: crm maintenance off
-  when: refreshed_crm_maintenance_mode is true or refreshed_crm_maintenance_mode == 'unknown'
+  when: refreshed_crm_maintenance_mode | string | lower in ['true', 'unknown']
   changed_when: true
 
 # For debug purpose only
