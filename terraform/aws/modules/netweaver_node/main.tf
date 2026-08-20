@@ -13,10 +13,9 @@ resource "aws_subnet" "netweaver-subnet" {
   vpc_id            = var.vpc_id
   cidr_block        = element(var.subnet_address_range, count.index)
   availability_zone = element(var.availability_zones, count.index)
-  tags = {
-    name      = "${var.common_variables["deployment_name"]}-netweaver-subnet-${count.index + 1}"
-    workspace = var.common_variables["deployment_name"]
-  }
+  tags = merge({
+    name = "${var.common_variables["deployment_name"]}-netweaver-subnet-${count.index + 1}"
+  }, var.tags)
 }
 
 resource "aws_route_table_association" "netweaver-subnet-route-association" {
@@ -62,9 +61,9 @@ resource "aws_efs_file_system" "netweaver-efs" {
   creation_token   = "${var.common_variables["deployment_name"]}-netweaver-efs"
   performance_mode = var.efs_performance_mode
 
-  tags = {
+  tags = merge({
     Name = "${var.common_variables["deployment_name"]}-efs"
-  }
+  }, var.tags)
 }
 
 resource "aws_efs_mount_target" "netweaver-efs-mount-target" {
@@ -105,13 +104,12 @@ resource "aws_instance" "netweaver" {
     device_name = "/dev/sdb"
   }
 
-  volume_tags = {
+  volume_tags = merge({
     Name = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
-  }
+  }, var.tags)
 
-  tags = {
+  tags = merge({
     Name                                                 = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
-    Workspace                                            = var.common_variables["deployment_name"]
     "${var.common_variables["deployment_name"]}-cluster" = "${var.name}${format("%02d", count.index + 1)}"
-  }
+  }, var.tags)
 }

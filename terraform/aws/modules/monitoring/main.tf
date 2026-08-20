@@ -31,12 +31,11 @@ resource "aws_instance" "monitoring" {
     device_name = "/dev/sdb"
   }
 
-  volume_tags = {
+  volume_tags = merge({
     Name = "${var.common_variables["deployment_name"]}-${var.name}"
-  }
+  }, var.tags)
 
-  tags = {
-    name      = "${var.common_variables["deployment_name"]}-${var.name}"
-    workspace = var.common_variables["deployment_name"]
-  }
+  tags = merge({
+    name = "${var.common_variables["deployment_name"]}-${var.name}"
+  }, var.tags)
 }

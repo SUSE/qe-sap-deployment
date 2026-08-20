@@ -64,3 +64,8 @@ variable "timezone" {
   default     = "Europe/Berlin"
 }
 
+variable "tags" {
+  description = "A map of tags to add to all resources in this module"
+  type        = map(string)
+  default     = {}
+}

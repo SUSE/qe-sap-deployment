@@ -139,3 +139,9 @@ variable "destroy_timeout" {
   type        = number
   description = "Delete-timeout in minutes."
 }
+
+variable "tags" {
+  description = "A map of tags to add to all resources in this module"
+  type        = map(string)
+  default     = {}
+}

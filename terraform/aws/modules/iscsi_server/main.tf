@@ -33,12 +33,11 @@ resource "aws_instance" "iscsisrv" {
     device_name = "/dev/sdb"
   }
 
-  volume_tags = {
+  volume_tags = merge({
     Name = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
-  }
+  }, var.tags)
 
-  tags = {
-    name      = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
-    workspace = var.common_variables["deployment_name"]
-  }
+  tags = merge({
+    name = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
+  }, var.tags)
 }

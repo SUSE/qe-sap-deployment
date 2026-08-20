@@ -96,3 +96,8 @@ variable "iscsi_srv_ip" {
   type        = string
 }
 
+variable "tags" {
+  description = "A map of tags to add to all resources in this module"
+  type        = map(string)
+  default     = {}
+}
