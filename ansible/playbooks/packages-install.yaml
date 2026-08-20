@@ -1,0 +1,367 @@
+---
+# Single place for all the package installation of the deployment.
+#
+# Every zypper install that used to be scattered across the other playbooks
+# and task files has been collected here, so that there is exactly one point
+# in the deployment where packages are pulled from the repositories.
+#
+# ORDERING CONSTRAINT: this playbook must run once the repositories are in
+# their final state, which means after 'registration.yaml' and, when an IBS
+# mirror is used, after 'ibsm.yaml'. Each play starts by including
+# ./tasks/assert-repos-ready.yaml, which fails fast when that is not the case.
+# Set 'use_ibsm' to true to make the IBS mirror check mandatory.
+#
+# The playbook is made of two plays because the HANA nodes and the iSCSI
+# server need a different set of packages.
+
+- name: Install packages on the HANA nodes
+  hosts: hana
+  become: true
+  become_user: root
+  environment:
+    ZYPP_LOCK_TIMEOUT: '120'
+
+  vars:
+    # SAPHanaSR-angi
+    use_hana_sr_angi: "{{ use_sap_hana_sr_angi | default(false) }}"
+    scale_out: false
+    use_sapconf: false
+    cluster_node: true
+    # 'use_ibsm' is deliberately NOT defaulted here: a play var would win over
+    # group_vars/host_vars and silently disable the mirror check. The guard
+    # defaults it to false itself.
+
+  pre_tasks:
+    # vars/hana_vars.yaml is only written when the conf.yaml has an
+    # 'ansible::hana_vars' section. This playbook runs early in the sequence
+    # and is also useful to deployments that do not install HANA at all, so
+    # the file is optional here and the defaults above are used without it.
+    - name: Source hana install variables
+      ansible.builtin.include_vars: "{{ item }}"
+      with_first_found:
+        - files:
+            - ./vars/hana_vars.yaml
+          skip: true
+
+    - name: Detect cloud platform
+      ansible.builtin.include_tasks:
+        ./tasks/detect-cloud-platform.yaml
+
+    - name: Assert the repositories are ready
+      ansible.builtin.include_tasks:
+        ./tasks/assert-repos-ready.yaml
+
+  tasks:
+
+    # -----------------------------------------------------------------
+    # Packages formerly installed by sap-hana-preconfigure.yaml
+    # -----------------------------------------------------------------
+    - name: Ensure libssl 2.1 is installed on distributed Systems
+      community.general.zypper:
+        name: libssh2-1  # Caution, no version control here (yet)
+        state: present
+      when: scale_out | bool
+
+    - name: Ensure iscsi is installed
+      community.general.zypper:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - 'iscsiuio'
+        - 'open-iscsi'
+      when: use_sbd | default(false) | bool
+
+    - name: Update old SAPHanaSR on SLE 15-SP1
+      community.general.zypper:
+        name: SAPHanaSR=0.154.0
+        state: present
+        replacefiles: true
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+      when:
+        - ansible_facts['distribution_version'] == '15.1' and not use_hana_sr_angi | bool
+
+      # 3018133 - Linux: Running SAP applications compiled with GCC 10.x
+    - name: Ensure GCC10 is installed
+      community.general.zypper:
+        name: "{{ item }}"
+        state: present
+        oldpackage: true
+      loop:
+        - 'libgcc_s1>=10.2.1'
+        - 'libstdc++6>=10.2.1'
+        - 'libatomic1>=10.2.1'
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+
+    - name: Ensure ClusterTools2 is installed
+      community.general.zypper:
+        name: ClusterTools2
+        state: present
+      when: cluster_node | bool
+
+    - name: SAPHanaSR package pattern
+      ansible.builtin.set_fact:
+        saphanasr_patterns: >-
+          {{ ['absent', 'present' ]
+             if ( use_hana_sr_angi | bool )
+             else ['present', 'absent']
+          }}
+
+    - name: Ensure SAPHanaSR-doc and SAPHanaSR is NOT installed when angi is used
+      community.general.zypper:
+        name: "{{ item }}"
+        state: "{{ saphanasr_patterns[0] }}"
+      loop:
+        - 'SAPHanaSR-doc'
+        - 'SAPHanaSR'
+      when: cluster_node
+
+    - name: Ensure SAPHanaSR-angi and supportutils plugin is installed when angi is used
+      community.general.zypper:
+        name: "{{ item }}"
+        state: "{{ saphanasr_patterns[1] }}"
+      loop:
+        - 'SAPHanaSR-angi'
+        - 'supportutils-plugin-ha-sap'
+      when: cluster_node
+
+    # -----------------------------------------------------------------
+    # Packages formerly installed by tasks/sapconf.yaml.
+    # The configuration of the tuning daemon stays in that task file,
+    # only the package installation is done here.
+    # -----------------------------------------------------------------
+    - name: Gather the package facts
+      ansible.builtin.package_facts:
+        manager: auto
+      when: use_sapconf | bool
+
+    # SLE12 ships both sapconf and tuned and they conflict with each other,
+    # so tuned has to go before sapconf is installed.
+    - name: Remove tuned on SLE12
+      community.general.zypper:
+        name: tuned
+        state: absent
+      when:
+        - use_sapconf | bool
+        - ansible_facts['distribution_major_version'] == "12"
+
+    - name: Ensure saptune is on latest version. Fix for failing service check.
+      community.general.zypper:
+        name: saptune
+        state: latest
+      when:
+        - use_sapconf | bool
+        - ansible_facts.packages.saptune is defined
+
+    - name: Ensure sapconf is installed
+      community.general.zypper:
+        name: sapconf
+        state: present
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+      when: use_sapconf | bool
+
+    # -----------------------------------------------------------------
+    # Packages formerly installed by tasks/saptune.yaml
+    # -----------------------------------------------------------------
+    - name: Ensure that saptune 3.0 or greater is installed
+      community.general.zypper:
+        name: 'saptune>=3.0'
+        state: present
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+      when: not use_sapconf | bool
+
+    - name: Gather the package facts after the saptune installation
+      ansible.builtin.package_facts:
+        manager: auto
+      when: not use_sapconf | bool
+
+    # patterns-cockpit is a dependency introduced in saptune 3.2.3 on SLES 16
+    # and is expected to be eventually dropped.
+    # https://bugzilla.suse.com/show_bug.cgi?id=1262794#c4 and https://bugzilla.suse.com/show_bug.cgi?id=1262794#c5
+    - name: Install saptune dependency
+      community.general.zypper:
+        name: 'patterns-cockpit'
+        state: present
+      when:
+        - not use_sapconf | bool
+        - ansible_facts.packages['saptune'][0].version is version('3.2.3', '>=')
+        - ansible_distribution_major_version == '16'
+
+    # -----------------------------------------------------------------
+    # Packages formerly installed by tasks/client-sbd-config.yaml
+    # -----------------------------------------------------------------
+    - name: Ensure lsscsi is installed (SLES16)
+      community.general.zypper:
+        name: lsscsi
+        state: present
+      when: ansible_distribution_major_version == '16'
+
+    # -----------------------------------------------------------------
+    # Cluster packages formerly installed by the cloud specific
+    # cluster bootstrap task files.
+    # -----------------------------------------------------------------
+    - name: Ensure cluster dependencies are installed [azure]
+      community.general.zypper:
+        name: "{{ item }}"  # Caution, no version control here (yet)
+        state: present
+      loop:
+        - socat
+        - resource-agents
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+      when:
+        - cluster_node | bool
+        - cloud_platform_is_azure
+
+    # 15-SP6 Image refresh on 20241113 get it pre-installed
+    - name: Ensure cluster dependencies for SLES 15-SP4 and 15-SP5 are installed [azure]
+      community.general.zypper:
+        name: "{{ item }}"  # Caution, no version control here (yet)
+        state: present
+      loop:
+        - fence-agents-azure-arm    # Workaround for bsc#1224797. We should remove this line once the base OS images include the package
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+      when:
+        - cluster_node | bool
+        - cloud_platform_is_azure
+        - ansible_distribution_version is version('15.4', '==') or
+          ansible_distribution_version is version('15.5', '==') or
+          ansible_distribution_version is version('12.5', '==')
+
+    - name: Ensure Azure Python SDK and Azure Identity python modules are installed [15 sp<4]
+      community.general.zypper:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - 'python3-azure-mgmt-compute'
+        - 'python3-azure-identity'
+      when:
+        - cluster_node | bool
+        - cloud_platform_is_azure
+        - ansible_distribution_version is version('15.4', '<')
+        - ansible_distribution_version is version('12.5', '!=')
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+
+    # https://www.suse.com/c/incompatible-changes-ahead-for-public-cloud-sdks/
+    - name: Ensure Azure Python SDK and Azure Identity python modules are installed [15 sp>=4]
+      community.general.zypper:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - 'python311-azure-mgmt-compute'
+        - 'python311-azure-identity'
+      when:
+        - cluster_node | bool
+        - cloud_platform_is_azure
+        - ansible_distribution_major_version == '15'
+        - ansible_distribution_version is version('15.4', '>=')
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+
+    - name: Ensure Azure Python SDK and Azure Identity python modules are installed [16]
+      community.general.zypper:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - 'python313-azure-mgmt-compute'
+        - 'python313-azure-identity'
+      when:
+        - cluster_node | bool
+        - cloud_platform_is_azure
+        - ansible_distribution_major_version == '16'
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+
+    - name: Ensure cluster dependencies are installed [aws, gcp]
+      community.general.zypper:
+        name: ['corosync', 'crmsh', 'fence-agents', 'pacemaker', 'patterns-ha-ha_sles', 'resource-agents', 'rsyslog', 'socat']
+        state: present
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+      when:
+        - cluster_node | bool
+        - cloud_platform_is_aws or cloud_platform_is_gcp
+
+- name: Install packages on the iSCSI server
+  hosts: iscsi
+  become: true
+  become_user: root
+  environment:
+    ZYPP_LOCK_TIMEOUT: '120'
+
+  pre_tasks:
+    - name: Assert the repositories are ready
+      ansible.builtin.include_tasks:
+        ./tasks/assert-repos-ready.yaml
+
+  tasks:
+
+    # -----------------------------------------------------------------
+    # Packages formerly handled by tasks/iscsi-server-sbd-prep.yaml.
+    # The removal is kept together with the installation because on
+    # 12-SP5 the packages below conflict with targetcli-fb.
+    # -----------------------------------------------------------------
+    - name: Remove conflicting packages from iscsi server for 12-SP5
+      community.general.zypper:
+        name: "{{ item }}"
+        state: absent
+      with_items:
+        - lio-utils           # Only exists in 12SP5
+        - python-rtslib       # Only exists in 12SP5
+        - python-configshell  # Only exists in 12SP5
+        - targetcli           # Only exists in 12SP5
+      when: ansible_distribution_major_version == '12'
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+      # SLE12 ships both targetcli and targetcli-fb. They both provide the targetcli
+      # binary but they are not compatible. Neither are packages like
+      # python-configshell and python-configshell-fb. This is not a problem in SLE15
+      # as we only ship fb there.
+
+    - name: Install targetcli-fb for SLE12
+      community.general.zypper:
+        name: targetcli-fb
+        state: present
+      when: ansible_distribution_major_version == '12'
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+
+    - name: Install targetcli-fb for SLE15
+      community.general.zypper:
+        name: python3-targetcli-fb
+        state: present
+      when: (ansible_distribution_major_version == '15') or
+            (ansible_distribution_major_version == '16')
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60

@@ -14,9 +14,6 @@
 
 
   vars:
-    # SAPHahaSR-angi
-    use_hana_sr_angi: "{{ use_sap_hana_sr_angi | default(false) }}"
-    scale_out: false
     use_sapconf: false
     # Set use_reboottimeout default value to 1200,
     # as for AWS 'r5b.metal' instance type the reboot elapses at least 800 seconds
@@ -27,55 +24,8 @@
     firewall_cfg: 'ignore'
 
   tasks:
-    # Ensure required installation of required packages
-    - name: Ensure libssl 2.1 is installed on distributed Systems
-      community.general.zypper:
-        name: libssh2-1  # Caution, no version control here (yet)
-        state: present
-      when: scale_out | bool
-
-    - name: Ensure iscsi is installed
-      community.general.zypper:
-        name: "{{ item }}"
-        state: present
-      loop:
-        - 'iscsiuio'
-        - 'open-iscsi'
-      when: use_sbd | default(false) | bool
-
-    - name: Update old SAPHanaSR on SLE 15-SP1
-      community.general.zypper:
-        name: SAPHanaSR=0.154.0
-        state: present
-        replacefiles: true
-      register: result
-      until: result is succeeded
-      retries: 3
-      delay: 60
-      when:
-        - ansible_facts['distribution_version'] == '15.1' and not use_hana_sr_angi | bool
-
-      # 3018133 - Linux: Running SAP applications compiled with GCC 10.x
-    - name: Ensure GCC10 is installed
-      community.general.zypper:
-        name: "{{ item }}"
-        state: present
-        oldpackage: true
-      loop:
-        - 'libgcc_s1>=10.2.1'
-        - 'libstdc++6>=10.2.1'
-        - 'libatomic1>=10.2.1'
-      register: result
-      until: result is succeeded
-      retries: 3
-      delay: 60
-
-    - name: Ensure ClusterTools2 is installed
-      community.general.zypper:
-        name: ClusterTools2
-        state: present
-      when: cluster_node | bool
-
+    # All the packages needed here are installed by packages-install.yaml,
+    # which has to be executed right after registration.yaml.
     - name: Validate firewall_cfg
       ansible.builtin.assert:
         that:
@@ -115,32 +65,6 @@
     - name: Configure saptune based systems
       ansible.builtin.include_tasks: ./tasks/saptune.yaml
       when: not use_sapconf | bool
-
-    - name: SAPHanaSR package pattern
-      ansible.builtin.set_fact:
-        saphanasr_patterns: >-
-          {{ ['absent', 'present' ]
-             if ( use_hana_sr_angi | bool )
-             else ['present', 'absent']
-          }}
-
-    - name: Ensure SAPHanaSR-doc and SAPHanaSR is NOT installed when angi is used
-      community.general.zypper:
-        name: "{{ item }}"
-        state: "{{ saphanasr_patterns[0] }}"
-      loop:
-        - 'SAPHanaSR-doc'
-        - 'SAPHanaSR'
-      when: cluster_node
-
-    - name: Ensure SAPHanaSR-angi and supportutils plugin is installed when angi is used
-      community.general.zypper:
-        name: "{{ item }}"
-        state: "{{ saphanasr_patterns[1] }}"
-      loop:
-        - 'SAPHanaSR-angi'
-        - 'supportutils-plugin-ha-sap'
-      when: cluster_node
 
   # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/reboot_module.html#parameters
   # reboot_timeout Maximum seconds to wait for machine to reboot and respond to a test command.  Default: 600

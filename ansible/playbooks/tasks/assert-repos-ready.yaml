@@ -1,0 +1,114 @@
+---
+# Guard used by packages-install.yaml.
+#
+# Package installation depends on the repositories being in their final state,
+# so packages-install.yaml has to run:
+#   - after registration.yaml, otherwise zypper has no repository at all
+#   - after ibsm.yaml, when an IBS mirror is used, otherwise the packages are
+#     taken from the SCC repositories instead of the mirror under test
+#
+# This task file makes both dependencies explicit and fails fast, instead of
+# letting a long list of zypper tasks fail one by one, or worse, silently
+# installing the wrong packages.
+#
+# What the guard does NOT prove: that a subscription is still valid (an
+# expired one is still reported as 'Registered'), that the configured
+# repositories are reachable, or that a given package really resolves from
+# the IBS mirror rather than from SCC.
+
+- name: Check the configured zypper repositories
+  ansible.builtin.command: zypper --non-interactive lr --uri
+  register: qesap_zypper_lr
+  changed_when: false
+  failed_when: false
+
+- name: Query the SCC registration status
+  ansible.builtin.command: SUSEConnect --status
+  register: qesap_scc_status
+  changed_when: false
+  failed_when: false
+
+# 'SUSEConnect --status' returns a JSON list with one entry per installed
+# product. The base products are the only ones using an upper case identifier
+# (SLES, SLES_SAP, SLE_HPC, ...); modules and extensions are all lower case
+# (sle-module-*). All of the base products are collected, not just the first
+# one, so that an image reporting more than one cannot hide an unregistered
+# one behind a registered one.
+#
+# The task is skipped when the probe failed. SUSEConnect reports its errors on
+# stdout and with a non zero exit code (64 unreachable, 66 unparseable, 67
+# invalid credentials, ...), and it prints the JSON 'null' when no product is
+# installed at all. The assert below therefore requires the probe to have
+# succeeded AND to have produced at least one base product, rather than
+# treating "no data" as "nothing unregistered".
+- name: Set the base product registration status
+  ansible.builtin.set_fact:
+    qesap_base_products: >-
+      {{ qesap_scc_status.stdout | from_json
+         | selectattr('identifier', 'match', '^[A-Z]')
+         | map(attribute='status', default='unknown') | list }}
+  when:
+    - qesap_scc_status.rc == 0
+    - qesap_scc_status.stdout | trim is match('^\[')
+
+- name: Report the registration status
+  ansible.builtin.debug:
+    msg:
+      - "Base products: {{ qesap_base_products | default([]) | join(', ') | default('none', true) }}"
+      - "SUSEConnect --status rc: {{ qesap_scc_status.rc }}"
+      - "zypper lr rc: {{ qesap_zypper_lr.rc }}"
+
+- name: Assert that the deployment is registered
+  ansible.builtin.assert:
+    that:
+      # 6 is the only 'no repository is defined' exit code. Any other non zero
+      # value means something else is wrong with zypper, not that the host is
+      # unregistered, so it must not be reported as a registration problem.
+      - qesap_zypper_lr.rc != 6
+      # Checked on qesap_scc_status, which is registered again by every play,
+      # rather than on qesap_base_products, which would survive from a
+      # previous play for a host that is in both the hana and iscsi groups.
+      - qesap_scc_status.rc == 0
+      - qesap_base_products | default([]) | length > 0
+      - "'Not Registered' not in (qesap_base_products | default([]))"
+    fail_msg: >-
+      This host is not registered, so no package can be installed.
+      Run the 'registration.yaml' playbook before 'packages-install.yaml'.
+      Base products: {{ qesap_base_products | default([]) | join(', ') | default('none', true) }}.
+      'SUSEConnect --status' returned {{ qesap_scc_status.rc }}
+      ({{ qesap_scc_status.stdout | trim | truncate(200) }}).
+      'zypper lr' returned {{ qesap_zypper_lr.rc }}
+      (6 means no repository is defined).
+    success_msg: "The host is registered"
+
+# ibsm.yaml adds the mirror repositories with the alias 'TEST_<index>', and
+# zypper stores each of them in a repo file named after its alias. The files
+# are looked up instead of parsing the 'zypper lr' table, whose columns are
+# abbreviated depending on the terminal width. 'contains' additionally skips
+# an empty or disabled repo file, which zypper would ignore anyway.
+- name: Look for enabled IBS mirror repo files
+  ansible.builtin.find:
+    paths: /etc/zypp/repos.d
+    patterns: 'TEST_*.repo'
+    contains: '^enabled\s*=\s*1\s*$'
+  register: qesap_ibsm_repo_files
+
+- name: Set the IBS mirror repository status
+  ansible.builtin.set_fact:
+    qesap_ibsm_repos: "{{ qesap_ibsm_repo_files.files | map(attribute='path') | map('basename') | map('regex_replace', '\\.repo$', '') | list }}"
+
+- name: Report the IBS mirror status
+  ansible.builtin.debug:
+    msg: "Enabled IBS mirror repositories: {{ qesap_ibsm_repos | join(', ') | default('none', true) }}"
+
+- name: Assert that the IBS mirror is in place
+  ansible.builtin.assert:
+    that:
+      - qesap_ibsm_repos | length > 0
+    fail_msg: >-
+      'use_ibsm' is set but this host has no enabled IBS mirror repository.
+      Run the 'ibsm.yaml' playbook, with a non empty 'repos', before
+      'packages-install.yaml', otherwise the packages are installed from the
+      SCC repositories instead of the mirror under test.
+    success_msg: "The IBS mirror is in place: {{ qesap_ibsm_repos | join(', ') }}"
+  when: use_ibsm | default(false) | bool
