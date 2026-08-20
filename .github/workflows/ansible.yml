@@ -21,8 +21,11 @@ jobs:
       - name: Install all requirements
         run: |
           python3 -m pip install --upgrade -r requirements.txt
-          # 25.1.3 is the newest version that support ansible-core 2.16.8 we are using right now
-          python3 -m pip install ansible-lint==25.1.3
+          # ansible-lint 25.1.3 is the newest version that supports ansible-core 2.16.
+          # ansible-compat must be pinned <26.8 because 26.8.0 (released ~Aug 2026)
+          # pulls in ansible-core 2.21+ which removed ansible.parsing.yaml.constructor,
+          # breaking ansible-lint at import time.
+          python3 -m pip install 'ansible-lint==25.1.3' 'ansible-compat<26.8'
           ansible-galaxy install -r requirements.yml
 
       - name: Run ansible static tests
