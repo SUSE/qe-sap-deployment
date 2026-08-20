@@ -7,11 +7,12 @@ locals {
 }
 
 resource "google_compute_disk" "data" {
-  count = var.drbd_count
-  name  = "${var.common_variables["deployment_name"]}-disk-drbd-${count.index}"
-  type  = var.drbd_data_disk_type
-  size  = var.drbd_data_disk_size
-  zone  = element(var.compute_zones, count.index)
+  count  = var.drbd_count
+  name   = "${var.common_variables["deployment_name"]}-disk-drbd-${count.index}"
+  type   = var.drbd_data_disk_type
+  size   = var.drbd_data_disk_size
+  zone   = element(var.compute_zones, count.index)
+  labels = var.labels
 }
 
 # Don't remove the routes! Even though the RA gcp-vpc-move-route creates them, if they are not created here, the terraform destroy cannot work as it will find new route names
@@ -53,6 +54,7 @@ module "drbd-load-balancer" {
   tcp_health_check_port = tonumber("61000")
   target_tags           = ["drbd-group"]
   ip_address            = var.common_variables["drbd"]["cluster_vip"]
+  labels                = var.labels
 }
 
 resource "google_compute_instance" "drbd" {
@@ -102,5 +104,6 @@ resource "google_compute_instance" "drbd" {
     scopes = ["compute-rw", "storage-rw", "logging-write", "monitoring-write", "service-control", "service-management"]
   }
 
-  tags = ["drbd-group"]
+  tags   = ["drbd-group"]
+  labels = var.labels
 }

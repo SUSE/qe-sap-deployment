@@ -27,6 +27,14 @@ locals {
     ? "projects/${var.project}/locations/global/hubs/${var.ibsm_hub_name}"
     : null
   )
+
+  base_labels = {
+    workspace = lower(local.deployment_name)
+  }
+  custom_labels = {
+    for k, v in var.custom_tags : lower(k) => lower(v)
+  }
+  labels = merge(local.base_labels, local.custom_labels)
 }
 
 # Network resources: Network, Subnet
@@ -181,4 +189,6 @@ resource "google_network_connectivity_spoke" "edge_to_ibsm" {
   linked_vpc_network {
     uri = local.network_link
   }
+
+  labels = local.labels
 }

@@ -156,6 +156,7 @@ module "drbd_node" {
   iscsi_srv_ip        = module.iscsi_server.iscsisrv_ip
   nfs_mounting_point  = var.drbd_nfs_mounting_point
   nfs_export_name     = var.netweaver_sid
+  labels              = local.labels
 }
 
 module "netweaver_node" {
@@ -174,6 +175,7 @@ module "netweaver_node" {
   iscsi_srv_ip              = module.iscsi_server.iscsisrv_ip
   netweaver_software_bucket = var.netweaver_software_bucket
   virtual_host_ips          = local.netweaver_virtual_ips
+  labels                    = local.labels
 }
 
 module "hana_node" {
@@ -195,6 +197,7 @@ module "hana_node" {
   hana_log_disk_size    = var.hana_log_disk_size
   hana_backup_disk_type = var.hana_backup_disk_type
   hana_backup_disk_size = var.hana_backup_disk_size
+  labels                = local.labels
 }
 
 module "monitoring" {
@@ -208,6 +211,7 @@ module "monitoring" {
   network_subnet_name = local.subnet_name
   os_image            = local.monitoring_os_image
   monitoring_srv_ip   = local.monitoring_srv_ip
+  labels              = local.labels
 }
 
 module "iscsi_server" {
@@ -223,4 +227,5 @@ module "iscsi_server" {
   host_ips            = local.iscsi_ips
   lun_count           = var.iscsi_lun_count
   iscsi_disk_size     = var.iscsi_disk_size
+  labels              = local.labels
 }

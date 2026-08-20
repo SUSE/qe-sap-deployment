@@ -10,11 +10,12 @@ locals {
 }
 
 resource "google_compute_disk" "netweaver-software" {
-  count = local.vm_count
-  name  = "${var.common_variables["deployment_name"]}-nw-installation-sw-${count.index}"
-  type  = "pd-standard"
-  size  = 60
-  zone  = element(var.compute_zones, count.index)
+  count  = local.vm_count
+  name   = "${var.common_variables["deployment_name"]}-nw-installation-sw-${count.index}"
+  type   = "pd-standard"
+  size   = 60
+  zone   = element(var.compute_zones, count.index)
+  labels = var.labels
 }
 
 # Don't remove the routes! Even though the RA gcp-vpc-move-route creates them, if they are not created here, the terraform destroy cannot work as it will find new route names
@@ -88,6 +89,7 @@ module "netweaver-load-balancer-ascs" {
   tcp_health_check_port = tonumber("620${var.common_variables["netweaver"]["ascs_instance_number"]}")
   target_tags           = ["nw-group"]
   ip_address            = element(var.virtual_host_ips, 0)
+  labels                = var.labels
 }
 
 module "netweaver-load-balancer-ers" {
@@ -102,6 +104,7 @@ module "netweaver-load-balancer-ers" {
   tcp_health_check_port = tonumber("621${var.common_variables["netweaver"]["ers_instance_number"]}")
   target_tags           = ["nw-group"]
   ip_address            = element(var.virtual_host_ips, 1)
+  labels                = var.labels
 }
 
 resource "google_compute_instance" "netweaver" {
@@ -151,5 +154,6 @@ resource "google_compute_instance" "netweaver" {
     scopes = ["compute-rw", "storage-rw", "logging-write", "monitoring-write", "service-control", "service-management"]
   }
 
-  tags = ["nw-group"]
+  tags   = ["nw-group"]
+  labels = var.labels
 }

@@ -10,43 +10,48 @@ locals {
 
 # HANA disks configuration information: https://cloud.google.com/solutions/sap/docs/sap-hana-planning-guide#storage_configuration
 resource "google_compute_disk" "data" {
-  count = var.hana_count
-  name  = "${var.common_variables["deployment_name"]}-hana-data"
-  type  = var.hana_data_disk_type
-  size  = var.hana_data_disk_size
-  zone  = element(var.compute_zones, count.index)
+  count  = var.hana_count
+  name   = "${var.common_variables["deployment_name"]}-hana-data"
+  type   = var.hana_data_disk_type
+  size   = var.hana_data_disk_size
+  zone   = element(var.compute_zones, count.index)
+  labels = var.labels
 }
 
 resource "google_compute_disk" "log" {
-  count = var.hana_count
-  name  = "${var.common_variables["deployment_name"]}-hana-log"
-  type  = var.hana_log_disk_type
-  size  = var.hana_log_disk_size
-  zone  = element(var.compute_zones, count.index)
+  count  = var.hana_count
+  name   = "${var.common_variables["deployment_name"]}-hana-log"
+  type   = var.hana_log_disk_type
+  size   = var.hana_log_disk_size
+  zone   = element(var.compute_zones, count.index)
+  labels = var.labels
 }
 
 resource "google_compute_disk" "shared" {
-  count = var.hana_count
-  name  = "${var.common_variables["deployment_name"]}-hana-shared"
-  type  = var.hana_shared_disk_type
-  size  = var.hana_shared_disk_size
-  zone  = element(var.compute_zones, count.index)
+  count  = var.hana_count
+  name   = "${var.common_variables["deployment_name"]}-hana-shared"
+  type   = var.hana_shared_disk_type
+  size   = var.hana_shared_disk_size
+  zone   = element(var.compute_zones, count.index)
+  labels = var.labels
 }
 
 resource "google_compute_disk" "backup" {
-  count = var.hana_count
-  name  = "${var.common_variables["deployment_name"]}-hana-backup"
-  type  = var.hana_backup_disk_type
-  size  = var.hana_backup_disk_size
-  zone  = element(var.compute_zones, count.index)
+  count  = var.hana_count
+  name   = "${var.common_variables["deployment_name"]}-hana-backup"
+  type   = var.hana_backup_disk_type
+  size   = var.hana_backup_disk_size
+  zone   = element(var.compute_zones, count.index)
+  labels = var.labels
 }
 
 resource "google_compute_disk" "usr_sap" {
-  count = var.hana_count
-  name  = "${var.common_variables["deployment_name"]}-usr-sap"
-  type  = var.hana_usr_sap_disk_type
-  size  = var.hana_usr_sap_disk_size
-  zone  = element(var.compute_zones, count.index)
+  count  = var.hana_count
+  name   = "${var.common_variables["deployment_name"]}-usr-sap"
+  type   = var.hana_usr_sap_disk_type
+  size   = var.hana_usr_sap_disk_size
+  zone   = element(var.compute_zones, count.index)
+  labels = var.labels
 }
 
 # Don't remove the routes! Even though the RA gcp-vpc-move-route creates them, if they are not created here, the terraform destroy cannot work as it will find new route names
@@ -91,6 +96,7 @@ module "hana-load-balancer" {
   tcp_health_check_port = tonumber("625${var.common_variables["hana"]["instance_number"]}")
   target_tags           = ["hana-group"]
   ip_address            = var.common_variables["hana"]["cluster_vip"]
+  labels                = var.labels
 }
 
 # Load balancer for Active/Active setup
@@ -106,6 +112,7 @@ module "hana-secondary-load-balancer" {
   tcp_health_check_port = tonumber("626${var.common_variables["hana"]["instance_number"]}")
   target_tags           = ["hana-group"]
   ip_address            = var.common_variables["hana"]["cluster_vip_secondary"]
+  labels                = var.labels
 }
 
 resource "google_compute_instance" "clusternodes" {
@@ -180,5 +187,6 @@ resource "google_compute_instance" "clusternodes" {
     scopes = ["compute-rw", "storage-rw", "logging-write", "monitoring-write", "service-control", "service-management"]
   }
 
-  tags = ["hana-group"]
+  tags   = ["hana-group"]
+  labels = var.labels
 }

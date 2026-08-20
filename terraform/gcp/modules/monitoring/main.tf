@@ -7,11 +7,12 @@ locals {
 }
 
 resource "google_compute_disk" "monitoring_data" {
-  count = var.monitoring_enabled == true ? 1 : 0
-  name  = "${var.common_variables["deployment_name"]}-monitoring-data"
-  type  = "pd-standard"
-  size  = "20"
-  zone  = element(var.compute_zones, 0)
+  count  = var.monitoring_enabled == true ? 1 : 0
+  name   = "${var.common_variables["deployment_name"]}-monitoring-data"
+  type   = "pd-standard"
+  size   = "20"
+  zone   = element(var.compute_zones, 0)
+  labels = var.labels
 }
 
 resource "google_compute_instance" "monitoring" {
@@ -61,4 +62,6 @@ resource "google_compute_instance" "monitoring" {
   service_account {
     scopes = ["compute-rw", "storage-rw", "logging-write", "monitoring-write", "service-control", "service-management"]
   }
+
+  labels = var.labels
 }

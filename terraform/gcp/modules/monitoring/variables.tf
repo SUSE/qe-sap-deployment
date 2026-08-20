@@ -43,3 +43,9 @@ variable "monitoring_srv_ip" {
   type        = string
   default     = ""
 }
+
+variable "labels" {
+  description = "A map of labels to add to all resources in this module"
+  type        = map(string)
+  default     = {}
+}
