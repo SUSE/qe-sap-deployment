@@ -1,43 +1,29 @@
 ---
-- name: Remove conflicting packages from iscsi server for 12-SP5
-  community.general.zypper:
-    name: "{{ item }}"
-    state: absent
-  with_items:
-    - lio-utils           # Only exists in 12SP5
-    - python-rtslib       # Only exists in 12SP5
-    - python-configshell  # Only exists in 12SP5
-    - targetcli           # Only exists in 12SP5
-  when: ansible_distribution_major_version == '12'
-  register: result
-  until: result is succeeded
-  retries: 3
-  delay: 60
-  # SLE12 ships both targetcli and targetcli-fb. They both provide the targetcli
-  # binary but they are not compatible. Neither are packages like
-  # python-configshell and python-configshell-fb. This is not a problem in SLE15
-  # as we only ship fb there.
+# targetcli-fb, and the removal of the packages conflicting with it on 12-SP5,
+# are handled by packages-install.yaml, which has to be executed right after
+# registration.yaml.
+#
+# The assert matters most on 12-SP5: there the image ships the incompatible
+# 'targetcli', which provides the same binary name. Without the removal done
+# by packages-install.yaml the targetcli commands below would not fail, they
+# would silently configure the wrong implementation.
+- name: Gather the package facts
+  ansible.builtin.package_facts:
+    manager: auto
 
-- name: Install targetcli-fb for SLE12
-  community.general.zypper:
-    name: targetcli-fb
-    state: present
-  when: ansible_distribution_major_version == '12'
-  register: result
-  until: result is succeeded
-  retries: 3
-  delay: 60
-
-- name: Install targetcli-fb for SLE15
-  community.general.zypper:
-    name: python3-targetcli-fb
-    state: present
-  when: (ansible_distribution_major_version == '15') or
-        (ansible_distribution_major_version == '16')
-  register: result
-  until: result is succeeded
-  retries: 3
-  delay: 60
+- name: Assert targetcli-fb is installed
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.packages['targetcli-fb'] is defined or
+        ansible_facts.packages['python3-targetcli-fb'] is defined
+      # Only 12-SP5 ships the incompatible 'targetcli' alongside the fb one
+      - ansible_distribution_major_version != '12' or
+        ansible_facts.packages['targetcli'] is not defined
+    fail_msg: >-
+      targetcli-fb is not installed, or the conflicting 'targetcli' is still
+      present. Both are handled by the 'packages-install.yaml' playbook, which
+      has to run before this one.
+    success_msg: "targetcli-fb is installed"
 
 - name: Load AWS disk configuration
   ansible.builtin.include_vars: ./vars/aws_iscsi_storage_profile.yaml

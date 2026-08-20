@@ -1,24 +1,24 @@
 ---
+# sapconf is installed, and the conflicting tuned removed, by
+# packages-install.yaml, which has to be executed right after registration.yaml.
 - name: Gather the package facts
   ansible.builtin.package_facts:
     manager: auto
 
-- name: Remove tuned on SLE12
-  community.general.zypper:
-    name: tuned
-    state: absent
-  when: ansible_facts['distribution_major_version'] == "12"
+- name: Assert sapconf is installed
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.packages['sapconf'] is defined
+    fail_msg: >-
+      sapconf is not installed. It is installed by the 'packages-install.yaml'
+      playbook, which has to run before this one with the same 'use_sapconf'
+      value that is used here (currently {{ use_sapconf | default(false) }}).
+    success_msg: "sapconf is installed"
 
 - name: Set saptune installation status
   ansible.builtin.set_fact:
     saptune_inst: "{{ ansible_facts.packages.saptune[0].version | default('not-installed') }}"
     tuned_inst: "{{ ansible_facts.packages.tuned[0].version | default('not-installed') }}"
-
-- name: Ensure saptune is on latest version. Fix for failing service check.
-  community.general.zypper:
-    name: saptune
-    state: latest
-  when: saptune_inst != 'not-installed'
 
 - name: Ensure saptune is stopped and disabled (if installed)
   ansible.builtin.systemd:
@@ -33,15 +33,6 @@
     state: stopped
     enabled: false
   when: tuned_inst != 'not-installed' and ansible_facts['distribution_major_version'] != "12"
-
-- name: Ensure sapconf is installed
-  community.general.zypper:
-    name: sapconf
-    state: present
-  register: result
-  until: result is succeeded
-  retries: 3
-  delay: 60
 
 - name: Ensure sapconf daemon is started and enabled
   ansible.builtin.systemd:

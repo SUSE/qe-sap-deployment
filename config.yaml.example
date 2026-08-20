@@ -24,6 +24,16 @@ ansible:
     - <IMDB_CLIENT>
   create:
     - registration.yaml -e reg_code=${REG_CODE} -e email_address=${EMAIL}
+    # Uncomment to install from an IBS mirror instead of the SCC repositories.
+    # It has to come before packages-install.yaml, which then also needs
+    # '-e use_ibsm=true' to check that the mirror is really in place.
+    # Uncomment the matching IBSM_* entries in 'variables' below as well:
+    # an unresolved ${...} makes qesap fail.
+    # - ibsm.yaml -e ibsm_ip=${IBSM_IP} -e download_hostname=${IBSM_HOSTNAME} -e repos=${IBSM_REPOS}
+    # packages-install.yaml installs all the packages needed by the
+    # deployment. It must not be executed before registration.yaml, nor
+    # before ibsm.yaml when an IBS mirror is used.
+    - packages-install.yaml -e use_sapconf=${SAPCONF}
     - pre-cluster.yaml
     - sap-hana-preconfigure.yaml -e use_sapconf=${SAPCONF}
     - cluster_sbd_prep.yaml
@@ -39,3 +49,7 @@ ansible:
     REG_CODE: <YOUR_CODE>
     EMAIL: <YOUR_REG_EMAIL>
     SAPCONF: true
+    # Only needed when the ibsm.yaml line above is uncommented.
+    # IBSM_IP: <YOUR_MIRROR_IP>
+    # IBSM_HOSTNAME: <YOUR_MIRROR_DOWNLOAD_HOSTNAME>
+    # IBSM_REPOS: <COMMA_SEPARATED_REPO_URLS>

@@ -2,26 +2,23 @@
 - name: Gather service facts
   ansible.builtin.service_facts:
 
-- name: Ensure that saptune 3.0 or greater is installed
-  community.general.zypper:
-    name: 'saptune>=3.0'
-    state: present
-  register: result
-  until: result is succeeded
-  retries: 3
-  delay: 60
-
+# saptune and its patterns-cockpit dependency are installed by
+# packages-install.yaml, which has to be executed right after registration.yaml.
 - name: Gather package facts
   ansible.builtin.package_facts:
     manager: auto
 
-- name: Install saptune dependency
-  community.general.zypper:
-    name: 'patterns-cockpit'
-    state: present
-  when:
-    - ansible_facts.packages['saptune'][0].version is version('3.2.3', '>=')
-    - ansible_distribution_major_version == '16'
+# Without this the conditions below dereference ansible_facts.packages['saptune'][0]
+# and the play dies with 'dict object has no attribute saptune'.
+- name: Assert saptune is installed
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.packages['saptune'] is defined
+    fail_msg: >-
+      saptune is not installed. It is installed by the 'packages-install.yaml'
+      playbook, which has to run before this one with the same 'use_sapconf'
+      value that is used here (currently {{ use_sapconf | default(false) }}).
+    success_msg: "saptune is installed"
 
 # patterns-cockpit is a dependency introduced in saptune 3.2.3 on SLES 16
 # and is expected to be eventually dropped.
