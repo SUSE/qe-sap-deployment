@@ -1,4 +1,643 @@
 ---
+# This playbook prepares the nodes before the cluster is built, and it is the
+# place where the deployment installs packages.
+#
+# The package plays come first on purpose: they are a precondition for the
+# playbooks that follow in the sequence, and the guard aborts the whole run
+# rather than letting a partially prepared cluster be built.
+#
+# ORDERING CONSTRAINT: package installation needs the repositories in their
+# final state, which means after 'registration.yaml' and, when an IBS mirror
+# is used, after 'ibsm.yaml'. That is already true of the documented sequence;
+# the first play verifies it rather than assuming it. Set 'use_ibsm' to true
+# to make the mirror check mandatory.
+#
+# What the guard does NOT prove: that a subscription is still valid (an
+# expired one is still reported as 'Registered'), that the configured
+# repositories are reachable, or that a given package really resolves from
+# the IBS mirror rather than from SCC.
+
+- name: Assert the repositories are ready
+  # hana:iscsi, not all: only the hosts that go on to install packages need
+  # the repositories. On 'all' an extra inventory host that installs nothing -
+  # a jump box, a monitoring node - could abort the deployment.
+  hosts: hana:iscsi
+  become: true
+  become_user: root
+  # One unregistered node is enough to abort the whole run. Without this only
+  # the failing host is dropped and the survivors are packaged and configured
+  # on their own, which leaves a half built cluster behind.
+  any_errors_fatal: true
+  environment:
+    ZYPP_LOCK_TIMEOUT: '120'
+
+  tasks:
+    - name: Check the configured zypper repositories
+      ansible.builtin.command: zypper --non-interactive lr --uri
+      register: qesap_zypper_lr
+      changed_when: false
+      failed_when: false
+
+    - name: Query the SCC registration status
+      ansible.builtin.command: SUSEConnect --status
+      register: qesap_scc_status
+      changed_when: false
+      failed_when: false
+
+    # 'SUSEConnect --status' returns a JSON list with one entry per installed
+    # product. The base products are the only ones using an upper case identifier
+    # (SLES, SLES_SAP, SLE_HPC, ...); modules and extensions are all lower case
+    # (sle-module-*). All of the base products are collected, not just the first
+    # one, so that an image reporting more than one cannot hide an unregistered
+    # one behind a registered one.
+    #
+    # The fact is set to an empty list when the probe is unusable. SUSEConnect
+    # reports its errors on stdout and with a non zero exit code (64 unreachable,
+    # 66 unparseable, 67 invalid credentials, ...), and it prints the JSON 'null'
+    # when no product is installed at all. The assert below therefore requires the
+    # probe to have succeeded AND to have produced at least one base product,
+    # rather than treating "no data" as "nothing unregistered".
+    #
+    # The task is deliberately NOT conditional: a skipped set_fact would leave the
+    # fact from a previous play in place for a host that is in both the hana and
+    # the iscsi group, and a stale 'Registered' there would satisfy the assert
+    # while this play's own probe returned nothing usable.
+    - name: Set the base product registration status
+      ansible.builtin.set_fact:
+        qesap_base_products: >-
+          {{ (qesap_scc_status.stdout | from_json
+              | selectattr('identifier', 'match', '^[A-Z]')
+              | map(attribute='status', default='unknown') | list)
+             if (qesap_scc_status.rc == 0 and
+                 qesap_scc_status.stdout | trim is match('^\['))
+             else [] }}
+
+    - name: Report the registration status
+      ansible.builtin.debug:
+        msg:
+          - "Base products: {{ qesap_base_products | default([]) | join(', ') | default('none', true) }}"
+          - "SUSEConnect --status rc: {{ qesap_scc_status.rc }}"
+          - "zypper lr rc: {{ qesap_zypper_lr.rc }}"
+
+    - name: Assert that the deployment is registered
+      ansible.builtin.assert:
+        that:
+          # 6 is the only 'no repository is defined' exit code. Any other non zero
+          # value means something else is wrong with zypper, not that the host is
+          # unregistered, so it must not be reported as a registration problem.
+          - qesap_zypper_lr.rc != 6
+          - qesap_scc_status.rc == 0
+          - qesap_base_products | default([]) | length > 0
+          - "'Not Registered' not in (qesap_base_products | default([]))"
+        fail_msg: >-
+          This host is not registered, so no package can be installed.
+          Run the 'registration.yaml' playbook before 'pre-cluster.yaml'.
+          Base products: {{ qesap_base_products | default([]) | join(', ') | default('none', true) }}.
+          'SUSEConnect --status' returned {{ qesap_scc_status.rc }}
+          ({{ qesap_scc_status.stdout | trim | truncate(200) }}).
+          'zypper lr' returned {{ qesap_zypper_lr.rc }}
+          (6 means no repository is defined).
+        success_msg: "The host is registered"
+
+    # ibsm.yaml adds the mirror repositories with the alias 'TEST_<index>', and
+    # zypper stores each of them in a repo file named after its alias. The files
+    # are looked up instead of parsing the 'zypper lr' table, whose columns are
+    # abbreviated depending on the terminal width. 'contains' additionally skips
+    # an empty or disabled repo file, which zypper would ignore anyway.
+    - name: Look for enabled IBS mirror repo files
+      ansible.builtin.find:
+        paths: /etc/zypp/repos.d
+        patterns: 'TEST_*.repo'
+        contains: '^enabled\s*=\s*1\s*$'
+      register: qesap_ibsm_repo_files
+      when: use_ibsm | default(false) | bool
+
+    - name: Set the IBS mirror repository status
+      ansible.builtin.set_fact:
+        qesap_ibsm_repos: "{{ qesap_ibsm_repo_files.files | map(attribute='path') | map('basename') | map('regex_replace', '\\.repo$', '') | list }}"
+      when: use_ibsm | default(false) | bool
+
+    - name: Report the IBS mirror status
+      ansible.builtin.debug:
+        msg: "Enabled IBS mirror repositories: {{ qesap_ibsm_repos | join(', ') | default('none', true) }}"
+      when: use_ibsm | default(false) | bool
+
+    - name: Assert that the IBS mirror is in place
+      ansible.builtin.assert:
+        that:
+          - qesap_ibsm_repos | length > 0
+        fail_msg: >-
+          'use_ibsm' is set but this host has no enabled IBS mirror repository.
+          Run the 'ibsm.yaml' playbook, with a non empty 'repos', before
+          'pre-cluster.yaml', otherwise the packages are installed from the
+          SCC repositories instead of the mirror under test.
+        success_msg: "The IBS mirror is in place: {{ qesap_ibsm_repos | join(', ') }}"
+      when: use_ibsm | default(false) | bool
+
+- name: Install packages on the HANA nodes
+  hosts: hana
+  # A package failure must abort the run. Without this the failed host is
+  # merely dropped and the 'Cluster preparation' play below still runs on
+  # the survivors, which then dereference hostvars[<dropped host>] and die
+  # on a half configured cluster.
+  any_errors_fatal: true
+  become: true
+  become_user: root
+  environment:
+    ZYPP_LOCK_TIMEOUT: '120'
+
+  vars:
+    # SAPHanaSR-angi
+    use_hana_sr_angi: "{{ use_sap_hana_sr_angi | default(false) }}"
+    scale_out: false
+    use_sapconf: false
+    cluster_node: true
+
+
+  pre_tasks:
+    # vars/hana_vars.yaml is only written when the conf.yaml has an
+    # 'ansible::hana_vars' section, so it is optional here and the defaults
+    # above are used without it.
+    - name: Source hana install variables
+      ansible.builtin.include_vars: "{{ item }}"
+      with_first_found:
+        - files:
+            - ./vars/hana_vars.yaml
+          skip: true
+
+    - name: Detect cloud platform
+      ansible.builtin.include_tasks:
+        ./tasks/detect-cloud-platform.yaml
+
+  tasks:
+
+    # -----------------------------------------------------------------
+    # Packages used in sap-hana-preconfigure.yaml
+    # -----------------------------------------------------------------
+    - name: Ensure libssl 2.1 is installed on distributed Systems
+      community.general.zypper:
+        name: libssh2-1  # Caution, no version control here (yet)
+        state: present
+      when: scale_out | bool
+
+    - name: Ensure iscsi is installed
+      community.general.zypper:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - 'iscsiuio'
+        - 'open-iscsi'
+      when: use_sbd | default(false) | bool
+
+      # 3018133 - Linux: Running SAP applications compiled with GCC 10.x
+    - name: Ensure GCC10 is installed
+      community.general.zypper:
+        name: "{{ item }}"
+        state: present
+        oldpackage: true
+      loop:
+        - 'libgcc_s1>=10.2.1'
+        - 'libstdc++6>=10.2.1'
+        - 'libatomic1>=10.2.1'
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+
+    - name: Ensure ClusterTools2 is installed
+      community.general.zypper:
+        name: ClusterTools2
+        state: present
+      when: cluster_node | bool
+
+    - name: SAPHanaSR package pattern
+      ansible.builtin.set_fact:
+        saphanasr_patterns: >-
+          {{ ['absent', 'present' ]
+             if ( use_hana_sr_angi | bool )
+             else ['present', 'absent']
+          }}
+
+    - name: Ensure SAPHanaSR-doc and SAPHanaSR is NOT installed when angi is used
+      community.general.zypper:
+        name: "{{ item }}"
+        state: "{{ saphanasr_patterns[0] }}"
+      loop:
+        - 'SAPHanaSR-doc'
+        - 'SAPHanaSR'
+      when: cluster_node | bool
+
+    - name: Ensure SAPHanaSR-angi and supportutils plugin is installed when angi is used
+      community.general.zypper:
+        name: "{{ item }}"
+        state: "{{ saphanasr_patterns[1] }}"
+      loop:
+        - 'SAPHanaSR-angi'
+        - 'supportutils-plugin-ha-sap'
+      when: cluster_node | bool
+
+    # -----------------------------------------------------------------
+    # Packages used in tasks/sapconf.yaml.
+    # The configuration of the tuning daemon stays in that task file,
+    # only the package installation is done here.
+    # -----------------------------------------------------------------
+    - name: Gather the package facts
+      ansible.builtin.package_facts:
+        manager: auto
+      when: use_sapconf | bool
+
+    # Same probe as for saptune below: not every image and repository set has
+    # sapconf at all. 'zypper search' exits 104 when nothing matches. Note it
+    # matches installed packages as well as available ones, so this answers
+    # "does sapconf exist here at all", not "can it be installed from a repo".
+    - name: Look for sapconf
+      ansible.builtin.command:
+        cmd: zypper --non-interactive search --match-exact --type package sapconf
+      register: qesap_sapconf_search
+      changed_when: false
+      failed_when: false
+      environment:
+        # the output is parsed below; community.general.zypper pins C too
+        LC_ALL: C
+      when: use_sapconf | bool
+
+    # rc 104 alone is not conclusive: a repository that fails to load also ends
+    # in 104, and a host with no repositories at all returns 104 for anything
+    # not already installed. Treating either as "not shipped" would skip the
+    # install and the tuning on a broken system and still report success, so
+    # the output is checked too - stderr as well as stdout, because zypper
+    # writes "Error building the cache:" to stderr.
+    #
+    # Only checked when rc is non zero. On rc 0 the answer is already
+    # conclusive: a host whose repositories are all disabled still reports its
+    # installed packages, and warning about that must not abort the run.
+    - name: Assert the sapconf probe was conclusive
+      ansible.builtin.assert:
+        that:
+          - qesap_sapconf_search.rc in [0, 104]
+          - qesap_sapconf_search.rc == 0 or
+            (qesap_sapconf_search.stdout ~ ' ' ~ qesap_sapconf_search.stderr)
+            is not search('(?i)error|problem loading|not loaded|no repositories defined')
+        fail_msg: >-
+          Could not determine whether sapconf is available, so it is not
+          silently treated as missing. Either zypper exited with an unexpected
+          code, or it reported a repository error; both are environment
+          problems. zypper exited {{ qesap_sapconf_search.rc }}.
+          {{ (qesap_sapconf_search.stdout ~ ' ' ~ qesap_sapconf_search.stderr) | trim | truncate(400) }}
+        success_msg: "The sapconf availability probe is conclusive"
+      when: use_sapconf | bool
+
+    - name: Report that sapconf is not available
+      ansible.builtin.debug:
+        msg:
+          - "sapconf is neither installed nor available, so it is not installed."
+          - "The sapconf tuning of sap-hana-preconfigure.yaml will be skipped."
+      when:
+        - use_sapconf | bool
+        - qesap_sapconf_search.rc == 104
+
+    # SLE12 ships both sapconf and tuned and they conflict with each other,
+    # so tuned has to go before sapconf is installed. It is only removed when
+    # sapconf can actually replace it, otherwise the node would be left with
+    # no tuning daemon at all.
+    - name: Remove tuned on SLE12
+      community.general.zypper:
+        name: tuned
+        state: absent
+      when:
+        - use_sapconf | bool
+        - qesap_sapconf_search.rc == 0
+        - ansible_facts['distribution_major_version'] == "12"
+
+    - name: Ensure saptune is on latest version. Fix for failing service check.
+      community.general.zypper:
+        name: saptune
+        state: latest
+      when:
+        - use_sapconf | bool
+        - ansible_facts.packages.saptune is defined
+
+    - name: Ensure sapconf is installed
+      community.general.zypper:
+        name: sapconf
+        state: present
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+      when:
+        - use_sapconf | bool
+        - qesap_sapconf_search.rc == 0
+
+    # -----------------------------------------------------------------
+    # Packages used in tasks/saptune.yaml
+    # -----------------------------------------------------------------
+    # Not every image and repository set has saptune at all. Probing first
+    # turns a hard failure into a skip with an explicit message when saptune
+    # is absent entirely. 'zypper search' exits 104 when nothing matches.
+    # Note it matches installed packages as well as available ones, so this
+    # answers "does saptune exist here at all", not "can it be installed from
+    # a repo": a preinstalled but too old saptune still reaches the install
+    # below and fails there, which is the right outcome for that case.
+    - name: Look for saptune
+      ansible.builtin.command:
+        cmd: zypper --non-interactive search --match-exact --type package saptune
+      register: qesap_saptune_search
+      changed_when: false
+      failed_when: false
+      environment:
+        # the output is parsed below; community.general.zypper pins C too
+        LC_ALL: C
+      when: not use_sapconf | bool
+
+    # rc 104 alone is not conclusive: a repository that fails to load also ends
+    # in 104, and a host with no repositories at all returns 104 for anything
+    # not already installed. Treating either as "not shipped" would skip the
+    # install and the tuning on a broken system and still report success, so
+    # the output is checked too - stderr as well as stdout, because zypper
+    # writes "Error building the cache:" to stderr.
+    #
+    # Only checked when rc is non zero. On rc 0 the answer is already
+    # conclusive: a host whose repositories are all disabled still reports its
+    # installed packages, and warning about that must not abort the run.
+    - name: Assert the saptune probe was conclusive
+      ansible.builtin.assert:
+        that:
+          - qesap_saptune_search.rc in [0, 104]
+          - qesap_saptune_search.rc == 0 or
+            (qesap_saptune_search.stdout ~ ' ' ~ qesap_saptune_search.stderr)
+            is not search('(?i)error|problem loading|not loaded|no repositories defined')
+        fail_msg: >-
+          Could not determine whether saptune is available, so it is not
+          silently treated as missing. Either zypper exited with an unexpected
+          code, or it reported a repository error; both are environment
+          problems. zypper exited {{ qesap_saptune_search.rc }}.
+          {{ (qesap_saptune_search.stdout ~ ' ' ~ qesap_saptune_search.stderr) | trim | truncate(400) }}
+        success_msg: "The saptune availability probe is conclusive"
+      when: not use_sapconf | bool
+
+    - name: Report that saptune is not available
+      ansible.builtin.debug:
+        msg:
+          - "saptune is neither installed nor available, so it is not installed."
+          - "The saptune tuning of sap-hana-preconfigure.yaml will be skipped."
+      when:
+        - not use_sapconf | bool
+        - qesap_saptune_search.rc == 104
+
+    - name: Ensure that saptune 3.0 or greater is installed
+      community.general.zypper:
+        name: 'saptune>=3.0'
+        state: present
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+      when:
+        - not use_sapconf | bool
+        - qesap_saptune_search.rc == 0
+
+    - name: Gather the package facts after the saptune installation
+      ansible.builtin.package_facts:
+        manager: auto
+      when: not use_sapconf | bool
+
+    # patterns-cockpit is a dependency introduced in saptune 3.2.3 on SLES 16
+    # and is expected to be eventually dropped.
+    # https://bugzilla.suse.com/show_bug.cgi?id=1262794#c4 and https://bugzilla.suse.com/show_bug.cgi?id=1262794#c5
+    #
+    # The conditions are collected into one fact rather than repeated on the
+    # four tasks below. Jinja 'and' short circuits, so the version dereference
+    # is only evaluated on SLES 16 and only once saptune is known to be in the
+    # package facts; the other way round a host without saptune dies with
+    # "object of type 'dict' has no attribute 'saptune'" instead of skipping.
+    - name: Decide whether the saptune dependency is needed
+      ansible.builtin.set_fact:
+        qesap_need_patterns_cockpit: >-
+          {{ not use_sapconf | bool
+             and ansible_facts['distribution_major_version'] == '16'
+             and ansible_facts.packages['saptune'] is defined
+             and ansible_facts.packages['saptune'][0].version is version('3.2.3', '>=') }}
+
+    # Same availability probe as saptune and sapconf: the Cockpit module is not
+    # always enabled, and this task sits in a play with any_errors_fatal, so an
+    # unavailable dependency would otherwise abort the whole deployment.
+    # '--type package', not '--type pattern': patterns-cockpit is the RPM that
+    # carries the pattern, which is what the zypper module installs by default.
+    # The pattern object itself is called 'cockpit', without the prefix.
+    - name: Look for patterns-cockpit
+      ansible.builtin.command:
+        cmd: zypper --non-interactive search --match-exact --type package patterns-cockpit
+      register: qesap_patterns_cockpit_search
+      changed_when: false
+      failed_when: false
+      environment:
+        # the output is parsed below; community.general.zypper pins C too
+        LC_ALL: C
+      when: qesap_need_patterns_cockpit | bool
+
+    - name: Assert the patterns-cockpit probe was conclusive
+      ansible.builtin.assert:
+        that:
+          - qesap_patterns_cockpit_search.rc in [0, 104]
+          - qesap_patterns_cockpit_search.rc == 0 or
+            (qesap_patterns_cockpit_search.stdout ~ ' ' ~ qesap_patterns_cockpit_search.stderr)
+            is not search('(?i)error|problem loading|not loaded|no repositories defined')
+        fail_msg: >-
+          Could not determine whether patterns-cockpit is available, so it is not
+          silently treated as missing. Either zypper exited with an unexpected
+          code, or it reported a repository error; both are environment
+          problems. zypper exited {{ qesap_patterns_cockpit_search.rc }}.
+          {{ (qesap_patterns_cockpit_search.stdout ~ ' ' ~ qesap_patterns_cockpit_search.stderr) | trim | truncate(400) }}
+        success_msg: "The patterns-cockpit availability probe is conclusive"
+      when: qesap_need_patterns_cockpit | bool
+
+    - name: Report that patterns-cockpit is not available
+      ansible.builtin.debug:
+        msg:
+          - "patterns-cockpit is neither installed nor available, so it is not installed."
+          - "saptune {{ ansible_facts.packages['saptune'][0].version }} on SLES 16 expects it,"
+          - "so 'saptune_check' in sap-hana-preconfigure.yaml may report it missing."
+      when:
+        - qesap_need_patterns_cockpit | bool
+        - qesap_patterns_cockpit_search.rc == 104
+
+    - name: Install saptune dependency
+      community.general.zypper:
+        name: 'patterns-cockpit'
+        state: present
+      when:
+        - qesap_need_patterns_cockpit | bool
+        - qesap_patterns_cockpit_search.rc == 0
+
+    # -----------------------------------------------------------------
+    # Packages used in tasks/client-sbd-config.yaml
+    # -----------------------------------------------------------------
+    - name: Ensure lsscsi is installed (SLES16)
+      community.general.zypper:
+        name: lsscsi
+        state: present
+      when: ansible_distribution_major_version == '16'
+
+    # -----------------------------------------------------------------
+    # Cluster packages for the cloud specific cluster bootstrap task
+    # files.
+    # -----------------------------------------------------------------
+    - name: Ensure cluster dependencies are installed [azure]
+      community.general.zypper:
+        name: "{{ item }}"  # Caution, no version control here (yet)
+        state: present
+      loop:
+        - socat
+        - resource-agents
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+      when:
+        - cluster_node | bool
+        - cloud_platform_is_azure
+
+    # 15-SP6 Image refresh on 20241113 get it pre-installed
+    - name: Ensure cluster dependencies for SLES 15-SP4 and 15-SP5 are installed [azure]
+      community.general.zypper:
+        name: "{{ item }}"  # Caution, no version control here (yet)
+        state: present
+      loop:
+        - fence-agents-azure-arm    # Workaround for bsc#1224797. We should remove this line once the base OS images include the package
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+      when:
+        - cluster_node | bool
+        - cloud_platform_is_azure
+        - ansible_distribution_version is version('15.4', '==') or
+          ansible_distribution_version is version('15.5', '==') or
+          ansible_distribution_version is version('12.5', '==')
+
+    - name: Ensure Azure Python SDK and Azure Identity python modules are installed [15 sp<4]
+      community.general.zypper:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - 'python3-azure-mgmt-compute'
+        - 'python3-azure-identity'
+      when:
+        - cluster_node | bool
+        - cloud_platform_is_azure
+        - ansible_distribution_version is version('15.4', '<')
+        - ansible_distribution_version is version('12.5', '!=')
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+
+    # https://www.suse.com/c/incompatible-changes-ahead-for-public-cloud-sdks/
+    - name: Ensure Azure Python SDK and Azure Identity python modules are installed [15 sp>=4]
+      community.general.zypper:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - 'python311-azure-mgmt-compute'
+        - 'python311-azure-identity'
+      when:
+        - cluster_node | bool
+        - cloud_platform_is_azure
+        - ansible_distribution_major_version == '15'
+        - ansible_distribution_version is version('15.4', '>=')
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+
+    - name: Ensure Azure Python SDK and Azure Identity python modules are installed [16]
+      community.general.zypper:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - 'python313-azure-mgmt-compute'
+        - 'python313-azure-identity'
+      when:
+        - cluster_node | bool
+        - cloud_platform_is_azure
+        - ansible_distribution_major_version == '16'
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+
+    - name: Ensure cluster dependencies are installed [aws, gcp]
+      community.general.zypper:
+        name: ['corosync', 'crmsh', 'fence-agents', 'pacemaker', 'patterns-ha-ha_sles', 'resource-agents', 'rsyslog', 'socat']
+        state: present
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+      when:
+        - cluster_node | bool
+        - cloud_platform_is_aws or cloud_platform_is_gcp
+
+- name: Install packages on the iSCSI server
+  hosts: iscsi
+  # A package failure must abort the run. Without this the failed host is
+  # merely dropped and the 'Cluster preparation' play below still runs on
+  # the survivors, which then dereference hostvars[<dropped host>] and die
+  # on a half configured cluster.
+  any_errors_fatal: true
+  become: true
+  become_user: root
+  environment:
+    ZYPP_LOCK_TIMEOUT: '120'
+
+  tasks:
+
+    # -----------------------------------------------------------------
+    # Packages used in tasks/iscsi-server-sbd-prep.yaml
+    # The removal is kept together with the installation because on
+    # 12-SP5 the packages below conflict with targetcli-fb.
+    # -----------------------------------------------------------------
+    - name: Remove conflicting packages from iscsi server for 12-SP5
+      community.general.zypper:
+        name: "{{ item }}"
+        state: absent
+      with_items:
+        - lio-utils           # Only exists in 12SP5
+        - python-rtslib       # Only exists in 12SP5
+        - python-configshell  # Only exists in 12SP5
+        - targetcli           # Only exists in 12SP5
+      when: ansible_distribution_major_version == '12'
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+      # SLE12 ships both targetcli and targetcli-fb. They both provide the targetcli
+      # binary but they are not compatible. Neither are packages like
+      # python-configshell and python-configshell-fb. This is not a problem in SLE15
+      # as we only ship fb there.
+
+    - name: Install targetcli-fb for SLE12
+      community.general.zypper:
+        name: targetcli-fb
+        state: present
+      when: ansible_distribution_major_version == '12'
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+
+    - name: Install targetcli-fb for SLE15
+      community.general.zypper:
+        name: python3-targetcli-fb
+        state: present
+      when: (ansible_distribution_major_version == '15') or
+            (ansible_distribution_major_version == '16')
+      register: result
+      until: result is succeeded
+      retries: 3
+      delay: 60
+
 - name: Cluster preparation
   hosts: all
   vars:

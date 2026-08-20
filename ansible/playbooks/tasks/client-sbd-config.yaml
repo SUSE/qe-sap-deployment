@@ -8,12 +8,23 @@
 ##
 # Use lsscsi to report all the disks.  Our new disks will not be in facts yet
 
-- name: Ensure lsscsi is installed (SLES16)
-  become: true
-  community.general.zypper:
-    name: lsscsi
-    state: present
-  when: ansible_distribution_major_version == '16'
+# On SLES 16 lsscsi is not in the image; pre-cluster.yaml installs it there
+# and has to run before this one. On SLE 12 and 15 it comes with the image.
+- name: Look for lsscsi
+  ansible.builtin.command: which lsscsi
+  register: qesap_which_lsscsi
+  changed_when: false
+  failed_when: false
+
+- name: Assert lsscsi is available
+  ansible.builtin.assert:
+    that:
+      - qesap_which_lsscsi.rc == 0
+    fail_msg: >-
+      lsscsi is not installed. On SLES 16 it is installed by the
+      'pre-cluster.yaml' playbook, which has to run before this one. On SLE 12
+      and 15 it is expected to come with the image.
+    success_msg: "lsscsi is available"
 
 # Find all scsi devices
 - name: Discovery iscsi devices

@@ -176,7 +176,9 @@ ansible:
   sequences:
     create:
       - registration.yaml -e reg_code=******* -e email_address=your@email.some
-      - pre-cluster.yaml
+      # to install from an IBS mirror, add ibsm.yaml here and
+      # '-e use_ibsm=true' to the line below
+      - pre-cluster.yaml -e use_sapconf=true
       - sap-hana-preconfigure.yaml -e use_sapconf=true
       - cluster_sbd_prep.yaml
       - sap-hana-storage.yaml
