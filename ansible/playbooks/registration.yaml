@@ -8,8 +8,23 @@
 
   vars:
     use_suseconnect: false  # Set to false unless specified
+    is_flavor: ''  # Set to 'BYOS' or 'PAYG' to bypass instance-flavor-check
 
   tasks:
+
+    - name: Validate is_flavor override
+      ansible.builtin.assert:
+        that:
+          - is_flavor in ['BYOS', 'PAYG']
+        fail_msg: "'is_flavor' must be either 'BYOS' or 'PAYG' when set"
+        success_msg: "'is_flavor' override is OK"
+      changed_when: false
+      when: is_flavor | length > 0
+
+    - name: Set registration flag based on is_flavor override
+      ansible.builtin.set_fact:
+        to_be_registered: "{{ is_flavor == 'BYOS' }}"
+      when: is_flavor | length > 0
 
     # Pre flight checks
     - name: Check for instance-flavor-check presence
@@ -17,6 +32,7 @@
       register: ifc_bin
       changed_when: false
       failed_when: false
+      when: is_flavor | length == 0
 
     - name: Check for SUSEConnect binary presence
       ansible.builtin.command: which SUSEConnect
@@ -27,18 +43,23 @@
       register: flavor
       failed_when: false
       changed_when: false
-      when: ifc_bin.rc == 0
+      when:
+        - is_flavor | length == 0
+        - ifc_bin.rc == 0
 
     - name: Classify instance-flavor-check outcome
       ansible.builtin.set_fact:
         flavor_ok: "{{ flavor.rc in [10, 11, 12] and (('BYOS' in flavor.stdout) or ('PAYG' in flavor.stdout)) }}"
         flavor_known_bug: "{{ flavor.rc == 1 and 'FileNotFoundError: [Errno 2] No such file or directory' in flavor.stderr }}"
-      when: ifc_bin.rc == 0
+      when:
+        - is_flavor | length == 0
+        - ifc_bin.rc == 0
 
     - name: Fail on unexpected instance-flavor-check result
       ansible.builtin.fail:
         msg: "instance-flavor-check unexpected result: rc={{ flavor.rc }} stdout={{ flavor.stdout }} stderr={{ flavor.stderr }}"
       when:
+        - is_flavor | length == 0
         - ifc_bin.rc == 0
         - not flavor_ok
         - not flavor_known_bug
@@ -49,6 +70,7 @@
           - "[OSADO][softfail] bsc#1267739 instance-flavor-check crashed with FileNotFoundError"
           - "Falling back to SUSEConnect -s to detect registration status"
       when:
+        - is_flavor | length == 0
         - ifc_bin.rc == 0
         - flavor_known_bug
 
@@ -56,6 +78,7 @@
       ansible.builtin.set_fact:
         to_be_registered: "{{ 'BYOS' in flavor.stdout }}"
       when:
+        - is_flavor | length == 0
         - ifc_bin.rc == 0
         - flavor_ok
 
@@ -69,12 +92,16 @@
       delay: 120
       failed_when: repos.rc != 0
       changed_when: false
-      when: ifc_bin.rc != 0 or (flavor_known_bug | default(false))
+      when:
+        - is_flavor | length == 0
+        - ifc_bin.rc != 0 or (flavor_known_bug | default(false))
 
     - name: Check for 'Not Registered'
       ansible.builtin.set_fact:
         to_be_registered: "{{ 'Not Registered' in repos.stdout }}"
-      when: ifc_bin.rc != 0 or (flavor_known_bug | default(false))
+      when:
+        - is_flavor | length == 0
+        - ifc_bin.rc != 0 or (flavor_known_bug | default(false))
 
     # Is registercloudguest available?
     # Only check about it if there any chance that it needs to be used
