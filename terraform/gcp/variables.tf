@@ -756,3 +756,10 @@ variable "ibsm_hub_name" {
   type        = string
   default     = ""
 }
+
+# Custom resource tags (labels) variable
+variable "custom_tags" {
+  description = "Optional custom tags/labels to apply to all resources"
+  type        = map(string)
+  default     = {}
+}

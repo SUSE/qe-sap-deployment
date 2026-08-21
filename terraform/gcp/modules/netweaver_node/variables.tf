@@ -66,3 +66,9 @@ variable "virtual_host_ips" {
   description = "virtual ip addresses to set to the nodes"
   type        = list(string)
 }
+
+variable "labels" {
+  description = "A map of labels to add to all resources in this module"
+  type        = map(string)
+  default     = {}
+}

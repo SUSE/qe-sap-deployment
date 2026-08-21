@@ -4,11 +4,12 @@ locals {
 }
 
 resource "google_compute_disk" "iscsi_data" {
-  count = var.iscsi_count
-  name  = "${var.common_variables["deployment_name"]}-iscsi-data-${count.index + 1}"
-  type  = "pd-standard"
-  size  = var.iscsi_disk_size
-  zone  = element(var.compute_zones, 0)
+  count  = var.iscsi_count
+  name   = "${var.common_variables["deployment_name"]}-iscsi-data-${count.index + 1}"
+  type   = "pd-standard"
+  size   = var.iscsi_disk_size
+  zone   = element(var.compute_zones, 0)
+  labels = var.labels
 }
 
 resource "google_compute_instance" "iscsisrv" {
@@ -58,4 +59,6 @@ resource "google_compute_instance" "iscsisrv" {
   service_account {
     scopes = ["compute-rw", "storage-rw", "logging-write", "monitoring-write", "service-control", "service-management"]
   }
+
+  labels = var.labels
 }

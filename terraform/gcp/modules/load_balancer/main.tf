@@ -61,4 +61,5 @@ resource "google_compute_forwarding_rule" "load-balancer-forwarding-rule" {
   ip_address            = var.ip_address
   backend_service       = google_compute_region_backend_service.backend-service.id
   all_ports             = true
+  labels                = var.labels
 }

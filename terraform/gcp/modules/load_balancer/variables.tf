@@ -42,3 +42,9 @@ variable "ip_address" {
   description = "IP address which the data is forwarded"
   type        = string
 }
+
+variable "labels" {
+  description = "A map of labels to add to all resources in this module"
+  type        = map(string)
+  default     = {}
+}
