@@ -739,3 +739,9 @@ variable "hana_destroy_timeout" {
   description = "How long Terraform should wait (in minutes) before giving up on a resource deletion."
   default     = 60
 }
+
+variable "custom_tags" {
+  description = "Optional custom tags to apply to all resources"
+  type        = map(string)
+  default     = {}
+}

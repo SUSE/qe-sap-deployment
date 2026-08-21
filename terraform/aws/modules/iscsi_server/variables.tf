@@ -68,3 +68,9 @@ variable "lun_count" {
   type        = number
   default     = 3
 }
+
+variable "tags" {
+  description = "A map of tags to add to all resources in this module"
+  type        = map(string)
+  default     = {}
+}

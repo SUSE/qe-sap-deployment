@@ -14,10 +14,9 @@ resource "aws_subnet" "hana-subnet" {
   cidr_block        = element(var.subnet_address_range, count.index)
   availability_zone = element(var.availability_zones, count.index)
 
-  tags = {
-    name      = "${var.common_variables["deployment_name"]}-hana-subnet-${count.index + 1}"
-    workspace = var.common_variables["deployment_name"]
-  }
+  tags = merge({
+    name = "${var.common_variables["deployment_name"]}-hana-subnet-${count.index + 1}"
+  }, var.tags)
 }
 
 resource "aws_route_table_association" "hana-subnet-route-association" {
@@ -76,10 +75,6 @@ resource "aws_instance" "hana" {
     }
   }
 
-  volume_tags = {
-    Name = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
-  }
-
   #maintenance_options {
   #  auto_recovery = "disabled" # see https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-on-aws-cluster-configuration.html
   #}
@@ -88,9 +83,12 @@ resource "aws_instance" "hana" {
     delete = "${var.destroy_timeout}m"
   }
 
-  tags = {
+  volume_tags = merge({
+    Name = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
+  }, var.tags)
+
+  tags = merge({
     name                        = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
-    workspace                   = var.common_variables["deployment_name"]
     "${local.hana_stonith_tag}" = "${var.name}${format("%02d", count.index + 1)}"
-  }
+  }, var.tags)
 }

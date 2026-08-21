@@ -19,12 +19,19 @@ locals {
   vpc_id            = var.vpc_id == "" ? aws_vpc.vpc.0.id : var.vpc_id
   internet_gateway  = var.vpc_id == "" ? aws_internet_gateway.igw.0.id : data.aws_internet_gateway.current-gateway.0.internet_gateway_id
   security_group_id = var.security_group_id != "" ? var.security_group_id : aws_security_group.secgroup.0.id
+
+  base_tags = {
+    workspace = local.deployment_name
+  }
+  tags = merge(local.base_tags, var.custom_tags)
 }
 
 # AWS key pair
 resource "aws_key_pair" "key-pair" {
   key_name   = "${local.deployment_name} - terraform"
   public_key = module.common_variables.configuration["public_key"]
+
+  tags = local.tags
 }
 
 # AWS availability zones
@@ -39,10 +46,9 @@ resource "aws_vpc" "vpc" {
   enable_dns_hostnames = true
   enable_dns_support   = true
 
-  tags = {
-    name      = "${local.deployment_name}-vpc"
-    workspace = local.deployment_name
-  }
+  tags = merge({
+    name = "${local.deployment_name}-vpc"
+  }, local.tags)
 }
 
 resource "aws_internet_gateway" "igw" {
@@ -53,10 +59,9 @@ resource "aws_internet_gateway" "igw" {
     delete = "${var.hana_destroy_timeout + 10}m"
   }
 
-  tags = {
-    name      = "${local.deployment_name}-igw"
-    workspace = local.deployment_name
-  }
+  tags = merge({
+    name = "${local.deployment_name}-igw"
+  }, local.tags)
 }
 
 resource "aws_subnet" "infra-subnet" {
@@ -64,19 +69,17 @@ resource "aws_subnet" "infra-subnet" {
   cidr_block        = local.infra_subnet_address_range
   availability_zone = element(data.aws_availability_zones.available.names, 0)
 
-  tags = {
-    name      = "${local.deployment_name}-infra-subnet"
-    workspace = local.deployment_name
-  }
+  tags = merge({
+    name = "${local.deployment_name}-infra-subnet"
+  }, local.tags)
 }
 
 resource "aws_route_table" "route-table" {
   vpc_id = local.vpc_id
 
-  tags = {
-    name      = "${local.deployment_name}-hana-route-table"
-    workspace = local.deployment_name
-  }
+  tags = merge({
+    name = "${local.deployment_name}-hana-route-table"
+  }, local.tags)
 }
 
 resource "aws_route_table_association" "infra-subnet-route-association" {
@@ -100,10 +103,9 @@ resource "aws_security_group" "secgroup" {
   name   = "${local.deployment_name}-sg"
   vpc_id = local.vpc_id
 
-  tags = {
-    name      = "${local.deployment_name}-sg"
-    workspace = local.deployment_name
-  }
+  tags = merge({
+    name = "${local.deployment_name}-sg"
+  }, local.tags)
 }
 
 resource "aws_security_group_rule" "outall" {
@@ -295,10 +297,9 @@ resource "aws_ec2_transit_gateway_vpc_attachment" "ibsm" {
   transit_gateway_id = data.aws_ec2_transit_gateway.ibsm[0].id
   subnet_ids         = local.one_per_az_subnet_ids # One subnet per AZ
 
-  tags = {
-    Name      = "${local.deployment_name}-tgw-attach"
-    workspace = local.deployment_name
-  }
+  tags = merge({
+    Name = "${local.deployment_name}-tgw-attach"
+  }, local.tags)
 }
 
 resource "aws_route" "to_ibsm_via_tgw" {

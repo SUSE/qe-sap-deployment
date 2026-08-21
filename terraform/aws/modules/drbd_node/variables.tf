@@ -94,3 +94,9 @@ variable "nfs_export_name" {
   description = "Name of the created export in the NFS service. Usually, the `sid` of the SAP instances is used"
   type        = string
 }
+
+variable "tags" {
+  description = "A map of tags to add to all resources in this module"
+  type        = map(string)
+  default     = {}
+}
