@@ -43,6 +43,11 @@
       register: flavor
       failed_when: false
       changed_when: false
+      until: >
+        flavor.rc != 11 or
+        (reg_code is defined and reg_code | length > 0)
+      retries: 3
+      delay: 10
       when:
         - is_flavor | length == 0
         - ifc_bin.rc == 0
