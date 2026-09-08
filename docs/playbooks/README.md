@@ -4,9 +4,10 @@ The playbooks in this project are written to be executed after
 `terraform apply` and in the following order:
 
 * registration.yaml
+* ibsm.yaml (optional)
 * pre-cluster.yaml
 * sap-hana-preconfigure.yaml
-* cluster-sbd_prep.yaml
+* cluster_sbd_prep.yaml
 * sap-hana-storage.yaml
 * sap-hana-download-media.yaml
 * sap-hana-install.yaml
@@ -61,28 +62,154 @@ create:
     - registration.yaml (.......other variables here......) -e sles_modules='[{"key":"<module1>","value":"<regcode1>"},{"key":"<module2","value":"<regcode2>"}]'
 ```
 
-## pre-cluster
+## ibsm
 
 Target hosts:
 
 * all
 
-Variables: N/A
+Variables:
 
-Variable Source = N/A
+* ibsm_ip
+* download_hostname
+* repos
+* priority
 
-The pre-cluster playbook performs a number of simple tasks that need to be
-completed before the HANA clustering can commence. No variables need to
-be set for this playbook.
+Variable Source = from the command line in the conf.yaml
 
-Firstly, the playbook ensure that the `/etc/hosts` on each system contains
-a valid entry for all other hosts.
+This optional playbook points the hosts at an IBS mirror: it adds the mirror
+to `/etc/hosts` and registers the comma separated list of `repos` as zypper
+repositories aliased `TEST_<index>`, then refreshes all the repositories.
 
-After this first step the rest of the plays are only conducted on the `hana`
-node group. A ssh key-pair is created (if one doesn't already exist) for the
-root user. The root public key for each hana node is inserted into the
-`/root/.ssh/authorized_keys`. Finally, a command is run from each host to
-each target (including itself) to accept the keys.
+It is used to test packages that are not in SCC yet. Because it changes where
+zypper takes the packages from, it has to run **before**
+`pre-cluster.yaml` and after `registration.yaml`.
+
+Note that adding the mirror does not by itself guarantee that a package comes
+from it: zypper still resolves by version and repository priority. Use the
+`priority` variable when the mirror has to win over the SCC repositories.
+
+## pre-cluster
+
+Target hosts:
+
+* hana and iscsi (repository guard and the package plays)
+* all (the /etc/hosts and ssh key preparation)
+
+Variables:
+
+* use_sapconf
+* use_sbd
+* use_sap_hana_sr_angi
+* use_ibsm
+* cluster_node - defaults to true; false skips every cluster package
+* scale_out - defaults to false
+
+Variable Sources:
+
+* `./vars/hana_vars.yaml`, which is optional here: it only exists when the
+  conf.yaml has an `ansible::hana_vars` section, and the playbook falls back
+  on its own defaults without it
+* the terraform inventory, which provides `use_sbd`; `cloud_platform_name` is
+  set there for some providers and otherwise derived by
+  `./tasks/detect-cloud-platform.yaml`
+* the command line in the conf.yaml, for `use_sapconf` and `use_ibsm`.
+  `use_ibsm` has to come from the command line: the guard runs in the first
+  play, which does not read `hana_vars.yaml`.
+
+This playbook does two things. It is **the single place where the deployment
+installs packages**, and it performs the preparation the cluster needs.
+
+All the `zypper` package installations that used to be spread over
+`sap-hana-preconfigure.yaml`, `cluster_sbd_prep.yaml` and
+`sap-hana-cluster.yaml` (and their task files) have been collected here, so
+that there is exactly one point in the deployment where packages are pulled
+from the repositories. Those playbooks now only configure the corresponding
+services, and most of them assert that this one has already run. The
+exception is `tasks/azure-cluster-bootstrap.yaml`, which has no such assert:
+on Azure a missing cluster package surfaces later as a crm or fencing error
+rather than a clear message.
+
+The playbook is four plays, in this order:
+
+1. **Assert the repositories are ready** (`hana:iscsi`) - the repository
+   guard. Only the hosts that go on to install packages need it. It
+   sets `any_errors_fatal`, so a single host failing it aborts the whole run.
+   Without that only the failing host would be dropped and the survivors
+   would be packaged and configured on their own, leaving a half built
+   cluster behind.
+2. **Install packages on the HANA nodes** (`hana`).
+3. **Install packages on the iSCSI server** (`iscsi`).
+4. **Cluster preparation** (`all`) - `/etc/hosts` entries, ssh key pairs and
+   known_hosts, as before.
+
+**Package installation needs the repositories in their final state**, which
+means this playbook must run after `registration.yaml` and, when an IBS
+mirror is used, after `ibsm.yaml`. Both are already true of the documented
+sequence; the first play verifies it rather than assuming it, checking that:
+
+* `zypper lr` does not exit 6, its "no repository is defined" code - any
+  other zypper failure is not treated as a registration problem - and
+  `SUSEConnect --status` does
+  not report any base product as `Not Registered`. Only the base products are
+  checked, because a deployment can legitimately leave some optional module
+  not activated.
+* at least one enabled `TEST_<index>` repository, the alias used by
+  `ibsm.yaml`, is configured. This one is only enforced when `use_ibsm` is
+  true, since most deployments do not use a mirror. Note that the check proves
+  the mirror is configured, not that a given package is resolved from it: see
+  the `ibsm` section about repository priority.
+
+If either check fails the playbook stops immediately with an explicit message
+instead of letting every single package task fail.
+
+The `hana` play installs, depending on the variables and on the detected cloud
+platform and OS version:
+
+* the HANA prerequisites (GCC 10 libraries, `libssh2-1` for scale out,
+  `ClusterTools2`, `iscsiuio`/`open-iscsi` when SBD is used, `lsscsi` on
+  SLES 16)
+* either `SAPHanaSR`/`SAPHanaSR-doc` or `SAPHanaSR-angi` plus
+  `supportutils-plugin-ha-sap`, according to `use_sap_hana_sr_angi`
+* the tuning daemon: `sapconf` when `use_sapconf` is true (removing the
+  conflicting `tuned` on SLE 12), otherwise `saptune` and, on SLES 16 with
+  saptune >= 3.2.3, `patterns-cockpit`. All three are installed **only if a
+  `zypper search` finds them**; when neither exists the install is skipped and
+  `sap-hana-preconfigure.yaml` skips the tuning too, so the deployment succeeds
+  with an untuned node rather than failing. The probe distinguishes a genuinely
+  absent package from a broken zypper - an unreachable repository also exits
+  104 - by checking stdout and stderr for a repository error, and fails loudly
+  on that rather than skipping. It runs with `LC_ALL=C` so the check does not
+  depend on the target's language
+* the cluster packages, when `cluster_node` is true: `socat`,
+  `resource-agents`, `fence-agents-azure-arm` and the Azure Python SDK modules
+  on Azure; the full corosync/pacemaker/crmsh package set on AWS and GCP
+
+The `iscsi` play installs `targetcli-fb` on SLE 12 and `python3-targetcli-fb`
+on SLE 15 and 16, removing first the packages that conflict with it on
+12-SP5.
+
+Three package operations are intentionally **not** part of this playbook:
+
+* `registration.yaml` updates `cloud-regionsrv-client` as part of the
+  registration itself, so it has to stay there
+* `ptf_installation.yaml` installs local RPM files that it downloads itself,
+  so it does not depend on the repositories. It is not part of the standard
+  sequence, but when it is used it has to run **after** `pre-cluster.yaml`:
+  the other way round the repository versions installed here can replace the
+  PTFs, silently.
+* `fully-patch-system.yaml` runs `zypper patch` over everything. It is also
+  not part of the standard sequence, and for the same reason it should run
+  after `pre-cluster.yaml`.
+
+**`use_sapconf` has to agree with `sap-hana-preconfigure.yaml`.** This
+playbook decides which tuning daemon to *install*, that one configures it, and
+the two read the variable independently. Pass the same value on both lines of
+the conf.yaml. A mismatch usually fails in `sap-hana-preconfigure.yaml` with an
+explicit message naming this playbook - but not always: if the daemon that
+playbook wants is not available on the host at all, the tuning is skipped
+instead and the node ends up with neither daemon configured, with the run
+still green. Nothing detects that case.
 
 ## sap-hana-preconfigure
 
@@ -93,17 +220,21 @@ Target hosts:
 Variables:
 
 * use_sapconf
-* use_sap_hana_sr_angi
 * firewall_cfg
 
 Variable Source = ./vars/hana_vars.yaml that can be populated by ansible::hana_vars in the conf.yaml
 
+`use_sap_hana_sr_angi` is no longer read here: the SAPHanaSR package choice it
+drives moved to `pre-cluster.yaml`.
+
 The 'sap-hana-preconfigure' playbook is used to tune the HANA nodes for
-SAP HANA. It will install any additionally required packages and then
-attempt to tune the OS for HANA. If the variable `use_sapconf` is true, then
+SAP HANA. The additionally required packages are installed by
+`pre-cluster.yaml`; this playbook only tunes the OS for HANA.
+If the variable `use_sapconf` is true, then
 sapconf will be used to tune the installation. If `use_sapconf` is not set or
-is set to false, not tuning will take place. In the future the system will
-be tuned by saptune by default.
+is set to false, the system is tuned by `saptune` instead. Note that this
+variable must match the one given to `pre-cluster.yaml`, which installs the
+daemon this playbook then configures.
 
 The `firewall_cfg` variable is used as a centralized source of truth for firewall
 management across all playbooks. Possible values are:
@@ -152,9 +283,9 @@ This variable must be set, however, the default values in
 ./ansible/playbooks/vars/iscsi-storage-profile.yaml will be suitable unless
 significant changes have been made to the iscsi Terraform configuration.
 
-The iscsi server tasks will ensure that the correct packages are installed and
-remove any packages that are known to conflict with these. It then ensures
-that the iscsi services are enabled and running. The playbook then creates an
+The iscsi server packages, and the removal of the packages known to conflict
+with them, are handled by `pre-cluster.yaml`. The iscsi server tasks
+ensure that the iscsi services are enabled and running. The playbook then creates an
 LVG, LV and file system which is to be used to store the iscsi LUN. The file
 system is mounted and added to `/etc/fstab`. Finally, the iscsi LUN is
 created and ACLs are added to allow the clients to access the LUN.
