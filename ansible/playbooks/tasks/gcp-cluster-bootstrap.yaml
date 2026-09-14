@@ -1,14 +1,7 @@
 ---
 # GCP cluster bootstrap wrapper.
 # Orchestrates common and GCP-specific tasks for HA cluster setup.
-
 # It assumes that all cloud detection has already been run
-- name: Set corosync template path
-  ansible.builtin.set_fact:
-    corosync_template: "../templates/gcp_corosync.conf.j2"
-
-- name: Common cluster initialization
-  ansible.builtin.include_tasks: ./cluster-bootstrap-init.yaml
 
 # GCP-specific STONITH configuration using fence_gce.
 # GCP native fencing requires per-node stonith primitives (fence_gce),
