@@ -1,14 +1,43 @@
 ---
-# Common cluster initialization tasks shared by AWS and GCP.
-# Assumes the calling wrapper has already set `corosync_template`.
-
+# Common cluster initialization tasks shared by all supported cloud providers.
+#
+# The cluster is formed with the crmsh bootstrap commands (`crm cluster init`
+# on the primary, `crm cluster join` on the other nodes). crmsh takes care of
+# generating and distributing /etc/corosync/authkey and /etc/corosync/corosync.conf
+# and of starting the cluster stack.
+#
 # The cluster dependencies are installed by pre-cluster.yaml, which has to
-# run before this one.
+# run before this one. `crm cluster join` requires passwordless root ssh and
+# hostname resolution among the nodes; this is also set up by pre-cluster.yaml.
+#
+# Once the cluster exists, the same corosync tuning is applied on every
+# cloud service provider, and defaults to:
+#
+# * token: 30000
+# * token_retransmits_before_loss_const: 10
+# * join: 60
+# * consensus: 36000
+# * max_messages: 20
+# * expected_votes: 2
+# * two_node: 1
+#
+# These values can be overridden by passing different values via the
+# `corosync_params` variable to this task. Details on the format of the
+# variable can be seen below next to the defaults `corosync_params_default`.
+#
+# When SBD fencing is used, `crm cluster init` is called with the SBD
+# devices found in `/etc/sysconfig/sbd`, and the fencing resource it
+# creates is then replaced by one carrying `pcmk_delay_max=15`. The
+# resource is named `stonith-sbd`, or `fencing-sbd` from SLE 16.1 onwards.
 
-# The following tasks check that the file /etc/corosync/authkey exists on each node and that all nodes have an identical copy
-# if either of the the above conditions are false the back `Create authkeys` is run.
-# It will shutdown pacemaker on all nodes, write the authfile to the primary node and then copy it the other nodes.
-# Finally, it will notify a handler to start corosync.
+# Optional variables:
+#   cluster_name    - name passed to `crm cluster init -n`. Default: qe-cluster.
+#   cluster_nic     - interface passed to `-i`. Default: eth0.
+#   corosync_params - list of {regexp, line} pairs applied to corosync.conf
+#                     after the cluster is created. Defaults to the values
+#                     below, which are shared by all clouds.
+#
+
 - name: Gather package facts
   ansible.builtin.package_facts:
     manager: auto
@@ -32,93 +61,109 @@
     enabled: true
   when: ansible_facts.packages['pacemaker'][0].version is version('2.0.0', '<')
 
-- name: Register authkey status
-  ansible.builtin.stat:
-    path: /etc/corosync/authkey
-  register: authkey_reg
-
-- name: Set authkey facts
+- name: Set corosync parameter defaults
   ansible.builtin.set_fact:
-    sum: "{{ authkey_reg.stat.checksum | default('nosum') }}"
-    reg: "{{ authkey_reg.stat.isreg | default('false') }}"
+    corosync_params: "{{ corosync_params | default(corosync_params_default) }}"
+  vars:
+    corosync_params_default:
+      - {'regexp': '(.*)(token:).*', 'line': '\g<1>\g<2> 30000'}
+      - {'regexp': '(.*)(token_retransmits_before_loss_const:).*', 'line': '\g<1>\g<2> 10'}
+      - {'regexp': '(.*)(join:).*', 'line': '\g<1>\g<2> 60'}
+      - {'regexp': '(.*)(consensus:).*', 'line': '\g<1>\g<2> 36000'}
+      - {'regexp': '(.*)(max_messages:).*', 'line': '\g<1>\g<2> 20'}
+      - {'regexp': '(.*)(expected_votes:).*', 'line': '\g<1>\g<2> 2'}
+      - {'regexp': '(.*)(two_node:).*', 'line': '\g<1>\g<2> 1'}
 
-- name: Set authkey json data
+- name: Set crmsh transport flag
   ansible.builtin.set_fact:
-    authkey_data: "{{ groups.hana | map('extract', hostvars) | list | json_query('[].{host: ansible_hostname,isreg: reg,cryptosum: sum }') }}"
-  run_once: true
+    crmsh_transport_flag: "{{ '--transport udpu' if ansible_facts.packages['crmsh'][0].version is version('5.0.0', '>=') else '-u' }}"
 
-# The following 3 tasks determine if any of nodes will be changed by writing the the corosync file (either the file changing or not currently existing)
-# If any of the nodes will change, the `Write corosync` block will run.  It will shutdown pacemaker on all nodes, write corosync and then notify a handler to
-# start corosync.
-- name: Check if template write will make changes
-  ansible.builtin.template:  # noqa no-relative-paths
-    src: "{{ corosync_template }}"
-    dest: /etc/corosync/corosync.conf
-    owner: root
-    group: root
-    mode: '0600'
-  check_mode: true
-  register: temp_check
+- name: Slurp SBD config
+  ansible.builtin.slurp:
+    src: /etc/sysconfig/sbd
+  register: sbd_slurp
+  when: use_sbd | default(false) | bool
 
-- name: Set corosync facts
+- name: Set SBD set_fact
   ansible.builtin.set_fact:
-    write_corosync: "{{ temp_check.changed }}"
+    sbd_paths: "{{ sbd_slurp['content'] | b64decode | regex_findall('SBD_DEVICE=(.+)') | last }}"
+  when: use_sbd | default(false) | bool
 
-- name: Set corosync json data
+- name: Set crm cluster init command
   ansible.builtin.set_fact:
-    corosync_data: "{{ groups.hana | map('extract', hostvars) | list | json_query('[].{host: ansible_hostname,write_corosync: write_corosync}') }}"
-  run_once: true
+    crm_cluster_init_cmd: >-
+      crm cluster init
+      -y
+      -n {{ cluster_name | default('qe-cluster') }}
+      -i {{ cluster_nic | default('eth0') }}
+      {{ crmsh_transport_flag }}
+      {{ '-s ' + sbd_paths + ' -w softdog' if use_sbd | default(false) | bool else '' }}
 
-- name: Create authkeys
-  when: authkey_data|json_query('[].cryptosum')|unique|length != 1 or authkey_data|json_query('[?isreg==`false`]')|count > 0
-  notify: Start pacemaker
-  block:
-    - name: Stop pacemaker
-      ansible.builtin.systemd:
-        name: pacemaker
-        state: stopped
+- name: Create the cluster on primary
+  ansible.builtin.command:
+    cmd: "{{ crm_cluster_init_cmd }}"
+    creates: /etc/corosync/corosync.conf
+  register: crm_cluster_init
+  when: is_primary
 
-    - name: Create cluster secret
-      ansible.builtin.command:
-        cmd: corosync-keygen
-        creates: /etc/corosync/authkey
-      when: is_primary
+# The tuning is applied to the seed node before the other nodes join, so that
+# they inherit the tuned corosync.conf and only the single node cluster has to
+# be restarted for the new values to become effective.
+- name: Ensure correct corosync parameters are set on primary
+  ansible.builtin.lineinfile:
+    path: /etc/corosync/corosync.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backrefs: true
+    backup: true
+  loop: "{{ corosync_params }}"
+  register: corosync_tuning_primary
+  when: is_primary
 
-    - name: Fetch authkey
-      ansible.builtin.fetch:
-        src: /etc/corosync/authkey
-        dest: /tmp/authkey_tmp
-        flat: true
-      when: is_primary
+# Only restart when this run created the cluster: on an already running
+# cluster a restart of the stack would trigger a failover.
+- name: Restart the single node cluster to apply the corosync parameters
+  ansible.builtin.command:
+    cmd: crm cluster restart
+  register: crm_cluster_restart
+  changed_when: crm_cluster_restart.rc == 0
+  when:
+    - is_primary
+    - crm_cluster_init is changed
+    - corosync_tuning_primary is changed
 
-    - name: Copy authkey
-      ansible.builtin.copy:
-        src: /tmp/authkey_tmp
-        dest: /etc/corosync/authkey
-        owner: root
-        group: root
-        mode: '0400'
-      when: not is_primary
+- name: Check the cluster on primary
+  ansible.builtin.command:
+    cmd: crm status
+  when: is_primary
+  changed_when: false
 
-- name: Write corosync.conf
-  when: corosync_data|json_query('[?write_corosync==`true`]')|count > 0
-  notify: Start pacemaker
-  block:
-    - name: Stop pacemaker
-      ansible.builtin.systemd:
-        name: pacemaker
-        state: stopped
+- name: Join the cluster
+  ansible.builtin.command:
+    creates: /etc/corosync/corosync.conf
+    cmd: >-
+      crm cluster join
+      -y
+      -c {{ hostvars[ansible_play_hosts[0]]['ansible_hostname'] }}
+      -i {{ cluster_nic | default('eth0') }}
+  when: not is_primary
 
-    - name: Write the corosync.conf template
-      ansible.builtin.template:  # noqa no-relative-paths
-        src: "{{ corosync_template }}"
-        dest: /etc/corosync/corosync.conf
-        owner: root
-        group: root
-        mode: '0600'
+- name: Check the cluster on secondary
+  ansible.builtin.command:
+    cmd: crm status
+  when: not is_primary
+  changed_when: false
 
-- name: Flush handler
-  ansible.builtin.meta: flush_handlers
+# Runs on all nodes: idempotent on the seed node, and it catches any drift on
+# the nodes that joined.
+- name: Ensure correct corosync parameters are set
+  ansible.builtin.lineinfile:
+    path: /etc/corosync/corosync.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backrefs: true
+    backup: true
+  loop: "{{ corosync_params }}"
 
 - name: Check pacemaker service status
   ansible.builtin.service_facts:
@@ -170,6 +215,8 @@
   loop: "{{ systemd_result.stdout_lines }}"
   when: item is search("DefaultTasksMax=infinity")
 
+# The code needs to decide if it is necessary to set DefaultTasksMax to 4096.
+# The value may be set to a larger or smaller integer or infinity
 - name: Check max tasks integer
   ansible.builtin.set_fact:
     max_tasks_int: "{{ item | split('=') | last }}"
@@ -204,12 +251,6 @@
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers
 
-# check crm status and fail if not return code != 0
-- name: Check the cluster is up
-  ansible.builtin.command:
-    cmd: crm status
-  changed_when: false
-
 - name: Get general cluster configuration
   ansible.builtin.command:
     cmd: crm configure show
@@ -232,7 +273,6 @@
 
 - name: Set cluster facts
   ansible.builtin.set_fact:
-    sbd_stonith: "{{ (crm_conf_show.stdout | regex_search('(rsc_iscsi_sbd)', '\\1'))[0] | default('false') }}"
     stonith_enabled: "{{ (crm_conf_show.stdout | regex_search(crm_prop_fencing_enabled ~ '=([a-z]*)', '\\1'))[0] | default('false') }}"
     stonith_action: "{{ (crm_conf_show.stdout | regex_search(crm_prop_fencing_action ~ '=([a-z]*)', '\\1'))[0] | default('false') }}"
     stonith_timeout: "{{ (crm_conf_show.stdout | regex_search(crm_prop_fencing_timeout ~ '=([a-z0-9]*)', '\\1'))[0] | default('false') }}"
@@ -243,12 +283,40 @@
     migration_threshold: "{{ (crm_rsc_options_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] | default('false') }}"
     op_default_timeout: "{{ (crm_op_options_show.stdout | regex_search('timeout=([0-9]*)', '\\1'))[0] | default('false') }}"
 
-- name: Enable SBD [sbd]
-  ansible.builtin.command:
-    cmd: crm configure primitive rsc_iscsi_sbd stonith:external/sbd
-  register: enable_sbd_result
-  changed_when: enable_sbd_result.rc == 0
+# The initial `crm cluster init -s` creates a default SBD resource.
+# We must replace it to inject project-specific parameters (e.g., pcmk_delay_max).
+#
+# WHAT THIS GUARDS:
+# Shell-based `crm` commands are not natively idempotent. The canary file
+# (/var/lib/qedep/sbd) prevents the playbook from unnecessarily destroying
+# and recreating the cluster's stonith resource on every subsequent run.
+#
+# WORKFLOW & CODE NAVIGATION:
+# 1. CHECK (Below): This task checks if the canary file exists.
+# 2. EXECUTE (rebuild-stonith.yaml): If absent, we load the rebuild playbook.
+# 3. CREATE (handlers): Once the new resource is successfully created, it
+#    notifies the 'Write stonith status file' handler to create the canary file.
+- name: Check for previous ansible creation of stonith devices
+  ansible.builtin.file:
+    path: /var/lib/qedep/sbd
+    state: file
+  check_mode: true
+  register: sbd_file_check
+  changed_when: false
+  failed_when: false
   when:
-    - sbd_stonith | string | lower  == 'false'
-    - use_sbd | default(false) | bool
     - is_primary
+
+- name: Set stonith state facts
+  ansible.builtin.set_fact:
+    sbd_tracer: "{{ sbd_file_check.state }}"
+  when:
+    - is_primary
+
+# Split rebuild to its own task file
+- name: Rebuild stonith device
+  ansible.builtin.include_tasks: ./rebuild-stonith.yaml
+  when:
+    - is_primary
+    - sbd_tracer == 'absent'
+    - use_sbd | default(false) | bool

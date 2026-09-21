@@ -1,34 +1,10 @@
 ---
 # AWS cluster bootstrap wrapper.
-# Orchestrates common and AWS-specific tasks for HA cluster setup.
-
+# Orchestrates AWS-specific tasks for HA cluster setup.
 # It assumes that all cloud detection has already been run
-- name: Set corosync template path
-  ansible.builtin.set_fact:
-    corosync_template: "../templates/aws_corosync.conf.j2"
 
 # This collection of tasks bootstraps the cluster following guidance from
 # https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-on-aws-ha-cluster-configuration-on-sles.html
-# AWS-specific: upload credentials to target nodes.
-- name: Ensure aws directory exists
-  ansible.builtin.file:
-    path: /root/.aws
-    state: directory
-    mode: '0700'
-
-- name: Upload aws files
-  ansible.builtin.copy:
-    src: "~/.aws/{{ item }}"
-    dest: "/root/.aws/{{ item }}"
-    owner: root
-    group: root
-    mode: '0600'
-  loop:
-    - credentials
-    - config
-
-- name: Common cluster initialization
-  ansible.builtin.include_tasks: ./cluster-bootstrap-init.yaml
 
 # AWS-specific STONITH configuration using EC2 external agent.
 - name: Stonith command

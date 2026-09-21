@@ -14,7 +14,7 @@
   ansible.builtin.assert:
     that:
       - ansible_facts.packages['targetcli-fb'] is defined or
-        ansible_facts.packages['python3-targetcli-fb'] is defined
+        (ansible_facts.packages.keys() | select('match', '^python.*-targetcli-fb$') | list | length) > 0
       # Only 12-SP5 ships the incompatible 'targetcli' alongside the fb one
       - ansible_distribution_major_version != '12' or
         ansible_facts.packages['targetcli'] is not defined

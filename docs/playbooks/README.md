@@ -485,6 +485,14 @@ Like the other playbooks that are directly connected to HANA operations,
 this playbook also sources `hana_vars.yaml` for consistency. By default,
 an SBD based cluster will not be created.
 
+### Cluster formation
+
+On all three cloud service providers, the cluster is formed with the crmsh
+bootstrap commands: `crm cluster init` on the primary node and `crm cluster join`
+on the remaining nodes. This requires passwordless root ssh and hostname
+resolution among the nodes, both of which are set up by the `pre-cluster`
+playbook. More details in `ansible/playbooks/tasks/cluster-bootstrap-init.yaml`.
+
 ### AWS native fencing
 
 AWS uses the `stonith:external/ec2` agent. Following the SUSE/AWS

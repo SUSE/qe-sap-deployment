@@ -28,14 +28,6 @@
       ansible.builtin.systemd:
         daemon_reload: true
 
-    - name: Start pacemaker
-      ansible.builtin.systemd:
-        name: pacemaker
-        state: started
-        enabled: true
-      register: pacemaker_start_result
-      ignore_errors: true
-
     # When the stonith device is changed the file /var/lib/sbd is changed
     - name: Write stonith status file
       ansible.builtin.file:
@@ -69,6 +61,46 @@
         crm_prop_fencing_action: "{{ 'fencing-action' if ansible_distribution_version is version('16.1', '>=') else 'stonith-action' }}"
 
   tasks:
+    # Ensure CLOUD_NETCONFIG_MANAGE is disabled for eth0 in Azure
+    - name: Determine cloud-netconfig configuration file path
+      ansible.builtin.set_fact:
+        cloud_netconfig_path: >-
+          {{ '/usr/etc/default/cloud-netconfig'
+             if ansible_distribution_major_version == '16'
+             else '/etc/sysconfig/network/ifcfg-eth0' }}
+
+    - name: Ensure 'CLOUD_NETCONFIG_MANAGE' is disabled for eth0
+      ansible.builtin.lineinfile:
+        path: "{{ cloud_netconfig_path }}"
+        regexp: '^CLOUD_NETCONFIG_MANAGE='
+        line: 'CLOUD_NETCONFIG_MANAGE="no"'
+        backup: true
+      when: cloud_platform_is_azure
+
+    # AWS-specific: upload credentials to target nodes.
+    - name: Ensure aws directory exists
+      ansible.builtin.file:
+        path: /root/.aws
+        state: directory
+        mode: '0700'
+      when: cloud_platform_is_aws
+
+    - name: Upload aws files
+      ansible.builtin.copy:
+        src: "~/.aws/{{ item }}"
+        dest: "/root/.aws/{{ item }}"
+        owner: root
+        group: root
+        mode: '0600'
+      loop:
+        - credentials
+        - config
+      when: cloud_platform_is_aws
+
+    - name: Common cluster initialization
+      ansible.builtin.include_tasks: ./tasks/cluster-bootstrap-init.yaml
+      tags: cluster_init
+
     - name: Base Cluster Configuration [azure]
       ansible.builtin.include_tasks: ./tasks/azure-cluster-bootstrap.yaml
       when: cloud_platform_is_azure
