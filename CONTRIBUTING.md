@@ -48,6 +48,7 @@ The project is composed by files in many different code languages: Terraform, An
   The text in the Github pull request description is only
   visible on Github, not in the git log which can be considered permanent
   information storage.
+* Commits need to be signed, so ensure you have your GPG key ready and configured in your local git environment before running `git commit -S`.
 * Add comments to the source code if the code is not self-explanatory:
   Comments in the source code should describe the choices made, to answer the
   question "why is the code like this". The git commit message should describe
@@ -59,21 +60,20 @@ The project is composed by files in many different code languages: Terraform, An
   * Documentation: some of the Markdown files are tested for Markdown syntax and spelling.
   * Python code: it is mostly important for the glue script code in `scripts/qesap`. The code is statically tested with pylint and flake8. These tests can be executed manually with `make static-py` or with `tox -e pylint`. Some unit testing are also associated with the qesap.py script. They can be executed with `tox` or using `make test`.
   * Ansible code: code can be statically tested using `make static-ansible`. It is also recommended to run `make static-ansible-lint` and fix at least warnings in the edited file (please consider that for the moment this target is not part of any github pipeline)
+* If the pull request was assisted by LLM or AI-powered tools, please tag it with the `ai-assisted` label.
 
 * Every pull request is tested by CI system defined in this repo.
 
-Also see the [DoD/DoR][1] as a helpful (but not mandatory) guideline for new contributions.
-
-[1]: https://progress.opensuse.org/projects/openqatests/wiki/Wiki#Definition-of-DONEREADY
+Also see the [DoD/DoR](https://progress.opensuse.org/projects/openqatests/wiki/Wiki#Definition-of-DONEREADY) as a helpful (but not mandatory) guideline for new contributions.
 
 ## Running qesap script unit testing
 
 Help script `qesap.py` is provided with a suite of unit tests. The script itself is developed using BDD/TDD technique.
-Are you investigating on a bug or like to add a new functionalities? Please add a test at first.
+Are you investigating a bug or would like to add new functionalities? Please add unit tests first.
 
 ### Run them with tox
 
-[Tox][2] is configured to run both unit testing and Python static analysis tools
+[Tox](https://tox.wiki/en/latest/) is configured to run both unit testing and Python static analysis tools
 
 ```shell
 % cd scripts/qesap/
@@ -81,11 +81,9 @@ Are you investigating on a bug or like to add a new functionalities? Please add 
 % tox
 ```
 
-[2]: https://tox.wiki/en/latest/
-
 ### Run manually
 
-Unit tests are written using [Pytest][3]. In order to run them you need to create (once) a Python virtual environment with all needed tools:
+Unit tests are written using [Pytest](https://docs.pytest.org/). In order to run them you need to create (once) a Python virtual environment with all needed tools:
 
 ```shell
 % cd <THIS_REPO_FOLDER>/scripts/qesap/
@@ -111,5 +109,3 @@ Each time you like to run some test you can:
 # with more verbosity
 (.venv) % PYTHONPATH=$(pwd):$(pwd)/src pytest -vv -o log_cli=true -o log_cli_level=10 -v test/unit/
 ```
-
-[3]: https://docs.pytest.org/
