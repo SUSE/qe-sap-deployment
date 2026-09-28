@@ -17,8 +17,7 @@ sap_storage_dict:
     lv: 'hanaloglv'
     pv: ["/dev/xvdd", "/dev/xvde"]
     numluns: '2'
-    stripesize: '32'
-  # stripesize: '32i'
+    stripesize: '64'
   hanashared:
     name: 'hanashared'
     directory: '/hana/shared'
