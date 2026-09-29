@@ -76,7 +76,7 @@
     msg: "Using PV list: {{ (adjusted_pv is defined and (adjusted_pv | length) > 0) | ternary(adjusted_pv, item.value.pv) }}"
 
 # Create Volume Group
-- name: "SAP Storage Preparation - Volume Group One: {{ item.value.name + ' on ' + sap_storage_cloud_type }}"
+- name: "SAP Storage Preparation - Volume Group One: {{ item.value.name + ' on ' + qe_sap_storage_cloud_type }}"
   community.general.lvg:
     vg: "{{ item.value.vg }}"
     pvs: "{{ (adjusted_pv is defined and (adjusted_pv | length) > 0) | ternary(adjusted_pv, item.value.pv) }}"
@@ -92,7 +92,7 @@
   when: adjusted_pv is defined
 
 # Create Logical Group - One
-- name: "SAP Storage Preparation - Logical Volume One: {{ item.value.name + ' on ' + sap_storage_cloud_type }}"
+- name: "SAP Storage Preparation - Logical Volume One: {{ item.value.name + ' on ' + qe_sap_storage_cloud_type }}"
   community.general.lvol:
     vg: "{{ item.value.vg }}"
     lv: "{{ item.value.lv }}"
@@ -101,7 +101,7 @@
     - "item.value.numluns == '1'"
 
 # Create Logical Group - Striped
-- name: "SAP Storage Preparation - Logical Volume Striped: {{ item.value.name + ' on ' + sap_storage_cloud_type }}"
+- name: "SAP Storage Preparation - Logical Volume Striped: {{ item.value.name + ' on ' + qe_sap_storage_cloud_type }}"
   community.general.lvol:
     vg: "{{ item.value.vg }}"
     lv: "{{ item.value.lv }}"
@@ -111,13 +111,13 @@
     - "item.value.numluns != '1'"
 
 # Create Filesystem
-- name: "SAP Storage Preparation - Filesystem: {{ item.value.name + ' on ' + sap_storage_cloud_type }}"
+- name: "SAP Storage Preparation - Filesystem: {{ item.value.name + ' on ' + qe_sap_storage_cloud_type }}"
   community.general.filesystem:
     fstype: xfs
     dev: "/dev/{{ item.value.vg }}/{{ item.value.lv }}"
 
 # Mount Filesystem
-- name: "SAP Storage Preparation - Mount: {{ item.value.name + ' on ' + sap_storage_cloud_type }}"
+- name: "SAP Storage Preparation - Mount: {{ item.value.name + ' on ' + qe_sap_storage_cloud_type }}"
   ansible.posix.mount:
     path: "{{ item.value.directory }}"
     fstype: xfs
