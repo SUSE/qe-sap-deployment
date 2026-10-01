@@ -15,7 +15,7 @@
     hana_topology_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaTpg') }}"
     hana_topology_clone: "{{ crm_conf_hana_show.stdout | regex_search('clone cln_SAPHanaTpg') }}"
     hana_filesystem_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaFil_') }}"
-    hana_filesystem_clone: "{{ crm_conf_hana_show.stdout | regex_search('primitive cln_SAPHanaFil_') }}"
+    hana_filesystem_clone: "{{ crm_conf_hana_show.stdout | regex_search('clone cln_SAPHanaFil_') }}"
     ip_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_ip_') }}"
     ip_nc: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_socat_') }}"
     ip_grp: "{{ crm_conf_hana_show.stdout | regex_search('group g_ip_') }}"
@@ -23,6 +23,17 @@
     cluster_order: "{{ crm_conf_hana_show.stdout | regex_search('order ord_SAPHana') }}"
   when: is_primary
   changed_when: false
+
+- name: Detect existing HANA angi controller clone
+  ansible.builtin.set_fact:
+    hana_clone: >-
+      {{ crm_conf_hana_show.stdout
+         | regex_search('(?m)^[ \t]*(?:ms|clone)[ \t]+'
+                        ~ (ms_saphanactl | regex_escape) ~ '[ \t]+')
+         | default('', true) }}
+  when:
+    - is_primary
+    - use_hana_sr_angi | bool
 
 - name: Gather package facts
   ansible.builtin.package_facts:
@@ -107,7 +118,7 @@
       {{ rsc_saphanactl }}
       ocf:suse:SAPHanaController
       op start interval="0" timeout="3600"
-      op stop interval="0" timeout="3600"
+      op stop interval="0" timeout="3600" on-fail="fence"
       op promote interval="0" timeout="900"
       op demote interval="0" timeout="320"
       op monitor interval="60" role="Promoted" timeout="700"
@@ -118,6 +129,7 @@
       PREFER_SITE_TAKEOVER="true"
       DUPLICATE_PRIMARY_TIMEOUT="7200"
       AUTOMATED_REGISTER="false"
+      ON_FAIL_ACTION="{{ 'fence' if angi_variant == 'progressive' else 'proceed' }}"
       meta
       priority="100"
   when:
@@ -159,14 +171,14 @@
       operations
       $id="rsc_sap3_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}-operations"
       op start interval="0" timeout="10"
-      op stop interval="0" timeout="20"
+      op stop interval="0" timeout="20" on-fail="fence"
       op monitor interval="120" timeout="120"
       params
       SID="{{ sap_hana_install_sid }}"
       InstanceNumber="{{ sap_hana_install_instance_number }}"
-      ON_FAIL_ACTION="fence"
+      ON_FAIL_ACTION="{{ 'fence' if angi_variant == 'progressive' else 'ignore' }}"
   register: cmd_crm_chfr_output
-  changed_when: cmd_crm_chfr_output.rc != 0
+  changed_when: cmd_crm_chfr_output.rc == 0
   when:
     - is_primary
     - use_hana_sr_angi | bool
@@ -184,7 +196,7 @@
       target-role="Started"
       interleave="true"
   register: cmd_crm_chfc_output
-  changed_when: cmd_crm_chfc_output.rc != 0
+  changed_when: cmd_crm_chfc_output.rc == 0
   when:
     - is_primary
     - use_hana_sr_angi | bool
