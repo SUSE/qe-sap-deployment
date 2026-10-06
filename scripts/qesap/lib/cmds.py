@@ -437,6 +437,7 @@ def execute_ansible_commands(commands, dryrun):
     Returns:
         Status: Execution result, 0 means OK.
     """
+    playbook_number = 0
     for command in commands:
         if dryrun:
             print(command["cmd"])
@@ -444,20 +445,21 @@ def execute_ansible_commands(commands, dryrun):
             ret, out = lib.process_manager.subprocess_run(**command)
             log.debug("Ansible process return ret:%d", ret)
             if "ansible-playbook" in command["cmd"]:
-                ansible_export_output(command["cmd"], out)
+                playbook_number += 1
+                ansible_export_output(command["cmd"], out, playbook_number)
             if ret != 0:
                 log.error("command:%s returned non zero %d", command, ret)
                 return Status(f"Error rc: {ret} at {command}")
     return Status("ok")
 
 
-def ansible_export_output(command, out):
+def ansible_export_output(command, out, playbook_number):
     """Write the Ansible (or ansible-playbook) stdout to file
 
     Function is in charge to:
     - get a cmd and calculate from it the log file name to write.
       The filename is calculated, when available, from the playbook name:
-      stripping '.yaml' and adding '.log.txt'
+      stripping '.yaml', adding '.log.txt' and prefixing the execution number
     - open a file in write mode. Path for this file is the current directory
     - write to the file the content of the out variable.
       Each element of the out list to a new file line
@@ -465,6 +467,7 @@ def ansible_export_output(command, out):
     Args:
         command (str): one cmd element as prepared by ansible_command_sequence
         out (str list): as returned by subprocess_run
+        playbook_number (int): position in the executed playbook sequence, starting at 1
     """
     # log name has to be derived from the name of the playbook:
     # search the playbook name in all command words.
@@ -478,7 +481,7 @@ def ansible_export_output(command, out):
         log.error("Unable to find which one is the playbook in %s", command)
         return
     playbook_name = os.path.splitext(os.path.basename(playbook_path))[0]
-    log_filename = f"ansible.{playbook_name}.log.txt"
+    log_filename = f"{playbook_number:02d}-ansible.{playbook_name}.log.txt"
     log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
     with open(log_filename, "w", encoding="utf-8") as log_file:
         log_file.write("\n".join(out))
