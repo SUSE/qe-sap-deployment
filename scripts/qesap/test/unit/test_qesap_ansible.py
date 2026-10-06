@@ -797,7 +797,7 @@ def test_ansible_create_logs(
 ):
     """
     Test that config.yml with playbook named `<SOMETHING>.yaml`
-    result in the generation of a log file named `<SOMETHING>.log.txt`
+    result in the generation of a log file named `NN-ansible.<SOMETHING>.log.txt`
     """
     provider = "grilloparlante"
     playbooks = {"create": ["get_cherry_wood", "made_pinocchio_head"]}
@@ -817,8 +817,8 @@ def test_ansible_create_logs(
 
     assert main(args) == 0
 
-    assert os.path.isfile("ansible.get_cherry_wood.log.txt")
-    assert os.path.isfile("ansible.made_pinocchio_head.log.txt")
+    assert os.path.isfile("01-ansible.get_cherry_wood.log.txt")
+    assert os.path.isfile("02-ansible.made_pinocchio_head.log.txt")
 
 
 @pytest.mark.parametrize("seq", ["create", "destroy"])

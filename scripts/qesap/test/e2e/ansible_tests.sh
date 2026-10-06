@@ -26,18 +26,18 @@ test_step "[$QESAP_CFG] Run Ansible with no playbooks"
 # This test is about a not ok conf.yaml
 reset_root
 touch "${TEST_PROVIDER}/inventory.yaml"
-rm ansible.*.log.txt || echo "Nothing to delete"
+rm [0-9][0-9]-ansible.*.log.txt || echo "Nothing to delete"
 qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} ansible || test_die "${QESAP_CFG} fail on ansible"
-ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
+ansible_logs_number=$(find . -type f -name "[0-9][0-9]-ansible.*.log.txt" | wc -l)
 [[ $ansible_logs_number -eq 0 ]] || test_die "ansible .log.txt are not 0 files but has ${ansible_logs_number}"
 
 #######################################################################
 QESAP_CFG=test_3.yaml
 test_step "[${QESAP_CFG}] Run Ansible with no playbooks and verbosity"
 # exactly same as the previous one but with "--verbose"
-rm ansible.*.log.txt || echo "Nothing to delete"
+rm [0-9][0-9]-ansible.*.log.txt || echo "Nothing to delete"
 qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible || test_die "${QESAP_CFG} fail on ansible"
-ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
+ansible_logs_number=$(find . -type f -name "[0-9][0-9]-ansible.*.log.txt" | wc -l)
 [[ $ansible_logs_number -eq 0 ]] || test_die "ansible .log.txt are not 0 files but has ${ansible_logs_number}"
 
 #######################################################################
@@ -49,7 +49,7 @@ reset_root
 cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/"
 cp inventory.yaml "${TEST_PROVIDER}/"
 qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} configure || test_die "${QESAP_CFG} fail on configure"
-rm ansible.*.log.txt || echo "Nothing to delete"
+rm [0-9][0-9]-ansible.*.log.txt || echo "Nothing to delete"
 qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun ansible || test_die "${QESAP_CFG} fail on ansible"
 
 test_split
@@ -61,7 +61,7 @@ grep -E "ansible.*-i.*${PROVIDER}/inventory.yaml.*all.*sudo.*true" \
     "${THIS_LOG}" || test_die "${QESAP_CFG} dryrun fails in second ansible command"
 grep -E "ansible-playbook.*-i.*${PROVIDER}/inventory.yaml.*ansible/playbooks/sambuconero.yaml" \
     "${THIS_LOG}" || test_die "${QESAP_CFG} dryrun fails in ansible-playbook command"
-ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
+ansible_logs_number=$(find . -type f -name "[0-9][0-9]-ansible.*.log.txt" | wc -l)
 [[ $ansible_logs_number -eq 0 ]] || test_die "ansible .log.txt are not 0 files but has ${ansible_logs_number}"
 rm "${THIS_LOG}" "${QESAPROOT}/ansible/playbooks/sambuconero.yaml" "${TEST_PROVIDER}/inventory.yaml"
 
@@ -78,7 +78,7 @@ cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/"
 cp inventory.yaml "${TEST_PROVIDER}/"
 
 qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} configure || test_die "${QESAP_CFG} fail on configure"
-rm ansible.*.log.txt || echo "Nothing to delete"
+rm [0-9][0-9]-ansible.*.log.txt || echo "Nothing to delete"
 test_split
 # Start by checking that mkdir is not in the command list if --junit is NOT used
 qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun ansible |& tee "${THIS_LOG}"
@@ -150,11 +150,11 @@ echo "--> task_occurrence:${task_occurrence}"
 [[ $task_occurrence -eq 1 ]] || test_die "Some Ansible stdout lines are repeated ${task_occurrence} times in place of exactly 1"
 set -e
 # check presence of the subprocess .log.txt
-ansible_logs_number=$(find . -type f -name "ansible.sambuconero.log.txt" | wc -l)
-[[ $ansible_logs_number -eq 1 ]] || test_die "ansible.sambuconero.log.txt missing"
+ansible_logs_number=$(find . -type f -name "01-ansible.sambuconero.log.txt" | wc -l)
+[[ $ansible_logs_number -eq 1 ]] || test_die "01-ansible.sambuconero.log.txt missing"
 # check content of the subprocess .log.txt
-grep -E "TASK.*Say hello" ansible.sambuconero.log.txt || test_die "Expected content not found in ansible.sambuconero.log.txt"
-rm "${THIS_LOG}" ansible.*.log.txt "${QESAPROOT}/ansible/playbooks/sambuconero.yaml" "${TEST_PROVIDER}/inventory.yaml"
+grep -E "TASK.*Say hello" 01-ansible.sambuconero.log.txt || test_die "Expected content not found in 01-ansible.sambuconero.log.txt"
+rm "${THIS_LOG}" [0-9][0-9]-ansible.*.log.txt "${QESAPROOT}/ansible/playbooks/sambuconero.yaml" "${TEST_PROVIDER}/inventory.yaml"
 
 #######################################################################
 QESAP_CFG=test_6.yaml
@@ -165,11 +165,11 @@ cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/buga.yaml"
 cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/purace.yaml"
 cp inventory.yaml "${TEST_PROVIDER}/"
 PATH=$TROOT:$PATH qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} ansible || test_die "${QESAP_CFG} fail on ansible"
-ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
+ansible_logs_number=$(find . -type f -name "[0-9][0-9]-ansible.*.log.txt" | wc -l)
 echo "--> ansible_logs_number:${ansible_logs_number}"
 # 3 playbooks means 3 logs
 [[ $ansible_logs_number -eq 3 ]] || test_die "ansible .log.txt are not 3 files but has ${ansible_logs_number}"
-rm ansible.*.log.txt "${QESAPROOT}/ansible/playbooks/timbio.yaml" "${QESAPROOT}/ansible/playbooks/buga.yaml" "${QESAPROOT}/ansible/playbooks/purace.yaml" "${TEST_PROVIDER}/inventory.yaml"
+rm [0-9][0-9]-ansible.*.log.txt "${QESAPROOT}/ansible/playbooks/timbio.yaml" "${QESAPROOT}/ansible/playbooks/buga.yaml" "${QESAPROOT}/ansible/playbooks/purace.yaml" "${TEST_PROVIDER}/inventory.yaml"
 
 #######################################################################
 QESAP_CFG=test_7.yaml # This is a conf.yaml with a playbook that always fails
@@ -181,13 +181,13 @@ set +e
 PATH=$TROOT:$PATH qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible
 rc=$?; [[ $rc -ne 0 ]] || test_die "qesap.py ansible has to fail if ansible-playbook fails rc:$rc"
 set -e
-ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
+ansible_logs_number=$(find . -type f -name "[0-9][0-9]-ansible.*.log.txt" | wc -l)
 # 2 playbooks means 2 logs
 [[ $ansible_logs_number -eq 2 ]] || test_die "ansible .log.txt are not 2 files but has ${ansible_logs_number}"
-grep -E "TASK.*Say hello" ansible.sambuconero.log.txt || test_die "Expected content not found in ansible.sambuconero.log.txt"
-grep -E "TASK.*This fails" ansible.marasca.log.txt || test_die "Expected content not found in ansible.marasca.log.txt"
+grep -E "TASK.*Say hello" 01-ansible.sambuconero.log.txt || test_die "Expected content not found in 01-ansible.sambuconero.log.txt"
+grep -E "TASK.*This fails" 02-ansible.marasca.log.txt || test_die "Expected content not found in 02-ansible.marasca.log.txt"
 
-rm ansible.*.log.txt "${QESAPROOT}/ansible/playbooks/sambuconero.yaml" "${QESAPROOT}/ansible/playbooks/marasca.yaml" "${QESAPROOT}/ansible/playbooks/goji.yaml" "${TEST_PROVIDER}/inventory.yaml"
+rm [0-9][0-9]-ansible.*.log.txt "${QESAPROOT}/ansible/playbooks/sambuconero.yaml" "${QESAPROOT}/ansible/playbooks/marasca.yaml" "${QESAPROOT}/ansible/playbooks/goji.yaml" "${TEST_PROVIDER}/inventory.yaml"
 
 #######################################################################
 QESAP_CFG=test_4.yaml
@@ -208,22 +208,22 @@ rm -rf ${THIS_REPORT_DIR}
 QESAP_CFG=test_8.yaml
 test_step "[${QESAP_CFG}] Run Ansible with --profile"
 reset_root
-rm ansible.*.log.txt || echo "Nothing to delete"
+rm [0-9][0-9]-ansible.*.log.txt || echo "Nothing to delete"
 cp goji.yaml "${QESAPROOT}/ansible/playbooks/"
 cp inventory.yaml "${TEST_PROVIDER}/"
 PATH=$TROOT:$PATH qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible --profile \
   || test_die "${QESAP_CFG} fail on ansible with --profile"
 set +e
-time_reports=$(grep -cE " -+ [0-9.]+s" ansible.goji.log.txt)
+time_reports=$(grep -cE " -+ [0-9.]+s" 01-ansible.goji.log.txt)
 echo "--> time_reports:${time_reports}"
 set -e
 [[ $time_reports -gt 1 ]] || test_die "ansible profile reports should be at least 1 but is ${time_reports}"
-rm ansible.*.log.txt
+rm [0-9][0-9]-ansible.*.log.txt
 
 #######################################################################
 QESAP_CFG=test_8.yaml
 test_step "[${QESAP_CFG}] Run Ansible with --profile and --junit"
-rm ansible.*.log.txt || echo "Nothing to delete"
+rm [0-9][0-9]-ansible.*.log.txt || echo "Nothing to delete"
 find . -type f -name "goji*.xml" -delete || echo "Nothing to delete"
 PATH=$TROOT:$PATH qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible --profile --junit . \
   || test_die "${QESAP_CFG} fail on ansible with --profile and --junit"
@@ -231,11 +231,11 @@ junit_logs_number=$(find . -type f -name "goji*.xml" | wc -l)
 echo "--> junit_logs_number:${junit_logs_number}"
 [[ $junit_logs_number -eq 1 ]] || test_die "ansible JUNIT reports should be 1 files but are ${junit_logs_number}"
 set +e
-time_reports=$(grep -cE " -+ [0-9.]+s" ansible.goji.log.txt) || test_die "Test fails at profile output check"
+time_reports=$(grep -cE " -+ [0-9.]+s" 01-ansible.goji.log.txt) || test_die "Test fails at profile output check"
 echo "--> time_reports:${time_reports}"
 set -e
 [[ $time_reports -gt 1 ]] || test_die "ansible profile reports should be at least 1 but is ${time_reports}"
-rm ansible.*.log.txt
+rm [0-9][0-9]-ansible.*.log.txt
 find . -type f -name "goji*.xml" -delete
 
 #######################################################################
@@ -243,7 +243,7 @@ QESAP_CFG=test_8.yaml
 test_step "[${QESAP_CFG}] Run Ansible with --sequence create/destroy and apiver:3"
 # --sequence option is also supported when using conf.yaml with apiver:3
 # but only create and destroy are supported as name
-rm ansible.*.log.txt || echo "Nothing to delete"
+rm [0-9][0-9]-ansible.*.log.txt || echo "Nothing to delete"
 find . -type f -name "goji*.xml" -delete || echo "Nothing to delete"
 find . -type f -name "ribes*.xml" -delete || echo "Nothing to delete"
 reset_root
@@ -260,14 +260,14 @@ PATH=$TROOT:$PATH qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible --s
 junit_logs_number=$(find . -type f -name "goji*.xml" | wc -l)
 echo "--> junit_logs_number:${junit_logs_number}"
 [[ $junit_logs_number -eq 0 ]] || test_die "ansible JUNIT reports should not be generated but are ${junit_logs_number}"
-rm ansible.*.log.txt
+rm [0-9][0-9]-ansible.*.log.txt
 
 #######################################################################
 QESAP_CFG=test_8.yaml
 test_step "[${QESAP_CFG}] Fails running Ansible with --sequence other than create/destroy and apiver:3"
 # --sequence option is also supported when using conf.yaml with apiver:3
 # but only create and destroy are supported as name
-rm ansible.*.log.txt || echo "Nothing to delete"
+rm [0-9][0-9]-ansible.*.log.txt || echo "Nothing to delete"
 find . -type f -name "goji*.xml" -delete || echo "Nothing to delete"
 find . -type f -name "ribes*.xml" -delete || echo "Nothing to delete"
 reset_root
@@ -286,7 +286,7 @@ QESAP_CFG=test_8.yaml
 test_step "[${QESAP_CFG}] Fails running Ansible both -d and --sequence"
 # --sequence option is also supported when using conf.yaml with apiver:3
 # but only create and destroy are supported as name
-rm ansible.*.log.txt || echo "Nothing to delete"
+rm [0-9][0-9]-ansible.*.log.txt || echo "Nothing to delete"
 find . -type f -name "goji*.xml" -delete || echo "Nothing to delete"
 find . -type f -name "ribes*.xml" -delete || echo "Nothing to delete"
 reset_root
@@ -332,7 +332,7 @@ test_step "[${QESAP_CFG}] Run Ansible with variables in the config.yaml"
 cp goji.yaml "${QESAPROOT}/ansible/playbooks/"
 PATH=$TROOT:$PATH qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible \
   || test_die "${QESAP_CFG} ansible with variables test"
-find . -type f -name "ansible.*.log.txt" -exec grep -E "extra_vars.*gineprino" {} + || test_die "String gineprino not found in ansible logs"
+find . -type f -name "[0-9][0-9]-ansible.*.log.txt" -exec grep -E "extra_vars.*gineprino" {} + || test_die "String gineprino not found in ansible logs"
 
 #######################################################################
 QESAP_CFG=test_8.yaml
@@ -347,7 +347,7 @@ FILE_TOUCH_BY_ANSIBLE="${QESAPROOT}/ansible/playbooks/goji.bacche"
 qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} configure || test_die "${QESAP_CFG} fail on configure"
 PATH=$TROOT:$PATH qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} ansible || test_die "${QESAP_CFG} fail on ansible create"
 test_file "${FILE_TOUCH_BY_ANSIBLE}"
-rm ansible.*.log.txt
+rm [0-9][0-9]-ansible.*.log.txt
 
 test_split
 qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun ansible -d || test_die "${QESAP_CFG} fail on ansible destroy"
@@ -357,7 +357,7 @@ echo "Run the script again collecting the output"
 qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun ansible -d |& tee "${THIS_LOG}"
 grep -E "ansible-playbook.*-i.*${PROVIDER}/inventory.yaml.*ansible/playbooks/ribes_nero.yaml" \
     "${THIS_LOG}" || test_die "${QESAP_CFG} dryrun fails in ansible-playbook command"
-ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
+ansible_logs_number=$(find . -type f -name "[0-9][0-9]-ansible.*.log.txt" | wc -l)
 [[ $ansible_logs_number -eq 0 ]] || test_die "ansible .log.txt are not 0 files but has ${ansible_logs_number}"
 rm "${THIS_LOG}"
 

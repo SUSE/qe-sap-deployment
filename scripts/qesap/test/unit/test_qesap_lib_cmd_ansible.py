@@ -22,13 +22,13 @@ def test_export_ansible_output():
     """
 
     test_dir = os.getcwd()
-    test_file = os.path.join(test_dir, "ansible.testAll.log.txt")
+    test_file = os.path.join(test_dir, "01-ansible.testAll.log.txt")
 
     command_to_sent = "/tmp/exec_venv/bin/ansible-playbok -vvvv -i /root/qe-sap-deployment/terraform/aws/inventory.yaml /some/immaginary/path/ansible/playbooks/testAll.yaml -e something=somevalue"
     ansible_output = """whatever multiline string
     produced by Ansible"""
 
-    ansible_export_output(command_to_sent, ansible_output)
+    ansible_export_output(command_to_sent, ansible_output, 1)
 
     assert os.path.isfile(test_file), (
         f"Ansible output file {test_file} was not created."
