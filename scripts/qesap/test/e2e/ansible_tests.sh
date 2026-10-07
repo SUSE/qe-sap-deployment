@@ -390,3 +390,25 @@ cp inventory.yaml "${TEST_PROVIDER}/"
 qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun ansible |& tee "${THIS_LOG}"
 grep -E "ansible.*-vvvv" "${THIS_LOG}" || test_die "${QESAP_CFG} should have -vvvv in ansible commands"
 rm "${THIS_LOG}"
+
+#######################################################################
+QESAP_CFG=test_6.yaml
+test_step "[${QESAP_CFG}] Run Ansible with --numbered-logs"
+reset_root
+rm -f ansible.*.log.txt [0-9][0-9]-ansible.*.log.txt
+cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/timbio.yaml"
+cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/purace.yaml"
+cp sambuconero.yaml "${QESAPROOT}/ansible/playbooks/buga.yaml"
+cp inventory.yaml "${TEST_PROVIDER}/"
+PATH=$TROOT:$PATH qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} ansible --numbered-logs \
+  || test_die "${QESAP_CFG} fail on ansible with --numbered-logs"
+
+test_file "01-ansible.timbio.log.txt"
+test_file "02-ansible.purace.log.txt"
+test_file "03-ansible.buga.log.txt"
+ansible_logs_number=$(find . -type f -name "[0-9][0-9]-ansible.*.log.txt" | wc -l)
+[[ $ansible_logs_number -eq 3 ]] || test_die "Expected 3 numbered logs, found ${ansible_logs_number}"
+ansible_logs_number=$(find . -type f -name "ansible.*.log.txt" | wc -l)
+[[ $ansible_logs_number -eq 0 ]] || test_die "Unexpected unnumbered logs: ${ansible_logs_number}"
+
+rm [0-9][0-9]-ansible.*.log.txt "${QESAPROOT}/ansible/playbooks/timbio.yaml" "${QESAPROOT}/ansible/playbooks/purace.yaml" "${QESAPROOT}/ansible/playbooks/buga.yaml" "${TEST_PROVIDER}/inventory.yaml"
