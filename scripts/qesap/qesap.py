@@ -162,6 +162,12 @@ def cli(command_line=None):
     )
 
     parser_ansible.add_argument(
+        "--numbered-logs",
+        action="store_true",
+        help="Prefix playbook log filenames with their execution order",
+    )
+
+    parser_ansible.add_argument(
         "-s",
         "--sequence",
         help="Only execute a playbook sequence from a specific Ansible `sequence` section",
@@ -204,6 +210,7 @@ def run_subcommand(args):
             profile=args.profile,
             junit=args.junit,
             sequence=args.sequence,
+            numbered_logs=args.numbered_logs,
         )
     return Status(f"Unknown command: {args.command}")
 

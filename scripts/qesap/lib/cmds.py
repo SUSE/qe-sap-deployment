@@ -427,12 +427,13 @@ def ansible_command_sequence(
     return True, ansible_cmd_seq
 
 
-def execute_ansible_commands(commands, dryrun):
+def execute_ansible_commands(commands, dryrun, numbered_logs=False):
     """Helper to execute a list of ansible commands.
 
     Args:
         commands (list): List of command dictionaries as prepared by ansible_command_sequence.
         dryrun (bool): Enable dryrun execution mode.
+        numbered_logs (bool): Prefix playbook log filenames with their execution order.
 
     Returns:
         Status: Execution result, 0 means OK.
@@ -446,20 +447,22 @@ def execute_ansible_commands(commands, dryrun):
             log.debug("Ansible process return ret:%d", ret)
             if "ansible-playbook" in command["cmd"]:
                 playbook_number += 1
-                ansible_export_output(command["cmd"], out, playbook_number)
+                ansible_export_output(
+                    command["cmd"], out, playbook_number if numbered_logs else None
+                )
             if ret != 0:
                 log.error("command:%s returned non zero %d", command, ret)
                 return Status(f"Error rc: {ret} at {command}")
     return Status("ok")
 
 
-def ansible_export_output(command, out, playbook_number):
+def ansible_export_output(command, out, playbook_number=None):
     """Write the Ansible (or ansible-playbook) stdout to file
 
     Function is in charge to:
     - get a cmd and calculate from it the log file name to write.
       The filename is calculated, when available, from the playbook name:
-      stripping '.yaml', adding '.log.txt' and prefixing the execution number
+      stripping '.yaml', adding '.log.txt' and optionally prefixing the execution number
     - open a file in write mode. Path for this file is the current directory
     - write to the file the content of the out variable.
       Each element of the out list to a new file line
@@ -467,7 +470,7 @@ def ansible_export_output(command, out, playbook_number):
     Args:
         command (str): one cmd element as prepared by ansible_command_sequence
         out (str list): as returned by subprocess_run
-        playbook_number (int): position in the executed playbook sequence, starting at 1
+        playbook_number (int or None): execution number, or None for no prefix
     """
     # log name has to be derived from the name of the playbook:
     # search the playbook name in all command words.
@@ -481,7 +484,8 @@ def ansible_export_output(command, out, playbook_number):
         log.error("Unable to find which one is the playbook in %s", command)
         return
     playbook_name = os.path.splitext(os.path.basename(playbook_path))[0]
-    log_filename = f"{playbook_number:02d}-ansible.{playbook_name}.log.txt"
+    prefix = f"{playbook_number:02d}-" if playbook_number is not None else ""
+    log_filename = f"{prefix}ansible.{playbook_name}.log.txt"
     log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
     with open(log_filename, "w", encoding="utf-8") as log_file:
         log_file.write("\n".join(out))
@@ -495,6 +499,7 @@ def cmd_ansible(
     profile=False,
     junit=False,
     sequence=None,
+    numbered_logs=False,
 ):
     """Main executor for the deploy sub-command
 
@@ -509,6 +514,7 @@ def cmd_ansible(
         sequence (str): only run a named section from the ansible::sequence conf.yaml part.
                        In case it is used with conf.yaml using apiver <4, only 'create' and 'destroy'
                        values are supported.
+        numbered_logs (bool): prefix playbook log filenames with their execution order.
 
     Returns:
         Status: execution result, 0 means OK. It is mind to be used as script exit code
@@ -564,4 +570,6 @@ def cmd_ansible(
         log.error("ansible_command_sequence ret:%d", ret)
         return Status(ansible_cmd_seq)
 
-    return execute_ansible_commands(ansible_cmd_seq, dryrun)
+    return execute_ansible_commands(
+        ansible_cmd_seq, dryrun, numbered_logs=numbered_logs
+    )

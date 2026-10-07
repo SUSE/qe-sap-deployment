@@ -790,17 +790,24 @@ ansible:
     run.assert_has_calls(calls)
 
 
+@pytest.mark.parametrize("numbered_logs", [False, True])
 @mock.patch("shutil.which", side_effect=lambda x: fake_ansible_path(x))
 @mock.patch("lib.process_manager.subprocess_run")
 def test_ansible_create_logs(
-    run, _, base_args, tmpdir, create_inventory, create_playbooks, ansible_config
+    run,
+    _,
+    base_args,
+    tmpdir,
+    create_inventory,
+    create_playbooks,
+    ansible_config,
+    monkeypatch,
+    numbered_logs,
 ):
-    """
-    Test that config.yml with playbook named `<SOMETHING>.yaml`
-    result in the generation of a log file named `NN-ansible.<SOMETHING>.log.txt`
-    """
+    """Check default and numbered log filenames through the CLI."""
+    monkeypatch.chdir(tmpdir)
     provider = "grilloparlante"
-    playbooks = {"create": ["get_cherry_wood", "made_pinocchio_head"]}
+    playbooks = {"create": ["made_pinocchio_head", "get_cherry_wood"]}
 
     config_content = ansible_config(provider, playbooks)
     config_file_name = str(tmpdir / "config.yaml")
@@ -809,16 +816,28 @@ def test_ansible_create_logs(
 
     create_playbooks(playbooks["create"])
     create_inventory(provider)
-
     run.return_value = (0, [])
 
     args = base_args(None, config_file_name, False)
     args.append("ansible")
+    if numbered_logs:
+        args.append("--numbered-logs")
 
     assert main(args) == 0
 
-    assert os.path.isfile("01-ansible.get_cherry_wood.log.txt")
-    assert os.path.isfile("02-ansible.made_pinocchio_head.log.txt")
+    expected = (
+        [
+            "01-ansible.made_pinocchio_head.log.txt",
+            "02-ansible.get_cherry_wood.log.txt",
+        ]
+        if numbered_logs
+        else [
+            "ansible.made_pinocchio_head.log.txt",
+            "ansible.get_cherry_wood.log.txt",
+        ]
+    )
+    actual = sorted(name for name in os.listdir() if name.endswith(".log.txt"))
+    assert actual == sorted(expected)
 
 
 @pytest.mark.parametrize("seq", ["create", "destroy"])
