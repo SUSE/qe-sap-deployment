@@ -475,11 +475,11 @@ two fencing types: SBD or native fencing. The table
 below shows what is currently supported and which STONITH
 agent is used for native fencing on each cloud.
 
-| Type  | SBD Fencing | Native Fencing | Native STONITH agent                |
-|-------|-------------|----------------|-------------------------------------|
-| AWS   | Yes         | Yes            | `stonith:external/ec2`              |
-| Azure | Yes         | Yes            | `stonith:fence_azure_arm` (MSI/SPN) |
-| GCP   | Yes         | Yes            | `stonith:fence_gce`                 |
+| Type  | SBD Fencing | Native Fencing | Native STONITH agent                                              |
+|-------|-------------|----------------|-------------------------------------------------------------------|
+| AWS   | Yes         | Yes            | `stonith:external/ec2` (SLE 12/15), `stonith:fence_aws` (SLE 16+) |
+| Azure | Yes         | Yes            | `stonith:fence_azure_arm` (MSI/SPN)                               |
+| GCP   | Yes         | Yes            | `stonith:fence_gce`                                               |
 
 Like the other playbooks that are directly connected to HANA operations,
 this playbook also sources `hana_vars.yaml` for consistency. By default,
@@ -495,13 +495,17 @@ playbook. More details in `ansible/playbooks/tasks/cluster-bootstrap-init.yaml`.
 
 ### AWS native fencing
 
-AWS uses the `stonith:external/ec2` agent. Following the SUSE/AWS
-reference architecture for SAP HANA HA on SLES, the playbook sets the
-cluster property `stonith-action=off`, which forces the EC2 STONITH
-agent to **stop** the fenced instance via the EC2 API rather than
-reboot it. This prevents a fenced node from automatically rejoining
-the cluster — which on AWS could otherwise lead to split brain — and
-forces an operator to deliberately reintroduce the node. See the
+AWS uses the `stonith:external/ec2` agent on SLE 12 and SLE 15, and the
+`stonith:fence_aws` agent on SLE 16 and newer. For `fence_aws`, Terraform
+exports the EC2 instance IDs into the Ansible inventory so that the playbook
+can build the required Pacemaker `pcmk_host_map` parameter.
+
+Following the SUSE/AWS reference architecture for SAP HANA HA on SLES, the
+playbook sets the cluster property `stonith-action=off`, which forces the
+STONITH agent to **stop** the fenced instance via the EC2 API rather than
+reboot it. This prevents a fenced node from automatically rejoining the
+cluster — which on AWS could otherwise lead to split brain — and forces an
+operator to deliberately reintroduce the node. See the
 [AWS guide](https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-on-aws-stonith-device.html)
 for details. The corresponding `stonith-timeout` is `600s`.
 

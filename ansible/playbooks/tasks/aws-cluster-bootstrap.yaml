@@ -6,37 +6,72 @@
 # This collection of tasks bootstraps the cluster following guidance from
 # https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-on-aws-ha-cluster-configuration-on-sles.html
 
-# AWS-specific STONITH configuration using EC2 external agent.
-- name: Stonith command
+# AWS-specific STONITH configuration.
+# SLE 12 and 15 use the legacy EC2 external agent (stonith:external/ec2).
+# SLE 16+ uses the fence agent (stonith:fence_aws) with pcmk_host_map.
+# Operation timeouts and meta attributes for STONITH primitives.
+# These values are carried over from the original external/ec2 configuration in this repository.
+# Note: AWS documentation in sap-hana-pacemaker-sles-cluster-config
+# (https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-pacemaker-sles-cluster-config.html)
+# suggests the following alternative values for fence_aws:
+#   op start interval="0" timeout="600"
+#   op stop interval="0" timeout="180"
+#   op monitor interval="300" timeout="60"
+#   pcmk_delay_max="10" (used in conjunction with priority-fencing-delay="20")
+#   pcmk_reboot_timeout="600"
+#   pcmk_reboot_retries="4"
+- name: Set common AWS STONITH options
   ansible.builtin.set_fact:
-    aws_stonith_cmd: |
-      crm configure primitive rsc_aws_stonith stonith:external/ec2 \
-      op start interval=0 timeout=180 \
-      op stop interval=0 timeout=180 \
-      op monitor interval=120 timeout=60 \
-      meta target-role=Started \
-      params tag={{ aws_stonith_tag }} pcmk_delay_max=15
+    aws_stonith_common_ops: >-
+      op start interval=0 timeout=180
+      op stop interval=0 timeout=180
+      op monitor interval=120 timeout=60
+      meta target-role=Started
+    aws_stonith_delay_max: 15
+  when:
+    - not (use_sbd | default(false) | bool)
 
-- name: Configure AWS EC2 STONITH for sle 12sp5
+- name: Stonith command for sle 12 and 15
+  ansible.builtin.set_fact:
+    aws_stonith_cmd: >-
+      crm configure primitive rsc_aws_stonith stonith:external/ec2
+      {{ aws_stonith_common_ops }}
+      params tag={{ aws_stonith_tag }} pcmk_delay_max={{ aws_stonith_delay_max }}
+  when:
+    - not (use_sbd | default(false) | bool)
+    - ansible_distribution_major_version is version('16', '<')
+
+- name: Build pcmk_host_map for fence_aws
+  ansible.builtin.set_fact:
+    aws_pcmk_host_map: >-
+      {% for host in groups['hana'] %}{{ host }}:{{ hostvars[host].instance_id }}{% if not loop.last %};{% endif %}{% endfor %}
+  when:
+    - not (use_sbd | default(false) | bool)
+    - ansible_distribution_major_version is version('16', '>=')
+
+- name: Stonith command for sle 16+
+  ansible.builtin.set_fact:
+    aws_stonith_cmd: >-
+      crm configure primitive rsc_aws_stonith stonith:fence_aws
+      {{ aws_stonith_common_ops }}
+      params pcmk_host_map={{ aws_pcmk_host_map }}
+      region={{ aws_region }}
+      skip_os_shutdown=true
+      pcmk_delay_max={{ aws_stonith_delay_max }}
+  when:
+    - not (use_sbd | default(false) | bool)
+    - ansible_distribution_major_version is version('16', '>=')
+
+- name: Configure AWS STONITH
   ansible.builtin.command: "{{ aws_stonith_cmd }}"
   when:
     - is_primary
     - not (use_sbd | default(false) | bool)
-    - ansible_distribution_major_version == '12'
   register: stonith_config_result
   changed_when: stonith_config_result.rc == 0
   failed_when: >
-    stonith_config_result.stderr_lines | select("match", "ERROR") | reject("match", "ERROR: warning") | list | length > 0
-
-- name: Configure AWS EC2 STONITH for sle 15
-  ansible.builtin.command: "{{ aws_stonith_cmd }}"
-  when:
-    - is_primary
-    - not (use_sbd | default(false) | bool)
-    - ansible_distribution_major_version != '12'
-  register: stonith_config_result
-  changed_when: stonith_config_result.rc == 0
-  failed_when: "'ERROR' in stonith_config_result.stderr"
+    stonith_config_result.rc != 0 or
+    (stonith_config_result.stderr_lines | select("match", "ERROR") | reject("match", "ERROR: warning") | list | length > 0)
 
 # AWS opts in to `stonith-action=off` per the SUSE/AWS reference architecture
 # (see cluster-bootstrap-defaults.yaml header for details).
