@@ -127,6 +127,9 @@
   register: sapchk
   changed_when: false
   failed_when: sapchk.rc != 0
+  until: sapchk.rc == 0
+  retries: 12
+  delay: 10
 
 - name: Discover active solution
   ansible.builtin.command: saptune solution enabled
