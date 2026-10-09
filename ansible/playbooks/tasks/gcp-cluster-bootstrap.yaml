@@ -6,8 +6,8 @@
 # GCP-specific STONITH configuration using fence_gce.
 # GCP native fencing requires per-node stonith primitives (fence_gce),
 # each referencing a specific hostname and zone.
-# AWS uses a single tag-based stonith resource (external/ec2) that
-# discovers instances automatically, so it does not need these variables.
+# AWS uses a single stonith resource (external/ec2 on SLE 12/15, fence_aws on SLE 16+),
+# so it does not need separate per-node primitives.
 - name: Set primary and secondary hostnames
   ansible.builtin.set_fact:
     primary_hostname: "{{ groups['hana'][0] }}"
