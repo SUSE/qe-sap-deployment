@@ -134,6 +134,55 @@
         success_msg: "The IBS mirror is in place: {{ qesap_ibsm_repos | join(', ') }}"
       when: use_ibsm | default(false) | bool
 
+- name: Prepare SLE 16 Btrfs nodes for SELinux policy cleanup
+  hosts: hana:iscsi
+  any_errors_fatal: true
+  become: true
+  become_user: root
+  environment:
+    ZYPP_LOCK_TIMEOUT: '120'
+
+  tasks:
+    # bsc#1271814: SLE 16 cloud images intentionally omit snapper.
+    # cleanoldsepoldir.service can fail on Btrfs without that command.
+    - name: Install Snapper and recover failed SELinux policy cleanup
+      when:
+        - ansible_facts['distribution_major_version'] == '16'
+        - >-
+          (ansible_facts['mounts']
+           | selectattr('mount', 'equalto', '/')
+           | selectattr('fstype', 'equalto', 'btrfs')
+           | list | length) > 0
+      block:
+        - name: Gather service facts before installing snapper
+          ansible.builtin.service_facts:
+          register: qesap_cleanup_services
+
+        - name: Recover failed SELinux policy cleanup
+          when: >-
+            qesap_cleanup_services.get('ansible_facts', {}).get('services', {}).get('cleanoldsepoldir.service', {}).get('status', '') == 'failed'
+          block:
+            - name: Report the SELinux policy cleanup workaround
+              ansible.builtin.debug:
+                msg: "[OSADO][softfail] bsc#1271814 cleanoldsepoldir.service failed on Btrfs; applying the snapper workaround"
+              when: not ansible_check_mode
+
+            - name: Ensure snapper is installed
+              community.general.zypper:
+                name: snapper
+                state: present
+              register: qesap_snapper_install
+              until: qesap_snapper_install is succeeded
+              retries: 3
+              delay: 60
+
+            # Retry the cleanup instead of clearing the failed state.
+            - name: Retry failed SELinux policy cleanup
+              ansible.builtin.systemd_service:
+                name: cleanoldsepoldir.service
+                state: restarted
+              when: not ansible_check_mode
+
 - name: Install packages on the HANA nodes
   hosts: hana
   # A package failure must abort the run. Without this the failed host is
