@@ -6,6 +6,7 @@
   vars:
     # SAPHahaSR-angi
     use_hana_sr_angi: "{{ use_sap_hana_sr_angi | default(false) }}"
+    angi_variant: progressive
     # is_primary is selected so that tasks that need to be issued one are honoured correctly
     is_primary: "{{ ansible_play_hosts[0] == inventory_hostname }}"
     primary_hostname: "{{ ansible_play_hosts[0] }}"
@@ -21,6 +22,7 @@
     rsc_socat: "rsc_socat_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}"
     rsc_saphanactl: "rsc_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}"
     ms_saphanactl: "msl_SAPHanaCtl_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}"
+    pacemaker_start_delay: 300
 
 
   handlers:
@@ -47,6 +49,13 @@
 
     - name: Load SAP HANA variables
       ansible.builtin.include_vars: ./vars/hana_vars.yaml
+
+    - name: Validate angi variant
+      ansible.builtin.assert:
+        that:
+          - angi_variant in ['conservative', 'progressive']
+        fail_msg: "angi_variant must be conservative or progressive"
+      when: use_hana_sr_angi | bool
 
     - name: Re-set HANA Angi vars
       ansible.builtin.set_fact:
@@ -161,3 +170,46 @@
         cmd: cs_wait_for_idle -s 5
       changed_when: false
       when: is_primary
+
+    - name: Configure delayed cluster startup for Azure angi
+      when:
+        - cloud_platform_is_azure | bool
+        - use_hana_sr_angi | bool
+      block:
+        - name: Disable additional SBD startup delay
+          ansible.builtin.lineinfile:
+            path: /etc/sysconfig/sbd
+            regexp: '^SBD_DELAY_START='
+            line: 'SBD_DELAY_START=no'
+          when: use_sbd | default(false) | bool
+
+        - name: Create Pacemaker startup timer
+          ansible.builtin.copy:
+            dest: /etc/systemd/system/pacemaker.timer
+            owner: root
+            group: root
+            mode: '0644'
+            content: |
+              [Unit]
+              Description=Delay start of pacemaker.service after boot
+
+              [Timer]
+              OnBootSec={{ pacemaker_start_delay }}
+              Unit=pacemaker.service
+
+              [Install]
+              WantedBy=timers.target
+
+        - name: Enable Pacemaker startup timer
+          ansible.builtin.systemd:
+            name: pacemaker.timer
+            daemon_reload: true
+            enabled: true
+
+        - name: Disable direct cluster startup at boot
+          ansible.builtin.systemd:
+            name: "{{ item }}"
+            enabled: false
+          loop:
+            - pacemaker.service
+            - corosync.service

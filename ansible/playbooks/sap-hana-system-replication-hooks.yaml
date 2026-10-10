@@ -8,6 +8,13 @@
     - name: Source hana install variables
       ansible.builtin.include_vars: ./vars/hana_vars.yaml
 
+    - name: Validate angi variant
+      ansible.builtin.assert:
+        that:
+          - angi_variant in ['conservative', 'progressive']
+        fail_msg: "angi_variant must be conservative or progressive"
+      when: use_hana_sr_angi | bool
+
   vars:
     is_primary: "{{ ansible_play_hosts[0] == inventory_hostname }}"
     # All hook scripts should be used directly from the SAPHanaSR package.
@@ -17,6 +24,7 @@
     __sapcontrol: "/usr/sap/hostctrl/exe/sapcontrol"
     # SAPHahaSR-angi
     use_hana_sr_angi: "{{ use_sap_hana_sr_angi | default(false) }}"
+    angi_variant: progressive
     __hooks_dir_angi: "/usr/share/SAPHanaSR-angi/"
 
   handlers:
@@ -130,6 +138,9 @@
             - {'section': 'ha_dr_provider_suschksrv', 'key': 'provider', 'value': 'susChkSrv'}
             - {'section': 'ha_dr_provider_suschksrv', 'key': 'path', 'value': '{{ __hooks_dir_angi }}'}
             - {'section': 'ha_dr_provider_suschksrv', 'key': 'execution_order', 'value': '3'}
+            - section: ha_dr_provider_suschksrv
+              key: action_on_lost
+              value: "{{ 'fence' if angi_variant == 'progressive' else 'stop' }}"
             - {'section': 'trace', 'key': 'ha_dr_sushanasr', 'value': 'info'}
             - {'section': 'trace', 'key': 'ha_dr_suschksrv', 'value': 'info'}
             - {'section': 'trace', 'key': 'ha_dr_sustkover', 'value': 'info'}
