@@ -15,6 +15,10 @@ output "hana_name" {
   value = data.aws_instance.hana.*.id
 }
 
+output "hana_instance_id" {
+  value = data.aws_instance.hana.*.id
+}
+
 output "hana_public_name" {
   value = data.aws_instance.hana.*.public_dns
 }

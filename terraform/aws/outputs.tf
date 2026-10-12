@@ -41,6 +41,10 @@ output "hana_name" {
   value = module.hana_node.hana_name
 }
 
+output "hana_instance_id" {
+  value = module.hana_node.hana_instance_id
+}
+
 output "hana_public_name" {
   value = module.hana_node.hana_public_name
 }
@@ -105,6 +109,7 @@ resource "local_file" "ansible_inventory" {
     {
       hana_name           = var.hana_name,
       hana_pip            = module.hana_node.hana_public_ip,
+      hana_instance_ids   = module.hana_node.hana_instance_id,
       hana_remote_python  = var.hana_remote_python,
       hana_machinetype    = var.hana_vm_size,
       iscsi_name          = var.iscsi_name,

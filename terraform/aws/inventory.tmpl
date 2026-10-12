@@ -14,6 +14,7 @@ all:
         ${hana_name}${format("%02d", index + 1)}:
           ansible_host: ${value}
           ansible_python_interpreter: ${hana_remote_python}
+          instance_id: ${hana_instance_ids[index]}
           hana_machinetype: ${hana_machinetype}
           ebs_id_to_device_name:
 %{ for ebs_map_key, ebs_map_value in ebs_map[index] ~}
