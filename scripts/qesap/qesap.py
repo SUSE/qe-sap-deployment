@@ -18,7 +18,7 @@ logging.basicConfig(format="%(levelname)-8s %(message)s")
 log = logging.getLogger("QESAP")
 
 
-VERSION = "2.7"
+VERSION = "2.13"
 
 DESCRIBE = """qe-sap-deployment helper script"""
 
