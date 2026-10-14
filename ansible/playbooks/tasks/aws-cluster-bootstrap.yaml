@@ -48,6 +48,17 @@
     disable_stonith_action: true
     set_sbd_stonith_timeout: 144
 
+- name: Enable reboot fencing for progressive AWS angi
+  ansible.builtin.command:
+    cmd: "crm configure property {{ crm_prop_fencing_action }}=reboot"
+  register: aws_reboot_fencing
+  changed_when: aws_reboot_fencing.rc == 0
+  when:
+    - is_primary
+    - use_hana_sr_angi | bool
+    - angi_variant == 'progressive'
+    - not (use_sbd | default(false) | bool)
+
 # AWS-specific cluster IP configuration using aws-vpc-move-ip.
 - name: Configure cluster IP
   ansible.builtin.command:
