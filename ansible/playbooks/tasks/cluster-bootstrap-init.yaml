@@ -51,6 +51,39 @@
       'pre-cluster.yaml' playbook, which has to run before this one.
     success_msg: "The cluster packages are installed"
 
+# bsc#1284962: podman-pilot replaces an unset %HOME with the literal text "$HOME".
+# Pacemaker runs resource agents without HOME. Thus /usr/bin/aws (a flake on
+# SLE 16.1) fails in ocf:suse:aws-vpc-move-ip.
+# bsc#1285040: pacemaker-controld cannot parse agent output that contains ANSI
+# color codes from podman-pilot. It loses the operation result.
+# FLAKE_LOG_STYLE=never removes the color codes.
+# Pacemaker reads /etc/sysconfig/pacemaker only at service start.
+- name: Work around the aws flake failures in pacemaker
+  when:
+    - ansible_facts['distribution_version'] == '16.1'
+    - ansible_facts.packages['aws-cli-cmd'] is defined
+    - ansible_facts.packages['flake-pilot-podman'] is defined
+    - ansible_facts.packages['flake-pilot-podman'][0].version is version('3.1.45', '<=')
+    - (ansible_facts.packages['pacemaker'][0].version ~ '-' ~ ansible_facts.packages['pacemaker'][0].release) is version('3.0.3+20260728.7052efa194-160100.2.8', '<=')
+  block:
+    - name: Softfail for aws flake in pacemaker
+      ansible.builtin.debug:
+        msg:
+          - "[OSADO][softfail] bsc#1284962 podman-pilot fails when HOME is not set"
+          - "[OSADO][softfail] bsc#1285040 pacemaker-controld loses the result when agent output has ANSI codes"
+
+    - name: Configure pacemaker environment for the aws flake
+      ansible.builtin.lineinfile:
+        path: /etc/sysconfig/pacemaker
+        regexp: "^{{ item.split('=')[0] }}="
+        line: "{{ item }}"
+        create: true
+        mode: '0644'
+        backup: true
+      loop:
+        - "HOME=/root"
+        - "FLAKE_LOG_STYLE=never"
+
 # ha_logd (logd) is provided by cluster-glue, which has been dropped in SLE 16.
 # Pacemaker >= 2.0.0 no longer uses ha_logd (adopted libqb logging instead),
 # so this is only needed for SLE 12 SP5 with Pacemaker 1.x.
