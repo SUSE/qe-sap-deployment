@@ -757,6 +757,18 @@ variable "ibsm_hub_name" {
   default     = ""
 }
 
+variable "allowed_ssh_cidr_csv" {
+  description = "Comma-separated CIDRs allowed to reach the public ports. Leave empty to allow from anywhere."
+  type        = string
+  default     = ""
+  validation {
+    condition = var.allowed_ssh_cidr_csv == "" || alltrue([
+      for address in split(",", var.allowed_ssh_cidr_csv) : can(cidrsubnet(trimspace(address), 0, 0))
+    ])
+    error_message = "The value must be a valid CIDR or a comma-separated list of valid CIDRs."
+  }
+}
+
 # Custom resource tags (labels) variable
 variable "custom_tags" {
   description = "Optional custom tags/labels to apply to all resources"

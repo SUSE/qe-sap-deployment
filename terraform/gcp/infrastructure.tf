@@ -35,6 +35,13 @@ locals {
     for k, v in var.custom_tags : lower(k) => lower(v)
   }
   labels = merge(local.base_labels, local.custom_labels)
+
+  allowed_ssh_cidrs = var.allowed_ssh_cidr_csv == "" ? [] : [
+    for s in split(",", var.allowed_ssh_cidr_csv) : trimspace(s)
+    if trimspace(s) != ""
+  ]
+  # Ranges for externally exposed ports: the allowed CIDRs, or anywhere if no CIDRs are set
+  allowed_source_ranges = length(local.allowed_ssh_cidrs) > 0 ? local.allowed_ssh_cidrs : ["0.0.0.0/0"]
 }
 
 # Network resources: Network, Subnet
@@ -86,15 +93,29 @@ resource "google_compute_firewall" "ha_firewall_allow_icmp" {
   }
 }
 
+# SSH, HTTP, HTTPS and HAWK: only from the allowed CIDRs (the openQA worker)
 resource "google_compute_firewall" "ha_firewall_allow_tcp" {
   count         = local.create_firewall
   name          = "${local.deployment_name}-fw-tcp"
   network       = local.vpc_name
-  source_ranges = ["0.0.0.0/0"]
+  source_ranges = local.allowed_source_ranges
 
   allow {
     protocol = "tcp"
-    ports    = ["22", "80", "443", "3000", "7630", "9668", "9100", "9664", "9090", "9680"]
+    ports    = ["22", "80", "443", "7630"]
+  }
+}
+
+# Monitoring ports: only from the allowed CIDRs
+resource "google_compute_firewall" "ha_firewall_allow_monitoring" {
+  count         = local.create_firewall
+  name          = "${local.deployment_name}-fw-monitoring"
+  network       = local.vpc_name
+  source_ranges = local.allowed_source_ranges
+
+  allow {
+    protocol = "tcp"
+    ports    = ["3000", "9668", "9100", "9664", "9090", "9680"]
   }
 }
 
