@@ -24,6 +24,13 @@ locals {
     workspace = local.deployment_name
   }
   tags = merge(local.base_tags, var.custom_tags)
+
+  allowed_ssh_cidrs = var.allowed_ssh_cidr_csv == "" ? [] : [
+    for s in split(",", var.allowed_ssh_cidr_csv) : trimspace(s)
+    if trimspace(s) != ""
+  ]
+  # Ranges for externally exposed ports: the allowed CIDRs, or anywhere if no CIDRs are set
+  allowed_source_ranges = length(local.allowed_ssh_cidrs) > 0 ? local.allowed_ssh_cidrs : ["0.0.0.0/0"]
 }
 
 # AWS key pair
@@ -136,7 +143,7 @@ resource "aws_security_group_rule" "http" {
   from_port   = 80
   to_port     = 80
   protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
+  cidr_blocks = local.allowed_source_ranges
 
   security_group_id = local.security_group_id
 }
@@ -147,7 +154,7 @@ resource "aws_security_group_rule" "https" {
   from_port   = 443
   to_port     = 443
   protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
+  cidr_blocks = local.allowed_source_ranges
 
   security_group_id = local.security_group_id
 }
@@ -158,7 +165,7 @@ resource "aws_security_group_rule" "hawk" {
   from_port   = 7630
   to_port     = 7630
   protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
+  cidr_blocks = local.allowed_source_ranges
 
   security_group_id = local.security_group_id
 }
@@ -169,7 +176,7 @@ resource "aws_security_group_rule" "ssh" {
   from_port   = 22
   to_port     = 22
   protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
+  cidr_blocks = local.allowed_source_ranges
 
   security_group_id = local.security_group_id
 }
@@ -182,7 +189,7 @@ resource "aws_security_group_rule" "hanadb_exporter" {
   from_port   = 9668
   to_port     = 9668
   protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
+  cidr_blocks = local.allowed_source_ranges
 
   security_group_id = local.security_group_id
 }
@@ -194,7 +201,7 @@ resource "aws_security_group_rule" "node_exporter" {
   from_port   = 9100
   to_port     = 9100
   protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
+  cidr_blocks = local.allowed_source_ranges
 
   security_group_id = local.security_group_id
 }
@@ -205,7 +212,7 @@ resource "aws_security_group_rule" "ha_exporter" {
   from_port   = 9664
   to_port     = 9664
   protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
+  cidr_blocks = local.allowed_source_ranges
 
   security_group_id = local.security_group_id
 }
@@ -216,7 +223,7 @@ resource "aws_security_group_rule" "saphost_exporter" {
   from_port   = 9680
   to_port     = 9680
   protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
+  cidr_blocks = local.allowed_source_ranges
 
   security_group_id = local.security_group_id
 }
@@ -227,7 +234,7 @@ resource "aws_security_group_rule" "prometheus_server" {
   from_port   = 9090
   to_port     = 9090
   protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
+  cidr_blocks = local.allowed_source_ranges
 
   security_group_id = local.security_group_id
 }
@@ -238,7 +245,7 @@ resource "aws_security_group_rule" "grafana_server" {
   from_port   = 3000
   to_port     = 3000
   protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
+  cidr_blocks = local.allowed_source_ranges
 
   security_group_id = local.security_group_id
 }
