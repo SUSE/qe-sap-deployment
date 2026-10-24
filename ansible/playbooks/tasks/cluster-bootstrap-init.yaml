@@ -165,11 +165,18 @@
     - crm_cluster_init is changed
     - corosync_tuning_primary is changed
 
+# Since this task is right after a restart, the cluster may not be immediately ready.
+# Retries make sure the task is not aborted due to timing issues
 - name: Check the cluster on primary
   ansible.builtin.command:
     cmd: crm status
-  when: is_primary
+  register: crm_status_primary
+  until:
+    - crm_status_primary.rc == 0
+  retries: 10
+  delay: 10
   changed_when: false
+  when: is_primary
 
 - name: Join the cluster
   ansible.builtin.command:
