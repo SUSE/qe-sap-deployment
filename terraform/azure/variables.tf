@@ -895,15 +895,13 @@ variable "ibsm_rg" {
 }
 
 variable "allowed_ssh_cidr_csv" {
-  description = "Comma-separated CIDRs to allow for SSH. Leave empty to allow from anywhere."
+  description = "Comma-separated CIDRs allowed to reach the VMs on SSH (22), HTTP (80), HTTPS (443) and HAWK (7630). Leave empty to allow from anywhere."
   type        = string
   default     = ""
   validation {
-    # This condition passes if:
-    # 1. The input string is empty.
-    # 2. Every item in the comma-separated string is a valid CIDR after trimming whitespace.
-    condition = var.allowed_ssh_cidr_csv == "" || alltrue([
-      for address in split(",", var.allowed_ssh_cidr_csv) : can(cidrsubnet(trimspace(address), 0, 0))
+    condition = alltrue([
+      for address in split(",", var.allowed_ssh_cidr_csv) :
+      can(cidrsubnet(trimspace(address), 0, 0)) if trimspace(address) != ""
     ])
     error_message = "The value must be a valid CIDR or a comma-separated list of valid CIDRs."
   }

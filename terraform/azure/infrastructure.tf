@@ -54,6 +54,9 @@ locals {
     if trimspace(s) != ""
   ]
 
+  allowed_ingress_prefixes = length(local.allowed_ssh_cidrs) > 0 ? local.allowed_ssh_cidrs : null
+  allowed_ingress_prefix   = length(local.allowed_ssh_cidrs) == 0 ? "*" : null
+
   base_tags = {
     workspace = local.deployment_name
   }
@@ -205,8 +208,8 @@ resource "azurerm_network_security_group" "mysecgroup" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "22"
-    source_address_prefixes    = length(local.allowed_ssh_cidrs) > 0 ? local.allowed_ssh_cidrs : null
-    source_address_prefix      = length(local.allowed_ssh_cidrs) == 0 ? "*" : null
+    source_address_prefixes    = local.allowed_ingress_prefixes
+    source_address_prefix      = local.allowed_ingress_prefix
     destination_address_prefix = "*"
   }
 
@@ -218,7 +221,8 @@ resource "azurerm_network_security_group" "mysecgroup" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "80"
-    source_address_prefix      = "*"
+    source_address_prefixes    = local.allowed_ingress_prefixes
+    source_address_prefix      = local.allowed_ingress_prefix
     destination_address_prefix = "*"
   }
 
@@ -230,7 +234,8 @@ resource "azurerm_network_security_group" "mysecgroup" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "443"
-    source_address_prefix      = "*"
+    source_address_prefixes    = local.allowed_ingress_prefixes
+    source_address_prefix      = local.allowed_ingress_prefix
     destination_address_prefix = "*"
   }
 
@@ -242,9 +247,11 @@ resource "azurerm_network_security_group" "mysecgroup" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "7630"
-    source_address_prefix      = "*"
+    source_address_prefixes    = local.allowed_ingress_prefixes
+    source_address_prefix      = local.allowed_ingress_prefix
     destination_address_prefix = "*"
   }
+
   // monitoring rules
   security_rule {
     name                       = "nodeExporter"
