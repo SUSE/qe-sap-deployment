@@ -63,6 +63,16 @@ resource "azurerm_network_interface_backend_address_pool_association" "hana" {
   network_interface_id    = element(azurerm_network_interface.hana.*.id, count.index)
   ip_configuration_name   = "ipconf-primary"
   backend_address_pool_id = azurerm_lb_backend_address_pool.hana-load-balancer[0].id
+
+  depends_on = [time_sleep.wait_after_lb_probes]
+}
+
+# Azure rejects concurrent writes to the same LB (409 ConflictingConcurrentWriteNotAllowed)
+# and keeps updating it after the API call returns: serialize every LB write with a pause.
+resource "time_sleep" "wait_after_lb_pool" {
+  count           = local.create_ha_infra
+  create_duration = "10s"
+  depends_on      = [azurerm_lb_backend_address_pool.hana-load-balancer]
 }
 
 resource "azurerm_lb_probe" "hana-load-balancer" {
@@ -74,6 +84,14 @@ resource "azurerm_lb_probe" "hana-load-balancer" {
   port                = tonumber("625${var.hana_instance_number}")
   interval_in_seconds = 5
   number_of_probes    = 2
+
+  depends_on = [time_sleep.wait_after_lb_pool]
+}
+
+resource "time_sleep" "wait_after_lb_probe" {
+  count           = local.create_active_active_infra
+  create_duration = "10s"
+  depends_on      = [azurerm_lb_probe.hana-load-balancer]
 }
 
 resource "azurerm_lb_probe" "hana-load-balancer-secondary" {
@@ -85,6 +103,23 @@ resource "azurerm_lb_probe" "hana-load-balancer-secondary" {
   port                = tonumber("626${var.hana_instance_number}")
   interval_in_seconds = 5
   number_of_probes    = 2
+
+  depends_on = [time_sleep.wait_after_lb_probe]
+}
+
+resource "time_sleep" "wait_after_lb_probes" {
+  count           = local.create_ha_infra
+  create_duration = "10s"
+  depends_on = [
+    azurerm_lb_probe.hana-load-balancer,
+    azurerm_lb_probe.hana-load-balancer-secondary,
+  ]
+}
+
+resource "time_sleep" "wait_before_lb_rules" {
+  count           = local.create_ha_infra
+  create_duration = "10s"
+  depends_on      = [azurerm_network_interface_backend_address_pool_association.hana]
 }
 
 # Load balancing rules for HANA 2.0
@@ -98,6 +133,8 @@ module "hana_primary_lb_rules" {
   probe_id                       = azurerm_lb_probe.hana-load-balancer[0].id
   frontend_ip_configuration_name = "lbfe-hana"
   name_suffix                    = ""
+
+  depends_on = [time_sleep.wait_before_lb_rules]
 }
 
 # Load balancing rules for the Active/Active setup
@@ -128,6 +165,8 @@ resource "azurerm_lb_rule" "hanadb_exporter" {
   probe_id                       = azurerm_lb_probe.hana-load-balancer[0].id
   idle_timeout_in_minutes        = 30
   floating_ip_enabled            = "true"
+
+  depends_on = [module.hana_secondary_lb_rules, module.hana_primary_lb_rules]
 }
 
 # hana network configuration
