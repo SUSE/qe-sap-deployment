@@ -14,6 +14,7 @@ env:
   PYTHON_VERSION: 3.11
   TF_PLUGIN_CACHE_DIR: "/home/runner/.terraform.d/plugin-cache"
   TF_VERSION: 1.5.7
+  TOFU_VERSION: 1.11.6
   TFTESTS_FOLDER: "terraform/tests"
 
 jobs:
@@ -54,6 +55,12 @@ jobs:
 
   tftest:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        binary: ['terraform', 'tofu']
+
+    env:
+      TFTEST_BINARY: ${{ matrix.binary }}
 
     steps:
     - name: Checkout
@@ -61,10 +68,18 @@ jobs:
 
     # Install the specific version of Terraform that the project support and
     - name: Setup Terraform
+      if: matrix.binary == 'terraform'
       uses: hashicorp/setup-terraform@v2
       with:
         terraform_version: ${{ env.TF_VERSION }}
         terraform_wrapper: false
+
+    - name: Setup OpenTofu
+      if: matrix.binary == 'tofu'
+      uses: opentofu/setup-opentofu@v1
+      with:
+        tofu_version: ${{ env.TOFU_VERSION }}
+        tofu_wrapper: false
 
     - name: Run tftests
       run: |

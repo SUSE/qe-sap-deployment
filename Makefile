@@ -4,6 +4,11 @@
 
 base_dir := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
+# Binary for the Terraform tests and format: terraform (default) or tofu.
+# Example: make test-terraform TFTEST_BINARY=tofu
+TFTEST_BINARY ?= terraform
+export TFTEST_BINARY
+
 all: static test
 
 static: static-py static-terraform static-ansible
@@ -16,7 +21,7 @@ static-ansible: static-ansible-yaml static-ansible-syntax
 
 test: test-ut test-e2e
 
-test-all: test-ut test-ut-fuzzy test-ut-verbose test-ut-dep  test-e2e
+test-all: test-ut test-ut-fuzzy test-ut-verbose test-ut-dep  test-e2e test-terraform
 
 beyond: all static-flake8-test static-ansible-kics static-terraform-kics static-ansible-lint test-ut-fuzzy test-ut-verbose test-ut-dep
 
@@ -42,6 +47,9 @@ static-terraform-fmt-aws:
 
 static-terraform-fmt-gcp:
 	@cd terraform/gcp ; terraform fmt -check -recursive -diff
+
+static-terraform-format-apply:
+	@cd terraform ; $(TFTEST_BINARY) fmt -recursive
 
 static-terraform-validate: static-terraform-validate-azure static-terraform-validate-aws static-terraform-validate-gcp
 
@@ -78,6 +86,9 @@ test-ut-dep:
 
 test-e2e:
 	@cd scripts/qesap/test/e2e ; ./test.sh
+
+test-terraform:
+	@cd terraform ; pytest -vv tests
 
 tox:
 	@cd scripts/qesap/ ; tox
