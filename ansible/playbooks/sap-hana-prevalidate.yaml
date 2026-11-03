@@ -1,0 +1,140 @@
+---
+# Copyright SUSE LLC
+# SPDX-License-Identifier: FSFAP
+# Health checks for a deployed HANA HA cluster, replacing the remote part of
+# OSADO qesap_prevalidate.pm. Writes a JSON result for openQA on the controller.
+- name: Prevalidate the deployed HANA cluster
+  hosts: hana
+  become: true
+  gather_facts: false
+  any_errors_fatal: true
+  vars:
+    angi: "{{ qesap_prevalidate_angi | default(false) | bool }}"
+    cmd_timeout: "{{ qesap_prevalidate_command_timeout | default(60) }}"
+    showattr: "SAPHanaSR-showAttr --format={{ 'json' if angi else 'script' }}"
+    crm_mon: crm_mon -r -R -n -N -1
+    crm_not_ready: ':\s*Starting|Failed Resource Actions:'
+    promoted_re: ':\s(\S+)\s(?:Master|Promoted)'
+    version_re: '\d+\.\d+(?:\.\d+)*'
+    cleanup_errors: 'Aborting because no messages received in \d+ seconds|Error performing operation: Timeout occurred'
+    resource: "{{ qesap_prevalidate_resource }}"
+    softfails: []
+  tasks:
+    - name: Refresh repositories (fail only on rc 4, 6, 106 like the original)
+      ansible.builtin.command: timeout -k 10 90 zypper ref
+      register: zypper
+      changed_when: false
+      failed_when: zypper.rc in [4, 6, 106]
+
+    - name: Read the SAPHanaSR package version
+      ansible.builtin.shell: rpm -qf "$(command -v SAPHanaSR-showAttr)"
+      register: saphanasr_pkg
+      changed_when: false
+
+    - name: Keep the SAPHanaSR version per host
+      ansible.builtin.set_fact:
+        saphanasr_version: "{{ saphanasr_pkg.stdout | regex_search(version_re) | default('', true) }}"
+
+    - name: Wait for HANA system replication to be in sync (5 consecutive healthy samples)
+      ansible.builtin.shell: |
+        for i in 1 2 3 4 5; do
+          [ "$i" -gt 1 ] && sleep 30
+          timeout -k 10 {{ cmd_timeout }} cs_wait_for_idle --sleep 5 >/dev/null 2>&1
+          echo '@@SAMPLE@@'
+          timeout -k 10 {{ cmd_timeout }} {{ showattr }} 2>&1
+        done
+        exit 0
+      register: topology
+      changed_when: false
+      until: >-
+        (topology.stdout.split('@@SAMPLE@@')[1:]
+         | map('hana_sr_ready', angi) | select | list | length) == 5
+      retries: "{{ [(qesap_prevalidate_sync_timeout | default(900) | int) // 150, 1] | max }}"
+      delay: 30
+
+    - name: Read full CRM status (original 'crm out')
+      ansible.builtin.command: crm status full
+      register: crm_full
+      changed_when: false
+      run_once: true
+
+    - name: Read the promoted resource status
+      ansible.builtin.command: crm resource status {{ resource }}
+      register: resource_status
+      changed_when: false
+      run_once: true
+
+    - name: Require exactly one promoted host
+      ansible.builtin.assert:
+        that: resource_status.stdout | regex_findall(promoted_re) | length == 1
+        fail_msg: Master database was not found.
+      run_once: true
+
+    - name: Check overall cluster readiness
+      run_once: true
+      block:
+        - name: Wait for nodes online, replication in sync and no failed resources
+          ansible.builtin.shell: |
+            timeout -k 10 {{ cmd_timeout }} cs_wait_for_idle --sleep 5 >/dev/null 2>&1
+            {{ crm_mon }}
+            echo '@@TOPOLOGY@@'
+            {{ showattr }}
+          register: cluster
+          changed_when: false
+          until: >-
+            (cluster.stdout.split('@@TOPOLOGY@@')[0] is not search(crm_not_ready))
+            and (cluster.stdout.split('@@TOPOLOGY@@')[-1] | hana_sr_ready(angi))
+          retries: 10
+          delay: 60
+      rescue:
+        - name: Tolerate the known SLE12-SP5 TimeoutError
+          ansible.builtin.set_fact:
+            sle12_timeout: true
+            softfails: "{{ softfails + ['bsc#1233026 - Error occurred, see previous output: Proceeding despite failure.'] }}"
+          when:
+            - qesap_prevalidate_sle12sp5 | default(false) | bool
+            - "'TimeoutError' in cluster.stdout"
+
+        - name: Recover with a resource cleanup
+          when: not (sle12_timeout | default(false))
+          block:
+            - name: Record the soft failure
+              ansible.builtin.set_fact:
+                softfails: "{{ softfails + ['jsc#TEAM-10642 Cluster is not ready after specified retries, attempting cleanup'] }}"
+
+            - name: Clean up resources
+              ansible.builtin.command: crm resource cleanup
+              register: cleanup
+              changed_when: true
+              until: cleanup.stdout is not search(cleanup_errors)
+              retries: 3
+              delay: 5
+
+            - name: Wait for the resource to run on this host again
+              ansible.builtin.command: crm resource status {{ resource }}
+              register: after_cleanup
+              changed_when: false
+              until: >-
+                ('is running on: ' ~ inventory_hostname) in after_cleanup.stdout
+              retries: "{{ (qesap_prevalidate_cleanup_timeout | default(300) | int) // 30 }}"
+              delay: 30
+
+            - name: Require a clean CRM state after cleanup
+              ansible.builtin.command: "{{ crm_mon }}"
+              register: final_crm
+              changed_when: false
+              failed_when: final_crm.stdout is search(crm_not_ready)
+
+    - name: Write the result for openQA
+      ansible.builtin.copy:
+        dest: "{{ qesap_prevalidate_result_file | default('/tmp/qesap-prevalidate.json') }}"
+        mode: '0600'
+        content: >-
+          {{ {'versions': dict(ansible_play_hosts | zip(ansible_play_hosts | map('extract', hostvars, 'saphanasr_version'))),
+              'promoted': (resource_status.stdout | regex_findall(promoted_re))[0],
+              'crm_status_full': crm_full.stdout,
+              'cluster_status': (cluster.stdout | default('')).split('@@TOPOLOGY@@')[0],
+              'softfails': softfails} | to_json }}
+      run_once: true
+      delegate_to: localhost
+      become: false

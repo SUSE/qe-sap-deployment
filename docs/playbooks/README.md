@@ -539,3 +539,7 @@ The five additional variables all relate to the SAP fencing application
 that needs to be created. At this point, the creation of the fencing
 application is not automated. Follow [these instructions](https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/high-availability-guide-suse-pacemaker#create-azure-fence-agent-stonith-device)
 to create the fencing application.
+
+## sap-hana-prevalidate
+
+TBD
