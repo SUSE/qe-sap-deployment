@@ -31,6 +31,9 @@
   ansible.builtin.command:
     cmd: "crm configure delete {{ sbd_device_name }}"
   register: remove_stonith_result
+  until: remove_stonith_result.rc == 0
+  retries: 5
+  delay: 10
   changed_when: remove_stonith_result.rc == 0
   when: sbd_device_name != 'NOresourcesconfigured'  # If no stonith was found 'NOresourcesconfigured' should be registered in {{ sbd_device_name }}
 
