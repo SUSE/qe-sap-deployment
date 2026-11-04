@@ -59,6 +59,7 @@ The project is composed by files in many different code languages: Terraform, An
 * All code needs to be checked locally. As the repository contains different kinds of code (Terraform, Ansible, Python, Documentation, bash scripts), any PR need to be prepared in different way, accordingly to its content:
   * Documentation: some of the Markdown files are tested for Markdown syntax and spelling.
   * Python code: it is mostly important for the glue script code in `scripts/qesap`. The code is statically tested with pylint and flake8. These tests can be executed manually with `make static-py` or with `tox -e pylint`. Some unit testing are also associated with the qesap.py script. They can be executed with `tox` or using `make test`.
+  * Terraform code: check the format with `make static-terraform-fmt` and the syntax with `make static-terraform-validate`. Run the Terraform tests with `make test-terraform`. Refer to [Running Terraform tests](#running-terraform-tests).
   * Ansible code: code can be statically tested using `make static-ansible`. It is also recommended to run `make static-ansible-lint` and fix at least warnings in the edited file (please consider that for the moment this target is not part of any github pipeline)
 * If the pull request was assisted by LLM or AI-powered tools, please tag it with the `ai-assisted` label.
 
@@ -109,3 +110,15 @@ Each time you like to run some test you can:
 # with more verbosity
 (.venv) % PYTHONPATH=$(pwd):$(pwd)/src pytest -vv -o log_cli=true -o log_cli_level=10 -v test/unit/
 ```
+
+## Running Terraform tests
+
+The tests are in `terraform/tests/`. Install the dependencies one time with `pip install -r terraform/tests/requirements.txt`, then run:
+
+```shell
+% make test-terraform TFTEST_BINARY=tofu
+```
+
+`TFTEST_BINARY` selects the binary. The default is `terraform`.
+
+If you add a `validation` block to a variable, add a test named `test_<variable>` or `test_<csp>_<variable>` in `terraform/tests/test_variables.py`.

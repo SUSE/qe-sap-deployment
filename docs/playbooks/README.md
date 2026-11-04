@@ -504,7 +504,7 @@ Following the SUSE/AWS reference architecture for SAP HANA HA on SLES, the
 playbook sets the cluster property `stonith-action=off`, which forces the
 STONITH agent to **stop** the fenced instance via the EC2 API rather than
 reboot it. This prevents a fenced node from automatically rejoining the
-cluster — which on AWS could otherwise lead to split brain — and forces an
+cluster, which on AWS could otherwise lead to split brain and forces an
 operator to deliberately reintroduce the node. See the
 [AWS guide](https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-on-aws-stonith-device.html)
 for details. The corresponding `stonith-timeout` is `600s`.
