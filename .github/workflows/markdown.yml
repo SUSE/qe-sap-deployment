@@ -19,7 +19,7 @@ permissions:
 jobs:
   markdown_lint:
     name: 'Markdown lint'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: production
     strategy:
       matrix:
@@ -28,16 +28,16 @@ jobs:
     steps:
     # Checkout the repository to the GitHub Actions runner
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
     - name: markdownlint-cli
-      uses: nosborn/github-action-markdown-cli@v3.1.0
+      uses: nosborn/github-action-markdown-cli@508d6cefd8f0cc99eab5d2d4685b1d5f470042c1  # v3.5.0
       with:
         files: ${{ matrix.docfile }}
         config_file: .markdownlint.json
 
     - name: Spell-check Markdown files
-      uses: streetsidesoftware/cspell-action@v2.11.0
+      uses: streetsidesoftware/cspell-action@ce1816e4ce36532956ac6e983737392774b6e169  # v9.2.0
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         incremental_files_only: false
