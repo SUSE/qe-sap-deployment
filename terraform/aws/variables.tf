@@ -753,7 +753,35 @@ variable "allowed_ssh_cidr_csv" {
 }
 
 variable "custom_tags" {
-  description = "Optional custom tags to apply to all resources"
+  description = "Optional custom tags to apply to all resources. Keys must be 1 to 128 characters long, values 0 to 256 characters long. Keys and values can only use the characters [A-Za-z0-9+-=_:./@]. Keys must not start with 'aws:'. The deployment adds the 'workspace' tag, the total number of tags must be 50 or less."
   type        = map(string)
   default     = {}
+  # The total includes the 'workspace' tag from local.base_tags
+  validation {
+    condition     = length(setunion(keys(var.custom_tags), ["workspace"])) <= 50
+    error_message = "Too many tags: the total number of tags, 'workspace' included, must be 50 or less."
+  }
+  validation {
+    condition     = alltrue([for k in keys(var.custom_tags) : length(k) >= 1 && length(k) <= 128])
+    error_message = "Tag keys must be 1 to 128 characters long."
+  }
+  validation {
+    condition     = alltrue([for k in keys(var.custom_tags) : !startswith(k, "aws:")])
+    error_message = "Tag keys must not use the reserved 'aws:' prefix."
+  }
+  validation {
+    condition     = alltrue([for v in values(var.custom_tags) : v != null])
+    error_message = "Tag values must not be null."
+  }
+  validation {
+    condition     = alltrue([for v in values(var.custom_tags) : v == null ? true : length(v) <= 256])
+    error_message = "Tag values must be 256 characters long or less."
+  }
+  # This set is stricter than the AWS limits: AWS also accepts spaces and Unicode letters
+  validation {
+    condition = alltrue([
+      for k, v in var.custom_tags : can(regex("^[A-Za-z0-9+=_:./@-]+$", k)) && can(regex("^[A-Za-z0-9+=_:./@-]*$", v))
+    ])
+    error_message = "Tag keys and values can only use the characters [A-Za-z0-9+-=_:./@]."
+  }
 }

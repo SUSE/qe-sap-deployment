@@ -243,6 +243,66 @@ def test_aws_netweaver_shared_storage_type(variables):
     variables.invalid('netweaver_shared_storage_type', '', 'Invalid Netweaver shared storage type.')
     variables.invalid('netweaver_shared_storage_type', 'anf', 'Invalid Netweaver shared storage type.')
 
+
+@pytest.mark.parametrize('tags', [
+    {},
+    {'openqa_created_date': '2026-01-01T00:00:00', 'openqa_var_job_id': '123'},
+    {'a/b@c': 'x+y=z-_:.'},
+    {'key': ''},
+], ids=['empty', 'openqa', 'special_chars', 'empty_value'])
+@pytest.mark.parametrize('csp', ['aws'])
+def test_aws_custom_tags_valid(variables, tags):
+    variables.valid('custom_tags', tags)
+
+
+@pytest.mark.parametrize('csp', ['aws'])
+def test_aws_custom_tags_count(variables):
+    """
+    AWS accepts 50 tags at most. The deployment adds the 'workspace' tag.
+    """
+    tags = {f"key{i}": 'value' for i in range(49)}
+    variables.valid('custom_tags', tags)
+    variables.valid('custom_tags', {'workspace': 'w', **tags})
+    variables.invalid('custom_tags', {'key49': 'value', **tags}, 'Too many tags')
+
+
+@pytest.mark.parametrize('csp', ['aws'])
+def test_aws_custom_tags_key_length(variables):
+    error = 'Tag keys must be 1 to 128 characters long'
+    variables.valid('custom_tags', {'a' * 128: 'ok'})
+    variables.invalid('custom_tags', {'a' * 129: 'ok'}, error)
+    variables.invalid('custom_tags', {'': 'ok'}, error)
+
+
+@pytest.mark.parametrize('csp', ['aws'])
+def test_aws_custom_tags_key_aws_prefix(variables):
+    variables.invalid('custom_tags', {'aws:reserved': 'v'}, "Tag keys must not use the reserved 'aws:' prefix")
+
+
+@pytest.mark.parametrize('csp', ['aws'])
+def test_aws_custom_tags_value_null(variables):
+    variables.invalid('custom_tags', {'key': None}, 'Tag values must not be null')
+
+
+@pytest.mark.parametrize('csp', ['aws'])
+def test_aws_custom_tags_value_length(variables):
+    variables.valid('custom_tags', {'key': 'b' * 256})
+    variables.invalid('custom_tags', {'key': 'b' * 257}, 'Tag values must be 256 characters long or less')
+
+
+@pytest.mark.parametrize('tags', [
+    {'key space': 'v'},
+    {'key': 'a b'},
+    {'key': 'a$b'},
+    {'key': 'a`b'},
+    {'key': 'a,b'},
+    {'key': 'a{b}'},
+], ids=['space_in_key', 'space', 'dollar', 'backtick', 'comma', 'braces'])
+@pytest.mark.parametrize('csp', ['aws'])
+def test_aws_custom_tags_invalid_chars(variables, tags):
+    variables.invalid('custom_tags', tags, 'Tag keys and values can only use the characters')
+
+
 # Azure
 
 @pytest.mark.parametrize('csp', ['azure'])
