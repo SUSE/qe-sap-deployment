@@ -53,8 +53,8 @@
 # saptune >= 3.2.3 on SLES 16 checks that tsx=auto appears in /proc/cmdline.
 # The check tag [grub:arch=x86_64] has no virt= filter, so it fires on cloud VMs
 # where tsx=auto is absent from the default boot cmdline. On VMs the parameter has
-# no independent security effect — the hypervisor handles TAA mitigation at the host
-# level — but saptune solution verify returns rc=1 without it.
+# no independent security effect, the hypervisor handles TAA mitigation at the host
+# level. This is detected as a problem in saptune solution, it returns rc=1 without it.
 #
 # Adding a virt= filter is not planned for the short term because cloud providers
 # also offer bare-metal instance types.
