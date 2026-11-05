@@ -539,3 +539,37 @@ The five additional variables all relate to the SAP fencing application
 that needs to be created. At this point, the creation of the fencing
 application is not automated. Follow [these instructions](https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/high-availability-guide-suse-pacemaker#create-azure-fence-agent-stonith-device)
 to create the fencing application.
+
+### SAPHanaSR-angi on Azure and GCP
+
+On Azure and GCP with SAPHanaSR-angi (`use_sap_hana_sr_angi: true`), the
+variable `angi_variant` selects one of the SUSE
+[SAPHanaSR-angi configuration variants](https://www.suse.com/c/what-are-saphanasr-angi-configuration-variants):
+
+| Setting                                 | `progressive` (default)     | `conservative` |
+|-----------------------------------------|-----------------------------|----------------|
+| SAPHanaController `ON_FAIL_ACTION`      | `fence`                     | `proceed`      |
+| SAPHanaController stop `on-fail`        | `fence`                     | not set        |
+| SAPHanaFilesystem `ON_FAIL_ACTION`      | `fence`                     | `ignore`       |
+| SAPHanaFilesystem stop `on-fail`        | `fence`                     | not set        |
+| susChkSrv `action_on_lost`              | `fence`                     | `stop`         |
+
+Both variants also set:
+
+* cluster property `priority-fencing-delay=30` with `pcmk_delay_max=15`;
+* with native fencing, the fence agent parameters of the cloud vendor guides
+  (GCP: `pcmk_reboot_timeout=300`, `pcmk_monitor_retries=4`,
+  `pcmk_delay_max=15`; Azure SPN: `pcmk_delay_max=15`);
+* with native fencing, no cluster start at boot: a `pacemaker.timer`
+  starts Pacemaker `qesap_cluster_start_delay` seconds (default `180`) after
+  boot. A fenced node then cannot rejoin before the fencing is complete, see the
+  [Google Cloud troubleshooting guide](https://docs.cloud.google.com/sap/docs/troubleshooting/troubleshooting-sap-ha).
+  With `qesap_cluster_start_delay: 0` there is no timer: the test has to start
+  the cluster on a fenced node after the fencing is complete.
+
+The fenced node reboots and rejoins the cluster, so `SBD_STARTMODE` stays
+`always`. The SUSE variants use `clean`. The conservative variant keeps the
+SAPHanaFilesystem resource with `ON_FAIL_ACTION=ignore` (log only).
+
+`angi_variant: none` keeps the configuration without a variant. AWS and
+SAPHanaSR (classic) clusters do not change.

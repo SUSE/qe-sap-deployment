@@ -1,0 +1,48 @@
+---
+# Cluster start at boot (SAPHanaSR-angi on Azure and GCP, native fencing).
+# A node that reboots fast (crash, or fence 'reboot') must not rejoin the
+# cluster before the peer has declared it lost and the fencing is complete:
+# corosync token + consensus (30s + 36s), pcmk_delay_max (15s),
+# priority-fencing-delay (30s) and the power off of the fence agent.
+# See https://docs.cloud.google.com/sap/docs/troubleshooting/troubleshooting-sap-ha
+# Pacemaker and corosync are not started at boot. A systemd timer starts
+# pacemaker (and so corosync) after the delay. A manual start of the cluster
+# is not delayed.
+#
+# Optional variables:
+#   qesap_cluster_start_delay - seconds after boot. Default: 180.
+#                               0: no timer, the cluster never starts at boot.
+#                               The test starts it after the fencing is complete.
+- name: Create pacemaker start timer
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/pacemaker.timer
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      # Managed by qe-sap-deployment, see tasks/cluster-start-delay.yaml
+      [Unit]
+      Description=Delay start of pacemaker.service after boot
+
+      [Timer]
+      OnBootSec={{ qesap_cluster_start_delay | default(180) | int }}
+      Unit=pacemaker.service
+
+      [Install]
+      WantedBy=timers.target
+  when: qesap_cluster_start_delay | default(180) | int > 0
+
+- name: Enable pacemaker start timer
+  ansible.builtin.systemd:
+    name: pacemaker.timer
+    daemon_reload: true
+    enabled: true
+  when: qesap_cluster_start_delay | default(180) | int > 0
+
+- name: Disable direct cluster start at boot
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: false
+  loop:
+    - pacemaker.service
+    - corosync.service

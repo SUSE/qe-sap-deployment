@@ -1,0 +1,23 @@
+---
+# Priority fencing for 2-node SAPHanaSR-angi clusters.
+# Pacemaker delays the fencing of the node that runs the promoted HANA
+# instance, so that the primary survives a split brain. This works only if
+# the SAPHanaController resource has meta priority (angi resource only).
+# The delay (30s) must be >= 2 * pcmk_delay_max (15s),
+# see SAPHanaSR_basic_cluster(7).
+- name: Get priority-fencing-delay
+  ansible.builtin.command:
+    cmd: crm_attribute --type crm_config --name priority-fencing-delay --query --quiet
+  register: priority_fencing_delay_query
+  changed_when: false
+  failed_when: false
+  when: is_primary
+
+- name: Set priority-fencing-delay
+  ansible.builtin.command:
+    cmd: crm configure property $id="cib-bootstrap-options" priority-fencing-delay=30
+  register: priority_fencing_delay_result
+  changed_when: priority_fencing_delay_result.rc == 0
+  when:
+    - is_primary
+    - (priority_fencing_delay_query.stdout | default('') | trim) not in ['30', '30s']
