@@ -116,6 +116,12 @@
     - rsc_ip | length == 0
     - is_primary
 
+# One definition of the health check error log path. The primitive below
+# writes to it, and cluster-bootstrap-vip.yaml reads it on failure.
+- name: Set health check error log path
+  ansible.builtin.set_fact:
+    gcp_hc_errlogfile: /var/log/rsc_healthcheck_primary.err
+
 - name: Configure primary health check
   ansible.builtin.command:
     cmd: >-
@@ -125,6 +131,7 @@
       params
       binfile="/usr/bin/socat"
       cmdline_options="-U TCP-LISTEN:625{{ sap_hana_install_instance_number }},backlog=10,fork,reuseaddr /dev/null"
+      errlogfile="{{ gcp_hc_errlogfile }}"
       op monitor timeout=20s interval=10s op_params depth=0
   register: reg_hc_prim
   changed_when: reg_hc_prim.rc == 0
@@ -154,3 +161,4 @@
     # that the generated cli-prefer-* constraint is written against the
     # group and the subsequent clear removes it cleanly.
     vip_resource: grp_ip_hc
+    vip_errlogfile: "{{ gcp_hc_errlogfile }}"
