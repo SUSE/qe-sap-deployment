@@ -26,6 +26,13 @@
 #                       move/clear tasks are gated on the locate result so they
 #                       only execute when primary_hostname is defined.
 #   is_primary        - Boolean; all tasks in this file are gated on is_primary.
+#
+# Optional variables (may be passed by the caller via vars:):
+#   vip_errlogfile   - Path of the error log of the health check resource
+#                      (on GCP: rsc_healthcheck_primary, agent "anything").
+#                      If set, the rescue tasks show the last 50 lines.
+#                      The file is local to each node. The rescue tasks read
+#                      it on the primary node only.
 
 - name: Validate required variable vip_resource
   ansible.builtin.assert:
@@ -48,34 +55,85 @@
   retries: 10
   delay: 6
 
-- name: Move cluster IP to primary HANA node
-  ansible.builtin.command:
-    cmd: >-
-      crm resource move
-      {{ vip_resource }}
-      {{ primary_hostname }}
-  register: reg_move_cmd
-  changed_when: reg_move_cmd.rc == 0
+- name: Move VIP and wait for placement
   when:
     - is_primary
     - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
-  until: reg_move_cmd.rc == 0
-  retries: 10
-  delay: 6
+  block:
+    - name: Move cluster IP to primary HANA node
+      ansible.builtin.command:
+        cmd: >-
+          crm resource move
+          {{ vip_resource }}
+          {{ primary_hostname }}
+      register: reg_move_cmd
+      changed_when: reg_move_cmd.rc == 0
+      until: reg_move_cmd.rc == 0
+      retries: 10
+      delay: 6
 
-- name: Wait for move IP move to complete
-  ansible.builtin.command:
-    cmd: >-
-      crm resource locate
-      {{ vip_resource }}
-  register: reg_vip_location2
-  changed_when: false
-  when:
-    - is_primary
-    - reg_vip_location.stdout | trim | split(' ') | last != primary_hostname
-  until: reg_vip_location2.stdout_lines | length > 0 and reg_vip_location2.stdout_lines[0] | trim | split(' ') | last == primary_hostname
-  retries: 10
-  delay: 6
+    - name: Wait for the IP move to complete
+      ansible.builtin.command:
+        cmd: >-
+          crm resource locate
+          {{ vip_resource }}
+      register: reg_vip_location2
+      changed_when: false
+      until: reg_vip_location2.stdout_lines | length > 0 and reg_vip_location2.stdout_lines[0] | trim | split(' ') | last == primary_hostname
+      retries: 10
+      delay: 6
+
+  rescue:
+    - name: Collect cluster status (crm_mon)
+      ansible.builtin.command:
+        cmd: crm_mon -1rf
+      register: reg_diag_crm_mon
+      changed_when: false
+      failed_when: false
+
+    - name: Collect resource allocation scores (crm_simulate)
+      ansible.builtin.shell:
+        cmd: >-
+          set -o pipefail;
+          crm_simulate -Ls | grep -E '{{ vip_resource }}|rsc_healthcheck|rsc_ip_'
+      register: reg_diag_crm_simulate
+      changed_when: false
+      failed_when: false
+
+    - name: Collect VIP error log
+      ansible.builtin.command:
+        cmd: "tail -n 50 {{ vip_errlogfile }}"
+      register: reg_diag_vip_errlog
+      changed_when: false
+      failed_when: false
+      when:
+        - vip_errlogfile is defined
+        - vip_errlogfile | length > 0
+
+    - name: Display cluster status (crm_mon)
+      ansible.builtin.debug:
+        var: reg_diag_crm_mon.stdout_lines
+      when: reg_diag_crm_mon.stdout_lines is defined
+
+    - name: Display resource allocation scores (crm_simulate)
+      ansible.builtin.debug:
+        var: reg_diag_crm_simulate.stdout_lines
+      when: reg_diag_crm_simulate.stdout_lines is defined
+
+    - name: Display VIP error log
+      ansible.builtin.debug:
+        var: reg_diag_vip_errlog.stdout_lines
+      when:
+        - reg_diag_vip_errlog is defined
+        - reg_diag_vip_errlog.stdout_lines is defined
+
+    - name: Fail after VIP move failure
+      ansible.builtin.fail:
+        msg: >-
+          Task '{{ ansible_failed_task.name | default('unknown') }}' failed:
+          {{ ansible_failed_result.msg | default(ansible_failed_result.stderr | default('no message')) }}.
+          Could not place {{ vip_resource }} on primary node {{ primary_hostname }}.
+          See the diagnostic output above.
 
 - name: Clear the move constraint
   ansible.builtin.command:
