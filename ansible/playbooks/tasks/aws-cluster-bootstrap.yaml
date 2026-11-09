@@ -56,7 +56,6 @@
       {{ aws_stonith_common_ops }}
       params pcmk_host_map={{ aws_pcmk_host_map }}
       region={{ aws_region }}
-      skip_os_shutdown=true
       pcmk_delay_max={{ aws_stonith_delay_max }}
   when:
     - not (use_sbd | default(false) | bool)
