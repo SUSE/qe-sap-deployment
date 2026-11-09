@@ -28,7 +28,7 @@
 # When SBD fencing is used, `crm cluster init` is called with the SBD
 # devices found in `/etc/sysconfig/sbd`, and the fencing resource it
 # creates is then replaced by one carrying `pcmk_delay_max=15`. The
-# resource is named `stonith-sbd`, or `fencing-sbd` from SLE 16.1 onwards.
+# resource is named `stonith-sbd`, or `fencing-sbd` with crmsh 5.1.0 or later.
 
 # Optional variables:
 #   cluster_name    - name passed to `crm cluster init -n`. Default: qe-cluster.
@@ -50,6 +50,14 @@
       pacemaker is not installed. The cluster packages are installed by the
       'pre-cluster.yaml' playbook, which has to run before this one.
     success_msg: "The cluster packages are installed"
+
+# Pacemaker 3.0.2 renamed the stonith-* cluster properties to fencing-*.
+# The names depend on the Pacemaker package, not on the OS release.
+- name: Set CRM fencing property facts based on Pacemaker version
+  ansible.builtin.set_fact:
+    crm_prop_fencing_enabled: "{{ 'fencing-enabled' if ansible_facts.packages['pacemaker'][0].version is version('3.0.2', '>=') else 'stonith-enabled' }}"
+    crm_prop_fencing_timeout: "{{ 'fencing-timeout' if ansible_facts.packages['pacemaker'][0].version is version('3.0.2', '>=') else 'stonith-timeout' }}"
+    crm_prop_fencing_action: "{{ 'fencing-action' if ansible_facts.packages['pacemaker'][0].version is version('3.0.2', '>=') else 'stonith-action' }}"
 
 # bsc#1284962: podman-pilot replaces an unset %HOME with the literal text "$HOME".
 # Pacemaker runs resource agents without HOME. Thus /usr/bin/aws (a flake on
