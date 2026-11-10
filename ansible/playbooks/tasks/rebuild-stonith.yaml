@@ -1,7 +1,14 @@
 ---
+- name: Gather package facts
+  ansible.builtin.package_facts:
+    manager: auto
+
+# crmsh 5.1.0 renamed the SBD resource that `crm cluster init -s` creates
+# from `stonith-sbd` to `fencing-sbd`. The name depends on the crmsh
+# package, not on the OS release.
 - name: Set SBD resource name fact
   ansible.builtin.set_fact:
-    sbd_resource_name: "{{ 'fencing-sbd' if ansible_distribution_version is version('16.1', '>=') else 'stonith-sbd' }}"
+    sbd_resource_name: "{{ 'fencing-sbd' if ansible_facts.packages['crmsh'][0].version is version('5.1.0', '>=') else 'stonith-sbd' }}"
 
 - name: Check for stonith device
   ansible.builtin.command:
@@ -36,10 +43,6 @@
   delay: 10
   changed_when: remove_stonith_result.rc == 0
   when: sbd_device_name != 'NOresourcesconfigured'  # If no stonith was found 'NOresourcesconfigured' should be registered in {{ sbd_device_name }}
-
-- name: Gather package facts
-  ansible.builtin.package_facts:
-    manager: auto
 
 - name: Decide which SBD stonith agent to use
   ansible.builtin.set_fact:
