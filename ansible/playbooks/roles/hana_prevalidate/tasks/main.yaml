@@ -9,11 +9,44 @@
   register: hana_prevalidate_system_running_status
   changed_when: false
   become: true
-  failed_when: hana_prevalidate_system_running_status.stdout != 'running'
+  failed_when: hana_prevalidate_system_running_status.stdout not in ['running', 'degraded']
 
 - name: Display system running status
   ansible.builtin.debug:
     var: hana_prevalidate_system_running_status.stdout
+
+- name: Tolerate known failed units when degraded
+  when: hana_prevalidate_system_running_status.stdout == 'degraded'
+  vars:
+    # Failed units tolerated in 'degraded' state, with the bug reference to softfail on
+    # Leave empty to tolerate nothing: any failed unit then fails the check.
+    hana_prevalidate_known_failed_units:
+      aidecheck.service: bsc#1289744
+  block:
+    - name: List failed units # noqa: command-instead-of-module
+      ansible.builtin.command: systemctl --failed --no-legend --plain --no-pager
+      register: hana_prevalidate_failed_units
+      changed_when: false
+      become: true
+
+    - name: Split failed units into tolerated and unexpected
+      ansible.builtin.set_fact:
+        hana_prevalidate_tolerated_failed_units: >-
+          {{ hana_prevalidate_failed_units.stdout_lines | map('split') | map('first')
+             | intersect(hana_prevalidate_known_failed_units | default({}, true) | list) }}
+        hana_prevalidate_unexpected_failed_units: >-
+          {{ hana_prevalidate_failed_units.stdout_lines | map('split') | map('first')
+             | difference(hana_prevalidate_known_failed_units | default({}, true) | list) }}
+
+    - name: Softfail on tolerated failed units
+      ansible.builtin.debug:
+        msg: "[OSADO][softfail] {{ hana_prevalidate_known_failed_units[item] }} {{ item }} failed, system is degraded"
+      loop: "{{ hana_prevalidate_tolerated_failed_units }}"
+
+    - name: Fail on unexpected failed units
+      ansible.builtin.fail:
+        msg: "System is degraded, failed units: {{ hana_prevalidate_unexpected_failed_units | join(', ') }}"
+      when: hana_prevalidate_unexpected_failed_units | length > 0
 
 - name: Refresh zypper repositories
   ansible.builtin.command: zypper --non-interactive ref
