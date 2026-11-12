@@ -8,6 +8,10 @@
     - name: Source hana install variables
       ansible.builtin.include_vars: ./vars/hana_vars.yaml
 
+    - name: Detect cloud platform [angi]
+      ansible.builtin.include_tasks: ./tasks/detect-cloud-platform.yaml
+      when: use_hana_sr_angi | bool
+
   vars:
     is_primary: "{{ ansible_play_hosts[0] == inventory_hostname }}"
     # All hook scripts should be used directly from the SAPHanaSR package.
@@ -18,6 +22,15 @@
     # SAPHahaSR-angi
     use_hana_sr_angi: "{{ use_sap_hana_sr_angi | default(false) }}"
     __hooks_dir_angi: "/usr/share/SAPHanaSR-angi/"
+    # SAPHanaSR-angi configuration variant on Azure and GCP: set angi_variant
+    # to 'progressive' (default), 'conservative' or 'none' (as without variant).
+    # AWS and SAPHanaSR (classic) always use 'none'.
+    # See "SAPHanaSR-angi on Azure and GCP" in docs/playbooks/README.md.
+    angi_mode: >-
+      {{ angi_variant | default('progressive')
+         if (use_hana_sr_angi | bool)
+            and (cloud_platform_is_azure | default(false) or cloud_platform_is_gcp | default(false))
+         else 'none' }}
 
   handlers:
     - name: Stop HANA
@@ -111,6 +124,17 @@
             - {'section': 'ha_dr_provider_SAPHanaSR', 'key': 'execution_order', 'value': '1'}
             - {'section': 'trace', 'key': 'ha_dr_saphanasr', 'value': 'info'}
           when: not use_hana_sr_angi | bool
+
+        # SAPHanaSR-angi variant on Azure and GCP, see angi_mode.
+        - name: Set susChkSrv action_on_lost [angi, azure, gcp]
+          community.general.ini_file:
+            path: /usr/sap/{{ sap_hana_install_sid }}/SYS/global/hdb/custom/config/global.ini
+            section: ha_dr_provider_suschksrv
+            option: action_on_lost
+            value: "{{ {'progressive': 'fence', 'conservative': 'stop'}[angi_mode] }}"
+            mode: '0644'
+            backup: true
+          when: angi_mode != 'none'
 
         - name: Ensure ha_dr_provider_SAPHanaSR-angi section exists in global.ini
           community.general.ini_file:

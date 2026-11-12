@@ -6,6 +6,15 @@
   vars:
     # SAPHahaSR-angi
     use_hana_sr_angi: "{{ use_sap_hana_sr_angi | default(false) }}"
+    # SAPHanaSR-angi configuration variant on Azure and GCP: set angi_variant
+    # to 'progressive' (default), 'conservative' or 'none' (as without variant).
+    # AWS and SAPHanaSR (classic) always use 'none'.
+    # See "SAPHanaSR-angi on Azure and GCP" in docs/playbooks/README.md.
+    angi_mode: >-
+      {{ angi_variant | default('progressive')
+         if (use_hana_sr_angi | bool)
+            and (cloud_platform_is_azure | default(false) or cloud_platform_is_gcp | default(false))
+         else 'none' }}
     # is_primary is selected so that tasks that need to be issued one are honoured correctly
     is_primary: "{{ ansible_play_hosts[0] == inventory_hostname }}"
     primary_hostname: "{{ ansible_play_hosts[0] }}"
@@ -47,6 +56,12 @@
 
     - name: Load SAP HANA variables
       ansible.builtin.include_vars: ./vars/hana_vars.yaml
+
+    - name: Validate angi_variant
+      ansible.builtin.assert:
+        that: angi_mode in ['progressive', 'conservative', 'none']
+        fail_msg: "angi_variant must be 'progressive', 'conservative' or 'none', not '{{ angi_mode }}'"
+        quiet: true
 
     - name: Re-set HANA Angi vars
       ansible.builtin.set_fact:
@@ -108,6 +123,14 @@
     - name: Base Cluster Configuration [gcp]
       ansible.builtin.include_tasks: ./tasks/gcp-cluster-bootstrap.yaml
       when: cloud_platform_is_gcp
+      tags: bootstrap
+
+    # Runs on all nodes. SBD clusters use SBD_DELAY_START instead.
+    - name: Delay cluster start at boot [angi, azure, gcp, native fencing]
+      ansible.builtin.include_tasks: ./tasks/cluster-start-delay.yaml
+      when:
+        - angi_mode != 'none'
+        - not (use_sbd | default(false) | bool)
       tags: bootstrap
 
     - name: Add HANA to cluster [azure]

@@ -148,7 +148,7 @@
       {{ rsc_saphanactl }}
       ocf:suse:SAPHanaController
       op start interval="0" timeout="3600"
-      op stop interval="0" timeout="3600"
+      op stop interval="0" timeout="3600"{% if angi_mode == 'progressive' %} on-fail="fence"{% endif %}
       op promote interval="0" timeout="900"
       op demote interval="0" timeout="320"
       op monitor interval="60" role="Promoted" timeout="700"
@@ -159,6 +159,7 @@
       PREFER_SITE_TAKEOVER="true"
       DUPLICATE_PRIMARY_TIMEOUT="7200"
       AUTOMATED_REGISTER="false"
+      {% if angi_mode == 'progressive' and ansible_facts.packages['SAPHanaSR-angi'][0].version is version('1.2.9', '>=') %}ON_FAIL_ACTION="fence"{% endif %}
       meta
       priority="100"
   when:
@@ -200,12 +201,12 @@
       operations
       $id="rsc_sap3_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}-operations"
       op start interval="0" timeout="10"
-      op stop interval="0" timeout="20"
+      op stop interval="0" timeout="20"{% if angi_mode == 'progressive' %} on-fail="fence"{% endif %}
       op monitor interval="120" timeout="120"
       params
       SID="{{ sap_hana_install_sid }}"
       InstanceNumber="{{ sap_hana_install_instance_number }}"
-      ON_FAIL_ACTION="fence"
+      ON_FAIL_ACTION="{{ 'ignore' if angi_mode == 'conservative' else 'fence' }}"
   register: cmd_crm_chfr_output
   changed_when: cmd_crm_chfr_output.rc != 0
   when:
