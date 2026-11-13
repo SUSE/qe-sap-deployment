@@ -183,3 +183,51 @@ terraform:
     subprocess_run.assert_has_calls(
         [mock.call(f"terraform -chdir={provider_folder} init -no-color")]
     )
+
+
+@mock.patch("lib.process_manager.subprocess_run")
+def test_cmd_terraform_workspace_logs_no_collision(subprocess_run, tmpdir):
+    """
+    The two 'workspace' commands of a destroy must write different log files.
+    The old third-word rule gave both of them 'terraform.workspace.log.txt'.
+    """
+    conf_yaml = """---
+apiver: 3
+provider: "lolo"
+terraform:
+  variables:
+    sandwiches:
+      - club
+      - cheese
+"""
+    data = yaml.load(conf_yaml, Loader=yaml.FullLoader)
+    provider_folder = tmpdir / "terraform" / "lolo"
+    os.makedirs(provider_folder)
+    subprocess_run.return_value = (0, ["line"])
+
+    # Log files are written to the current folder. Remove the name that the
+    # old third-word rule produced, so this test does not depend on leftovers
+    # from previous runs.
+    for leftover in [
+        "terraform.workspace.log.txt",
+        "terraform.workspace_select.log.txt",
+        "terraform.workspace_delete.log.txt",
+    ]:
+        if os.path.isfile(leftover):
+            os.remove(leftover)
+
+    try:
+        ret = cmd_terraform(data, tmpdir, False, workspace="ws1", destroy=True)
+
+        assert ret == 0
+        assert os.path.isfile("terraform.workspace_select.log.txt")
+        assert os.path.isfile("terraform.workspace_delete.log.txt")
+        # The colliding name from the old rule must not be created.
+        assert not os.path.isfile("terraform.workspace.log.txt")
+    finally:
+        for leftover in [
+            "terraform.workspace_select.log.txt",
+            "terraform.workspace_delete.log.txt",
+        ]:
+            if os.path.isfile(leftover):
+                os.remove(leftover)
