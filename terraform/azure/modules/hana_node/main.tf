@@ -462,12 +462,26 @@ resource "azurerm_managed_disk" "hana_data_disk_07" {
   tags                 = var.tags
 }
 
+# Azure keeps writing to a freshly created VM after the create call returns: let it settle
+# before the first attachment PUTs the VM model (409 ConflictingConcurrentWriteNotAllowed).
+resource "time_sleep" "wait_after_vm" {
+  create_duration = "20s"
+
+  depends_on = [
+    azurerm_linux_virtual_machine.hana
+  ]
+}
+
 resource "azurerm_virtual_machine_data_disk_attachment" "hana_data_disk_attachment_01" {
   count              = var.hana_count
   managed_disk_id    = azurerm_managed_disk.hana_data_disk_01[count.index].id
   virtual_machine_id = azurerm_linux_virtual_machine.hana[count.index].id
   lun                = 0
   caching            = element(local.disks_caching, 0)
+
+  depends_on = [
+    time_sleep.wait_after_vm
+  ]
 
   timeouts {
     read   = "30m"
