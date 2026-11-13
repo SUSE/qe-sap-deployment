@@ -54,7 +54,7 @@ resource "aws_vpc" "vpc" {
   enable_dns_support   = true
 
   tags = merge({
-    name = "${local.deployment_name}-vpc"
+    Name = "${local.deployment_name}-vpc"
   }, local.tags)
 }
 
@@ -67,7 +67,7 @@ resource "aws_internet_gateway" "igw" {
   }
 
   tags = merge({
-    name = "${local.deployment_name}-igw"
+    Name = "${local.deployment_name}-igw"
   }, local.tags)
 }
 
@@ -77,7 +77,7 @@ resource "aws_subnet" "infra-subnet" {
   availability_zone = element(data.aws_availability_zones.available.names, 0)
 
   tags = merge({
-    name = "${local.deployment_name}-infra-subnet"
+    Name = "${local.deployment_name}-infra-subnet"
   }, local.tags)
 }
 
@@ -85,7 +85,7 @@ resource "aws_route_table" "route-table" {
   vpc_id = local.vpc_id
 
   tags = merge({
-    name = "${local.deployment_name}-hana-route-table"
+    Name = "${local.deployment_name}-hana-route-table"
   }, local.tags)
 }
 
@@ -111,7 +111,7 @@ resource "aws_security_group" "secgroup" {
   vpc_id = local.vpc_id
 
   tags = merge({
-    name = "${local.deployment_name}-sg"
+    Name = "${local.deployment_name}-sg"
   }, local.tags)
 }
 

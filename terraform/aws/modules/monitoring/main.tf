@@ -36,6 +36,6 @@ resource "aws_instance" "monitoring" {
   }, var.tags)
 
   tags = merge({
-    name = "${var.common_variables["deployment_name"]}-${var.name}"
+    Name = "${var.common_variables["deployment_name"]}-${var.name}"
   }, var.tags)
 }

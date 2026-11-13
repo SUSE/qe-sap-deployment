@@ -14,7 +14,7 @@ resource "aws_subnet" "netweaver-subnet" {
   cidr_block        = element(var.subnet_address_range, count.index)
   availability_zone = element(var.availability_zones, count.index)
   tags = merge({
-    name = "${var.common_variables["deployment_name"]}-netweaver-subnet-${count.index + 1}"
+    Name = "${var.common_variables["deployment_name"]}-netweaver-subnet-${count.index + 1}"
   }, var.tags)
 }
 
