@@ -38,6 +38,6 @@ resource "aws_instance" "iscsisrv" {
   }, var.tags)
 
   tags = merge({
-    name = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
+    Name = "${var.common_variables["deployment_name"]}-${var.name}${format("%02d", count.index + 1)}"
   }, var.tags)
 }
