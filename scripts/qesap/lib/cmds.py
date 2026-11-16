@@ -221,38 +221,91 @@ def cmd_terraform(
         f"{config.get_terraform_bin()} -chdir={cfg_paths['provider']}"
     )
 
+    # Each entry is (command, log_filename, add_no_color).
     cmds = []
     if destroy:
-        cmds.append(f"{terraform_common_cmd} destroy -auto-approve")
+        cmds.append(
+            (
+                f"{terraform_common_cmd} destroy -auto-approve",
+                "terraform.destroy.log.txt",
+                True,
+            )
+        )
         if workspace != "default":
-            cmds.append(f"{terraform_common_cmd} workspace select default")
-            cmds.append(f"{terraform_common_cmd} workspace delete {workspace}")
+            cmds.append(
+                (
+                    f"{terraform_common_cmd} workspace select default",
+                    "terraform.workspace_select.log.txt",
+                    True,
+                )
+            )
+            cmds.append(
+                (
+                    f"{terraform_common_cmd} workspace delete {workspace}",
+                    "terraform.workspace_delete.log.txt",
+                    True,
+                )
+            )
     else:
-        cmds.append(f"{terraform_common_cmd} init")
+        cmds.append((f"{terraform_common_cmd} init", "terraform.init.log.txt", True))
         if workspace != "default":
-            cmds.append(f"{terraform_common_cmd} workspace new {workspace}")
+            cmds.append(
+                (
+                    f"{terraform_common_cmd} workspace new {workspace}",
+                    "terraform.workspace_new.log.txt",
+                    True,
+                )
+            )
         parallel_str = ""
         if parallel:
             parallel_str = f"-parallelism={parallel} "
-        cmds.append(f"{terraform_common_cmd} plan {parallel_str}-out=plan.zip")
         cmds.append(
-            f"{terraform_common_cmd} apply {parallel_str}-auto-approve plan.zip"
+            (
+                f"{terraform_common_cmd} plan {parallel_str}-out=plan.zip",
+                "terraform.plan.log.txt",
+                True,
+            )
+        )
+        cmds.append(
+            (
+                f"{terraform_common_cmd} apply {parallel_str}-auto-approve plan.zip",
+                "terraform.apply.log.txt",
+                True,
+            )
         )
 
-    for command in cmds:
+    for command, log_filename, add_no_color in cmds:
+        res = _run_tf_step(command, log_filename, add_no_color, dryrun)
+        if res != 0:
+            return res
+    return Status("ok")
+
+
+def _run_tf_step(command, log_filename, add_no_color, dryrun):
+    """Run one terraform step and write its output to a log file.
+
+    Args:
+        command (str): the terraform command, without '-no-color'
+        log_filename (str): name of the log file to write in the current folder
+        add_no_color (bool): append ' -no-color' to the command before running it
+        dryrun (bool): only print the command, do not run it
+
+    Returns:
+        Status: execution result, 0 means OK
+    """
+    if add_no_color:
         command += " -no-color"
-        if dryrun:
-            print(command)
-        else:
-            ret, out = lib.process_manager.subprocess_run(command)
-            log.debug("Terraform process return ret:%d", ret)
-            log_filename = f"terraform.{command.split()[2]}.log.txt"
-            log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
-            with open(log_filename, "w", encoding="utf-8") as log_file:
-                log_file.write("\n".join(out))
-            if ret != 0:
-                log.error("command:%s returned non zero %d", command, ret)
-                return Status(f"Error rc: {ret} at {command}")
+    if dryrun:
+        print(command)
+        return Status("ok")
+    ret, out = lib.process_manager.subprocess_run(command)
+    log.debug("Terraform process return ret:%d", ret)
+    log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
+    with open(log_filename, "w", encoding="utf-8") as log_file:
+        log_file.write("\n".join(out))
+    if ret != 0:
+        log.error("command:%s returned non zero %d", command, ret)
+        return Status(f"Error rc: {ret} at {command}")
     return Status("ok")
 
 
