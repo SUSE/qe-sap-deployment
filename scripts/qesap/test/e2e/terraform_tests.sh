@@ -55,6 +55,7 @@ test_step "[${QESAP_CFG}] Run Terraform"
 # and for the generation of the terraform.tfstate
 # terraform.tfstate is directly created by the terraform executable
 reset_root
+rm -f terraform.*.log.txt
 cp main_local.tf "${TEST_PROVIDER}/main.tf"
 qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} terraform || test_die "${QESAP_CFG} fail on terraform"
 test_file "${TEST_TERRAFORM_TFSTATE}"
@@ -184,13 +185,21 @@ test_step "[${QESAP_CFG}] test .log.txt file redirection"
 #    executed terraform command (init, plan and apply) to a dedicated log file
 
 # run in non verbose mode
-rm terraform.*.log.txt || echo "No terraform.*.log.txt to delete"
+rm -f terraform.*.log.txt
 qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} terraform || test_die "Error in terraform execution"
 
 find . -type f -name "terraform.*.log.txt" | grep . || test_die "No generated terraform .log.txt"
 terraform_logs_number=$(find . -type f -name "terraform.*.log.txt" | wc -l)
 [[ $terraform_logs_number -eq 3 ]] || test_die "terraform .log.txt are not 3 files but has ${terraform_logs_number}"
-rm terraform.*.log.txt
+# the plain log keeps its human-readable format
+grep -qE "Apply complete!" terraform.apply.log.txt \
+  || test_die "terraform.apply.log.txt does not contain 'Apply complete!'"
+for t_step in plan apply; do
+  if grep -qE '^[[:space:]]*\{' "terraform.${t_step}.log.txt"; then
+    test_die "terraform.${t_step}.log.txt contains raw JSON lines"
+  fi
+done
+rm -f terraform.*.log.txt
 
 #######################################################################
 QESAP_CFG=test_3.yaml
@@ -201,12 +210,12 @@ qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} terraform
 find . -type f -name "terraform.*.log.txt" | grep . || test_die "No generated terraform .log.txt"
 terraform_logs_number=$(find . -type f -name "terraform.*.log.txt" | wc -l)
 [[ $terraform_logs_number -eq 3 ]] || test_die "terraform .log.txt are not 3 files but has ${terraform_logs_number}"
-rm terraform.*.log.txt
+rm -f terraform.*.log.txt
 
 #######################################################################
 QESAP_CFG=test_3.yaml
 test_step "[${QESAP_CFG}] test .log.txt file redirection in case of error"
-rm terraform.*.log.txt || echo "No terraform.*.log.txt to delete"
+rm -f terraform.*.log.txt
 reset_root
 echo "SOMETHING INVALID" > "${TEST_PROVIDER}/main.tf"
 set +e
@@ -216,7 +225,7 @@ THIS_LOG="terraform.init.log.txt"
 lines=$(cat "${THIS_LOG}" | wc -l)
 [[ $lines -ne 0 ]] || test_die "${THIS_LOG} should not be empty"
 grep -E "SOMETHING INVALID" $THIS_LOG || test_die "Expected content not found in ${THIS_LOG}"
-rm terraform.*.log.txt
+rm -f terraform.*.log.txt
 rm "${TEST_PROVIDER}/main.tf"
 
 #######################################################################

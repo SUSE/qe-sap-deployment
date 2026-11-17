@@ -14,6 +14,10 @@ from lib.status import Status
 
 log = logging.getLogger("QESAP")
 
+# How _run_tf_step handles the output of one terraform command.
+# LOG_PLAIN: write the output to the log file as it is.
+LOG_PLAIN = "plain"
+
 
 def create_tfvars(config, template):
     """Create the tfvars file content
@@ -221,14 +225,14 @@ def cmd_terraform(
         f"{config.get_terraform_bin()} -chdir={cfg_paths['provider']}"
     )
 
-    # Each entry is (command, log_filename, add_no_color).
+    # Each entry is (command, log_filename, log_mode).
     cmds = []
     if destroy:
         cmds.append(
             (
                 f"{terraform_common_cmd} destroy -auto-approve",
                 "terraform.destroy.log.txt",
-                True,
+                LOG_PLAIN,
             )
         )
         if workspace != "default":
@@ -236,24 +240,26 @@ def cmd_terraform(
                 (
                     f"{terraform_common_cmd} workspace select default",
                     "terraform.workspace_select.log.txt",
-                    True,
+                    LOG_PLAIN,
                 )
             )
             cmds.append(
                 (
                     f"{terraform_common_cmd} workspace delete {workspace}",
                     "terraform.workspace_delete.log.txt",
-                    True,
+                    LOG_PLAIN,
                 )
             )
     else:
-        cmds.append((f"{terraform_common_cmd} init", "terraform.init.log.txt", True))
+        cmds.append(
+            (f"{terraform_common_cmd} init", "terraform.init.log.txt", LOG_PLAIN)
+        )
         if workspace != "default":
             cmds.append(
                 (
                     f"{terraform_common_cmd} workspace new {workspace}",
                     "terraform.workspace_new.log.txt",
-                    True,
+                    LOG_PLAIN,
                 )
             )
         parallel_str = ""
@@ -263,37 +269,38 @@ def cmd_terraform(
             (
                 f"{terraform_common_cmd} plan {parallel_str}-out=plan.zip",
                 "terraform.plan.log.txt",
-                True,
+                LOG_PLAIN,
             )
         )
         cmds.append(
             (
                 f"{terraform_common_cmd} apply {parallel_str}-auto-approve plan.zip",
                 "terraform.apply.log.txt",
-                True,
+                LOG_PLAIN,
             )
         )
 
-    for command, log_filename, add_no_color in cmds:
-        res = _run_tf_step(command, log_filename, add_no_color, dryrun)
+    for command, log_filename, log_mode in cmds:
+        res = _run_tf_step(command, log_filename, log_mode, dryrun)
         if res != 0:
             return res
     return Status("ok")
 
 
-def _run_tf_step(command, log_filename, add_no_color, dryrun):
+def _run_tf_step(command, log_filename, log_mode, dryrun):
     """Run one terraform step and write its output to a log file.
 
     Args:
         command (str): the terraform command, without '-no-color'
         log_filename (str): name of the log file to write in the current folder
-        add_no_color (bool): append ' -no-color' to the command before running it
+        log_mode (str): how to handle the output. LOG_PLAIN writes it to
+                        log_filename as it is.
         dryrun (bool): only print the command, do not run it
 
     Returns:
         Status: execution result, 0 means OK
     """
-    if add_no_color:
+    if log_mode == LOG_PLAIN:
         command += " -no-color"
     if dryrun:
         print(command)
