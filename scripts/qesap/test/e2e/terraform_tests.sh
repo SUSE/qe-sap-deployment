@@ -55,11 +55,41 @@ test_step "[${QESAP_CFG}] Run Terraform"
 # and for the generation of the terraform.tfstate
 # terraform.tfstate is directly created by the terraform executable
 reset_root
-rm -f terraform.*.log.txt
+# remove the logs of a previous run: the checks below look for files that
+# must not exist
+rm -f terraform.*.log.txt terraform.*.log.json
 cp main_local.tf "${TEST_PROVIDER}/main.tf"
 qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} terraform || test_die "${QESAP_CFG} fail on terraform"
 test_file "${TEST_TERRAFORM_TFSTATE}"
 test_file "${TEST_PROVIDER}/foo.bar"
+# apply runs with '-json': it writes a .log.json file.
+# init stays plain: 'terraform init -json' needs Terraform 1.9+, the project caps at 1.5.7.
+# plan stays plain: 'terraform plan -json' does not write the resource attributes.
+test_file "terraform.apply.log.json"
+test_json_lines "terraform.apply.log.json"
+for t_step in init plan; do
+  [[ ! -f "terraform.${t_step}.log.json" ]] \
+    || test_die "terraform.${t_step}.log.json must not exist (${t_step} is plain)"
+done
+# the apply log has the expected event types
+for t_event in apply_start apply_complete change_summary outputs; do
+  jq -r .type terraform.apply.log.json | grep -qx "${t_event}" \
+    || test_die "terraform.apply.log.json has no ${t_event} event"
+done
+# the plain plan log has the resource attributes
+grep -qE 'content +=  *"foo!"' terraform.plan.log.txt \
+  || test_die "terraform.plan.log.txt does not have the attribute 'content' of local_file.foo"
+# the plain apply log has the output values, as the plain 'terraform apply'
+grep -qx "Outputs:" terraform.apply.log.txt \
+  || test_die "terraform.apply.log.txt does not have the 'Outputs:' line"
+grep -qE '^foo_filename = ".*/foo.bar"$' terraform.apply.log.txt \
+  || test_die "terraform.apply.log.txt does not have the value of the output foo_filename"
+grep -qx 'foo_list = tolist(\[' terraform.apply.log.txt \
+  || test_die "terraform.apply.log.txt does not have the value of the output foo_list"
+# the plain apply log does not repeat the plan
+if grep -qE "Plan to " terraform.apply.log.txt; then
+  test_die "terraform.apply.log.txt repeats the plan"
+fi
 # do not delete tfstate to lave them fo rthe next test
 
 #######################################################################
@@ -185,7 +215,7 @@ test_step "[${QESAP_CFG}] test .log.txt file redirection"
 #    executed terraform command (init, plan and apply) to a dedicated log file
 
 # run in non verbose mode
-rm -f terraform.*.log.txt
+rm terraform.*.log.txt terraform.*.log.json || echo "No terraform logs to delete"
 qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} terraform || test_die "Error in terraform execution"
 
 find . -type f -name "terraform.*.log.txt" | grep . || test_die "No generated terraform .log.txt"
@@ -199,7 +229,10 @@ for t_step in plan apply; do
     test_die "terraform.${t_step}.log.txt contains raw JSON lines"
   fi
 done
-rm -f terraform.*.log.txt
+# one .log.json for the only '-json' step (apply), none for init, plan or destroy
+terraform_json_logs_number=$(find . -type f -name "terraform.*.log.json" | wc -l)
+[[ $terraform_json_logs_number -eq 1 ]] || test_die "terraform .log.json are not 1 file but has ${terraform_json_logs_number}"
+rm -f terraform.*.log.txt terraform.*.log.json
 
 #######################################################################
 QESAP_CFG=test_3.yaml
@@ -210,12 +243,12 @@ qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} terraform
 find . -type f -name "terraform.*.log.txt" | grep . || test_die "No generated terraform .log.txt"
 terraform_logs_number=$(find . -type f -name "terraform.*.log.txt" | wc -l)
 [[ $terraform_logs_number -eq 3 ]] || test_die "terraform .log.txt are not 3 files but has ${terraform_logs_number}"
-rm -f terraform.*.log.txt
+rm -f terraform.*.log.txt terraform.*.log.json
 
 #######################################################################
 QESAP_CFG=test_3.yaml
 test_step "[${QESAP_CFG}] test .log.txt file redirection in case of error"
-rm -f terraform.*.log.txt
+rm terraform.*.log.txt terraform.*.log.json || echo "No terraform logs to delete"
 reset_root
 echo "SOMETHING INVALID" > "${TEST_PROVIDER}/main.tf"
 set +e
@@ -225,7 +258,40 @@ THIS_LOG="terraform.init.log.txt"
 lines=$(cat "${THIS_LOG}" | wc -l)
 [[ $lines -ne 0 ]] || test_die "${THIS_LOG} should not be empty"
 grep -E "SOMETHING INVALID" $THIS_LOG || test_die "Expected content not found in ${THIS_LOG}"
-rm -f terraform.*.log.txt
+# init and plan are plain and apply never ran: no .log.json file at all
+for t_step in init plan apply; do
+  [[ ! -f "terraform.${t_step}.log.json" ]] \
+    || test_die "terraform.${t_step}.log.json must not exist"
+done
+rm -f terraform.*.log.txt terraform.*.log.json
+rm "${TEST_PROVIDER}/main.tf"
+
+#######################################################################
+QESAP_CFG=test_3.yaml
+test_step "[${QESAP_CFG}] test apply .log.txt in case of error"
+# The error happens in 'apply' (the '-json' step): the plan is valid, but
+# terraform cannot create a folder in /proc.
+rm terraform.*.log.txt terraform.*.log.json || echo "No terraform logs to delete"
+reset_root
+cat > "${TEST_PROVIDER}/main.tf" <<'EOF'
+resource "local_file" "bad" {
+  content  = "bad"
+  filename = "/proc/qesap_e2e/bad.txt"
+}
+EOF
+set +e
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} terraform
+rc=$?
+set -e
+[[ $rc -ne 0 ]] || test_die "qesap.py terraform must fail when apply fails"
+THIS_LOG="terraform.apply.log.txt"
+test_file "${THIS_LOG}"
+test_file "terraform.apply.log.json"
+# the plain apply log has the error, the resource and the source location
+grep -qE "^Error: " "${THIS_LOG}" || test_die "${THIS_LOG} does not have the error"
+grep -qE "^  with local_file.bad,$" "${THIS_LOG}" || test_die "${THIS_LOG} does not have the resource address of the error"
+grep -qE "^  on main.tf line [0-9]+" "${THIS_LOG}" || test_die "${THIS_LOG} does not have the source location of the error"
+rm -f terraform.*.log.txt terraform.*.log.json
 rm "${TEST_PROVIDER}/main.tf"
 
 #######################################################################
@@ -270,4 +336,30 @@ done
 count=$(grep -rhE "^@.*foo@" "${TEST_PROVIDER}" | sort -u | wc -l)
 [[ $count -ne 1 ]] || test_die "All the generated files has the same content. Count:${count}"
 rm ${THIS_LOG}
+
+#######################################################################
+QESAP_CFG=test_3.yaml
+test_step "[${QESAP_CFG}] test destroy does not use -json"
+# destroy is plain: no '-json' flag, no .log.json file.
+# The workspace steps are also plain, but test_3.yaml uses the default
+# workspace, so they do not run here.
+reset_root
+# Empty configuration on purpose: this step checks the flags and the log
+# files, not what destroy removes.
+touch "${TEST_PROVIDER}/main.tf"
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} terraform >/dev/null \
+  || test_die "${QESAP_CFG} fail on terraform before destroy"
+THIS_LOG="${QESAPROOT}/test_destroy_plain.log"
+qesap.py -b ${QESAPROOT} -c ${QESAP_CFG} --dryrun terraform -d |& tee "${THIS_LOG}"
+if grep -qE '\-json' "${THIS_LOG}"; then
+  test_die "destroy dryrun command must not contain -json"
+fi
+rm "${THIS_LOG}"
+qesap.py --verbose -b ${QESAPROOT} -c ${QESAP_CFG} terraform -d \
+  || test_die "${QESAP_CFG} fail on terraform destroy"
+test_file "terraform.destroy.log.txt"
+if [[ -f "terraform.destroy.log.json" ]]; then
+  test_die "terraform.destroy.log.json must not be created for a plain step"
+fi
+rm -f terraform.*.log.txt terraform.*.log.json
 

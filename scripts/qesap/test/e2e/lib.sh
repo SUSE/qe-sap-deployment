@@ -69,3 +69,11 @@ test_die () {
 test_file () {
   [[ -f "$1" ]] || test_die "Generated file '$1' not found!"
 }
+
+# Assert that every line of $1 parses as JSON (a JSON-lines file).
+test_json_lines () {
+  local file=$1
+  # jq accepts an empty file: check that the file has content first
+  [[ -s "$file" ]] || test_die "${file} is empty"
+  jq -c . "$file" >/dev/null 2>&1 || test_die "${file} is not valid JSON lines"
+}

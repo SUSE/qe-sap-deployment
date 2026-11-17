@@ -2,10 +2,12 @@
 sub commands library
 """
 
+import json
 import os
 import shutil
 import re
 import logging
+import time
 import yaml
 
 from lib.config import CONF
@@ -16,7 +18,10 @@ log = logging.getLogger("QESAP")
 
 # How _run_tf_step handles the output of one terraform command.
 # LOG_PLAIN: write the output to the log file as it is.
+# LOG_JSONL: the output is JSON lines (the command has '-json'). Write it to
+#            a .log.json file and derive the plain .log.txt from it.
 LOG_PLAIN = "plain"
+LOG_JSONL = "jsonl"
 
 
 def create_tfvars(config, template):
@@ -190,6 +195,206 @@ def cmd_destroy(configure_data, base_project, dryrun=False):
     )
 
 
+# Event types of the '-json' stream that the plain output does not show:
+# - 'version': the plain output has no version line.
+# - 'planned_change': the plain 'apply plan.zip' does not print the plan again.
+_JSON_SKIP_TYPES = ("version", "planned_change")
+
+# Part of the JSON to plain text conversion of 'apply -json': it is used to
+# write the output values of the 'outputs' event as the plain apply does.
+# Tells if an object key needs quotes in the plain output.
+# Terraform writes a key without quotes only if it is a valid name:
+# it starts with a letter or '_', and has only letters, digits, '_' and '-'.
+#   {"name": "vm"}    ->  name = "vm"
+#   {"my key": "vm"}  ->  "my key" = "vm"
+_HCL_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*$")
+
+
+def _format_hcl_value(value, type_info=None, indent=""):
+    """Format a JSON output value as the plain terraform output does.
+
+    Lists, sets and tuples use one item per line with a trailing comma.
+    Maps and objects use one 'key = value' line per item, with the '='
+    aligned. Map keys are always quoted, object keys only if they are not
+    identifiers. A list, set or map is put in 'tolist()', 'toset()' or
+    'tomap()'. A tuple or an object is not.
+
+    Args:
+        value: the decoded JSON value
+        type_info: the terraform type of the value, as in the 'type' field of
+                   the 'outputs' event, for example ["list", "string"]
+        indent (str): the indentation of the current level
+
+    Returns:
+        str: the formatted value. It can have more than one line.
+    """
+    kind, sub = None, None
+    if isinstance(type_info, list) and len(type_info) == 2:
+        kind, sub = type_info
+    if isinstance(value, list):
+        text = _format_hcl_sequence(value, kind, sub, indent)
+    elif isinstance(value, dict):
+        text = _format_hcl_mapping(value, kind, sub, indent)
+    elif value is None:
+        return "null"
+    else:
+        # json.dumps gives 'true'/'false', numbers, and quoted escaped strings.
+        return json.dumps(value)
+    wrap = {"list": "tolist", "set": "toset", "map": "tomap"}.get(kind)
+    return f"{wrap}({text})" if wrap else text
+
+
+def _format_hcl_sequence(value, kind, sub, indent):
+    """Format a list, set or tuple value. Refer to _format_hcl_value."""
+    if not value:
+        return "[]"
+    inner = indent + "  "
+    lines = ["["]
+    for i, item in enumerate(value):
+        item_type = None
+        if kind == "tuple" and isinstance(sub, list) and i < len(sub):
+            item_type = sub[i]
+        elif kind in ("list", "set"):
+            item_type = sub
+        lines.append(f"{inner}{_format_hcl_value(item, item_type, inner)},")
+    lines.append(f"{indent}]")
+    return "\n".join(lines)
+
+
+def _format_hcl_mapping(value, kind, sub, indent):
+    """Format a map or object value. Refer to _format_hcl_value."""
+    if not value:
+        return "{}"
+    inner = indent + "  "
+    keys = {}
+    for key in value:
+        quote = kind == "map" or not _HCL_IDENTIFIER_RE.match(key)
+        keys[key] = json.dumps(key) if quote else key
+    width = max(len(k) for k in keys.values())
+    lines = ["{"]
+    for key, shown in keys.items():
+        item_type = None
+        if kind == "object" and isinstance(sub, dict):
+            item_type = sub.get(key)
+        elif kind == "map":
+            item_type = sub
+        formatted = _format_hcl_value(value[key], item_type, inner)
+        lines.append(f"{inner}{shown.ljust(width)} = {formatted}")
+    lines.append(f"{indent}}}")
+    return "\n".join(lines)
+
+
+def _render_outputs(outputs):
+    """Render the 'outputs' event of 'apply -json' as the plain apply does.
+
+    Args:
+        outputs (dict): the 'outputs' field of the event
+
+    Returns:
+        list of str: 'Outputs:', an empty line and one 'name = value' line
+        (or more for a long value) for each output, sorted by name. An empty
+        list if there are no outputs.
+    """
+    if not isinstance(outputs, dict) or not outputs:
+        return []
+    out = ["Outputs:", ""]
+    for name in sorted(outputs):
+        data = outputs[name] if isinstance(outputs[name], dict) else {}
+        if data.get("sensitive"):
+            # The JSON stream has the value also for sensitive outputs:
+            # do not write it to the plain log.
+            formatted = "<sensitive>"
+        else:
+            formatted = _format_hcl_value(data.get("value"), data.get("type"))
+        out.extend(f"{name} = {formatted}".split("\n"))
+    return out
+
+
+def _render_diagnostic(obj):
+    """Render a 'diagnostic' event as the plain output does.
+
+    The plain output has the summary, the resource address, the source
+    location, the source line and the detail.
+
+    Args:
+        obj (dict): the JSON event
+
+    Returns:
+        list of str: the plain text lines
+    """
+    out = []
+    message = obj.get("@message")
+    if message:
+        out.append(str(message))
+    diag = obj.get("diagnostic")
+    if not isinstance(diag, dict):
+        return out
+    address = diag.get("address")
+    if address:
+        out.append(f"  with {address},")
+    rng = diag.get("range")
+    if isinstance(rng, dict) and rng.get("filename"):
+        start = rng.get("start") if isinstance(rng.get("start"), dict) else {}
+        location = f"  on {rng['filename']} line {start.get('line', '?')}"
+        snippet = diag.get("snippet") if isinstance(diag.get("snippet"), dict) else {}
+        if snippet.get("context"):
+            location += f", in {snippet['context']}"
+        out.append(location + ":")
+        if snippet.get("code") is not None:
+            out.append(
+                f"{snippet.get('start_line', start.get('line', '?')):>4}: {snippet['code']}"
+            )
+    detail = diag.get("detail")
+    if detail:
+        out.append(str(detail))
+    return out
+
+
+def _render_plain_from_json(lines):
+    """Derive the human-readable log text from terraform .json log.
+
+    The result must have the same information as the plain output:
+    - For most events, emit the '@message' field.
+    - For a 'diagnostic' event, also emit the address, the source location
+      and the detail, so that the full error text is present.
+    - For an 'outputs' event, emit the name and value of each output.
+      The value of a sensitive output is not written.
+    - The events in _JSON_SKIP_TYPES are not emitted.
+    A line that does not parse as JSON is passed through unchanged.
+    This function must never raise: if an event has an unexpected format,
+    the raw line is passed through.
+
+    Args:
+        lines (list of str): raw output lines of a '-json' command
+
+    Returns:
+        list of str: the derived plain text lines
+    """
+    out = []
+    for line in lines:
+        try:
+            obj = json.loads(line)
+        except (ValueError, TypeError):
+            out.append(line)
+            continue
+        if not isinstance(obj, dict):
+            out.append(line)
+            continue
+        try:
+            event_type = obj.get("type")
+            if event_type in _JSON_SKIP_TYPES:
+                continue
+            if event_type == "diagnostic":
+                out.extend(_render_diagnostic(obj))
+            elif event_type == "outputs":
+                out.extend(_render_outputs(obj.get("outputs")))
+            elif obj.get("@message"):
+                out.append(str(obj["@message"]))
+        except (AttributeError, KeyError, TypeError, ValueError):
+            out.append(line)
+    return out
+
+
 def cmd_terraform(
     configure_data,
     base_project,
@@ -226,38 +431,41 @@ def cmd_terraform(
     )
 
     # Each entry is (command, log_filename, log_mode).
+    # Only 'apply' runs with '-json'. '-json' is written in the command
+    # string, directly after the subcommand: it must come before any
+    # positional argument (the plan file).
+    # 'init' stays plain: 'init -json' exists only from Terraform 1.9 /
+    # OpenTofu 1.7, and the project uses Terraform 1.5.7.
+    # 'plan' stays plain: 'plan -json' does not write the resource attributes
+    # (the 'planned_change' event has only the address and the action), so
+    # the full plan is only in the plain output.
+    tf = terraform_common_cmd
     cmds = []
     if destroy:
         cmds.append(
-            (
-                f"{terraform_common_cmd} destroy -auto-approve",
-                "terraform.destroy.log.txt",
-                LOG_PLAIN,
-            )
+            (f"{tf} destroy -auto-approve", "terraform.destroy.log.txt", LOG_PLAIN)
         )
         if workspace != "default":
             cmds.append(
                 (
-                    f"{terraform_common_cmd} workspace select default",
+                    f"{tf} workspace select default",
                     "terraform.workspace_select.log.txt",
                     LOG_PLAIN,
                 )
             )
             cmds.append(
                 (
-                    f"{terraform_common_cmd} workspace delete {workspace}",
+                    f"{tf} workspace delete {workspace}",
                     "terraform.workspace_delete.log.txt",
                     LOG_PLAIN,
                 )
             )
     else:
-        cmds.append(
-            (f"{terraform_common_cmd} init", "terraform.init.log.txt", LOG_PLAIN)
-        )
+        cmds.append((f"{tf} init", "terraform.init.log.txt", LOG_PLAIN))
         if workspace != "default":
             cmds.append(
                 (
-                    f"{terraform_common_cmd} workspace new {workspace}",
+                    f"{tf} workspace new {workspace}",
                     "terraform.workspace_new.log.txt",
                     LOG_PLAIN,
                 )
@@ -267,16 +475,16 @@ def cmd_terraform(
             parallel_str = f"-parallelism={parallel} "
         cmds.append(
             (
-                f"{terraform_common_cmd} plan {parallel_str}-out=plan.zip",
+                f"{tf} plan {parallel_str}-out=plan.zip",
                 "terraform.plan.log.txt",
                 LOG_PLAIN,
             )
         )
         cmds.append(
             (
-                f"{terraform_common_cmd} apply {parallel_str}-auto-approve plan.zip",
+                f"{tf} apply -json {parallel_str}-auto-approve plan.zip",
                 "terraform.apply.log.txt",
-                LOG_PLAIN,
+                LOG_JSONL,
             )
         )
 
@@ -292,24 +500,59 @@ def _run_tf_step(command, log_filename, log_mode, dryrun):
 
     Args:
         command (str): the terraform command, without '-no-color'
-        log_filename (str): name of the log file to write in the current folder
+        log_filename (str): name of the plain log file to write in the current
+                            folder
         log_mode (str): how to handle the output. LOG_PLAIN writes it to
-                        log_filename as it is.
+                        log_filename as it is. LOG_JSONL writes the raw JSON
+                        lines to a .log.json file and derives log_filename from
+                        them (see _render_plain_from_json).
         dryrun (bool): only print the command, do not run it
 
     Returns:
         Status: execution result, 0 means OK
     """
-    if log_mode == LOG_PLAIN:
-        command += " -no-color"
+    # Terraform and OpenTofu remove '-no-color' from any position of the
+    # arguments before they parse the flags, so it can go at the end,
+    # also after a positional argument.
+    command += " -no-color"
     if dryrun:
         print(command)
         return Status("ok")
-    ret, out = lib.process_manager.subprocess_run(command)
+    step_name = log_filename.removeprefix("terraform.").removesuffix(".log.txt")
+    perf_start = time.monotonic()
+    # For a LOG_JSONL step, subprocess_run must not log the raw JSON lines:
+    # this function logs the derived plain text instead, in the same format,
+    # so that the stdout/stderr of qesap.py does not change.
+    ret, out = lib.process_manager.subprocess_run(
+        command, log_output=(log_mode != LOG_JSONL)
+    )
+    plain_lines = out
+    if log_mode == LOG_JSONL:
+        render_start = time.monotonic()
+        plain_lines = _render_plain_from_json(out)
+        render_elapsed = time.monotonic() - render_start
+        # Same format, levels and position in the log as subprocess_run:
+        # DEBUG ('--verbose' only) on success, ERROR on failure.
+        lib.process_manager.log_output_lines(ret, plain_lines)
     log.debug("Terraform process return ret:%d", ret)
     log.debug("Write %s getcwd:%s", log_filename, os.getcwd())
     with open(log_filename, "w", encoding="utf-8") as log_file:
-        log_file.write("\n".join(out))
+        log_file.write("\n".join(plain_lines))
+    if log_mode == LOG_JSONL:
+        json_filename = log_filename[: -len(".log.txt")] + ".log.json"
+        with open(json_filename, "w", encoding="utf-8") as json_file:
+            json_file.write("\n".join(out))
+        # TEMPORARY performance measurement: remove before merge
+        log.info(
+            "PERF step=%s subprocess=%.3fs json_bytes=%d json_lines=%d "
+            "render=%.4fs plain_lines=%d",
+            step_name,
+            time.monotonic() - perf_start - render_elapsed,
+            sum(len(line.encode("utf-8")) for line in out),
+            len(out),
+            render_elapsed,
+            len(plain_lines),
+        )
     if ret != 0:
         log.error("command:%s returned non zero %d", command, ret)
         return Status(f"Error rc: {ret} at {command}")
