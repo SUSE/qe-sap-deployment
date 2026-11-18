@@ -69,12 +69,27 @@ resource "azurerm_managed_disk" "monitoring_data" {
   tags                 = var.tags
 }
 
+# Azure keeps writing to a freshly created VM after the create call returns: let it settle
+# before creating the attachment to avoid 409 ConflictingConcurrentWriteNotAllowed.
+resource "time_sleep" "wait_after_vm" {
+  count           = var.monitoring_enabled == true ? 1 : 0
+  create_duration = "20s"
+
+  depends_on = [
+    azurerm_linux_virtual_machine.monitoring
+  ]
+}
+
 resource "azurerm_virtual_machine_data_disk_attachment" "monitoring_data" {
   count              = var.monitoring_enabled == true ? 1 : 0
   managed_disk_id    = azurerm_managed_disk.monitoring_data[count.index].id
   virtual_machine_id = azurerm_linux_virtual_machine.monitoring[count.index].id
   lun                = 0
   caching            = "ReadWrite"
+
+  depends_on = [
+    time_sleep.wait_after_vm
+  ]
 }
 
 resource "azurerm_linux_virtual_machine" "monitoring" {
