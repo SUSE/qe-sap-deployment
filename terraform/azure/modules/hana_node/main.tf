@@ -152,23 +152,6 @@ module "hana_secondary_lb_rules" {
   depends_on = [module.hana_primary_lb_rules]
 }
 
-resource "azurerm_lb_rule" "hanadb_exporter" {
-  count = var.common_variables["monitoring_enabled"] ? local.create_ha_infra : 0
-  #resource_group_name            = var.resource_group_name
-  loadbalancer_id                = azurerm_lb.hana-load-balancer[0].id
-  name                           = "hanadb_exporter"
-  protocol                       = "Tcp"
-  frontend_ip_configuration_name = "lbfe-hana"
-  frontend_port                  = 9668
-  backend_port                   = 9668
-  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.hana-load-balancer[0].id]
-  probe_id                       = azurerm_lb_probe.hana-load-balancer[0].id
-  idle_timeout_in_minutes        = 30
-  floating_ip_enabled            = "true"
-
-  depends_on = [module.hana_secondary_lb_rules, module.hana_primary_lb_rules]
-}
-
 # hana network configuration
 
 resource "azurerm_network_interface" "hana" {

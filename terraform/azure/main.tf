@@ -20,17 +20,15 @@ locals {
   )
 
   # Obtain machines os_image value
-  hana_os_image       = var.hana_os_image != "" ? var.hana_os_image : var.os_image
-  iscsi_os_image      = var.iscsi_os_image != "" ? var.iscsi_os_image : var.os_image
-  monitoring_os_image = var.monitoring_os_image != "" ? var.monitoring_os_image : var.os_image
-  drbd_os_image       = var.drbd_os_image != "" ? var.drbd_os_image : var.os_image
-  netweaver_os_image  = var.netweaver_os_image != "" ? var.netweaver_os_image : var.os_image
+  hana_os_image      = var.hana_os_image != "" ? var.hana_os_image : var.os_image
+  iscsi_os_image     = var.iscsi_os_image != "" ? var.iscsi_os_image : var.os_image
+  drbd_os_image      = var.drbd_os_image != "" ? var.drbd_os_image : var.os_image
+  netweaver_os_image = var.netweaver_os_image != "" ? var.netweaver_os_image : var.os_image
 
-  hana_os_image_uri       = var.sles4sap_uri != "" ? var.sles4sap_uri : var.os_image_uri
-  iscsi_os_image_uri      = var.iscsi_srv_uri != "" ? var.iscsi_srv_uri : var.os_image_uri
-  monitoring_os_image_uri = var.monitoring_uri != "" ? var.monitoring_uri : var.os_image_uri
-  drbd_os_image_uri       = var.drbd_image_uri != "" ? var.drbd_image_uri : var.os_image_uri
-  netweaver_os_image_uri  = var.netweaver_image_uri != "" ? var.netweaver_image_uri : var.os_image_uri
+  hana_os_image_uri      = var.sles4sap_uri != "" ? var.sles4sap_uri : var.os_image_uri
+  iscsi_os_image_uri     = var.iscsi_srv_uri != "" ? var.iscsi_srv_uri : var.os_image_uri
+  drbd_os_image_uri      = var.drbd_image_uri != "" ? var.drbd_image_uri : var.os_image_uri
+  netweaver_os_image_uri = var.netweaver_image_uri != "" ? var.netweaver_image_uri : var.os_image_uri
 
   # Netweaver password checking
   # If Netweaver is not enabled, a dummy password is passed to pass the variable validation and not require
@@ -47,8 +45,6 @@ module "common_variables" {
   public_key                          = var.public_key
   authorized_keys                     = var.authorized_keys
   authorized_user                     = var.admin_user
-  monitoring_enabled                  = var.monitoring_enabled
-  monitoring_srv_ip                   = var.monitoring_enabled ? local.monitoring_ip : ""
   hana_hwcct                          = var.hwcct
   hana_instance_number                = var.hana_instance_number
   hana_cost_optimized_instance_number = var.hana_cost_optimized_instance_number
@@ -83,15 +79,6 @@ module "common_variables" {
   netweaver_cluster_vip_mechanism     = "load-balancer"
   netweaver_sbd_storage_type          = var.sbd_storage_type
   netweaver_shared_storage_type       = var.netweaver_shared_storage_type
-  monitoring_hana_targets             = var.hana_scale_out_enabled ? concat(local.hana_ips, [local.hana_majority_maker_ip]) : local.hana_ips
-  monitoring_hana_targets_ha          = var.hana_ha_enabled ? (var.hana_scale_out_enabled ? concat(local.hana_ips, [local.hana_majority_maker_ip]) : local.hana_ips) : []
-  monitoring_hana_targets_vip         = var.hana_ha_enabled ? [local.hana_cluster_vip] : [local.hana_ips[0]] # we use the vip for HA scenario and 1st hana machine for non HA to target the active hana instance
-  monitoring_drbd_targets             = var.drbd_enabled ? local.drbd_ips : []
-  monitoring_drbd_targets_ha          = var.drbd_enabled ? local.drbd_ips : []
-  monitoring_drbd_targets_vip         = var.drbd_enabled ? [local.drbd_cluster_vip] : []
-  monitoring_netweaver_targets        = var.netweaver_enabled ? local.netweaver_ips : []
-  monitoring_netweaver_targets_ha     = var.netweaver_enabled && var.netweaver_ha_enabled ? [local.netweaver_ips[0], local.netweaver_ips[1]] : []
-  monitoring_netweaver_targets_vip    = var.netweaver_enabled ? local.netweaver_virtual_ips : []
   drbd_cluster_vip                    = local.drbd_cluster_vip
   drbd_cluster_vip_mechanism          = "load-balancer"
   drbd_sbd_storage_type               = var.sbd_storage_type
@@ -197,23 +184,6 @@ module "hana_node" {
   # passed to majority_maker module
   majority_maker_vm_size = var.hana_majority_maker_vm_size
   majority_maker_ip      = local.hana_majority_maker_ip
-}
-
-module "monitoring" {
-  source              = "./modules/monitoring"
-  common_variables    = module.common_variables.configuration
-  name                = var.monitoring_name
-  network_domain      = var.monitoring_network_domain == "" ? var.network_domain : var.monitoring_network_domain
-  monitoring_enabled  = var.monitoring_enabled
-  az_region           = var.az_region
-  vm_size             = var.monitoring_vm_size
-  resource_group_name = local.resource_group_name
-  network_subnet_id   = local.subnet_id
-  storage_account     = azurerm_storage_account.mytfstorageacc.primary_blob_endpoint
-  monitoring_uri      = local.monitoring_os_image_uri
-  os_image            = local.monitoring_os_image
-  monitoring_srv_ip   = local.monitoring_ip
-  tags                = local.tags
 }
 
 module "iscsi_server" {
