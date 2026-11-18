@@ -10,6 +10,27 @@ log = logging.getLogger(__name__)
 
 terraform_cmds = [("init"), ("plan -out=plan.zip"), ("apply -auto-approve plan.zip")]
 
+# Log files written by cmd_terraform into the current working directory.
+# See lib/cmds.py for the full list of log filenames.
+TERRAFORM_LOG_FILES = [
+    "terraform.init.log.txt",
+    "terraform.plan.log.txt",
+    "terraform.apply.log.txt",
+    "terraform.destroy.log.txt",
+    "terraform.workspace_new.log.txt",
+    "terraform.workspace_select.log.txt",
+    "terraform.workspace_delete.log.txt",
+]
+
+
+@pytest.fixture(autouse=True)
+def cleanup_terraform_logs():
+    """Remove terraform log files left in the CWD after each test."""
+    yield
+    for leftover in TERRAFORM_LOG_FILES:
+        if os.path.isfile(leftover):
+            os.remove(leftover)
+
 
 @mock.patch("lib.process_manager.subprocess_run")
 @pytest.mark.parametrize("terraform_cmd_args", terraform_cmds)
