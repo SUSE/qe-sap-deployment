@@ -45,24 +45,6 @@ output "hana_public_name" {
   value = compact(module.hana_node.hana_public_name)
 }
 
-# Monitoring
-
-output "monitoring_ip" {
-  value = module.monitoring.monitoring_ip
-}
-
-output "monitoring_public_ip" {
-  value = module.monitoring.monitoring_public_ip
-}
-
-output "monitoring_name" {
-  value = module.monitoring.monitoring_name
-}
-
-output "monitoring_public_name" {
-  value = module.monitoring.monitoring_public_name
-}
-
 # drbd
 
 output "drbd_ip" {

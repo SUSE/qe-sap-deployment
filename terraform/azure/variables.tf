@@ -461,56 +461,6 @@ variable "iscsi_disk_size" {
   default     = 10
 }
 
-# Monitoring related variables
-
-variable "monitoring_name" {
-  description = "hostname, without the domain part"
-  type        = string
-  default     = "vmmonitoring"
-}
-
-variable "monitoring_network_domain" {
-  description = "hostname's network domain"
-  type        = string
-  default     = ""
-}
-
-variable "monitoring_enabled" {
-  description = "Enable the host to be monitored by exporters, e.g node_exporter"
-  type        = bool
-  default     = false
-}
-
-variable "monitoring_vm_size" {
-  description = "VM size for the monitoring machine"
-  type        = string
-  default     = "Standard_D2s_v3"
-}
-
-variable "monitoring_os_image" {
-  description = "sles4sap image used to create the Monitoring server machines. Composed by 'Publisher:Offer:Sku:Version' syntax. Example: SUSE:sles-sap-15-sp3:gen2:latest"
-  type        = string
-  default     = ""
-}
-
-variable "monitoring_uri" {
-  description = "Path to a custom azure image in a storage account used to create the monitoring machines"
-  type        = string
-  default     = ""
-}
-
-variable "monitoring_srv_ip" {
-  description = "monitoring server address. If it's not set the address will be auto generated from the provided vnet address range"
-  type        = string
-  default     = ""
-  validation {
-    condition = (
-      var.monitoring_srv_ip == "" || can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", var.monitoring_srv_ip))
-    )
-    error_message = "Invalid IP address format."
-  }
-}
-
 # DRBD related variables
 
 variable "drbd_name" {

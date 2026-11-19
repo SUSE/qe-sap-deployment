@@ -223,25 +223,6 @@ hana_count = "2"
 # Disk size in GB used to create the LUNs and partitions to be served by the ISCSI service
 #iscsi_disk_size = 10
 
-##############################
-# Monitoring related variables
-##############################
-
-# Custom monitoring server image
-#monitoring_uri = "/path/to/your/monitoring/image"
-
-# Public image usage for the monitoring server. BYOS example
-#monitoring_os_image = "SUSE:sles-sap-15-sp3-byos:gen2:latest"
-
-# Enable the host to be monitored by exporters
-#monitoring_enabled = true
-
-# Hostname, without the domain part
-#monitoring_name = "vmmonitoring"
-
-# IP address of the machine where Prometheus and Grafana are running. If it's not set the address will be auto generated from the provided vnet address range
-#monitoring_srv_ip = "10.74.1.13"
-
 ########################
 # DRBD related variables
 ########################

@@ -166,7 +166,7 @@ def test_drbd_cluster_vip(variables):
     variables.invalid('drbd_cluster_vip', 'not-an-ip', IP_ERROR)
 
 
-@pytest.mark.parametrize('csp', ALL)
+@pytest.mark.parametrize('csp', ['aws', 'gcp'])
 def test_monitoring_srv_ip(variables):
     variables.valid('monitoring_srv_ip', '')
     variables.valid('monitoring_srv_ip', '10.0.0.1')
