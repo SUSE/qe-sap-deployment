@@ -1,4 +1,6 @@
-from lib.process_manager import subprocess_run
+import logging
+
+from lib.process_manager import log_output_lines, subprocess_run
 
 
 def test_no_command():
@@ -67,3 +69,38 @@ def test_env():
     exit_code, stdout_list = subprocess_run("printenv", env={"BANANA_VALUE": "1234"})
     assert exit_code == 0
     assert "BANANA_VALUE=1234" in stdout_list
+
+
+def test_log_output_default(caplog):
+    """
+    By default each output line is logged as 'OUTPUT: <line>' at DEBUG level
+    """
+    with caplog.at_level(logging.DEBUG, logger="QESAP"):
+        exit_code, _ = subprocess_run('echo "Banana"')
+    assert exit_code == 0
+    records = [rec for rec in caplog.records if rec.message == "OUTPUT: Banana"]
+    assert len(records) == 1
+    assert records[0].levelno == logging.DEBUG
+
+
+def test_log_output_false(caplog):
+    """
+    With log_output=False the output lines are returned but not logged
+    """
+    with caplog.at_level(logging.DEBUG, logger="QESAP"):
+        exit_code, stdout_list = subprocess_run('echo "Banana"', log_output=False)
+    assert exit_code == 0
+    assert stdout_list == ["Banana"]
+    assert not any("OUTPUT:" in rec.message for rec in caplog.records)
+
+
+def test_log_output_lines_level(caplog):
+    """
+    log_output_lines logs at DEBUG for a zero exit code, at ERROR otherwise
+    """
+    with caplog.at_level(logging.DEBUG, logger="QESAP"):
+        log_output_lines(0, ["good"])
+        log_output_lines(1, ["bad"])
+    levels = {rec.message: rec.levelno for rec in caplog.records}
+    assert levels["OUTPUT: good"] == logging.DEBUG
+    assert levels["OUTPUT: bad"] == logging.ERROR

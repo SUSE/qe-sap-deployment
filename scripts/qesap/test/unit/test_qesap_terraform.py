@@ -32,6 +32,22 @@ def cleanup_terraform_logs():
             os.remove(leftover)
 
 
+# For each entry of terraform_cmds: the expected command after
+# '<bin> -chdir=<dir> ', and the expected 'log_output' of subprocess_run.
+# init stays plain (init -json needs TF 1.9+): subprocess_run logs its output.
+# plan stays plain (plan -json has no resource attributes).
+# apply runs with '-json' right after the subcommand: subprocess_run
+# does not log the raw JSON, cmd_terraform logs the derived text.
+expected_tf_calls = {
+    "init": ("init -no-color", True),
+    "plan -out=plan.zip": ("plan -out=plan.zip -no-color", True),
+    "apply -auto-approve plan.zip": (
+        "apply -json -auto-approve plan.zip -no-color",
+        False,
+    ),
+}
+
+
 @mock.patch("lib.process_manager.subprocess_run")
 @pytest.mark.parametrize("terraform_cmd_args", terraform_cmds)
 def test_terraform_call_terraform(
@@ -55,8 +71,13 @@ def test_terraform_call_terraform(
     subprocess_run.return_value = (0, [])
     assert main(args) == 0
     subprocess_run.assert_called()
+    expected, log_output = expected_tf_calls[terraform_cmd_args]
     subprocess_run.assert_has_calls(
-        [mock.call(f"terraform -chdir={terraform_dir} {terraform_cmd_args} -no-color")]
+        [
+            mock.call(
+                f"terraform -chdir={terraform_dir} {expected}", log_output=log_output
+            )
+        ]
     )
 
 
@@ -75,12 +96,13 @@ def test_terraform_stop_at_failure(subprocess_run, args_helper, config_yaml_samp
     args.append("terraform")
 
     calls = []
-    terraform_cmd_common = ["terraform", f"-chdir={terraform_dir}"]
-    for terraform_cmd_args in [["init"], ["plan", "-out=plan.zip"]]:
-        terraform_cmd = terraform_cmd_common.copy()
-        terraform_cmd += terraform_cmd_args
-        terraform_cmd.append("-no-color")
-        calls.append(mock.call(" ".join(terraform_cmd)))
+    for terraform_cmd_args in ["init", "plan -out=plan.zip"]:
+        expected, log_output = expected_tf_calls[terraform_cmd_args]
+        calls.append(
+            mock.call(
+                f"terraform -chdir={terraform_dir} {expected}", log_output=log_output
+            )
+        )
 
     assert main(args) == 1
 
@@ -166,14 +188,15 @@ terraform:
     assert main(args) == 0
     subprocess_run.assert_called()
 
-    calls = []
-    calls.append(
-        mock.call(
-            f"one_special_terraform_exe -chdir={terraform_dir} {terraform_cmd_args} -no-color"
-        )
+    expected, log_output = expected_tf_calls[terraform_cmd_args]
+    subprocess_run.assert_has_calls(
+        [
+            mock.call(
+                f"one_special_terraform_exe -chdir={terraform_dir} {expected}",
+                log_output=log_output,
+            )
+        ]
     )
-
-    subprocess_run.assert_has_calls(calls)
 
 
 @pytest.mark.skip(reason="Run a true deployment")
@@ -243,7 +266,10 @@ def test_terraform_call_terraform_destroy(
     subprocess_run.return_value = (0, [])
     calls = []
     calls.append(
-        mock.call(f"terraform -chdir={terraform_dir} destroy -auto-approve -no-color")
+        mock.call(
+            f"terraform -chdir={terraform_dir} destroy -auto-approve -no-color",
+            log_output=True,
+        )
     )
 
     assert main(args) == 0
@@ -269,7 +295,10 @@ def test_terraform_call_terraform_workspace(
 
     calls = []
     calls.append(
-        mock.call(f"terraform -chdir={terraform_dir} workspace new lucignolo -no-color")
+        mock.call(
+            f"terraform -chdir={terraform_dir} workspace new lucignolo -no-color",
+            log_output=True,
+        )
     )
 
     subprocess_run.assert_has_calls(calls)
@@ -294,12 +323,14 @@ def test_terraform_call_terraform_workspace_destroy(
     calls = []
     calls.append(
         mock.call(
-            f"terraform -chdir={terraform_dir} workspace select default -no-color"
+            f"terraform -chdir={terraform_dir} workspace select default -no-color",
+            log_output=True,
         )
     )
     calls.append(
         mock.call(
-            f"terraform -chdir={terraform_dir} workspace delete lucignolo -no-color"
+            f"terraform -chdir={terraform_dir} workspace delete lucignolo -no-color",
+            log_output=True,
         )
     )
 
@@ -325,12 +356,14 @@ def test_terraform_call_terraform_parallel(
     calls = []
     calls.append(
         mock.call(
-            f"terraform -chdir={terraform_dir} plan -parallelism=5 -out=plan.zip -no-color"
+            f"terraform -chdir={terraform_dir} plan -parallelism=5 -out=plan.zip -no-color",
+            log_output=True,
         )
     )
     calls.append(
         mock.call(
-            f"terraform -chdir={terraform_dir} apply -parallelism=5 -auto-approve plan.zip -no-color"
+            f"terraform -chdir={terraform_dir} apply -json -parallelism=5 -auto-approve plan.zip -no-color",
+            log_output=False,
         )
     )
 
