@@ -17,16 +17,14 @@ locals {
   )
 
   # Obtain machines os_image and os_owner values
-  hana_os_image       = var.hana_os_image != "" ? var.hana_os_image : var.os_image
-  hana_os_owner       = var.hana_os_owner != "" ? var.hana_os_owner : var.os_owner
-  iscsi_os_image      = var.iscsi_os_image != "" ? var.iscsi_os_image : var.os_image
-  iscsi_os_owner      = var.iscsi_os_owner != "" ? var.iscsi_os_owner : var.os_owner
-  monitoring_os_image = var.monitoring_os_image != "" ? var.monitoring_os_image : var.os_image
-  monitoring_os_owner = var.monitoring_os_owner != "" ? var.monitoring_os_owner : var.os_owner
-  drbd_os_image       = var.drbd_os_image != "" ? var.drbd_os_image : var.os_image
-  drbd_os_owner       = var.drbd_os_owner != "" ? var.drbd_os_owner : var.os_owner
-  netweaver_os_image  = var.netweaver_os_image != "" ? var.netweaver_os_image : var.os_image
-  netweaver_os_owner  = var.netweaver_os_owner != "" ? var.netweaver_os_owner : var.os_owner
+  hana_os_image      = var.hana_os_image != "" ? var.hana_os_image : var.os_image
+  hana_os_owner      = var.hana_os_owner != "" ? var.hana_os_owner : var.os_owner
+  iscsi_os_image     = var.iscsi_os_image != "" ? var.iscsi_os_image : var.os_image
+  iscsi_os_owner     = var.iscsi_os_owner != "" ? var.iscsi_os_owner : var.os_owner
+  drbd_os_image      = var.drbd_os_image != "" ? var.drbd_os_image : var.os_image
+  drbd_os_owner      = var.drbd_os_owner != "" ? var.drbd_os_owner : var.os_owner
+  netweaver_os_image = var.netweaver_os_image != "" ? var.netweaver_os_image : var.os_image
+  netweaver_os_owner = var.netweaver_os_owner != "" ? var.netweaver_os_owner : var.os_owner
 
   netweaver_xscs_server_count = var.netweaver_enabled ? (var.netweaver_ha_enabled ? 2 : 1) : 0
   netweaver_count             = var.netweaver_enabled ? local.netweaver_xscs_server_count + var.netweaver_app_server_count : 0
@@ -46,8 +44,6 @@ module "common_variables" {
   public_key                          = var.public_key
   authorized_keys                     = var.authorized_keys
   authorized_user                     = var.admin_user
-  monitoring_enabled                  = var.monitoring_enabled
-  monitoring_srv_ip                   = var.monitoring_enabled ? local.monitoring_ip : ""
   hana_instance_number                = var.hana_instance_number
   hana_cost_optimized_instance_number = var.hana_cost_optimized_instance_number
   hana_primary_site                   = var.hana_primary_site
@@ -81,15 +77,6 @@ module "common_variables" {
   netweaver_cluster_vip_mechanism     = "route"
   netweaver_sbd_storage_type          = var.sbd_storage_type
   netweaver_shared_storage_type       = var.netweaver_shared_storage_type
-  monitoring_hana_targets             = local.hana_ips
-  monitoring_hana_targets_ha          = var.hana_ha_enabled ? local.hana_ips : []
-  monitoring_hana_targets_vip         = var.hana_ha_enabled ? [local.hana_cluster_vip] : [local.hana_ips[0]] # we use the vip for HA scenario and 1st hana machine for non HA to target the active hana instance
-  monitoring_drbd_targets             = var.drbd_enabled ? local.drbd_ips : []
-  monitoring_drbd_targets_ha          = var.drbd_enabled ? local.drbd_ips : []
-  monitoring_drbd_targets_vip         = var.drbd_enabled ? [local.drbd_cluster_vip] : []
-  monitoring_netweaver_targets        = var.netweaver_enabled ? local.netweaver_ips : []
-  monitoring_netweaver_targets_ha     = var.netweaver_enabled && var.netweaver_ha_enabled ? [local.netweaver_ips[0], local.netweaver_ips[1]] : []
-  monitoring_netweaver_targets_vip    = var.netweaver_enabled ? local.netweaver_virtual_ips : []
   drbd_cluster_vip                    = local.drbd_cluster_vip
   drbd_cluster_vip_mechanism          = "route"
   drbd_sbd_storage_type               = var.sbd_storage_type
@@ -164,24 +151,6 @@ module "hana_node" {
   iscsi_srv_ip         = join("", module.iscsi_server.iscsisrv_ip)
   destroy_timeout      = var.hana_destroy_timeout
   tags                 = local.tags
-}
-
-module "monitoring" {
-  source             = "./modules/monitoring"
-  common_variables   = module.common_variables.configuration
-  name               = var.monitoring_name
-  network_domain     = var.monitoring_network_domain == "" ? var.network_domain : var.monitoring_network_domain
-  monitoring_enabled = var.monitoring_enabled
-  vm_size            = var.monitoring_vm_size
-  key_name           = aws_key_pair.key-pair.key_name
-  security_group_id  = local.security_group_id
-  monitoring_srv_ip  = local.monitoring_ip
-  availability_zones = data.aws_availability_zones.available.names
-  os_image           = local.monitoring_os_image
-  os_owner           = local.monitoring_os_owner
-  subnet_ids         = aws_subnet.infra-subnet.*.id
-  timezone           = var.timezone
-  tags               = local.tags
 }
 
 module "iscsi_server" {

@@ -188,8 +188,7 @@ Example based on `10.0.0.0/16` address range (VPC address range) and `192.168.1.
 
 | Service                          | Variable                     | Addresses                                                      | Comments                                                                                            |
 | ----                             | --------                     | ---------                                                      | --------                                                                                            |
-| iSCSI server                     | `iscsi_srv_ip`               | `10.0.0.4`                                                     |                                                                                                     |
-| Monitoring                       | `monitoring_srv_ip`          | `10.0.0.5`                                                     |                                                                                                     |
+| iSCSI server                     | `iscsi_srv_ip`               | `10.0.0.5`                                                     |                                                                                                     |
 | HANA ips                         | `hana_ips`                   | `10.0.1.10`, `10.0.2.11`                                       |                                                                                                     |
 | HANA cluster vip                 | `hana_cluster_vip`           | `192.168.1.10`                                                 | Only used if HA is enabled in HANA                                                                  |
 | HANA cluster vip secondary       | `hana_cluster_vip_secondary` | `192.168.1.11`                                                 | Only used if the Active/Active setup is used                                                        |
