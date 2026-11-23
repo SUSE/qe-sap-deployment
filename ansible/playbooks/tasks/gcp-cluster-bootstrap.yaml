@@ -40,6 +40,7 @@
     port="{{ primary_hostname }}"
     zone="{{ primary_zone }}"
     project="{{ project }}"
+    {% if angi_mode != 'none' %}pcmk_reboot_timeout=300 pcmk_monitor_retries=4 pcmk_delay_max=15{% endif %}
     op monitor interval="300s" timeout="120s"
     op start interval="0" timeout="60s"
     meta target-role=Started
@@ -61,6 +62,7 @@
     port="{{ secondary_hostname }}"
     zone="{{ secondary_zone }}"
     project="{{ project }}"
+    {% if angi_mode != 'none' %}pcmk_reboot_timeout=300 pcmk_monitor_retries=4 pcmk_delay_max=15{% endif %}
     op monitor interval="300s" timeout="120s"
     op start interval="0" timeout="60s"
     meta target-role=Started
@@ -98,6 +100,11 @@
     file: ./cluster-bootstrap-defaults.yaml
   vars:
     stonith_timeout_native: "300s"
+
+# Priority fencing for SAPHanaSR-angi on Azure and GCP, see angi_mode.
+- name: Priority fencing [angi]
+  ansible.builtin.include_tasks: ./priority-fencing.yaml
+  when: angi_mode != 'none'
 
 # GCP-specific cluster IP, healthcheck, and group configuration.
 - name: Configure cluster IP
