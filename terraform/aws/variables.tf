@@ -479,56 +479,6 @@ variable "iscsi_disk_size" {
   default     = 10
 }
 
-# Monitoring related variables
-
-variable "monitoring_name" {
-  description = "hostname, without the domain part"
-  type        = string
-  default     = "vmmonitoring"
-}
-
-variable "monitoring_network_domain" {
-  description = "hostname's network domain"
-  type        = string
-  default     = ""
-}
-
-variable "monitoring_os_image" {
-  description = "sles4sap AMI image identifier or a pattern used to find the image name (e.g. suse-sles-sap-15-sp3-byos)"
-  type        = string
-  default     = ""
-}
-
-variable "monitoring_os_owner" {
-  description = "OS image owner. For BYOS images the owner usually is 'amazon'"
-  type        = string
-  default     = ""
-}
-
-variable "monitoring_vm_size" {
-  description = "The instance type of the monitoring node."
-  type        = string
-  default     = "t3.micro"
-}
-
-variable "monitoring_srv_ip" {
-  description = "monitoring server address. Must be in 10.0.0.0/24 subnet"
-  type        = string
-  default     = ""
-  validation {
-    condition = (
-      var.monitoring_srv_ip == "" || can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", var.monitoring_srv_ip))
-    )
-    error_message = "Invalid IP address format."
-  }
-}
-
-variable "monitoring_enabled" {
-  description = "enable the host to be monitored by exporters, e.g node_exporter"
-  type        = bool
-  default     = false
-}
-
 # Netweaver related variables
 
 variable "netweaver_name" {

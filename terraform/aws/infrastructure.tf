@@ -101,8 +101,7 @@ resource "aws_route" "public" {
 }
 
 locals {
-  create_security_group            = var.security_group_id == "" ? 1 : 0
-  create_security_group_monitoring = var.security_group_id == "" && var.monitoring_enabled == true ? 1 : 0
+  create_security_group = var.security_group_id == "" ? 1 : 0
 }
 
 resource "aws_security_group" "secgroup" {
@@ -181,74 +180,6 @@ resource "aws_security_group_rule" "ssh" {
   security_group_id = local.security_group_id
 }
 
-
-# Monitoring rules
-resource "aws_security_group_rule" "hanadb_exporter" {
-  count       = local.create_security_group_monitoring
-  type        = "ingress"
-  from_port   = 9668
-  to_port     = 9668
-  protocol    = "tcp"
-  cidr_blocks = local.allowed_source_ranges
-
-  security_group_id = local.security_group_id
-}
-
-
-resource "aws_security_group_rule" "node_exporter" {
-  count       = local.create_security_group_monitoring
-  type        = "ingress"
-  from_port   = 9100
-  to_port     = 9100
-  protocol    = "tcp"
-  cidr_blocks = local.allowed_source_ranges
-
-  security_group_id = local.security_group_id
-}
-
-resource "aws_security_group_rule" "ha_exporter" {
-  count       = local.create_security_group_monitoring
-  type        = "ingress"
-  from_port   = 9664
-  to_port     = 9664
-  protocol    = "tcp"
-  cidr_blocks = local.allowed_source_ranges
-
-  security_group_id = local.security_group_id
-}
-
-resource "aws_security_group_rule" "saphost_exporter" {
-  count       = local.create_security_group_monitoring
-  type        = "ingress"
-  from_port   = 9680
-  to_port     = 9680
-  protocol    = "tcp"
-  cidr_blocks = local.allowed_source_ranges
-
-  security_group_id = local.security_group_id
-}
-
-resource "aws_security_group_rule" "prometheus_server" {
-  count       = local.create_security_group_monitoring
-  type        = "ingress"
-  from_port   = 9090
-  to_port     = 9090
-  protocol    = "tcp"
-  cidr_blocks = local.allowed_source_ranges
-
-  security_group_id = local.security_group_id
-}
-
-resource "aws_security_group_rule" "grafana_server" {
-  count       = local.create_security_group_monitoring
-  type        = "ingress"
-  from_port   = 3000
-  to_port     = 3000
-  protocol    = "tcp"
-  cidr_blocks = local.allowed_source_ranges
-
-  security_group_id = local.security_group_id
-}
 
 # IBSM imported resources
 
