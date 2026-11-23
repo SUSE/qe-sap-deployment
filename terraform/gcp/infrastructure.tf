@@ -106,19 +106,6 @@ resource "google_compute_firewall" "ha_firewall_allow_tcp" {
   }
 }
 
-# Monitoring ports: only from the allowed CIDRs
-resource "google_compute_firewall" "ha_firewall_allow_monitoring" {
-  count         = local.create_firewall
-  name          = "${local.deployment_name}-fw-monitoring"
-  network       = local.vpc_name
-  source_ranges = local.allowed_source_ranges
-
-  allow {
-    protocol = "tcp"
-    ports    = ["3000", "9668", "9100", "9664", "9090", "9680"]
-  }
-}
-
 # IBSM related network imports
 
 data "google_compute_network" "ibsm_vpc" {
