@@ -178,22 +178,6 @@ hana_vm_size = "n1-highmem-32"
 # Type of VM (vCPUs and RAM)
 #iscsi_vm_size = "custom-1-2048"
 
-##############################
-# Monitoring related variables
-##############################
-
-# Enable the host to be monitored by exporters
-#monitoring_enabled = true
-
-# Hostname, without the domain part
-#monitoring_name = "vmmonitoring"
-
-# Monitoring server image. By default, PAYG image is used. The usage is the same as the HANA images
-#monitoring_os_image = "suse-byos-cloud/sles-15-sp3-sap-byos"
-
-# IP address of the machine where Prometheus and Grafana are running
-#monitoring_srv_ip = "10.0.0.5"
-
 ########################
 # DRBD related variables
 ########################

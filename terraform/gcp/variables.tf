@@ -315,49 +315,6 @@ variable "hana_scale_out_standby_count" {
   default     = "1"
 }
 
-# Monitoring related variables
-variable "monitoring_name" {
-  description = "hostname, without the domain part"
-  type        = string
-  default     = "vmmonitoring"
-}
-
-variable "monitoring_vm_size" {
-  description = "VM size for the monitor server machine"
-  type        = string
-  default     = "custom-1-2048"
-}
-
-variable "monitoring_network_domain" {
-  description = "hostname's network domain"
-  type        = string
-  default     = ""
-}
-
-variable "monitoring_srv_ip" {
-  description = "Monitoring server address"
-  type        = string
-  default     = ""
-  validation {
-    condition = (
-      var.monitoring_srv_ip == "" || can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", var.monitoring_srv_ip))
-    )
-    error_message = "Invalid IP address format."
-  }
-}
-
-variable "monitoring_os_image" {
-  description = "The image used to create the monitoring machines"
-  type        = string
-  default     = ""
-}
-
-variable "monitoring_enabled" {
-  description = "Enable the host to be monitored by exporters, e.g node_exporter"
-  type        = bool
-  default     = false
-}
-
 # SBD related variables
 # In order to enable SBD, an ISCSI server is needed as right now is the unique option
 # All the clusters will use the same mechanism
