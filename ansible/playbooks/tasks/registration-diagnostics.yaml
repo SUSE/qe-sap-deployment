@@ -1,0 +1,152 @@
+---
+# Collect the registration state and the important logs after a failed
+# registercloudguest run. This file is read only. It classifies the failure
+# into a known family and fails with one clear message.
+- name: Extract the registration error lines from cloudregister
+  ansible.builtin.shell: |
+    set -o pipefail
+    grep -E "ERROR:|WARNING:|401|422|failed|already been taken|No product found|Invalid system credentials|LTSS|already running|waiting to acquire lock|System could not be created" /var/log/cloudregister | tail -n 200
+  register: registration_cloudregister
+  changed_when: false
+  failed_when: false
+
+# Keep only the lines since the last boot. The image build writes old lines
+# to zypper.log, and these lines can cause a wrong error family. Each line
+# starts with a local "YYYY-MM-DD HH:MM:SS" timestamp. The boot time is
+# calculated in the same format, thus a string comparison is sufficient.
+- name: Extract the zypper lock and THROW lines since the last boot
+  ansible.builtin.shell: |
+    set -o pipefail
+    since="$(date -d "@$(( $(date +%s) - $(cut -d. -f1 /proc/uptime) ))" '+%F %T')"
+    grep -E "System management is locked|THROW" /var/log/zypper.log \
+      | awk -v since="$since" 'substr($0, 1, 19) >= since' \
+      | tail -n 100
+  register: registration_zypper_log
+  changed_when: false
+  failed_when: false
+
+- name: Collect the registration state with simple commands
+  ansible.builtin.command: "{{ item }}"  # noqa command-instead-of-module
+  loop:
+    - "SUSEConnect --status-text"
+    - "systemctl show guestregister.service --property=ActiveState --property=Result"
+    - "systemctl status guestregister.service --no-pager -l"
+    - "journalctl --no-pager -u guestregister.service --lines=120"
+    - "zypper services"
+    - "zypper lr -u"
+    - "systemctl list-timers guestregister-lic-watcher.timer --no-pager"
+    - "rpm -q cloud-regionsrv-client suseconnect-ng cloud-regionsrv-client-license-watcher python-gcemetadata"
+    - "pgrep -a -f '[r]egistercloudguest|[z]ypper|[S]USEConnect'"
+    - "ls -l /etc/zypp/credentials.d /etc/zypp/services.d"
+    - "grep susecloud /etc/hosts"
+  register: registration_diag_commands
+  changed_when: false
+  failed_when: false
+
+- name: Display the registration state command output
+  ansible.builtin.debug:
+    msg: "{{ item.item }}:\n{{ item.stdout | default('') }}{{ item.stderr | default('') }}"
+  loop: "{{ registration_diag_commands.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Display the cloudregister diagnostics
+  ansible.builtin.debug:
+    msg: "{{ registration_cloudregister.stdout | default('no matching lines') }}"
+
+- name: Display the zypper log diagnostics
+  ansible.builtin.debug:
+    msg: "{{ registration_zypper_log.stdout | default('no matching lines') }}"
+
+- name: Build the registration failure evidence
+  ansible.builtin.set_fact:
+    # Use a double-quoted scalar: YAML changes '\n' into a real newline.
+    # A folded scalar (>-) keeps '\n' as two literal characters.
+    registration_evidence: "{{ ((rcg_register.stderr_lines | default([]))
+      + (rcg_register.stdout_lines | default([]))
+      + (registration_cloudregister.stdout_lines | default([]))
+      + (registration_zypper_log.stdout_lines | default([])))
+      | join('\n') }}"
+
+- name: Initialize the registration error family
+  ansible.builtin.set_fact:
+    registration_error_family: "unknown"
+    registration_error_hint: "No known signature matched. Review the diagnostics above."
+    registration_error_reference: ""
+
+- name: Classify the registration failure as a system token conflict
+  ansible.builtin.set_fact:
+    registration_error_family: "token-conflict"
+    registration_error_hint: "The system token already exists on an update server, usually after a broken failover. The instance cannot register again; destroy it."
+    registration_error_reference: "bsc#1289480"
+  when:
+    - registration_error_family == "unknown"
+    - registration_evidence is search("System could not be created|System token has already been taken")
+
+- name: Classify the registration failure as invalid system credentials
+  ansible.builtin.set_fact:
+    registration_error_family: "invalid-credentials"
+    registration_error_hint: "The update server rejected the credentials. The credentials are stale or the registration is not shared between update servers in time. A cleanup does not help."
+    registration_error_reference: "bsc#1257756"
+  when:
+    - registration_error_family == "unknown"
+    - registration_evidence is search("Invalid system credentials|No matching credentials file found")
+
+- name: Classify the registration failure as a concurrent registercloudguest run
+  ansible.builtin.set_fact:
+    registration_error_family: "concurrent-run"
+    registration_error_hint: "Another registercloudguest run holds the lock. Wait for it to finish. Do not start a new registration."
+    registration_error_reference: ""
+  when:
+    - registration_error_family == "unknown"
+    - registration_evidence is search("already running as PID|waiting to acquire lock|registercloudguest.lock")
+
+- name: Classify the registration failure as a zypper lock
+  ansible.builtin.set_fact:
+    registration_error_family: "zypper-lock"
+    registration_error_hint: "Another zypper operation holds the lock. Wait for it to finish."
+    registration_error_reference: ""
+  when:
+    - registration_error_family == "unknown"
+    - registration_evidence is search("System management is locked")
+
+- name: Classify the registration failure as an update server network error
+  ansible.builtin.set_fact:
+    registration_error_family: "update-server-network"
+    registration_error_hint: "An update server was unreachable or rejected the connection. The error can be transient. Check the failover in the log."
+    registration_error_reference: "bsc#1289480"
+  when:
+    - registration_error_family == "unknown"
+    - registration_evidence is search("Connection reset by peer|Read timed out|Registration with .* failed. Trying")
+
+# The cause of the failure is on an "Error: " line, for example
+# "Error: Registration server returned '...' (401)". The "ERROR:" lines
+# before it are generic, for example "ERROR: Baseproduct registration failed".
+# Thus use the first "Error: " line, and use the other lines only if there
+# is no "Error: " line.
+- name: Extract the first registration error line
+  ansible.builtin.set_fact:
+    registration_first_error: >-
+      {{ registration_evidence.splitlines() | select('search', 'Error: ') | first
+         | default(registration_evidence.splitlines() | select('search', 'ERROR:|Validation failed|422') | first, true)
+         | default('no matching error line', true) }}
+
+- name: Set the known bug line
+  ansible.builtin.set_fact:
+    registration_reference_line: "{{ ('Known bug: ' ~ registration_error_reference) if registration_error_reference | length > 0 else '' }}"
+
+- name: Report the known registration failure reference
+  ansible.builtin.debug:
+    msg: "[OSADO][softfail] {{ registration_error_reference }} {{ registration_error_family }} {{ registration_error_hint }}"
+  when: registration_error_reference | length > 0
+
+- name: Fail with the registration error family
+  ansible.builtin.fail:
+    msg: |
+      REGISTRATION: {{ registration_error_family }}: {{ registration_error_hint }}
+      {{ registration_reference_line }}
+      Base registration failed on {{ inventory_hostname }}.
+      registercloudguest rc: {{ rcg_register.rc }}
+      First error: {{ registration_first_error }}
+      Diagnostics: see the output of the "Display the registration state command output",
+      "Display the cloudregister diagnostics" and "Display the zypper log diagnostics" tasks above.
