@@ -220,9 +220,7 @@
 
   tasks:
 
-    # -----------------------------------------------------------------
     # Packages used in sap-hana-preconfigure.yaml
-    # -----------------------------------------------------------------
     - name: Ensure libssl 2.1 is installed on distributed Systems
       community.general.zypper:
         name: libssh2-1  # Caution, no version control here (yet)
@@ -285,11 +283,9 @@
         - 'supportutils-plugin-ha-sap'
       when: cluster_node | bool
 
-    # -----------------------------------------------------------------
     # Packages used in tasks/sapconf.yaml.
     # The configuration of the tuning daemon stays in that task file,
     # only the package installation is done here.
-    # -----------------------------------------------------------------
     - name: Gather the package facts
       ansible.builtin.package_facts:
         manager: auto
@@ -378,9 +374,8 @@
         - use_sapconf | bool
         - qesap_sapconf_search.rc == 0
 
-    # -----------------------------------------------------------------
     # Packages used in tasks/saptune.yaml
-    # -----------------------------------------------------------------
+    #
     # Not every image and repository set has saptune at all. Probing first
     # turns a hard failure into a skip with an explicit message when saptune
     # is absent entirely. 'zypper search' exits 104 when nothing matches.
@@ -519,19 +514,15 @@
         - qesap_need_patterns_cockpit | bool
         - qesap_patterns_cockpit_search.rc == 0
 
-    # -----------------------------------------------------------------
     # Packages used in tasks/client-sbd-config.yaml
-    # -----------------------------------------------------------------
     - name: Ensure lsscsi is installed (SLES16)
       community.general.zypper:
         name: lsscsi
         state: present
       when: ansible_distribution_major_version == '16'
 
-    # -----------------------------------------------------------------
     # Cluster packages for the cloud specific cluster bootstrap task
     # files.
-    # -----------------------------------------------------------------
     - name: Ensure cluster dependencies are installed [azure]
       community.general.zypper:
         name: "{{ item }}"  # Caution, no version control here (yet)
@@ -628,6 +619,37 @@
         - cluster_node | bool
         - cloud_platform_is_aws or cloud_platform_is_gcp
 
+    # SLES 16 cloud images omit aws-cli-cmd even though config.kiwi lists it
+    # as a base package. ocf:suse:aws-vpc-move-ip calls /usr/bin/aws, so the
+    # cluster IP resource cannot start on AWS.
+    # Delete this whole block once the images ship the package again.
+    - name: Work around the missing AWS CLI [aws]
+      when:
+        - cluster_node | bool
+        - cloud_platform_is_aws
+        - ansible_facts['distribution_major_version'] == '16'
+      block:
+        - name: Gather the package facts for the AWS CLI workaround
+          ansible.builtin.package_facts:
+            manager: auto
+
+        - name: Report the missing AWS CLI workaround
+          ansible.builtin.debug:
+            msg: "[OSADO][softfail] bsc#1289825 aws-cli-cmd is missing from the SLES 16 image; /usr/bin/aws is required by ocf:suse:aws-vpc-move-ip"
+          when:
+            - not ansible_check_mode
+            - ansible_facts.packages['aws-cli-cmd'] is not defined
+
+        - name: Ensure the AWS CLI is installed
+          community.general.zypper:
+            name: aws-cli-cmd
+            state: present
+          register: result
+          until: result is succeeded
+          retries: 3
+          delay: 60
+          when: ansible_facts.packages['aws-cli-cmd'] is not defined
+
 - name: Install packages on the iSCSI server
   hosts: iscsi
   # A package failure must abort the run. Without this the failed host is
@@ -641,12 +663,9 @@
     ZYPP_LOCK_TIMEOUT: '120'
 
   tasks:
-
-    # -----------------------------------------------------------------
     # Packages used in tasks/iscsi-server-sbd-prep.yaml
     # The removal is kept together with the installation because on
     # 12-SP5 the packages below conflict with targetcli-fb.
-    # -----------------------------------------------------------------
     - name: Remove conflicting packages from iscsi server for 12-SP5
       community.general.zypper:
         name: "{{ item }}"
