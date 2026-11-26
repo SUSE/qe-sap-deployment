@@ -159,31 +159,54 @@
       when:
         - not to_be_registered
 
-    # Start by pre-cleaning all. Only run it if:
-    #  - the registercloudguest binary is available
-    #  - there's at least one 'Not Registered' module
-    #  - the user does not force SUSEConnect usage with 'use_suseconnect'
-    - name: Pre-run cleaning registercloudguest
-      ansible.builtin.command: registercloudguest --clean
-      register: cleanout
-      changed_when: cleanout.rc == 0
+    # Do not pre-clean and do not retry the registration. A second
+    # registercloudguest run on a half registered instance activates LTSS or
+    # returns a token conflict (bsc#1289480), and this hides the first error.
+    - name: Register with registercloudguest
+      any_errors_fatal: false
       when:
         - to_be_registered
         - is_registercloudguest_bin.rc == 0
         - not use_suseconnect | bool
+      block:
+        - name: Run registercloudguest registration
+          ansible.builtin.command: registercloudguest --force-new -r "{{ reg_code }}" -e "{{ email_address }}"
+          register: rcg_register
+          changed_when: rcg_register.rc == 0
 
-    - name: Run registercloudguest registration
-      ansible.builtin.command: registercloudguest --force-new -r "{{ reg_code }}" -e "{{ email_address }}"
-      register: result
-      until: result is succeeded
-      retries: 10
-      delay: 60
-      failed_when: result.rc != 0 or result.stderr != ""
-      changed_when: result.rc == 0
-      when:
-        - to_be_registered
-        - is_registercloudguest_bin.rc == 0
-        - not use_suseconnect | bool
+      rescue:
+        - name: Query the SCC registration status after a failed registercloudguest
+          ansible.builtin.command: SUSEConnect --status
+          register: rcg_scc_status
+          changed_when: false
+          failed_when: false
+
+        - name: Set the base product registration status after a failed registercloudguest
+          ansible.builtin.set_fact:
+            rcg_scc_base_products: >-
+              {{ (rcg_scc_status.stdout | from_json
+                  | selectattr('identifier', 'match', '^[A-Z]')
+                  | map(attribute='status', default='unknown') | list)
+                 if (rcg_scc_status.rc == 0 and
+                     rcg_scc_status.stdout | trim is match('^\['))
+                 else [] }}
+
+        - name: Set the registration outcome after a failed registercloudguest
+          ansible.builtin.set_fact:
+            rcg_registered: "{{ (rcg_scc_base_products | default([]) | length > 0) and ('Not Registered' not in (rcg_scc_base_products | default([]))) }}"
+
+        - name: Report a late registration success
+          ansible.builtin.debug:
+            msg:
+              - "REGISTRATION: registercloudguest reported an error but SUSEConnect reports the base product registered (late success)"
+              - "Base products: {{ rcg_scc_base_products | default([]) | join(', ') | default('none', true) }}"
+              - "registercloudguest rc: {{ rcg_register.rc }}"
+          changed_when: true
+          when: rcg_registered | bool
+
+        - name: Collect registration failure diagnostics
+          ansible.builtin.include_tasks: tasks/registration-diagnostics.yaml
+          when: not (rcg_registered | bool)
 
     # Fall back on SUSEConnect if:
     #   - registercloudguest is not present

@@ -51,6 +51,16 @@ using `registercloudguest`. If the command is available, it will be used for
 registration. If `registercloudguest` is not available then `SUSEConnect` will
 be used.
 
+The playbook runs `registercloudguest` one time. It does not run
+`registercloudguest --clean` before the registration and it does not retry the
+registration. A second run on a system that is half registered can activate
+LTSS or return a token error, and this hides the first error. When
+`registercloudguest` fails, the playbook checks `SUSEConnect --status`. If the
+base product is registered, the error is a late success and the play
+continues. If the base product is not registered,
+`tasks/registration-diagnostics.yaml` collects the registration state and the
+logs, classifies the error family, and fails with one message. The SUSEConnect
+fallback and the module tasks still retry.
 
 There's a task allowing register additional modules that require a dedicated regcode.
 The module names and regcodes can be provided in the `ansible-playbook` command line as list of hashes (named sles_modules).
