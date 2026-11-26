@@ -706,6 +706,58 @@
       retries: 3
       delay: 60
 
+# Report if any package was installed from a 'TEST_<index>' repository, the
+# alias used by ibsm.yaml. The zypper history has the source of each package:
+#   date|install|name|version|arch|requested by|repository alias|checksum|
+- name: Check the packages installed from the repositories under test
+  hosts: hana
+  gather_facts: false
+  become: true
+  become_user: root
+
+  tasks:
+    # A host with no enabled TEST_<index> repository is skipped.
+    - name: Look for enabled repositories under test
+      ansible.builtin.find:
+        paths: /etc/zypp/repos.d
+        patterns: 'TEST_*.repo'
+        contains: '^enabled\s*=\s*1\s*$'
+      register: qesap_test_repo_files
+
+    - name: Read the zypper history
+      when: qesap_test_repo_files.matched > 0
+      block:
+        # grep exits 0 (found), 1 (none) or 2 (log not readable): the tasks
+        # below report each case. '-a': the log can look binary.
+        - name: List the packages installed from the repositories under test
+          ansible.builtin.command:
+            argv:
+              - grep
+              - -a
+              - -E
+              - '^[^|]*\|install\|([^|]*\|){4}TEST_[0-9]+\|'
+              - /var/log/zypp/history
+          register: qesap_test_repo_pkgs
+          changed_when: false
+          failed_when: false
+          check_mode: false
+
+        - name: Report the packages installed from the repositories under test
+          ansible.builtin.debug:
+            var: qesap_test_repo_pkgs.stdout_lines
+          when: qesap_test_repo_pkgs.rc == 0
+
+        # To make this fatal, replace debug with ansible.builtin.fail.
+        - name: Report that no package comes from the repositories under test
+          ansible.builtin.debug:
+            msg: "No package was installed or updated from the repositories under test"
+          when: qesap_test_repo_pkgs.rc == 1
+
+        - name: Report that the zypper history cannot be read
+          ansible.builtin.debug:
+            msg: "The zypper history cannot be read, grep returned {{ qesap_test_repo_pkgs.rc }}: {{ qesap_test_repo_pkgs.stderr }}"
+          when: qesap_test_repo_pkgs.rc not in [0, 1]
+
 - name: Cluster preparation
   hosts: all
   vars:
