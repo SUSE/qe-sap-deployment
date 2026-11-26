@@ -509,6 +509,13 @@ operator to deliberately reintroduce the node. See the
 [AWS guide](https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-on-aws-stonith-device.html)
 for details. The corresponding `stonith-timeout` is `600s`.
 
+On SLE 16 and newer, `fence_aws` is configured per the
+[AWS Pacemaker SLES cluster configuration guide](https://docs.aws.amazon.com/sap/latest/sap-hana/sap-hana-pacemaker-sles-cluster-config.html)
+with `skip_os_shutdown=true`, `pcmk_delay_max=10`, `pcmk_reboot_timeout=600`,
+`pcmk_reboot_retries=4`, `pcmk_off_timeout=600`, `pcmk_off_retries=4`,
+operation timeouts (`start`: 600s, `stop`: 180s, `monitor`: 300s/60s), and the
+cluster property `priority-fencing-delay=20`.
+
 ### GCP native fencing
 
 GCP uses the `stonith:fence_gce` agent. Per Google's
