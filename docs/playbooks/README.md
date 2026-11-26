@@ -189,6 +189,14 @@ The `iscsi` play installs `targetcli-fb` on SLE 12 and `python3-targetcli-fb`
 on SLE 15 and 16, removing first the packages that conflict with it on
 12-SP5.
 
+After the package plays, the **Check the packages installed from the
+repositories under test** play (`hana`) reads the zypper history log,
+`/var/log/zypp/history`, and prints the packages that were installed from a
+`TEST_<index>` repository, or a message when there are none. It is skipped on
+a host with no enabled `TEST_<index>` repository. It only reports: it never
+stops the deployment. Packages installed by a playbook that runs later are
+not counted.
+
 Three package operations are intentionally **not** part of this playbook:
 
 * `registration.yaml` updates `cloud-regionsrv-client` as part of the
