@@ -173,13 +173,7 @@
         - not use_suseconnect | bool
 
     - name: Run registercloudguest registration
-      ansible.builtin.command: registercloudguest --force-new -r "{{ reg_code }}" -e "{{ email_address }}"
-      register: result
-      until: result is succeeded
-      retries: 10
-      delay: 60
-      failed_when: result.rc != 0 or result.stderr != ""
-      changed_when: result.rc == 0
+      ansible.builtin.include_tasks: tasks/registercloudguest-registration.yaml
       when:
         - to_be_registered
         - is_registercloudguest_bin.rc == 0

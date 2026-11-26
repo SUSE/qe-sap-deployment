@@ -51,6 +51,15 @@ using `registercloudguest`. If the command is available, it will be used for
 registration. If `registercloudguest` is not available then `SUSEConnect` will
 be used.
 
+The result of the `registercloudguest` registration is decided by
+`SUSEConnect --status`, not by the exit code or the stderr of the command.
+If the host is not registered after the first attempt, the playbook reports
+the error and some diagnostics, waits for any `registercloudguest` or `zypper`
+process to end, runs `registercloudguest --clean` and tries once more.
+The registration is not repeated in any other way. Only the status check
+itself is repeated when it fails, for example when the registration server
+is not reachable. If the host is still not registered, the playbook fails
+and the error message starts with the error of the first attempt.
 
 There's a task allowing register additional modules that require a dedicated regcode.
 The module names and regcodes can be provided in the `ansible-playbook` command line as list of hashes (named sles_modules).
