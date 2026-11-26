@@ -1,0 +1,73 @@
+---
+# Register with registercloudguest. 'SUSEConnect --status' decides the result.
+# If the host is not registered after the first attempt: clean, then run
+# one more attempt.
+
+- name: Run registercloudguest registration
+  ansible.builtin.command: registercloudguest --force-new -r "{{ reg_code }}" -e "{{ email_address }}"
+  register: rcg_first
+  failed_when: false
+  changed_when: rcg_first.rc == 0
+
+- name: Check the registration status after the first attempt
+  ansible.builtin.include_tasks: registration-status.yaml
+
+- name: Repair a failed registercloudguest registration
+  when: not qesap_registered | bool
+  block:
+    - name: Collect diagnostics of the first registration attempt
+      ansible.builtin.shell: "{ ls -l /etc/zypp/credentials.d /etc/zypp/services.d; tail -n 40 /var/log/cloudregister; } 2>&1"
+      register: rcg_diag
+      changed_when: false
+      failed_when: false
+
+    - name: Report the failure of the first registration attempt
+      ansible.builtin.debug:
+        msg:
+          - "First registercloudguest attempt left {{ inventory_hostname }} not registered"
+          - "registercloudguest rc: {{ rcg_first.rc }}"
+          - "registercloudguest stderr: {{ rcg_first.stderr_lines }}"
+          - "registercloudguest stdout: {{ rcg_first.stdout_lines }}"
+          - "SUSEConnect --status rc: {{ qesap_reg_status.rc }} output: {{ qesap_reg_status.stdout | trim | truncate(300) }}"
+          - "zypp credentials, zypp services and cloudregister log: {{ rcg_diag.stdout_lines }}"
+
+    # pgrep returns 1 when no process matches
+    - name: Wait for registercloudguest and zypper processes to end
+      ansible.builtin.command: pgrep -fa 'registercloudguest|zypper'
+      register: rcg_running
+      until: rcg_running.rc == 1
+      retries: 30
+      delay: 10
+      changed_when: false
+      failed_when: false
+
+    - name: Clean the registration before the second attempt
+      ansible.builtin.command: registercloudguest --clean
+      register: rcg_clean
+      changed_when: rcg_clean.rc == 0
+      failed_when: false
+      when: rcg_running.rc == 1
+
+    - name: Run registercloudguest registration again
+      ansible.builtin.command: registercloudguest --force-new -r "{{ reg_code }}" -e "{{ email_address }}"
+      register: rcg_second
+      failed_when: false
+      changed_when: rcg_second.rc == 0
+      when: rcg_running.rc == 1
+
+    - name: Check the registration status after the second attempt
+      ansible.builtin.include_tasks: registration-status.yaml
+
+# One line that starts with the first error: log parsers can cut the line
+- name: Fail if the host is still not registered
+  ansible.builtin.fail:
+    msg: >-
+      registercloudguest attempt 1 rc={{ rcg_first.rc }}:
+      {{ (rcg_first.stderr_lines + rcg_first.stdout_lines) | join(' / ') }}
+      ## {{ 'attempt 2 (clean rc=' ~ rcg_clean.rc ~ ') rc=' ~ rcg_second.rc ~ ': '
+      ~ (rcg_second.stderr_lines + rcg_second.stdout_lines) | join(' / ')
+      if rcg_running.rc == 1 else
+      'no attempt 2, still running: ' ~ rcg_running.stdout_lines | join(' / ') }}
+      ## not registered, SUSEConnect --status rc={{ qesap_reg_status.rc }}:
+      {{ qesap_reg_status.stdout | trim | truncate(300) }}
+  when: not qesap_registered | bool

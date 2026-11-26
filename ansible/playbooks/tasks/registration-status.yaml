@@ -1,0 +1,26 @@
+---
+# Sets 'qesap_registered' from the output of 'SUSEConnect --status',
+# and keeps the output in 'qesap_reg_status'.
+
+# A probe that fails is repeated: it is not the same as 'Not Registered'
+- name: Query the SCC registration status
+  ansible.builtin.command: SUSEConnect --status
+  register: qesap_reg_status
+  until: qesap_reg_status.rc == 0
+  retries: 3
+  delay: 20
+  changed_when: false
+  failed_when: false
+
+# Only base products have an upper case identifier
+- name: Set the registration verdict
+  vars:
+    base_products: >-
+      {{ (qesap_reg_status.stdout | from_json
+          | selectattr('identifier', 'match', '^[A-Z]')
+          | map(attribute='status', default='unknown') | list)
+         if (qesap_reg_status.rc == 0 and
+             qesap_reg_status.stdout | trim is match('^\['))
+         else [] }}
+  ansible.builtin.set_fact:
+    qesap_registered: "{{ base_products | length > 0 and 'Not Registered' not in base_products }}"
