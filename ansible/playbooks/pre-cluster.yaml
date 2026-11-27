@@ -30,6 +30,8 @@
   any_errors_fatal: true
   environment:
     ZYPP_LOCK_TIMEOUT: '120'
+    ZYPP_PLUGIN_RECEIVE_TIMEOUT: '120'
+    ZYPP_PLUGIN_TIMEOUT: '120'
 
   tasks:
     - name: Check the configured zypper repositories
@@ -194,6 +196,8 @@
   become_user: root
   environment:
     ZYPP_LOCK_TIMEOUT: '120'
+    ZYPP_PLUGIN_RECEIVE_TIMEOUT: '120'
+    ZYPP_PLUGIN_TIMEOUT: '120'
 
   vars:
     # SAPHanaSR-angi
@@ -661,6 +665,8 @@
   become_user: root
   environment:
     ZYPP_LOCK_TIMEOUT: '120'
+    ZYPP_PLUGIN_RECEIVE_TIMEOUT: '120'
+    ZYPP_PLUGIN_TIMEOUT: '120'
 
   tasks:
     # Packages used in tasks/iscsi-server-sbd-prep.yaml
